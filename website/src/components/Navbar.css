@@ -1,0 +1,134 @@
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--background);
+  border-bottom: var(--border-width) solid var(--foreground);
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  gap: 32px;
+}
+
+/* Brand / Wordmark */
+.navbar-brand {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--text-xl);
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.brand-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  border: var(--border-width) solid var(--foreground);
+  flex-shrink: 0;
+}
+
+/* Desktop links */
+.navbar-links {
+  display: flex;
+  gap: 8px;
+}
+
+.navbar-links a {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  transition:
+    color 200ms ease,
+    background-color 200ms ease;
+}
+
+.navbar-links a:hover {
+  color: var(--foreground);
+  background-color: var(--muted);
+}
+
+/* Desktop CTA */
+.navbar-actions {
+  flex-shrink: 0;
+}
+
+.navbar-actions .btn {
+  padding: 10px 20px;
+  font-size: var(--text-sm);
+}
+
+/* Hamburger toggle — hidden on desktop */
+.navbar-toggle {
+  display: none;
+  color: var(--foreground);
+}
+
+/* Mobile drawer */
+.navbar-mobile {
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar-inner {
+    height: 60px;
+  }
+
+  .navbar-links,
+  .navbar-actions {
+    display: none;
+  }
+
+  .navbar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .navbar-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px var(--container-padding) 24px;
+    border-top: 1px solid var(--border);
+    background-color: var(--background);
+  }
+
+  .navbar-mobile ul {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .navbar-mobile a {
+    display: block;
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: var(--text-base);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    color: var(--foreground);
+    transition: background-color 200ms ease;
+  }
+
+  .navbar-mobile a:hover {
+    background-color: var(--muted);
+  }
+
+  .navbar-mobile .btn {
+    align-self: stretch;
+    justify-content: center;
+  }
+}

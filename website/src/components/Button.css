@@ -1,0 +1,80 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-base);
+  padding: 14px 28px;
+  border-radius: var(--radius-full);
+  border: var(--border-width) solid var(--foreground);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    background-color var(--transition-base);
+}
+
+/* Primary — "Candy Button" */
+.btn-primary {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  box-shadow: var(--shadow-pop);
+}
+
+.btn-primary:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-pop-hover);
+}
+
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-pop-active);
+}
+
+/* Secondary — outline, fills on hover */
+.btn-secondary {
+  background-color: transparent;
+  color: var(--foreground);
+  box-shadow: none;
+}
+
+.btn-secondary:hover {
+  background-color: var(--tertiary);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-pop);
+}
+
+.btn-secondary:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-pop-active);
+}
+
+/* Icon badge — white circle inside button */
+.btn-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: white;
+  color: var(--foreground);
+  flex-shrink: 0;
+}
+
+.btn-primary .btn-icon-badge {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--accent);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .btn {
+    padding: 12px 22px;
+    font-size: var(--text-sm);
+    min-height: 48px;
+  }
+}
