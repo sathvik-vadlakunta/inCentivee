@@ -43,9 +43,8 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer-inner container">
         <div className="footer-brand">
-          <a href="/" className="footer-logo" aria-label="InCentive home">
-            <span className="footer-logo-dot" />
-            InCentive
+          <a href="/" className="footer-logo" aria-label="incentive home">
+            in<span className="brand-highlight">cent</span>ive
           </a>
           <p className="footer-tagline">
             Making financial literacy accessible, engaging, and fun for everyone.
@@ -84,7 +83,7 @@ export default function Footer() {
       </div>
 
       <div className="footer-bottom container">
-        <p>&copy; {new Date().getFullYear()} InCentive. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} incentive. All rights reserved.</p>
       </div>
     </footer>
   )

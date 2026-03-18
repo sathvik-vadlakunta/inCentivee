@@ -38,7 +38,7 @@ export default function Hero() {
           </h1>
 
           <p className="hero-subtitle">
-            InCentive makes personal finance approachable, interactive,
+            incentive makes personal finance approachable, interactive,
             and actually fun. Build real skills with courses designed for
             the way you learn.
           </p>

@@ -6,6 +6,7 @@ import './Navbar.css'
 const links = [
   { label: 'Programs', href: '#programs' },
   { label: 'About', href: '#about' },
+  { label: 'Resources', href: '#resources' },
   { label: 'Community', href: '#community' },
 ]
 
@@ -15,9 +16,8 @@ export default function Navbar() {
   return (
     <header className="navbar">
       <nav className="navbar-inner container">
-        <a href="/" className="navbar-brand" aria-label="InCentive home">
-          <span className="brand-dot" />
-          InCentive
+        <a href="/" className="navbar-brand" aria-label="incentive home">
+          in<span className="brand-highlight">cent</span>ive
         </a>
 
         <ul className={`navbar-links ${open ? 'navbar-links--open' : ''}`}>

@@ -23,14 +23,6 @@
   margin-bottom: 16px;
 }
 
-.footer-logo-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--accent);
-  flex-shrink: 0;
-}
-
 .footer-tagline {
   font-size: var(--text-sm);
   color: var(--muted-foreground);

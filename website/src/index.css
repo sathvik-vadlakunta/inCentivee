@@ -135,6 +135,11 @@ h4 {
   font-weight: 700;
 }
 
+/* Brand logo highlight — "cent" in incentive */
+.brand-highlight {
+  color: var(--accent);
+}
+
 p {
   color: var(--muted-foreground);
   line-height: 1.7;
