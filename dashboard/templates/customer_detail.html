@@ -9,6 +9,10 @@
         <span class="badge badge-{{ customer.status }}" style="margin-left: 0.5rem;">{{ customer.status | title }}</span>
     </div>
     <div class="flex">
+        <form method="POST" action="{{ url_for('api_trigger_run') }}" style="display:inline;" onsubmit="return confirm('Trigger a full pipeline run for {{ customer.name }}?')">
+            <input type="hidden" name="customer_id" value="{{ customer.id }}">
+            <button type="submit" class="btn btn-sm btn-primary">Run Agent</button>
+        </form>
         <a href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" class="btn btn-sm btn-outline" target="_blank">Case Study</a>
         <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="display:inline;">
             <select name="status" onchange="this.form.submit()" style="width:auto; padding:0.3rem 0.5rem; font-size:0.8rem;">

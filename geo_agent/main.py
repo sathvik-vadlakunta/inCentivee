@@ -111,6 +111,8 @@ def process_customer(
     output_base: str | None = None,
     data_dir: str | None = None,
     db=None,
+    run_id: int | None = None,
+    resume_from: str | None = None,
 ) -> dict:
     """Run the full GEO optimization pipeline for one customer.
 
@@ -133,9 +135,31 @@ def process_customer(
     audit.log(customer.id, "pipeline_start", {"dry_run": dry_run, "stage_only": stage_only, "domain": customer.domain})
 
     # Create a run record in DB if available
-    run_id = None
-    if db:
+    if run_id is None and db:
         run_id = db.create_run(customer.id)
+        db.init_run_steps(run_id)
+
+    # Step tracking helpers
+    def _should_run(step_name: str) -> bool:
+        """Check if this step should run (for resume-from support)."""
+        if not resume_from:
+            return True
+        step_names = [s[0] for s in db.PIPELINE_STEPS] if db else []
+        if step_name not in step_names or resume_from not in step_names:
+            return True
+        return step_names.index(step_name) >= step_names.index(resume_from)
+
+    def _start(step_name: str):
+        if db and run_id:
+            db.start_step(run_id, step_name)
+
+    def _finish(step_name: str, status="success", log_text="", result=None, error_message=""):
+        if db and run_id:
+            db.finish_step(run_id, step_name, status=status, log_text=log_text, result=result, error_message=error_message)
+
+    def _skip(step_name: str, reason=""):
+        if db and run_id:
+            db.skip_step(run_id, step_name, reason=reason)
 
     summary = {
         "customer": customer.name,
@@ -154,255 +178,336 @@ def process_customer(
         audit.log_credential_access(customer.id, "webflow_api_key", customer.webflow_api_key)
 
     crawler = None
-    try:
-        crawler = get_crawler(
-            platform=platform,
-            domain=customer.domain,
-            api_key=customer.webflow_api_key,
-            site_id=customer.webflow_site_id,
-        )
-        pages = crawler.get_pages()
-        summary["pages_crawled"] = len(pages)
-        logger.info(f"  Crawled {len(pages)} pages")
-        audit.log(customer.id, "crawl_complete", {"pages_found": len(pages), "platform": platform})
-    except Exception as e:
-        logger.error(f"  Crawl failed for {customer.id}: {type(e).__name__}")
-        summary["errors"].append(f"Crawl failed: {type(e).__name__}")
-        audit.log(customer.id, "crawl_failed", {"error": type(e).__name__})
-        if db and run_id:
-            db.update_run(run_id, status="failed", errors=summary["errors"])
-        return summary
-    finally:
-        if crawler:
-            crawler.close()
+    if not _should_run("crawl"):
+        _skip("crawl", "Skipped (resuming from later step)")
+        # Still need pages for later steps — load from last output
+        output_dir = Path(output_base or (data_dir + "/output")) / customer.id
+        pages = []
+        logger.info("  Crawl skipped — will use cached data")
+    else:
+        _start("crawl")
+        try:
+            crawler = get_crawler(
+                platform=platform,
+                domain=customer.domain,
+                api_key=customer.webflow_api_key,
+                site_id=customer.webflow_site_id,
+            )
+            pages = crawler.get_pages()
+            summary["pages_crawled"] = len(pages)
+            logger.info(f"  Crawled {len(pages)} pages")
+            audit.log(customer.id, "crawl_complete", {"pages_found": len(pages), "platform": platform})
+            _finish("crawl", result={"pages_found": len(pages), "platform": platform})
+        except Exception as e:
+            logger.error(f"  Crawl failed for {customer.id}: {type(e).__name__}")
+            summary["errors"].append(f"Crawl failed: {type(e).__name__}")
+            audit.log(customer.id, "crawl_failed", {"error": type(e).__name__})
+            _finish("crawl", status="failed", error_message=str(e))
+            if db and run_id:
+                db.update_run(run_id, status="failed", errors=summary["errors"])
+            return summary
+        finally:
+            if crawler:
+                crawler.close()
 
-    if not pages:
-        logger.warning("  No pages found — skipping")
-        summary["errors"].append("No pages found on site")
-        if db and run_id:
-            db.update_run(run_id, status="failed", errors=summary["errors"])
-        return summary
+        if not pages:
+            logger.warning("  No pages found — skipping")
+            summary["errors"].append("No pages found on site")
+            if db and run_id:
+                db.update_run(run_id, status="failed", errors=summary["errors"])
+            return summary
 
     # --- Step 1.5: Verify business data via Google Places ---
     logger.info("Step 1.5: Verifying business data via Google Places")
     verified_data: VerifiedBusinessData | None = None
     competitors: list[CompetitorData] = []
-    try:
-        verified_data, competitors = verify_customer(customer)
-        if verified_data:
-            audit.log(customer.id, "places_verified", {
-                "match_confidence": verified_data.match_confidence,
-                "rating": verified_data.rating,
-                "review_count": verified_data.review_count,
-                "competitors_found": len(competitors),
-            })
-            logger.info(
-                f"  Verified: {verified_data.name} — "
-                f"{verified_data.rating} stars ({verified_data.review_count} reviews), "
-                f"{len(competitors)} competitors found"
-            )
-
-            # Update DB with Places data
-            if db:
-                db.upsert_google_places(
-                    customer_id=customer.id,
-                    place_id=verified_data.place_id,
-                    rating=verified_data.rating,
-                    review_count=verified_data.review_count,
-                    match_confidence=verified_data.match_confidence,
-                    lat=verified_data.lat,
-                    lng=verified_data.lng,
+    if not _should_run("places"):
+        _skip("places", "Skipped (resuming from later step)")
+    else:
+        _start("places")
+        try:
+            verified_data, competitors = verify_customer(customer)
+            if verified_data:
+                audit.log(customer.id, "places_verified", {
+                    "match_confidence": verified_data.match_confidence,
+                    "rating": verified_data.rating,
+                    "review_count": verified_data.review_count,
+                    "competitors_found": len(competitors),
+                })
+                logger.info(
+                    f"  Verified: {verified_data.name} — "
+                    f"{verified_data.rating} stars ({verified_data.review_count} reviews), "
+                    f"{len(competitors)} competitors found"
                 )
-                db.replace_competitors(customer.id, [
-                    {"name": c.name, "rating": c.rating, "review_count": c.review_count,
-                     "address": c.address, "place_id": c.place_id}
-                    for c in competitors
-                ])
-        else:
-            logger.info("  Google Places verification not available — continuing without")
-    except Exception as e:
-        logger.warning(f"  Google Places verification failed: {type(e).__name__} — continuing without")
-        audit.log(customer.id, "places_verification_failed", {"error": type(e).__name__})
+
+                # Update DB with Places data
+                if db:
+                    db.upsert_google_places(
+                        customer_id=customer.id,
+                        place_id=verified_data.place_id,
+                        rating=verified_data.rating,
+                        review_count=verified_data.review_count,
+                        match_confidence=verified_data.match_confidence,
+                        lat=verified_data.lat,
+                        lng=verified_data.lng,
+                    )
+                    db.replace_competitors(customer.id, [
+                        {"name": c.name, "rating": c.rating, "review_count": c.review_count,
+                         "address": c.address, "place_id": c.place_id}
+                        for c in competitors
+                    ])
+                _finish("places", result={
+                    "rating": verified_data.rating,
+                    "review_count": verified_data.review_count,
+                    "competitors": len(competitors),
+                })
+            else:
+                logger.info("  Google Places verification not available — continuing without")
+                _finish("places", log_text="Google Places verification not available")
+        except Exception as e:
+            logger.warning(f"  Google Places verification failed: {type(e).__name__} — continuing without")
+            audit.log(customer.id, "places_verification_failed", {"error": type(e).__name__})
+            _finish("places", status="failed", error_message=str(e))
 
     # --- Step 2: Update RAG store ---
     logger.info("Step 2: Updating RAG store")
     rag = None
-    try:
-        rag = CustomerRAG(customer.id, data_dir=data_dir + "/customers" if not data_dir.endswith("/customers") else data_dir)
-        # Minimize PII before sending to external embedding service
-        page_texts = [minimize_for_embedding(p.content) for p in pages]
-        embeddings = embed_texts(page_texts)
+    if not _should_run("rag"):
+        _skip("rag", "Skipped (resuming from later step)")
+    else:
+        _start("rag")
+        try:
+            rag = CustomerRAG(customer.id, data_dir=data_dir + "/customers" if not data_dir.endswith("/customers") else data_dir)
+            # Minimize PII before sending to external embedding service
+            page_texts = [minimize_for_embedding(p.content) for p in pages]
+            embeddings = embed_texts(page_texts)
 
-        for page, embedding in zip(pages, embeddings):
-            rag.upsert_page(
-                page_id=page.id,
-                url=page.url,
-                title=page.title,
-                content=page.content,
-                embedding=embedding,
-                category=page.category,
-            )
-        logger.info(f"  Stored {len(pages)} pages with embeddings")
-    except Exception as e:
-        logger.error(f"  RAG update failed for {customer.id}: {type(e).__name__}")
-        summary["errors"].append(f"RAG update failed: {type(e).__name__}")
-        # Continue without RAG — we still have the crawled pages
-        rag = None
+            for page, embedding in zip(pages, embeddings):
+                rag.upsert_page(
+                    page_id=page.id,
+                    url=page.url,
+                    title=page.title,
+                    content=page.content,
+                    embedding=embedding,
+                    category=page.category,
+                )
+            logger.info(f"  Stored {len(pages)} pages with embeddings")
+            _finish("rag", result={"pages_stored": len(pages)})
+        except Exception as e:
+            logger.error(f"  RAG update failed for {customer.id}: {type(e).__name__}")
+            summary["errors"].append(f"RAG update failed: {type(e).__name__}")
+            _finish("rag", status="failed", error_message=str(e))
+            # Continue without RAG — we still have the crawled pages
+            rag = None
 
     # --- Step 3: Analyze with Claude ---
     logger.info("Step 3: Analyzing with Claude 4.6")
     audit.log(customer.id, "claude_analysis_start", {"page_count": len(pages)})
-    try:
-        analysis = analyze_and_recommend(customer, pages, verified_data=verified_data, competitors=competitors)
-        summary["content_gaps"] = len(analysis.get("content_gaps", []))
-        summary["faq_sets"] = len(analysis.get("faq_entries", {}))
-        summary["priority_actions"] = analysis.get("priority_actions", [])
-
-        # Check for grading issues — block publish if any are critical
-        grading_issues = analysis.get("_grading_issues", [])
-        blocked_issues = [i for i in grading_issues if i.startswith("BLOCKED:")]
-        if blocked_issues:
-            for issue in blocked_issues:
-                summary["errors"].append(f"Grading: {issue}")
-            audit.log(customer.id, "analysis_blocked", {"issues": blocked_issues})
-            logger.error(f"  Analysis blocked by grading: {len(blocked_issues)} critical issue(s)")
-        if grading_issues:
-            summary["grading_warnings"] = len(grading_issues) - len(blocked_issues)
-
-        logger.info(f"  Analysis complete: {summary['content_gaps']} gaps, {summary['faq_sets']} FAQ sets")
-        audit.log(customer.id, "claude_analysis_complete", {
-            "gaps": summary["content_gaps"], "faq_sets": summary["faq_sets"],
-            "grading_issues": len(grading_issues),
-        })
-    except Exception as e:
-        logger.error(f"  Analysis failed for {customer.id}: {type(e).__name__}")
-        summary["errors"].append(f"Analysis failed: {type(e).__name__}")
-        audit.log(customer.id, "claude_analysis_failed", {"error": type(e).__name__})
+    if not _should_run("analysis"):
+        _skip("analysis", "Skipped (resuming from later step)")
         analysis = {}
+    else:
+        _start("analysis")
+        try:
+            analysis = analyze_and_recommend(customer, pages, verified_data=verified_data, competitors=competitors)
+            summary["content_gaps"] = len(analysis.get("content_gaps", []))
+            summary["faq_sets"] = len(analysis.get("faq_entries", {}))
+            summary["priority_actions"] = analysis.get("priority_actions", [])
+
+            # Check for grading issues — block publish if any are critical
+            grading_issues = analysis.get("_grading_issues", [])
+            blocked_issues = [i for i in grading_issues if i.startswith("BLOCKED:")]
+            if blocked_issues:
+                for issue in blocked_issues:
+                    summary["errors"].append(f"Grading: {issue}")
+                audit.log(customer.id, "analysis_blocked", {"issues": blocked_issues})
+                logger.error(f"  Analysis blocked by grading: {len(blocked_issues)} critical issue(s)")
+            if grading_issues:
+                summary["grading_warnings"] = len(grading_issues) - len(blocked_issues)
+
+            logger.info(f"  Analysis complete: {summary['content_gaps']} gaps, {summary['faq_sets']} FAQ sets")
+            audit.log(customer.id, "claude_analysis_complete", {
+                "gaps": summary["content_gaps"], "faq_sets": summary["faq_sets"],
+                "grading_issues": len(grading_issues),
+            })
+            _finish("analysis", result={
+                "content_gaps": summary["content_gaps"],
+                "faq_sets": summary["faq_sets"],
+                "grading_issues": len(grading_issues),
+            })
+        except Exception as e:
+            logger.error(f"  Analysis failed for {customer.id}: {type(e).__name__}")
+            summary["errors"].append(f"Analysis failed: {type(e).__name__}")
+            audit.log(customer.id, "claude_analysis_failed", {"error": type(e).__name__})
+            _finish("analysis", status="failed", error_message=str(e))
+            analysis = {}
 
     # --- Step 3.5: Generate content recommendations ---
     logger.info("Step 3.5: Generating content recommendations")
-    try:
-        existing_recs = []
-        if db:
-            existing_recs = db.get_content_recommendations(customer.id)
+    if not _should_run("content_recs"):
+        _skip("content_recs", "Skipped (resuming from later step)")
+    else:
+        _start("content_recs")
+        try:
+            existing_recs = []
+            if db:
+                existing_recs = db.get_content_recommendations(customer.id)
 
-        content_recs = generate_content_recommendations(customer, pages, existing_recs=existing_recs)
+            content_recs = generate_content_recommendations(customer, pages, existing_recs=existing_recs)
 
-        # Track content freshness
-        stale_pages = track_content_freshness(pages)
-        if stale_pages:
-            summary["stale_pages"] = len(stale_pages)
-            logger.info(f"  Found {len(stale_pages)} stale page(s) needing freshness updates")
+            # Track content freshness
+            stale_pages = track_content_freshness(pages)
+            if stale_pages:
+                summary["stale_pages"] = len(stale_pages)
+                logger.info(f"  Found {len(stale_pages)} stale page(s) needing freshness updates")
 
-        # Save recommendations to DB
-        if db and content_recs:
-            for rec in content_recs:
-                db.add_content_recommendation(rec.to_dict())
-            summary["content_recommendations"] = len(content_recs)
-            logger.info(f"  Generated {len(content_recs)} content recommendations")
-            audit.log(customer.id, "content_recs_generated", {
-                "count": len(content_recs),
-                "types": list({r.rec_type for r in content_recs}),
-                "stale_pages": len(stale_pages),
+            # Save recommendations to DB
+            if db and content_recs:
+                for rec in content_recs:
+                    db.add_content_recommendation(rec.to_dict())
+                summary["content_recommendations"] = len(content_recs)
+                logger.info(f"  Generated {len(content_recs)} content recommendations")
+                audit.log(customer.id, "content_recs_generated", {
+                    "count": len(content_recs),
+                    "types": list({r.rec_type for r in content_recs}),
+                    "stale_pages": len(stale_pages),
+                })
+            elif content_recs:
+                # Save to file if no DB
+                recs_file = Path(output_base or (data_dir + "/output")) / customer.id / "content_recommendations.json"
+                recs_file.parent.mkdir(parents=True, exist_ok=True)
+                recs_file.write_text(json.dumps([r.to_dict() for r in content_recs], indent=2))
+                summary["content_recommendations"] = len(content_recs)
+                logger.info(f"  Generated {len(content_recs)} content recommendations (saved to file)")
+            _finish("content_recs", result={
+                "recommendations": len(content_recs) if content_recs else 0,
+                "stale_pages": len(stale_pages) if stale_pages else 0,
             })
-        elif content_recs:
-            # Save to file if no DB
-            recs_file = Path(output_base or (data_dir + "/output")) / customer.id / "content_recommendations.json"
-            recs_file.parent.mkdir(parents=True, exist_ok=True)
-            recs_file.write_text(json.dumps([r.to_dict() for r in content_recs], indent=2))
-            summary["content_recommendations"] = len(content_recs)
-            logger.info(f"  Generated {len(content_recs)} content recommendations (saved to file)")
-    except Exception as e:
-        logger.warning(f"  Content recommendations failed: {type(e).__name__} — continuing")
-        audit.log(customer.id, "content_recs_failed", {"error": type(e).__name__})
+        except Exception as e:
+            logger.warning(f"  Content recommendations failed: {type(e).__name__} — continuing")
+            audit.log(customer.id, "content_recs_failed", {"error": type(e).__name__})
+            _finish("content_recs", status="failed", error_message=str(e))
 
     # --- Step 3.6: Competitor intelligence ---
     logger.info("Step 3.6: Checking competitor activity")
-    try:
-        comp_alerts = check_competitor_reviews(db, customer.id) if db else []
-        if comp_alerts and db:
-            for alert in comp_alerts:
-                db.add_alert(
-                    customer_id=customer.id,
-                    alert_type=alert.alert_type,
-                    severity=alert.severity,
-                    source=alert.competitor_name,
-                    message=alert.message,
-                    details=alert.details,
-                )
-            summary["competitor_alerts"] = len(comp_alerts)
-            logger.info(f"  {len(comp_alerts)} competitor alert(s) generated")
-            audit.log(customer.id, "competitor_check_complete", {"alerts": len(comp_alerts)})
-    except Exception as e:
-        logger.warning(f"  Competitor check failed: {type(e).__name__} — continuing")
+    if not _should_run("competitor"):
+        _skip("competitor", "Skipped (resuming from later step)")
+    else:
+        _start("competitor")
+        try:
+            comp_alerts = check_competitor_reviews(db, customer.id) if db else []
+            if comp_alerts and db:
+                for alert in comp_alerts:
+                    db.add_alert(
+                        customer_id=customer.id,
+                        alert_type=alert.alert_type,
+                        severity=alert.severity,
+                        source=alert.competitor_name,
+                        message=alert.message,
+                        details=alert.details,
+                    )
+                summary["competitor_alerts"] = len(comp_alerts)
+                logger.info(f"  {len(comp_alerts)} competitor alert(s) generated")
+                audit.log(customer.id, "competitor_check_complete", {"alerts": len(comp_alerts)})
+            _finish("competitor", result={"alerts": len(comp_alerts) if comp_alerts else 0})
+        except Exception as e:
+            logger.warning(f"  Competitor check failed: {type(e).__name__} — continuing")
+            _finish("competitor", status="failed", error_message=str(e))
 
     # --- Step 3.7: Schema validation ---
     logger.info("Step 3.7: Validating live schema markup")
-    try:
-        schema_results = validate_site_schema(customer.domain)
-        issues_count = sum(len(r.issues) for r in schema_results)
-        error_results = [r for r in schema_results if r.status in ("error", "missing")]
+    if not _should_run("schema_validation"):
+        _skip("schema_validation", "Skipped (resuming from later step)")
+    else:
+        _start("schema_validation")
+        try:
+            schema_results = validate_site_schema(customer.domain)
+            issues_count = sum(len(r.issues) for r in schema_results)
+            error_results = [r for r in schema_results if r.status in ("error", "missing")]
 
-        if error_results and db:
-            for r in error_results:
-                db.add_alert(
-                    customer_id=customer.id,
-                    alert_type="schema_invalid",
-                    severity="warning" if r.status == "missing" else "critical",
-                    source=r.url,
-                    message=f"Schema {r.status} on {r.url}: {'; '.join(r.issues[:3])}",
-                    details=r.to_dict(),
-                )
+            if error_results and db:
+                for r in error_results:
+                    db.add_alert(
+                        customer_id=customer.id,
+                        alert_type="schema_invalid",
+                        severity="warning" if r.status == "missing" else "critical",
+                        source=r.url,
+                        message=f"Schema {r.status} on {r.url}: {'; '.join(r.issues[:3])}",
+                        details=r.to_dict(),
+                    )
 
-        summary["schema_valid"] = sum(1 for r in schema_results if r.status == "valid")
-        summary["schema_issues"] = issues_count
-        logger.info(
-            f"  Schema: {summary['schema_valid']}/{len(schema_results)} pages valid, "
-            f"{issues_count} issue(s)"
-        )
-        audit.log(customer.id, "schema_validation_complete", {
-            "pages_checked": len(schema_results),
-            "valid": summary["schema_valid"],
-            "issues": issues_count,
-        })
-    except Exception as e:
-        logger.warning(f"  Schema validation failed: {type(e).__name__} — continuing")
+            summary["schema_valid"] = sum(1 for r in schema_results if r.status == "valid")
+            summary["schema_issues"] = issues_count
+            logger.info(
+                f"  Schema: {summary['schema_valid']}/{len(schema_results)} pages valid, "
+                f"{issues_count} issue(s)"
+            )
+            audit.log(customer.id, "schema_validation_complete", {
+                "pages_checked": len(schema_results),
+                "valid": summary["schema_valid"],
+                "issues": issues_count,
+            })
+            _finish("schema_validation", result={
+                "pages_checked": len(schema_results),
+                "valid": summary.get("schema_valid", 0),
+                "issues": issues_count,
+            })
+        except Exception as e:
+            logger.warning(f"  Schema validation failed: {type(e).__name__} — continuing")
+            _finish("schema_validation", status="failed", error_message=str(e))
 
     # --- Step 4: Generate files ---
     logger.info("Step 4: Generating llms.txt, schema, robots.txt")
+    llms_txt = llms_full_txt = schema_html = robots_txt = ""
+    if not _should_run("generate"):
+        _skip("generate", "Skipped (resuming from later step)")
+    else:
+        _start("generate")
+        try:
+            llms_txt = generate_llms_txt(customer, pages, verified_data=verified_data)
+            llms_full_txt = generate_llms_full_txt(customer, pages)
+            schema_html = generate_all_schemas(customer, verified_data=verified_data)
+            robots_txt = generate_robots_txt(customer)
 
-    llms_txt = generate_llms_txt(customer, pages, verified_data=verified_data)
-    llms_full_txt = generate_llms_full_txt(customer, pages)
-    schema_html = generate_all_schemas(customer, verified_data=verified_data)
-    robots_txt = generate_robots_txt(customer)
+            # Add FAQ schemas from analysis
+            faq_entries = analysis.get("faq_entries", {})
+            for page_url, faqs in faq_entries.items():
+                if faqs:
+                    faq_schema = generate_faq_schema(faqs)
+                    schema_html += "\n" + schema_to_script_tag(faq_schema)
 
-    # Add FAQ schemas from analysis
-    faq_entries = analysis.get("faq_entries", {})
-    for page_url, faqs in faq_entries.items():
-        if faqs:
-            faq_schema = generate_faq_schema(faqs)
-            schema_html += "\n" + schema_to_script_tag(faq_schema)
+            summary["changes"].append(f"Generated llms.txt ({len(llms_txt)} bytes)")
+            summary["changes"].append(f"Generated llms-full.txt ({len(llms_full_txt)} bytes)")
+            summary["changes"].append(f"Generated schema markup ({schema_html.count('application/ld+json')} blocks)")
+            summary["changes"].append(f"Generated robots.txt ({len(robots_txt)} bytes)")
 
-    summary["changes"].append(f"Generated llms.txt ({len(llms_txt)} bytes)")
-    summary["changes"].append(f"Generated llms-full.txt ({len(llms_full_txt)} bytes)")
-    summary["changes"].append(f"Generated schema markup ({schema_html.count('application/ld+json')} blocks)")
-    summary["changes"].append(f"Generated robots.txt ({len(robots_txt)} bytes)")
-
-    # Save generated files locally
-    output_dir = Path(output_base or (data_dir + "/output")) / customer.id
-    output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "llms.txt").write_text(llms_txt)
-    (output_dir / "llms-full.txt").write_text(llms_full_txt)
-    (output_dir / "schema.html").write_text(schema_html)
-    (output_dir / "robots.txt").write_text(robots_txt)
-    (output_dir / "analysis.json").write_text(json.dumps(analysis, indent=2))
-    logger.info(f"  Files saved to {output_dir}")
+            # Save generated files locally
+            output_dir = Path(output_base or (data_dir + "/output")) / customer.id
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "llms.txt").write_text(llms_txt)
+            (output_dir / "llms-full.txt").write_text(llms_full_txt)
+            (output_dir / "schema.html").write_text(schema_html)
+            (output_dir / "robots.txt").write_text(robots_txt)
+            (output_dir / "analysis.json").write_text(json.dumps(analysis, indent=2))
+            logger.info(f"  Files saved to {output_dir}")
+            _finish("generate", result={
+                "llms_txt_bytes": len(llms_txt),
+                "schema_blocks": schema_html.count("application/ld+json"),
+            })
+        except Exception as e:
+            logger.error(f"  File generation failed for {customer.id}: {type(e).__name__}")
+            summary["errors"].append(f"File generation failed: {type(e).__name__}")
+            _finish("generate", status="failed", error_message=str(e))
+            if db and run_id:
+                db.update_run(run_id, status="failed", errors=summary["errors"])
+            return summary
 
     if dry_run:
         logger.info("  DRY RUN — skipping stage/publish")
         summary["changes"].append("DRY RUN — nothing staged or published")
         audit.log(customer.id, "pipeline_complete", {"dry_run": True, "changes": len(summary["changes"])})
+        _skip("stage", "Dry run")
+        _skip("publish", "Dry run")
         if rag:
             rag.log_run(
                 changes=json.dumps(summary["changes"]),
@@ -417,16 +522,26 @@ def process_customer(
 
     # --- Step 5: Stage changes ---
     logger.info("Step 5: Staging changes for approval")
-    staged_files = {
-        "llms.txt": llms_txt,
-        "llms-full.txt": llms_full_txt,
-        "schema.html": schema_html,
-        "robots.txt": robots_txt,
-    }
-    staging.stage_changes(customer.id, staged_files)
-    diff_report = staging.generate_diff_report(customer.id)
-    summary["changes"].append("Changes staged for approval")
-    audit.log(customer.id, "changes_staged", {"files": list(staged_files.keys())})
+    if not _should_run("stage"):
+        _skip("stage", "Skipped (resuming from later step)")
+    else:
+        _start("stage")
+        try:
+            staged_files = {
+                "llms.txt": llms_txt,
+                "llms-full.txt": llms_full_txt,
+                "schema.html": schema_html,
+                "robots.txt": robots_txt,
+            }
+            staging.stage_changes(customer.id, staged_files)
+            diff_report = staging.generate_diff_report(customer.id)
+            summary["changes"].append("Changes staged for approval")
+            audit.log(customer.id, "changes_staged", {"files": list(staged_files.keys())})
+            _finish("stage", result={"files_staged": len(staged_files)})
+        except Exception as e:
+            logger.error(f"  Staging failed for {customer.id}: {type(e).__name__}")
+            summary["errors"].append(f"Staging failed: {type(e).__name__}")
+            _finish("stage", status="failed", error_message=str(e))
 
     if db and run_id:
         db.update_run(run_id, status="staged", pages_crawled=len(pages),
@@ -434,6 +549,7 @@ def process_customer(
 
     if stage_only:
         logger.info("  STAGE ONLY — awaiting approval before publish")
+        _skip("publish", "Stage only — awaiting approval")
         if rag:
             rag.log_run(
                 changes=json.dumps(summary["changes"]),
@@ -445,14 +561,21 @@ def process_customer(
 
     # --- Step 6: Publish (only if not stage_only) ---
     logger.info("Step 6: Publishing")
-    _publish_for_platform(customer, platform, schema_html, summary, audit)
+    _start("publish")
+    try:
+        _publish_for_platform(customer, platform, schema_html, summary, audit)
 
-    # Mark as published
-    staging.approve_changes(customer.id)
-    staging.publish_staged(customer.id)
-    if db and run_id:
-        db.approve_run(run_id)
-        db.mark_run_published(run_id)
+        # Mark as published
+        staging.approve_changes(customer.id)
+        staging.publish_staged(customer.id)
+        if db and run_id:
+            db.approve_run(run_id)
+            db.mark_run_published(run_id)
+        _finish("publish", result={"platform": platform})
+    except Exception as e:
+        logger.error(f"  Publish failed for {customer.id}: {type(e).__name__}")
+        summary["errors"].append(f"Publish failed: {type(e).__name__}")
+        _finish("publish", status="failed", error_message=str(e))
 
     # Log the run
     if rag:
@@ -583,6 +706,8 @@ def main():
     parser.add_argument("--db-path", help="Path to SQLite database file")
     parser.add_argument("--data-dir", help="Base data directory")
     parser.add_argument("--validate", action="store_true", help="Health check: verify imports and exit")
+    parser.add_argument("--run-id", type=int, help="Existing run ID (for retry)")
+    parser.add_argument("--resume-from", help="Resume pipeline from this step (for retry)")
     args = parser.parse_args()
 
     if args.validate:
@@ -640,6 +765,8 @@ def main():
                 stage_only=stage_only,
                 data_dir=data_dir,
                 db=customer_db,
+                run_id=args.run_id,
+                resume_from=args.resume_from,
             )
             results.append(result)
         except Exception as e:

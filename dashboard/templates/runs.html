@@ -4,7 +4,32 @@
 
 <div class="section-header">
     <h1>Agent Runs & Schedule</h1>
+    <div class="flex">
+        <select id="trigger-customer" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.85rem;">
+            <option value="">Select customer...</option>
+            {% for c in all_customers %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <button onclick="triggerRun()" class="btn btn-primary btn-sm">Trigger Run</button>
+    </div>
 </div>
+
+<script>
+function triggerRun() {
+    var sel = document.getElementById('trigger-customer');
+    if (!sel.value) { alert('Select a customer first'); return; }
+    if (!confirm('Trigger a full pipeline run for ' + sel.options[sel.selectedIndex].text + '?')) return;
+    var form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("api_trigger_run") }}';
+    var input = document.createElement('input');
+    input.type = 'hidden'; input.name = 'customer_id'; input.value = sel.value;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
 
 <!-- Stats -->
 <div class="grid grid-4" style="margin-bottom: 1.5rem;">
@@ -137,7 +162,7 @@
         <tbody>
         {% for r in runs %}
             <tr>
-                <td style="white-space: nowrap; font-size: 0.85rem;">{{ r.run_date[:10] }}</td>
+                <td style="white-space: nowrap; font-size: 0.85rem;"><a href="{{ url_for('run_detail', run_id=r.id) }}">{{ r.run_date[:10] }}</a></td>
                 <td><a href="{{ url_for('customer_detail', customer_id=r.customer_id) }}">{{ r.customer_name }}</a></td>
                 <td>
                     <span class="badge" style="background: {% if r.status == 'published' %}#d1fae5; color: #065f46{% elif r.status == 'approved' %}#d1fae5; color: #065f46{% elif r.status == 'staged' %}#ede9fe; color: #5b21b6{% elif r.status == 'failed' %}#fee2e2; color: #991b1b{% elif r.status == 'running' %}#dbeafe; color: #1e40af{% else %}#f3f4f6; color: var(--text-light){% endif %};">{{ r.status }}</span>

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Run #{{ run.id }} - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <div>
+        <h1>Run #{{ run.id }}</h1>
+        <a href="{{ url_for('runs') }}" style="color: var(--muted); font-size: 0.85rem;">&larr; All Runs</a>
+    </div>
+    <div class="flex">
+        <span class="badge" style="font-size: 0.85rem; background: {% if run.status == 'published' %}#d1fae5; color: #065f46{% elif run.status == 'approved' %}#d1fae5; color: #065f46{% elif run.status == 'staged' %}#ede9fe; color: #5b21b6{% elif run.status == 'failed' %}#fee2e2; color: #991b1b{% elif run.status == 'running' %}#dbeafe; color: #1e40af{% else %}#f3f4f6; color: var(--text-light){% endif %};">{{ run.status }}</span>
+        <a href="{{ url_for('customer_detail', customer_id=run.customer_id) }}" class="btn btn-outline btn-sm">{{ customer.name if customer else run.customer_id }}</a>
+        <a href="{{ url_for('api_run_logs', run_id=run.id) }}" class="btn btn-outline btn-sm" target="_blank">Raw Logs</a>
+        <button onclick="location.reload()" class="btn btn-outline btn-sm">Refresh</button>
+    </div>
+</div>
+
+<!-- Run Summary -->
+<div class="grid grid-4" style="margin-bottom: 1rem;">
+    <div class="card stat">
+        <div class="number">{{ run.pages_crawled }}</div>
+        <div class="label">Pages Crawled</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--success);">{{ run.changes | length }}</div>
+        <div class="label">Changes</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--danger);">{{ run.errors | length }}</div>
+        <div class="label">Errors</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="font-size: 1rem;">{{ run.run_date[:16] }}</div>
+        <div class="label">Started</div>
+    </div>
+</div>
+
+<!-- Pipeline Steps -->
+<div class="card" style="margin-bottom: 1rem;">
+    <h2>Pipeline Steps</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 2rem;">#</th>
+                <th>Step</th>
+                <th>Status</th>
+                <th style="text-align: right;">Duration</th>
+                <th>Details</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for step in steps %}
+            <tr style="{% if step.status == 'failed' %}background: #fef2f2;{% elif step.status == 'running' %}background: #eff6ff;{% endif %}">
+                <td style="color: var(--muted); font-size: 0.8rem;">{{ loop.index }}</td>
+                <td>
+                    <strong>{{ step.step_label or step.step_name }}</strong>
+                </td>
+                <td>
+                    {% if step.status == 'success' %}
+                        <span style="color: var(--success); font-weight: 600;">&#10003; Success</span>
+                    {% elif step.status == 'failed' %}
+                        <span style="color: var(--danger); font-weight: 600;">&#10007; Failed</span>
+                    {% elif step.status == 'running' %}
+                        <span style="color: #2563eb; font-weight: 600;">&#9654; Running</span>
+                    {% elif step.status == 'skipped' %}
+                        <span style="color: var(--muted);">&#8212; Skipped</span>
+                    {% else %}
+                        <span style="color: var(--muted);">&#9711; Pending</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right; font-size: 0.85rem; color: var(--muted);">
+                    {% if step.duration_ms is not none and step.duration_ms %}
+                        {% if step.duration_ms > 60000 %}
+                            {{ (step.duration_ms / 60000) | round(1) }}m
+                        {% elif step.duration_ms > 1000 %}
+                            {{ (step.duration_ms / 1000) | round(1) }}s
+                        {% else %}
+                            {{ step.duration_ms }}ms
+                        {% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% if step.error_message %}
+                        <details>
+                            <summary style="font-size: 0.8rem; cursor: pointer; color: var(--danger);">Error</summary>
+                            <pre style="font-size: 0.75rem; background: #fef2f2; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">{{ step.error_message }}</pre>
+                        </details>
+                    {% elif step.log_text %}
+                        <details>
+                            <summary style="font-size: 0.8rem; cursor: pointer; color: var(--primary);">Log</summary>
+                            <pre style="font-size: 0.75rem; background: #f9fafb; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">{{ step.log_text }}</pre>
+                        </details>
+                    {% elif step.result and step.result != {} %}
+                        <details>
+                            <summary style="font-size: 0.8rem; cursor: pointer; color: var(--primary);">Result</summary>
+                            <pre style="font-size: 0.75rem; background: #f9fafb; padding: 0.5rem; border-radius: 4px; margin-top: 0.25rem; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">{{ step.result | tojson(indent=2) }}</pre>
+                        </details>
+                    {% else %}
+                        <span style="color: var(--muted); font-size: 0.8rem;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if step.status == 'failed' %}
+                        <form method="POST" action="{{ url_for('api_retry_step') }}" style="display: inline;">
+                            <input type="hidden" name="run_id" value="{{ run.id }}">
+                            <input type="hidden" name="step_name" value="{{ step.step_name }}">
+                            <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('Retry this step and all subsequent steps?')">Retry</button>
+                        </form>
+                    {% elif step.status == 'success' %}
+                        <form method="POST" action="{{ url_for('api_retry_step') }}" style="display: inline;">
+                            <input type="hidden" name="run_id" value="{{ run.id }}">
+                            <input type="hidden" name="step_name" value="{{ step.step_name }}">
+                            <button type="submit" class="btn btn-sm btn-outline" onclick="return confirm('Re-run this step and all subsequent steps?')">Re-run</button>
+                        </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not steps %}
+    <p style="color: var(--muted); text-align: center; padding: 1rem;">No step-level data for this run. Step tracking was added after this run completed.</p>
+    {% endif %}
+</div>
+
+<!-- Changes & Errors -->
+{% if run.changes %}
+<div class="card" style="margin-bottom: 1rem;">
+    <h2>Changes</h2>
+    <ul style="font-size: 0.85rem; padding-left: 1.25rem;">
+        {% for c in run.changes %}
+        <li style="margin-bottom: 0.25rem;">{{ c }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if run.errors %}
+<div class="card" style="margin-bottom: 1rem; border-color: #fecaca;">
+    <h2 style="color: var(--danger);">Errors</h2>
+    <ul style="font-size: 0.85rem; padding-left: 1.25rem; color: var(--danger);">
+        {% for e in run.errors %}
+        <li style="margin-bottom: 0.25rem;">{{ e }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Auto-refresh while running -->
+{% if run.status == 'running' %}
+<script>
+setTimeout(function() { location.reload(); }, 5000);
+</script>
+{% endif %}
+
+{% endblock %}

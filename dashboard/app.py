@@ -1210,6 +1210,133 @@ def archived():
         db.close()
 
 
+# --- Run Detail + Step Logs + Trigger/Retry ---
+
+@app.route("/run/<int:run_id>")
+@login_required
+def run_detail(run_id):
+    db = get_db()
+    try:
+        run = db.get_run(run_id)
+        if not run:
+            flash("Run not found", "error")
+            return redirect(url_for("runs"))
+        customer = db.get_customer(run["customer_id"])
+        steps = db.get_run_steps(run_id)
+        return render_template("run_detail.html", run=run, customer=customer, steps=steps)
+    finally:
+        db.close()
+
+
+@app.route("/api/run/trigger", methods=["POST"])
+@login_required
+def api_trigger_run():
+    """Trigger a full pipeline run for a customer (runs in background)."""
+    import subprocess
+    customer_id = request.form.get("customer_id", "").strip()
+    if not customer_id:
+        return jsonify({"error": "customer_id required"}), 400
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        # Create a run record with steps
+        run_id = db.create_run(customer_id)
+        db.init_run_steps(run_id)
+    finally:
+        db.close()
+
+    # Launch pipeline in background
+    data_dir = str(Path(DATA_DIR))
+    db_path_arg = DB_PATH or str(Path(DATA_DIR) / "practicerank.db")
+    cmd = [
+        sys.executable, "-m", "geo_agent.main",
+        "--customer", customer_id,
+        "--use-db", "--db-path", db_path_arg,
+        "--data-dir", data_dir,
+        "--stage",
+        "--run-id", str(run_id),
+    ]
+
+    log_file = Path(DATA_DIR) / "run_logs" / f"run_{run_id}.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "w") as lf:
+        subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, cwd=str(Path(__file__).resolve().parent.parent))
+
+    logger.info(f"Triggered pipeline run {run_id} for {customer_id}")
+    flash(f"Pipeline run #{run_id} triggered for {customer['name']}. Check run detail for progress.", "success")
+    return redirect(url_for("run_detail", run_id=run_id))
+
+
+@app.route("/api/run/retry-step", methods=["POST"])
+@login_required
+def api_retry_step():
+    """Reset a failed step and re-trigger the pipeline from that step."""
+    import subprocess
+    run_id = request.form.get("run_id", type=int)
+    step_name = request.form.get("step_name", "").strip()
+    if not run_id or not step_name:
+        return jsonify({"error": "run_id and step_name required"}), 400
+
+    db = get_db()
+    try:
+        run = db.get_run(run_id)
+        if not run:
+            return jsonify({"error": "Run not found"}), 404
+
+        step_names = [s[0] for s in db.PIPELINE_STEPS]
+        if step_name not in step_names:
+            return jsonify({"error": f"Unknown step: {step_name}"}), 400
+
+        # Reset this step and all subsequent steps
+        idx = step_names.index(step_name)
+        for sn in step_names[idx:]:
+            db.reset_step(run_id, sn)
+
+        # Update run status back to running
+        db.update_run(run_id, status="running")
+    finally:
+        db.close()
+
+    # Re-trigger pipeline from this step
+    data_dir = str(Path(DATA_DIR))
+    db_path_arg = DB_PATH or str(Path(DATA_DIR) / "practicerank.db")
+    cmd = [
+        sys.executable, "-m", "geo_agent.main",
+        "--customer", run["customer_id"],
+        "--use-db", "--db-path", db_path_arg,
+        "--data-dir", data_dir,
+        "--stage",
+        "--resume-from", step_name,
+        "--run-id", str(run_id),
+    ]
+
+    log_file = Path(DATA_DIR) / "run_logs" / f"run_{run_id}.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(log_file, "a") as lf:
+        lf.write(f"\n\n--- RETRY from {step_name} at {datetime.now(timezone.utc).isoformat()} ---\n\n")
+        subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, cwd=str(Path(__file__).resolve().parent.parent))
+
+    logger.info(f"Retrying run {run_id} from step {step_name}")
+    flash(f"Retrying step '{step_name}' and all subsequent steps for run #{run_id}", "success")
+    return redirect(url_for("run_detail", run_id=run_id))
+
+
+@app.route("/api/run/logs/<int:run_id>")
+@login_required
+def api_run_logs(run_id):
+    """Get raw log output for a run."""
+    log_file = Path(DATA_DIR) / "run_logs" / f"run_{run_id}.log"
+    if log_file.exists():
+        return log_file.read_text(), 200, {"Content-Type": "text/plain"}
+    return "No log file found for this run.", 404, {"Content-Type": "text/plain"}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PracticeRank Dashboard")
     parser.add_argument("--port", type=int, default=5099)

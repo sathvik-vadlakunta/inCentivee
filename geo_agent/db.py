@@ -180,6 +180,22 @@ CREATE TABLE IF NOT EXISTS alerts (
 
 CREATE INDEX IF NOT EXISTS idx_alerts_customer ON alerts(customer_id);
 CREATE INDEX IF NOT EXISTS idx_alerts_active ON alerts(customer_id, dismissed);
+
+CREATE TABLE IF NOT EXISTS run_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER NOT NULL REFERENCES runs(id),
+    step_name TEXT NOT NULL,  -- crawl/places/rag/analysis/content_recs/competitor/schema_validation/generate/stage/publish
+    step_label TEXT NOT NULL DEFAULT '',  -- human-readable label
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending/running/success/failed/skipped
+    started_at TEXT,
+    finished_at TEXT,
+    duration_ms INTEGER,
+    log_text TEXT NOT NULL DEFAULT '',  -- captured log output
+    result_json TEXT NOT NULL DEFAULT '{}',  -- step-specific results
+    error_message TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_run_steps_run ON run_steps(run_id);
 """
 
 
@@ -588,6 +604,118 @@ class CustomerDB:
             d["errors"] = json.loads(d.pop("errors_json", "[]"))
             rows.append(d)
         return rows
+
+    def get_run(self, run_id: int) -> dict | None:
+        cur = self.conn.execute("SELECT * FROM runs WHERE id = ?", (run_id,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["changes"] = json.loads(d.pop("changes_json", "[]"))
+        d["errors"] = json.loads(d.pop("errors_json", "[]"))
+        return d
+
+    # --- Run Steps ---
+
+    PIPELINE_STEPS = [
+        ("crawl", "Crawl Website"),
+        ("places", "Google Places Verify"),
+        ("rag", "Update RAG Store"),
+        ("analysis", "Claude Analysis"),
+        ("content_recs", "Content Recommendations"),
+        ("competitor", "Competitor Intelligence"),
+        ("schema_validation", "Schema Validation"),
+        ("generate", "Generate Files"),
+        ("stage", "Stage Changes"),
+        ("publish", "Publish"),
+    ]
+
+    def init_run_steps(self, run_id: int) -> list[int]:
+        """Create all pipeline step records for a run. Returns list of step IDs."""
+        step_ids = []
+        for step_name, step_label in self.PIPELINE_STEPS:
+            cur = self.conn.execute(
+                """INSERT INTO run_steps (run_id, step_name, step_label, status)
+                VALUES (?, ?, ?, 'pending')""",
+                (run_id, step_name, step_label),
+            )
+            step_ids.append(cur.lastrowid)
+        self.conn.commit()
+        return step_ids
+
+    def start_step(self, run_id: int, step_name: str):
+        """Mark a step as running."""
+        self.conn.execute(
+            """UPDATE run_steps SET status = 'running', started_at = ?
+            WHERE run_id = ? AND step_name = ?""",
+            (datetime.now(timezone.utc).isoformat(), run_id, step_name),
+        )
+        self.conn.commit()
+
+    def finish_step(
+        self, run_id: int, step_name: str, status: str = "success",
+        log_text: str = "", result: dict | None = None, error_message: str = "",
+    ):
+        """Mark a step as completed (success/failed/skipped)."""
+        now = datetime.now(timezone.utc).isoformat()
+        # Calculate duration
+        cur = self.conn.execute(
+            "SELECT started_at FROM run_steps WHERE run_id = ? AND step_name = ?",
+            (run_id, step_name),
+        )
+        row = cur.fetchone()
+        duration_ms = None
+        if row and row["started_at"]:
+            try:
+                started = datetime.fromisoformat(row["started_at"])
+                duration_ms = int((datetime.fromisoformat(now) - started).total_seconds() * 1000)
+            except (ValueError, TypeError):
+                pass
+
+        self.conn.execute(
+            """UPDATE run_steps SET status = ?, finished_at = ?, duration_ms = ?,
+               log_text = ?, result_json = ?, error_message = ?
+            WHERE run_id = ? AND step_name = ?""",
+            (status, now, duration_ms, log_text,
+             json.dumps(result or {}), error_message,
+             run_id, step_name),
+        )
+        self.conn.commit()
+
+    def skip_step(self, run_id: int, step_name: str, reason: str = ""):
+        self.finish_step(run_id, step_name, status="skipped", log_text=reason)
+
+    def get_run_steps(self, run_id: int) -> list[dict]:
+        """Get all steps for a run, ordered by pipeline sequence."""
+        cur = self.conn.execute(
+            "SELECT * FROM run_steps WHERE run_id = ? ORDER BY id", (run_id,)
+        )
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["result"] = json.loads(d.pop("result_json", "{}"))
+            rows.append(d)
+        return rows
+
+    def get_step(self, step_id: int) -> dict | None:
+        cur = self.conn.execute("SELECT * FROM run_steps WHERE id = ?", (step_id,))
+        row = cur.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["result"] = json.loads(d.pop("result_json", "{}"))
+        return d
+
+    def reset_step(self, run_id: int, step_name: str):
+        """Reset a step to pending for retry."""
+        self.conn.execute(
+            """UPDATE run_steps SET status = 'pending', started_at = NULL,
+               finished_at = NULL, duration_ms = NULL, log_text = '',
+               result_json = '{}', error_message = ''
+            WHERE run_id = ? AND step_name = ?""",
+            (run_id, step_name),
+        )
+        self.conn.commit()
 
     def approve_run(self, run_id: int):
         self.conn.execute(
