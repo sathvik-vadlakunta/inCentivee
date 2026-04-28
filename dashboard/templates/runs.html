@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Runs & Schedule - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Agent Runs & Schedule</h1>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="card stat">
+        <div class="number">{{ run_stats.total_runs }}</div>
+        <div class="label">Total Runs</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--success);">{{ run_stats.this_month }}</div>
+        <div class="label">This Month</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--warning);">{{ run_stats.staged }}</div>
+        <div class="label">Awaiting Approval</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--danger);">{{ run_stats.failed }}</div>
+        <div class="label">Failed</div>
+    </div>
+</div>
+
+<!-- Monthly Schedule Timeline -->
+{% if schedule %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2>{{ current_month }} Schedule</h2>
+    <p style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;">Monthly pipeline: Agent Run → Stage → Approve → Publish → Track KPIs</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Customer</th>
+                <th style="text-align: center;">Agent Run</th>
+                <th style="text-align: center;">Staged</th>
+                <th style="text-align: center;">Approved</th>
+                <th style="text-align: center;">Published</th>
+                <th style="text-align: center;">KPIs</th>
+                <th style="text-align: right;">Alerts</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in schedule %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('customer_detail', customer_id=s.id) }}">{{ s.name }}</a>
+                    {% if s.pending_recs > 0 %}
+                    <span style="font-size: 0.7rem; background: #fef3c7; color: #92400e; padding: 0.1rem 0.35rem; border-radius: 4px; margin-left: 0.25rem;">{{ s.pending_recs }} recs</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if s.phase in ('ran', 'staged', 'approved', 'published') %}
+                        <span style="color: var(--success); font-size: 1.1rem;" title="{{ s.run_date }}">&#10003;</span>
+                    {% else %}
+                        <span style="color: var(--muted);">&#9711;</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if s.phase in ('staged', 'approved', 'published') %}
+                        <span style="color: var(--success); font-size: 1.1rem;">&#10003;</span>
+                    {% elif s.phase == 'ran' %}
+                        <span style="color: var(--warning);">&#9679;</span>
+                    {% else %}
+                        <span style="color: var(--muted);">&#9711;</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if s.phase in ('approved', 'published') %}
+                        <span style="color: var(--success); font-size: 1.1rem;">&#10003;</span>
+                    {% elif s.phase == 'staged' %}
+                        <span style="color: var(--warning);">&#9679;</span>
+                    {% else %}
+                        <span style="color: var(--muted);">&#9711;</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if s.phase == 'published' %}
+                        <span style="color: var(--success); font-size: 1.1rem;">&#10003;</span>
+                    {% elif s.phase == 'approved' %}
+                        <span style="color: var(--warning);">&#9679;</span>
+                    {% else %}
+                        <span style="color: var(--muted);">&#9711;</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if s.has_kpis %}
+                        <span style="color: var(--success); font-size: 1.1rem;">&#10003;</span>
+                    {% else %}
+                        <span style="color: var(--muted);">&#9711;</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;">
+                    {% if s.alert_count > 0 %}
+                    <a href="{{ url_for('alerts', customer=s.id) }}" style="color: var(--danger); font-weight: 600;">{{ s.alert_count }}</a>
+                    {% else %}
+                    <span style="color: var(--muted);">0</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Run History -->
+<div class="card">
+    <div class="section-header">
+        <h2>Run History</h2>
+        <form method="GET" style="display: inline;">
+            <select name="customer" onchange="this.form.submit()" style="width: auto; padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                <option value="">All Customers</option>
+                {% for c in all_customers %}
+                <option value="{{ c.id }}" {% if c.id == customer_filter %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    {% if runs %}
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th style="text-align:right;">Pages</th>
+                <th>Changes</th>
+                <th>Errors</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in runs %}
+            <tr>
+                <td style="white-space: nowrap; font-size: 0.85rem;">{{ r.run_date[:10] }}</td>
+                <td><a href="{{ url_for('customer_detail', customer_id=r.customer_id) }}">{{ r.customer_name }}</a></td>
+                <td>
+                    <span class="badge" style="background: {% if r.status == 'published' %}#d1fae5; color: #065f46{% elif r.status == 'approved' %}#d1fae5; color: #065f46{% elif r.status == 'staged' %}#ede9fe; color: #5b21b6{% elif r.status == 'failed' %}#fee2e2; color: #991b1b{% elif r.status == 'running' %}#dbeafe; color: #1e40af{% else %}#f3f4f6; color: var(--text-light){% endif %};">{{ r.status }}</span>
+                </td>
+                <td style="text-align:right;">{{ r.pages_crawled }}</td>
+                <td>
+                    {% if r.changes %}
+                    <details>
+                        <summary style="font-size: 0.8rem; cursor: pointer; color: var(--primary);">{{ r.changes | length }} change(s)</summary>
+                        <ul style="font-size: 0.8rem; margin-top: 0.25rem; padding-left: 1.25rem;">
+                            {% for c in r.changes %}
+                            <li>{{ c }}</li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                    {% else %}
+                    <span style="color: var(--muted); font-size: 0.8rem;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.errors %}
+                    <details>
+                        <summary style="font-size: 0.8rem; cursor: pointer; color: var(--danger);">{{ r.errors | length }} error(s)</summary>
+                        <ul style="font-size: 0.8rem; margin-top: 0.25rem; padding-left: 1.25rem; color: var(--danger);">
+                            {% for e in r.errors %}
+                            <li>{{ e }}</li>
+                            {% endfor %}
+                        </ul>
+                    </details>
+                    {% else %}
+                    <span style="color: var(--muted); font-size: 0.8rem;">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--muted); text-align: center; padding: 1rem;">No runs recorded yet.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

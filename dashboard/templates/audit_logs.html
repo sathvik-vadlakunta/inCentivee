@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Audit Logs</h1>
+    <span style="color: var(--muted); font-size: 0.85rem;">Structured operation logs — WHO did WHAT to WHICH customer, WHEN</span>
+</div>
+
+<!-- Filters -->
+<div class="card" style="margin-bottom: 1rem;">
+    <form method="GET" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom: 0; min-width: 140px;">
+            <label>Date</label>
+            <select name="date" onchange="this.form.submit()">
+                {% for d in dates %}
+                <option value="{{ d }}" {% if d == selected_date %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
+            <label>Customer</label>
+            <select name="customer" onchange="this.form.submit()">
+                <option value="">All Customers</option>
+                {% for c in all_customers %}
+                <option value="{{ c }}" {% if c == customer_filter %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom: 0; min-width: 160px;">
+            <label>Action</label>
+            <select name="action" onchange="this.form.submit()">
+                <option value="">All Actions</option>
+                {% for a in all_actions %}
+                <option value="{{ a }}" {% if a == action_filter %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <span style="font-size: 0.8rem; color: var(--muted); padding-bottom: 0.5rem;">{{ total_count }} entries</span>
+    </form>
+</div>
+
+{% if logs %}
+<div class="card" style="padding: 0;">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 160px;">Timestamp</th>
+                <th style="width: 150px;">Customer</th>
+                <th style="width: 200px;">Action</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            <tr>
+                <td style="font-family: monospace; font-size: 0.8rem; white-space: nowrap;">{{ log.timestamp[:19] | replace('T', ' ') }}</td>
+                <td>
+                    {% if log.customer_id %}
+                    <a href="{{ url_for('customer_detail', customer_id=log.customer_id) }}">{{ log.customer_id }}</a>
+                    {% else %}
+                    <span style="color: var(--muted);">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span style="display: inline-block; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.8rem; font-weight: 500;
+                        background: {% if 'fail' in log.action %}#fee2e2{% elif 'publish' in log.action %}#d1fae5{% elif 'start' in log.action %}#dbeafe{% elif 'credential' in log.action %}#fef3c7{% else %}#f3f4f6{% endif %};
+                        color: {% if 'fail' in log.action %}#991b1b{% elif 'publish' in log.action %}#065f46{% elif 'start' in log.action %}#1e40af{% elif 'credential' in log.action %}#92400e{% else %}var(--text-light){% endif %};">
+                        {{ log.action }}
+                    </span>
+                </td>
+                <td style="font-size: 0.8rem;">
+                    {% if log.details %}
+                    <details>
+                        <summary style="cursor: pointer; color: var(--primary);">
+                            {% set detail_preview = [] %}
+                            {% for k, v in log.details.items() %}
+                                {% if detail_preview | length < 3 %}
+                                    {% if detail_preview.append(k ~ '=' ~ v) %}{% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ detail_preview | join(', ') }}{% if log.details | length > 3 %} +{{ log.details | length - 3 }} more{% endif %}
+                        </summary>
+                        <pre style="margin-top: 0.35rem; padding: 0.5rem; background: #f9fafb; border-radius: 4px; font-size: 0.75rem; overflow-x: auto;">{{ log.details | tojson(indent=2) }}</pre>
+                    </details>
+                    {% else %}
+                    <span style="color: var(--muted);">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if total_count > 200 %}
+<p style="text-align: center; margin-top: 0.75rem; color: var(--muted); font-size: 0.85rem;">
+    Showing 200 of {{ total_count }} entries. Use filters to narrow results.
+</p>
+{% endif %}
+
+{% else %}
+<div class="card empty-state">
+    <p>No audit logs found{% if selected_date %} for {{ selected_date }}{% endif %}.</p>
+    <p style="font-size: 0.85rem; margin-top: 0.5rem;">Logs are generated when the GEO Agent runs. Each operation (crawl, analyze, publish) is recorded.</p>
+</div>
+{% endif %}
+
+{% endblock %}

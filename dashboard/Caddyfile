@@ -1,0 +1,3 @@
+admin.practicerank.ai {
+    reverse_proxy dashboard:5099
+}

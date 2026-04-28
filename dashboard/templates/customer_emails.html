@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Email Templates — {{ customer.name }}{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Email Templates</h1>
+    <a href="{{ url_for('customer_detail', customer_id=customer.id) }}" class="btn btn-outline">Back to {{ customer.name }}</a>
+</div>
+
+<p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.9rem;">
+    Templates rendered for <strong>{{ customer.name }}</strong>. Click "Copy" to copy formatted text — paste directly into Outlook, Gmail, or any email client.
+</p>
+
+{% for t in templates %}
+<div class="card" id="{{ t.slug }}">
+    <div class="section-header">
+        <h2>{{ t.slug | replace('-', ' ') | title }}</h2>
+        <div class="flex">
+            <button class="btn btn-sm btn-primary" onclick="copyFormatted('email-{{ loop.index }}', this)">Copy for Email</button>
+            <button class="btn btn-sm btn-outline" onclick="copySubject('subject-{{ loop.index }}', this)">Copy Subject</button>
+        </div>
+    </div>
+    <div class="email-subject-line" id="subject-{{ loop.index }}">{{ t.subject }}</div>
+    <div class="email-body" id="email-{{ loop.index }}">{{ t.body_html | safe }}</div>
+</div>
+{% endfor %}
+
+<style>
+    .email-subject-line {
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
+        background: #f1f3f5;
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+    }
+    .email-body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #222;
+        padding: 1.25rem;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+    .email-body p { margin: 0 0 12px 0; }
+    .email-body strong { font-weight: 600; }
+    .email-body ul, .email-body ol { margin: 0 0 12px 0; padding-left: 24px; }
+    .email-body li { margin-bottom: 4px; }
+    .email-body h1, .email-body h2, .email-body h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 16px 0 8px 0;
+    }
+    .email-body hr {
+        border: none;
+        border-top: 1px solid #ddd;
+        margin: 16px 0;
+    }
+    .email-body a { color: #2563eb; }
+    .email-body code {
+        background: #f3f4f6;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 13px;
+    }
+</style>
+
+<script>
+function copyFormatted(id, btn) {
+    const el = document.getElementById(id);
+    // Select the HTML content so it copies with formatting
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    // Copy as rich text (works in Outlook, Gmail, etc.)
+    document.execCommand('copy');
+    sel.removeAllRanges();
+
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+}
+
+function copySubject(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+</script>
+
+{% endblock %}

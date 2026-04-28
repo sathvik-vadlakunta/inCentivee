@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Dashboard</h1>
+    <div class="flex">
+        <a href="{{ url_for('board') }}" class="btn btn-outline">Kanban Board</a>
+        <a href="{{ url_for('add_customer') }}" class="btn btn-primary">+ Add Customer</a>
+    </div>
+</div>
+
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="card stat">
+        <div class="number">{{ stats.total }}</div>
+        <div class="label">Total Customers</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--success);">{{ stats.active }}</div>
+        <div class="label">Active</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--warning);">{{ stats.onboarding }}</div>
+        <div class="label">Onboarding</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: #7c3aed;">{{ stats.pending_approval }}</div>
+        <div class="label">Pending Approval</div>
+    </div>
+</div>
+
+{% if customers %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Practice</th>
+                <th>Domain</th>
+                <th>Platform</th>
+                <th>Status</th>
+                <th>Reviews</th>
+                <th>Staging</th>
+                <th>Access</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in customers %}
+            <tr>
+                <td><a href="{{ url_for('customer_detail', customer_id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+                <td style="color: var(--muted);">{{ c.domain }}</td>
+                <td>{{ c.platform | title }}</td>
+                <td>
+                    <span class="badge badge-{{ c.status }}">{{ c.status | title }}</span>
+                </td>
+                <td>
+                    {% if c.rating %}
+                        <span class="stars">{{ "%.1f" | format(c.rating) }}</span>
+                        <span style="color: var(--muted); font-size: 0.8rem;">({{ c.review_count }})</span>
+                    {% else %}
+                        <span style="color: var(--muted);">--</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c.is_staged and c.is_approved %}
+                        <span class="badge badge-approved">Approved</span>
+                    {% elif c.is_staged %}
+                        <span class="badge badge-staged">Staged</span>
+                    {% else %}
+                        <span style="color: var(--muted);">--</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c.pending_count > 0 %}
+                        <span class="badge badge-pending">{{ c.pending_count }} pending</span>
+                    {% else %}
+                        <span style="color: var(--success); font-size: 0.85rem;">All granted</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card empty-state">
+    <h2>No customers yet</h2>
+    <p style="margin-bottom: 1rem;">Add your first customer to get started.</p>
+    <a href="{{ url_for('add_customer') }}" class="btn btn-primary">+ Add Customer</a>
+</div>
+{% endif %}
+
+{% endblock %}

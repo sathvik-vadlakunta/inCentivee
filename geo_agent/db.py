@@ -1,0 +1,832 @@
+"""Customer database — single source of truth for all practice data.
+
+Replaces scattered JSON files with a proper SQLite database.
+All secrets (API keys, tokens) stay in env vars / secrets manager — never in SQLite.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
+import sqlite3
+from dataclasses import asdict
+from datetime import datetime, timezone
+from pathlib import Path
+
+from geo_agent.config import Customer, Provider
+
+logger = logging.getLogger(__name__)
+
+SCHEMA_VERSION = 1
+
+SCHEMA_SQL = """
+CREATE TABLE IF NOT EXISTS schema_version (
+    version INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    domain TEXT NOT NULL,
+    platform TEXT NOT NULL DEFAULT 'webflow',  -- webflow/squarespace/wordpress
+    city TEXT NOT NULL DEFAULT '',
+    state TEXT NOT NULL DEFAULT '',
+    zip TEXT NOT NULL DEFAULT '',
+    address TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '',
+    email TEXT NOT NULL DEFAULT '',
+    brand_voice TEXT NOT NULL DEFAULT 'Professional and warm',
+    status TEXT NOT NULL DEFAULT 'onboarding',  -- onboarding/active/paused/churned
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    onboarded_at TEXT,
+    webflow_site_id TEXT NOT NULL DEFAULT '',
+    specialties TEXT NOT NULL DEFAULT '[]',  -- JSON array
+    insurance_accepted TEXT NOT NULL DEFAULT '[]',  -- JSON array
+    hours TEXT NOT NULL DEFAULT '',
+    emergency_available INTEGER NOT NULL DEFAULT 0,
+    competitors_json TEXT NOT NULL DEFAULT '[]',  -- JSON array of domain strings
+    onboarding_step TEXT NOT NULL DEFAULT 'new'  -- new/contacted/access_pending/access_granted/audit_setup/review_approve/live
+);
+
+CREATE TABLE IF NOT EXISTS providers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    name TEXT NOT NULL,
+    credentials TEXT NOT NULL DEFAULT '',
+    specialties TEXT NOT NULL DEFAULT '[]',  -- JSON array
+    years_experience INTEGER,
+    bio TEXT NOT NULL DEFAULT '',
+    is_primary INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS services (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    name TEXT NOT NULL,
+    category TEXT NOT NULL DEFAULT 'primary',  -- primary/specialty
+    description TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS platform_access (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    platform TEXT NOT NULL,  -- squarespace/webflow/gsc/ga/gbp/apple/cloudflare
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending/granted/not_needed
+    granted_at TEXT,
+    notes TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL DEFAULT '',
+    phone TEXT NOT NULL DEFAULT '',
+    role TEXT NOT NULL DEFAULT 'owner'  -- owner/seo_manager/office_manager/introducer
+);
+
+CREATE TABLE IF NOT EXISTS google_places (
+    customer_id TEXT PRIMARY KEY REFERENCES customers(id),
+    place_id TEXT NOT NULL DEFAULT '',
+    rating REAL NOT NULL DEFAULT 0.0,
+    review_count INTEGER NOT NULL DEFAULT 0,
+    match_confidence TEXT NOT NULL DEFAULT 'low',
+    lat REAL NOT NULL DEFAULT 0.0,
+    lng REAL NOT NULL DEFAULT 0.0,
+    last_checked TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS competitors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    name TEXT NOT NULL,
+    rating REAL NOT NULL DEFAULT 0.0,
+    review_count INTEGER NOT NULL DEFAULT 0,
+    location TEXT NOT NULL DEFAULT '',
+    place_id TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    run_date TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    status TEXT NOT NULL DEFAULT 'running',  -- running/staged/approved/published/failed/blocked
+    pages_crawled INTEGER NOT NULL DEFAULT 0,
+    changes_json TEXT NOT NULL DEFAULT '[]',
+    errors_json TEXT NOT NULL DEFAULT '[]',
+    approved INTEGER NOT NULL DEFAULT 0,
+    approved_at TEXT,
+    published_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS kpis (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    date TEXT NOT NULL,
+    metric TEXT NOT NULL,  -- review_count/rating/ai_mentions/organic_clicks/llms_txt_hits
+    value REAL NOT NULL DEFAULT 0.0
+);
+
+CREATE INDEX IF NOT EXISTS idx_providers_customer ON providers(customer_id);
+CREATE INDEX IF NOT EXISTS idx_services_customer ON services(customer_id);
+CREATE INDEX IF NOT EXISTS idx_platform_access_customer ON platform_access(customer_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_customer ON contacts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_competitors_customer ON competitors(customer_id);
+CREATE INDEX IF NOT EXISTS idx_runs_customer ON runs(customer_id);
+CREATE TABLE IF NOT EXISTS va_checklist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    task_key TEXT NOT NULL,  -- unique key per task
+    completed INTEGER NOT NULL DEFAULT 0,
+    completed_at TEXT,
+    UNIQUE(customer_id, task_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_kpis_customer_date ON kpis(customer_id, date);
+CREATE INDEX IF NOT EXISTS idx_kpis_metric ON kpis(customer_id, metric);
+CREATE INDEX IF NOT EXISTS idx_va_checklist_customer ON va_checklist(customer_id);
+
+CREATE TABLE IF NOT EXISTS content_recommendations (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    rec_type TEXT NOT NULL,  -- blog_post/faq_update/expert_quote/stat_injection/freshness_update/new_page
+    target_page TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    html_snippet TEXT NOT NULL DEFAULT '',
+    priority INTEGER NOT NULL DEFAULT 3,
+    category TEXT NOT NULL DEFAULT 'general',
+    status TEXT NOT NULL DEFAULT 'pending',  -- pending/approved/rejected/published
+    ai_impact_reason TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    reviewed_at TEXT,
+    published_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_recs_customer ON content_recommendations(customer_id);
+CREATE INDEX IF NOT EXISTS idx_content_recs_status ON content_recommendations(customer_id, status);
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    alert_type TEXT NOT NULL,  -- review_surge/rating_change/overtake/new_schema/new_competitor/schema_invalid/stale_content
+    severity TEXT NOT NULL DEFAULT 'info',  -- info/warning/critical
+    source TEXT NOT NULL DEFAULT '',  -- competitor name or page URL
+    message TEXT NOT NULL,
+    details_json TEXT NOT NULL DEFAULT '{}',
+    dismissed INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_alerts_customer ON alerts(customer_id);
+CREATE INDEX IF NOT EXISTS idx_alerts_active ON alerts(customer_id, dismissed);
+"""
+
+
+class CustomerDB:
+    """SQLite-backed customer database."""
+
+    def __init__(self, db_path: str | None = None):
+        self.db_path = db_path or str(
+            Path(__file__).resolve().parent.parent / "data" / "practicerank.db"
+        )
+        Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+        self.conn = sqlite3.connect(self.db_path)
+        self.conn.row_factory = sqlite3.Row
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA foreign_keys=ON")
+        self._init_schema()
+
+    def _init_schema(self):
+        self.conn.executescript(SCHEMA_SQL)
+        # Check/set schema version
+        cur = self.conn.execute("SELECT version FROM schema_version LIMIT 1")
+        row = cur.fetchone()
+        if not row:
+            self.conn.execute(
+                "INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,)
+            )
+        # Migration: add onboarding_step if missing
+        cols = [r[1] for r in self.conn.execute("PRAGMA table_info(customers)").fetchall()]
+        if "onboarding_step" not in cols:
+            self.conn.execute("ALTER TABLE customers ADD COLUMN onboarding_step TEXT NOT NULL DEFAULT 'new'")
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    # --- Customer CRUD ---
+
+    def add_customer(
+        self,
+        id: str,
+        name: str,
+        domain: str,
+        platform: str = "webflow",
+        city: str = "",
+        state: str = "",
+        zip: str = "",
+        address: str = "",
+        phone: str = "",
+        email: str = "",
+        brand_voice: str = "Professional and warm",
+        webflow_site_id: str = "",
+        specialties: list[str] | None = None,
+        insurance_accepted: list[str] | None = None,
+        hours: str = "",
+        emergency_available: bool = False,
+        competitors: list[str] | None = None,
+    ) -> str:
+        self.conn.execute(
+            """INSERT INTO customers
+            (id, name, domain, platform, city, state, zip, address, phone, email,
+             brand_voice, webflow_site_id, specialties, insurance_accepted, hours,
+             emergency_available, competitors_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                id, name, domain, platform, city, state, zip, address, phone, email,
+                brand_voice, webflow_site_id,
+                json.dumps(specialties or []),
+                json.dumps(insurance_accepted or []),
+                hours,
+                int(emergency_available),
+                json.dumps(competitors or []),
+            ),
+        )
+        self.conn.commit()
+        logger.info(f"Added customer: {id} ({name})")
+        return id
+
+    def get_customer(self, customer_id: str) -> dict | None:
+        cur = self.conn.execute(
+            "SELECT * FROM customers WHERE id = ?", (customer_id,)
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        return self._row_to_customer_dict(row)
+
+    def list_customers(self, status: str | None = None) -> list[dict]:
+        if status:
+            cur = self.conn.execute(
+                "SELECT * FROM customers WHERE status = ? ORDER BY name", (status,)
+            )
+        else:
+            cur = self.conn.execute("SELECT * FROM customers ORDER BY name")
+        return [self._row_to_customer_dict(row) for row in cur.fetchall()]
+
+    def update_customer(self, customer_id: str, **fields) -> bool:
+        if not fields:
+            return False
+        # Handle JSON fields
+        for key in ("specialties", "insurance_accepted", "competitors"):
+            if key in fields and isinstance(fields[key], list):
+                json_key = "competitors_json" if key == "competitors" else key
+                fields[json_key] = json.dumps(fields.pop(key))
+        if "emergency_available" in fields:
+            fields["emergency_available"] = int(fields["emergency_available"])
+
+        set_clause = ", ".join(f"{k} = ?" for k in fields)
+        values = list(fields.values()) + [customer_id]
+        self.conn.execute(
+            f"UPDATE customers SET {set_clause} WHERE id = ?", values
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
+    def set_customer_status(self, customer_id: str, status: str):
+        updates = {"status": status}
+        if status == "active":
+            updates["onboarded_at"] = datetime.now(timezone.utc).isoformat()
+        self.update_customer(customer_id, **updates)
+
+    ONBOARDING_STEPS = [
+        "new", "contacted", "access_pending", "access_granted",
+        "audit_setup", "review_approve", "live",
+    ]
+
+    def set_onboarding_step(self, customer_id: str, step: str):
+        if step in self.ONBOARDING_STEPS:
+            self.conn.execute(
+                "UPDATE customers SET onboarding_step = ? WHERE id = ?",
+                (step, customer_id),
+            )
+            self.conn.commit()
+
+    def _row_to_customer_dict(self, row: sqlite3.Row) -> dict:
+        d = dict(row)
+        d["specialties"] = json.loads(d.get("specialties", "[]"))
+        d["insurance_accepted"] = json.loads(d.get("insurance_accepted", "[]"))
+        d["competitors"] = json.loads(d.pop("competitors_json", "[]"))
+        d["emergency_available"] = bool(d.get("emergency_available", 0))
+        return d
+
+    def to_config_customer(self, customer_id: str) -> Customer | None:
+        """Convert a DB customer to a geo_agent.config.Customer for pipeline use."""
+        data = self.get_customer(customer_id)
+        if not data:
+            return None
+
+        providers_rows = self.get_providers(customer_id)
+        providers = [
+            Provider(
+                name=p["name"],
+                credentials=p["credentials"],
+                specialties=json.loads(p["specialties"]) if isinstance(p["specialties"], str) else p["specialties"],
+                years_experience=p.get("years_experience"),
+                bio=p.get("bio", ""),
+            )
+            for p in providers_rows
+        ]
+
+        from geo_agent.secrets import get_secrets
+        secrets = get_secrets()
+        webflow_api_key = secrets.get_customer_secret(customer_id, "WEBFLOW_KEY") or ""
+
+        return Customer(
+            id=data["id"],
+            name=data["name"],
+            domain=data["domain"],
+            city=data["city"],
+            state=data["state"],
+            address=data.get("address", ""),
+            phone=data.get("phone", ""),
+            zip_code=data.get("zip", ""),
+            webflow_site_id=data.get("webflow_site_id", ""),
+            webflow_api_key=webflow_api_key,
+            specialties=data.get("specialties", []),
+            brand_voice=data.get("brand_voice", "Professional and warm"),
+            providers=providers,
+            competitors=data.get("competitors", []),
+            insurance_accepted=data.get("insurance_accepted", []),
+            hours=data.get("hours", ""),
+            emergency_available=data.get("emergency_available", False),
+        )
+
+    # --- Providers ---
+
+    def add_provider(
+        self,
+        customer_id: str,
+        name: str,
+        credentials: str = "",
+        specialties: list[str] | None = None,
+        years_experience: int | None = None,
+        bio: str = "",
+        is_primary: bool = False,
+    ) -> int:
+        cur = self.conn.execute(
+            """INSERT INTO providers (customer_id, name, credentials, specialties,
+               years_experience, bio, is_primary)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (customer_id, name, credentials, json.dumps(specialties or []),
+             years_experience, bio, int(is_primary)),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_providers(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM providers WHERE customer_id = ?", (customer_id,)
+        )
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["specialties"] = json.loads(d.get("specialties", "[]"))
+            rows.append(d)
+        return rows
+
+    # --- Services ---
+
+    def add_service(
+        self, customer_id: str, name: str, category: str = "primary", description: str = ""
+    ) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO services (customer_id, name, category, description) VALUES (?, ?, ?, ?)",
+            (customer_id, name, category, description),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_services(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM services WHERE customer_id = ?", (customer_id,)
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Contacts ---
+
+    def add_contact(
+        self, customer_id: str, name: str, email: str = "", phone: str = "", role: str = "owner"
+    ) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO contacts (customer_id, name, email, phone, role) VALUES (?, ?, ?, ?, ?)",
+            (customer_id, name, email, phone, role),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_contacts(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM contacts WHERE customer_id = ?", (customer_id,)
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Platform Access ---
+
+    def add_platform_access(
+        self, customer_id: str, platform: str, status: str = "pending", notes: str = ""
+    ) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO platform_access (customer_id, platform, status, notes) VALUES (?, ?, ?, ?)",
+            (customer_id, platform, status, notes),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def update_access_status(self, customer_id: str, platform: str, status: str):
+        granted_at = datetime.now(timezone.utc).isoformat() if status == "granted" else None
+        self.conn.execute(
+            """UPDATE platform_access SET status = ?, granted_at = ?
+            WHERE customer_id = ? AND platform = ?""",
+            (status, granted_at, customer_id, platform),
+        )
+        self.conn.commit()
+
+    def get_platform_access(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM platform_access WHERE customer_id = ?", (customer_id,)
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_pending_access(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM platform_access WHERE customer_id = ? AND status = 'pending'",
+            (customer_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Google Places ---
+
+    def upsert_google_places(
+        self, customer_id: str, place_id: str, rating: float, review_count: int,
+        match_confidence: str, lat: float = 0.0, lng: float = 0.0,
+    ):
+        self.conn.execute(
+            """INSERT INTO google_places (customer_id, place_id, rating, review_count,
+               match_confidence, lat, lng, last_checked)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(customer_id) DO UPDATE SET
+               place_id=excluded.place_id, rating=excluded.rating,
+               review_count=excluded.review_count, match_confidence=excluded.match_confidence,
+               lat=excluded.lat, lng=excluded.lng, last_checked=excluded.last_checked""",
+            (customer_id, place_id, rating, review_count, match_confidence,
+             lat, lng, datetime.now(timezone.utc).isoformat()),
+        )
+        self.conn.commit()
+
+    def get_google_places(self, customer_id: str) -> dict | None:
+        cur = self.conn.execute(
+            "SELECT * FROM google_places WHERE customer_id = ?", (customer_id,)
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    # --- Competitors ---
+
+    def add_competitor(
+        self, customer_id: str, name: str, rating: float = 0.0,
+        review_count: int = 0, location: str = "", place_id: str = "",
+    ) -> int:
+        cur = self.conn.execute(
+            """INSERT INTO competitors (customer_id, name, rating, review_count, location, place_id)
+            VALUES (?, ?, ?, ?, ?, ?)""",
+            (customer_id, name, rating, review_count, location, place_id),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_competitors(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM competitors WHERE customer_id = ? ORDER BY review_count DESC",
+            (customer_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def replace_competitors(self, customer_id: str, competitors: list[dict]):
+        self.conn.execute("DELETE FROM competitors WHERE customer_id = ?", (customer_id,))
+        for c in competitors:
+            self.conn.execute(
+                """INSERT INTO competitors (customer_id, name, rating, review_count, location, place_id)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                (customer_id, c["name"], c.get("rating", 0.0), c.get("review_count", 0),
+                 c.get("location", c.get("address", "")), c.get("place_id", "")),
+            )
+        self.conn.commit()
+
+    # --- Runs ---
+
+    def create_run(self, customer_id: str) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO runs (customer_id) VALUES (?)", (customer_id,)
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def update_run(self, run_id: int, **fields):
+        if "changes" in fields and isinstance(fields["changes"], list):
+            fields["changes_json"] = json.dumps(fields.pop("changes"))
+        if "errors" in fields and isinstance(fields["errors"], list):
+            fields["errors_json"] = json.dumps(fields.pop("errors"))
+
+        set_clause = ", ".join(f"{k} = ?" for k in fields)
+        values = list(fields.values()) + [run_id]
+        self.conn.execute(f"UPDATE runs SET {set_clause} WHERE id = ?", values)
+        self.conn.commit()
+
+    def get_latest_run(self, customer_id: str) -> dict | None:
+        cur = self.conn.execute(
+            "SELECT * FROM runs WHERE customer_id = ? ORDER BY run_date DESC LIMIT 1",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["changes"] = json.loads(d.pop("changes_json", "[]"))
+        d["errors"] = json.loads(d.pop("errors_json", "[]"))
+        return d
+
+    def get_runs(self, customer_id: str, limit: int = 10) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM runs WHERE customer_id = ? ORDER BY run_date DESC LIMIT ?",
+            (customer_id, limit),
+        )
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["changes"] = json.loads(d.pop("changes_json", "[]"))
+            d["errors"] = json.loads(d.pop("errors_json", "[]"))
+            rows.append(d)
+        return rows
+
+    def get_staged_runs(self) -> list[dict]:
+        """Get all runs waiting for approval."""
+        cur = self.conn.execute(
+            "SELECT * FROM runs WHERE status = 'staged' AND approved = 0 ORDER BY run_date DESC"
+        )
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["changes"] = json.loads(d.pop("changes_json", "[]"))
+            d["errors"] = json.loads(d.pop("errors_json", "[]"))
+            rows.append(d)
+        return rows
+
+    def approve_run(self, run_id: int):
+        self.conn.execute(
+            "UPDATE runs SET approved = 1, approved_at = ?, status = 'approved' WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), run_id),
+        )
+        self.conn.commit()
+
+    def mark_run_published(self, run_id: int):
+        self.conn.execute(
+            "UPDATE runs SET status = 'published', published_at = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), run_id),
+        )
+        self.conn.commit()
+
+    # --- KPIs ---
+
+    def record_kpi(self, customer_id: str, metric: str, value: float, date: str | None = None):
+        date = date or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        self.conn.execute(
+            "INSERT INTO kpis (customer_id, date, metric, value) VALUES (?, ?, ?, ?)",
+            (customer_id, date, metric, value),
+        )
+        self.conn.commit()
+
+    def get_kpis(
+        self, customer_id: str, metric: str | None = None, limit: int = 12
+    ) -> list[dict]:
+        if metric:
+            cur = self.conn.execute(
+                "SELECT * FROM kpis WHERE customer_id = ? AND metric = ? ORDER BY date DESC LIMIT ?",
+                (customer_id, metric, limit),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM kpis WHERE customer_id = ? ORDER BY date DESC LIMIT ?",
+                (customer_id, limit),
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_latest_kpi(self, customer_id: str, metric: str) -> dict | None:
+        cur = self.conn.execute(
+            "SELECT * FROM kpis WHERE customer_id = ? AND metric = ? ORDER BY date DESC LIMIT 1",
+            (customer_id, metric),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    # --- VA Checklist ---
+
+    def set_checklist_item(self, customer_id: str, task_key: str, completed: bool):
+        completed_at = datetime.now(timezone.utc).isoformat() if completed else None
+        self.conn.execute(
+            """INSERT INTO va_checklist (customer_id, task_key, completed, completed_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(customer_id, task_key) DO UPDATE SET
+                completed = excluded.completed, completed_at = excluded.completed_at""",
+            (customer_id, task_key, int(completed), completed_at),
+        )
+        self.conn.commit()
+
+    def get_checklist(self, customer_id: str) -> dict[str, bool]:
+        """Return {task_key: completed} for a customer."""
+        cur = self.conn.execute(
+            "SELECT task_key, completed FROM va_checklist WHERE customer_id = ?",
+            (customer_id,),
+        )
+        return {r["task_key"]: bool(r["completed"]) for r in cur.fetchall()}
+
+    # --- Content Recommendations ---
+
+    def add_content_recommendation(self, rec: dict) -> str:
+        """Insert a content recommendation. rec must have 'id' key."""
+        self.conn.execute(
+            """INSERT OR REPLACE INTO content_recommendations
+            (id, customer_id, rec_type, target_page, title, description, html_snippet,
+             priority, category, status, ai_impact_reason, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                rec["id"], rec["customer_id"], rec["rec_type"],
+                rec.get("target_page", ""), rec["title"],
+                rec.get("description", ""), rec.get("html_snippet", ""),
+                rec.get("priority", 3), rec.get("category", "general"),
+                rec.get("status", "pending"), rec.get("ai_impact_reason", ""),
+                rec.get("created_at", datetime.now(timezone.utc).isoformat()),
+            ),
+        )
+        self.conn.commit()
+        return rec["id"]
+
+    def get_content_recommendations(
+        self, customer_id: str, status: str | None = None, limit: int = 50
+    ) -> list[dict]:
+        """Get content recommendations for a customer, optionally filtered by status."""
+        if status:
+            cur = self.conn.execute(
+                """SELECT * FROM content_recommendations
+                WHERE customer_id = ? AND status = ?
+                ORDER BY priority ASC, created_at DESC LIMIT ?""",
+                (customer_id, status, limit),
+            )
+        else:
+            cur = self.conn.execute(
+                """SELECT * FROM content_recommendations
+                WHERE customer_id = ?
+                ORDER BY priority ASC, created_at DESC LIMIT ?""",
+                (customer_id, limit),
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+    def update_content_recommendation_status(
+        self, rec_id: str, status: str
+    ) -> bool:
+        """Update the status of a content recommendation."""
+        updates = {"status": status}
+        if status == "approved":
+            updates["reviewed_at"] = datetime.now(timezone.utc).isoformat()
+        elif status == "rejected":
+            updates["reviewed_at"] = datetime.now(timezone.utc).isoformat()
+        elif status == "published":
+            updates["published_at"] = datetime.now(timezone.utc).isoformat()
+
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        values = list(updates.values()) + [rec_id]
+        self.conn.execute(
+            f"UPDATE content_recommendations SET {set_clause} WHERE id = ?", values
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
+    def get_pending_recommendations_count(self, customer_id: str) -> int:
+        """Get count of pending content recommendations."""
+        cur = self.conn.execute(
+            "SELECT COUNT(*) FROM content_recommendations WHERE customer_id = ? AND status = 'pending'",
+            (customer_id,),
+        )
+        return cur.fetchone()[0]
+
+    # --- Alerts ---
+
+    def add_alert(
+        self, customer_id: str, alert_type: str, severity: str,
+        source: str, message: str, details: dict | None = None,
+    ) -> int:
+        cur = self.conn.execute(
+            """INSERT INTO alerts (customer_id, alert_type, severity, source, message, details_json)
+            VALUES (?, ?, ?, ?, ?, ?)""",
+            (customer_id, alert_type, severity, source, message, json.dumps(details or {})),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_alerts(
+        self, customer_id: str | None = None, active_only: bool = True, limit: int = 50
+    ) -> list[dict]:
+        """Get alerts, optionally filtered by customer and dismissed status."""
+        conditions = []
+        params = []
+        if customer_id:
+            conditions.append("customer_id = ?")
+            params.append(customer_id)
+        if active_only:
+            conditions.append("dismissed = 0")
+
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        params.append(limit)
+        cur = self.conn.execute(
+            f"SELECT * FROM alerts {where} ORDER BY created_at DESC LIMIT ?", params
+        )
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            d["details"] = json.loads(d.pop("details_json", "{}"))
+            rows.append(d)
+        return rows
+
+    def dismiss_alert(self, alert_id: int):
+        self.conn.execute("UPDATE alerts SET dismissed = 1 WHERE id = ?", (alert_id,))
+        self.conn.commit()
+
+    def get_active_alert_count(self, customer_id: str | None = None) -> int:
+        if customer_id:
+            cur = self.conn.execute(
+                "SELECT COUNT(*) FROM alerts WHERE customer_id = ? AND dismissed = 0",
+                (customer_id,),
+            )
+        else:
+            cur = self.conn.execute("SELECT COUNT(*) FROM alerts WHERE dismissed = 0")
+        return cur.fetchone()[0]
+
+    # --- Migration helper: import from customers.json ---
+
+    def import_from_json(self, json_path: str):
+        """Import customers from the legacy customers.json file."""
+        with open(json_path) as f:
+            data = json.load(f)
+
+        for c in data.get("customers", []):
+            customer_id = c["id"]
+            # Skip if already exists
+            if self.get_customer(customer_id):
+                logger.info(f"Skipping existing customer: {customer_id}")
+                continue
+
+            self.add_customer(
+                id=customer_id,
+                name=c["name"],
+                domain=c["domain"],
+                platform="webflow" if c.get("webflow_site_id") else "unknown",
+                city=c.get("city", ""),
+                state=c.get("state", ""),
+                zip=c.get("zip_code", ""),
+                address=c.get("address", ""),
+                phone=c.get("phone", ""),
+                brand_voice=c.get("brand_voice", ""),
+                webflow_site_id=c.get("webflow_site_id", ""),
+                specialties=c.get("specialties", []),
+                insurance_accepted=c.get("insurance_accepted", []),
+                hours=c.get("hours", ""),
+                emergency_available=c.get("emergency_available", False),
+                competitors=c.get("competitors", []),
+            )
+
+            for p in c.get("providers", []):
+                self.add_provider(
+                    customer_id=customer_id,
+                    name=p["name"],
+                    credentials=p.get("credentials", ""),
+                    specialties=p.get("specialties", []),
+                    years_experience=p.get("years_experience"),
+                    bio=p.get("bio") or "",
+                )
+
+            # Set up platform access tracking
+            platform = "webflow" if c.get("webflow_site_id") else "unknown"
+            access_platforms = ["gsc", "ga", "gbp", "cloudflare"]
+            if platform in ("webflow", "squarespace", "wordpress"):
+                access_platforms.append(platform)
+            for ap in access_platforms:
+                self.add_platform_access(customer_id, ap)
+
+            logger.info(f"Imported customer: {customer_id}")

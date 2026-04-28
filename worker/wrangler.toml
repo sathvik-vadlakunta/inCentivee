@@ -1,0 +1,11 @@
+name = "practicerank-api"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
+account_id = "64057faec3376a9cd325386637e90127"
+
+[vars]
+ALLOWED_ORIGIN = "https://practicerank.ai"
+
+[[kv_namespaces]]
+binding = "LEADS"
+id = "06985b98798246f4aa01819406ebca43"

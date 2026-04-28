@@ -1,0 +1,45 @@
+services:
+  dashboard:
+    build:
+      context: ..
+      dockerfile: dashboard/Dockerfile
+    container_name: practicerank-dashboard
+    restart: unless-stopped
+    ports:
+      - "5099:5099"
+    volumes:
+      - ../data:/app/data
+      - ../.env:/app/.env:ro
+      - ../templates:/app/templates:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "practicerank-dashboard"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: practicerank-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - dashboard
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "practicerank-caddy"
+
+volumes:
+  caddy_data:
+  caddy_config:

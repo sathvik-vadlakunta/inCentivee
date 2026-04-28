@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Case Studies - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Case Studies & Sales Collateral</h1>
+</div>
+
+<!-- Aggregate Stats -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <h2>Aggregate Results</h2>
+    <pre style="background: #f9fafb; padding: 1rem; border-radius: 6px; font-size: 0.85rem; line-height: 1.6; overflow-x: auto;">{{ aggregate }}</pre>
+</div>
+
+<!-- Per-Customer Case Studies -->
+<div class="card">
+    <h2>Generate Case Studies</h2>
+    <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">
+        Click to generate a one-page case study from each customer's KPI data. Use for sales presentations and client retention.
+    </p>
+
+    {% if customers %}
+    <table>
+        <thead>
+            <tr>
+                <th>Practice</th>
+                <th style="text-align:right;">Reviews</th>
+                <th style="text-align:right;">AI Reads</th>
+                <th style="text-align:right;">AI Mentions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in customers %}
+            <tr>
+                <td><a href="{{ url_for('customer_detail', customer_id=c.id) }}">{{ c.name }}</a></td>
+                <td style="text-align:right;">{{ c.reviews }}</td>
+                <td style="text-align:right;">{{ c.hits }}</td>
+                <td style="text-align:right;">{{ c.mentions }}</td>
+                <td>
+                    {% if c.has_data %}
+                    <a href="{{ url_for('customer_case_study', customer_id=c.id, format='html') }}" class="btn btn-sm btn-primary" target="_blank">HTML</a>
+                    <a href="{{ url_for('customer_case_study', customer_id=c.id, format='markdown') }}" class="btn btn-sm btn-outline">Markdown</a>
+                    {% else %}
+                    <span style="color: var(--muted); font-size: 0.8rem;">No KPI data yet</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--muted);">No active customers.</p>
+    {% endif %}
+</div>
+
+{% endblock %}

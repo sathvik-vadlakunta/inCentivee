@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Add Customer - PracticeRank{% endblock %}
+{% block content %}
+
+<h1>Add New Customer</h1>
+
+<div class="grid grid-2">
+    <div>
+        <div class="card">
+            <h2>Practice Info</h2>
+            <form method="POST" action="{{ url_for('add_customer') }}" id="onboard-form">
+                <div class="form-group">
+                    <label for="name">Practice Name *</label>
+                    <input type="text" id="name" name="name" required placeholder="e.g. Downtown Dental">
+                </div>
+                <div class="form-group">
+                    <label for="url">Website URL *</label>
+                    <input type="text" id="url" name="url" required placeholder="e.g. downtowndentalsmile.com">
+                </div>
+                <div class="form-group">
+                    <label for="contact_name">Contact Name</label>
+                    <input type="text" id="contact_name" name="contact_name" placeholder="e.g. Dr. Paul Zhivago">
+                </div>
+                <div class="form-group">
+                    <label for="contact_email">Contact Email</label>
+                    <input type="email" id="contact_email" name="contact_email" placeholder="e.g. doctor@practice.com">
+                </div>
+                <div class="form-group">
+                    <label for="contact_phone">Contact Phone</label>
+                    <input type="tel" id="contact_phone" name="contact_phone" placeholder="e.g. (555) 555-5555">
+                </div>
+                <div class="form-group">
+                    <label for="platform">Website Platform</label>
+                    <select id="platform" name="platform">
+                        <option value="auto">Auto-detect</option>
+                        <option value="squarespace">Squarespace</option>
+                        <option value="webflow">Webflow</option>
+                        <option value="wordpress">WordPress</option>
+                        <option value="unknown">Other / Unknown</option>
+                    </select>
+                </div>
+
+                <div class="flex">
+                    <button type="submit" class="btn btn-primary">Add Customer</button>
+                    <button type="button" class="btn btn-outline" id="discover-btn">Auto-Discover</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div>
+        <div class="card" id="discovery-results" style="display: none;">
+            <h2>Auto-Discovery Results</h2>
+            <div id="discovery-content"></div>
+        </div>
+
+        <div class="card">
+            <h2>What Happens Next</h2>
+            <ol style="padding-left: 1.25rem; color: var(--text-light); font-size: 0.9rem;">
+                <li style="margin-bottom: 0.5rem;">Customer is saved to the database</li>
+                <li style="margin-bottom: 0.5rem;">Platform access tracking is set up</li>
+                <li style="margin-bottom: 0.5rem;">Onboarding email is generated</li>
+                <li style="margin-bottom: 0.5rem;">Send the email and wait for access grants</li>
+                <li>Mark access as granted as the client responds</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('discover-btn').addEventListener('click', async function() {
+    const name = document.getElementById('name').value;
+    const url = document.getElementById('url').value;
+    if (!name || !url) {
+        alert('Enter a practice name and URL first.');
+        return;
+    }
+
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Discovering...';
+
+    const resultsDiv = document.getElementById('discovery-results');
+    const contentDiv = document.getElementById('discovery-content');
+    resultsDiv.style.display = 'block';
+    contentDiv.innerHTML = '<p style="color: var(--muted);">Looking up practice...</p>';
+
+    try {
+        const resp = await fetch('/api/discover', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, url}),
+        });
+        const data = await resp.json();
+
+        let html = '';
+
+        if (data.platform && data.platform !== 'unknown') {
+            html += `<p><strong>Platform:</strong> ${data.platform}</p>`;
+            document.getElementById('platform').value = data.platform;
+        }
+
+        if (data.places) {
+            const p = data.places;
+            html += `<div style="margin: 0.75rem 0; padding: 0.75rem; background: #f0fdf4; border-radius: 6px;">`;
+            html += `<strong>${p.name}</strong><br>`;
+            html += `${p.address || ''}<br>`;
+            if (p.city) html += `${p.city}, ${p.state} ${p.zip_code}<br>`;
+            if (p.phone) html += `Phone: ${p.phone}<br>`;
+            html += `<span class="stars">${p.rating} stars</span> (${p.review_count} reviews)<br>`;
+            html += `<span style="font-size:0.8rem;color:var(--muted);">Confidence: ${p.match_confidence}</span>`;
+            html += `</div>`;
+        } else {
+            html += `<p style="color: var(--muted);">No Google Places match found.</p>`;
+        }
+
+        if (data.competitors && data.competitors.length > 0) {
+            html += `<h3 style="margin-top:0.75rem;">Competitors (${data.competitors.length})</h3>`;
+            html += '<ul style="font-size:0.85rem; padding-left:1.25rem;">';
+            for (const c of data.competitors) {
+                html += `<li>${c.name} - ${c.rating} stars (${c.review_count} reviews)</li>`;
+            }
+            html += '</ul>';
+        }
+
+        contentDiv.innerHTML = html || '<p>No data found.</p>';
+    } catch (err) {
+        contentDiv.innerHTML = `<p style="color:var(--danger);">Error: ${err.message}</p>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Auto-Discover';
+    }
+});
+</script>
+
+{% endblock %}

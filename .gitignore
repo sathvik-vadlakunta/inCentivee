@@ -1,0 +1,52 @@
+# Environment & secrets — NEVER commit these
+.env
+.env.local
+.env.production
+*.env
+
+# Customer data (contains PII)
+data/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# OS
+.DS_Store
+
+# Wrangler cache
+.wrangler/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+
+# Binary packages
+*.pkg
+*.zip
+
+# Temp Office files
+~$*
+
+# Security: patterns that could contain secrets
+*.pem
+*.key
+*.cert
+*.p12
+secrets/
+credentials/
+**/secret*
+**/credential*
+
+# Audit logs (contain customer PII)
+audit_logs/
+
+# Generated reports (contain customer data)
+practicerank-report-*.pdf
+audit-*.json

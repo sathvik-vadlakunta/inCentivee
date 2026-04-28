@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Content - {{ customer.name }} - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <div>
+        <h1>Content Recommendations</h1>
+        <a href="{{ url_for('customer_detail', customer_id=customer.id) }}" style="color: var(--muted); font-size: 0.85rem;">&larr; {{ customer.name }}</a>
+    </div>
+    <div class="flex">
+        <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">Generate New</button>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-4" style="margin-bottom: 1rem;">
+    <div class="card stat">
+        <div class="number" style="color: var(--warning);">{{ counts.pending }}</div>
+        <div class="label">Pending Review</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--success);">{{ counts.approved }}</div>
+        <div class="label">Approved</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--primary);">{{ counts.published }}</div>
+        <div class="label">Published</div>
+    </div>
+    <div class="card stat">
+        <div class="number">{{ counts.total }}</div>
+        <div class="label">Total</div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="flex" style="margin-bottom: 1rem; gap: 0.5rem;">
+    <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline{% endif %}">All</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='pending') }}" class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %}">Pending</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='approved') }}" class="btn btn-sm {% if status_filter == 'approved' %}btn-primary{% else %}btn-outline{% endif %}">Approved</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='published') }}" class="btn btn-sm {% if status_filter == 'published' %}btn-primary{% else %}btn-outline{% endif %}">Published</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='rejected') }}" class="btn btn-sm {% if status_filter == 'rejected' %}btn-primary{% else %}btn-outline{% endif %}">Rejected</a>
+</div>
+
+<!-- Grouped by type -->
+{% for rec_type, type_recs in grouped.items() %}
+<div style="margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+        {% if rec_type == 'blog_post' %}📝{% elif rec_type == 'faq_update' %}❓{% elif rec_type == 'expert_quote' %}💬{% elif rec_type == 'stat_injection' %}📊{% elif rec_type == 'freshness_update' %}🔄{% else %}📄{% endif %}
+        {{ rec_type | replace('_', ' ') | title }}
+        <span style="font-size: 0.8rem; color: var(--muted); font-weight: 400;">{{ type_recs | length }}</span>
+    </h2>
+
+    {% for rec in type_recs %}
+    <div class="card" id="rec-{{ rec.id }}" style="border-left: 3px solid {% if rec.status == 'approved' %}var(--success){% elif rec.status == 'rejected' %}var(--danger){% elif rec.status == 'published' %}var(--primary){% else %}var(--warning){% endif %}; margin-bottom: 0.75rem;">
+        <div class="section-header" style="margin-bottom: 0.35rem;">
+            <div style="flex: 1;">
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.15rem;">{{ rec.title }}</h3>
+                <div style="display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--muted);">
+                    <span>Priority {{ rec.priority }}</span>
+                    <span>{{ rec.category | title }}</span>
+                    {% if rec.target_page and rec.target_page != 'new' %}<span>{{ rec.target_page }}</span>{% endif %}
+                    <span>{{ rec.created_at[:10] }}</span>
+                </div>
+            </div>
+            <div class="flex">
+                {% if rec.status == 'pending' %}
+                <button class="btn btn-success btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'approved', this)">Approve</button>
+                <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="updateRecStatus('{{ rec.id }}', 'rejected', this)">Reject</button>
+                {% elif rec.status == 'approved' %}
+                <span class="badge badge-approved" style="margin-right: 0.5rem;">Approved</span>
+                <button class="btn btn-primary btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
+                {% elif rec.status == 'published' %}
+                <span class="badge badge-active">Published</span>
+                {% else %}
+                <span class="badge badge-archived" style="margin-right: 0.5rem;">Rejected</span>
+                <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'pending', this)">Restore</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.35rem;">{{ rec.description }}</p>
+
+        {% if rec.ai_impact_reason %}
+        <p style="font-size: 0.8rem; color: var(--primary); margin-bottom: 0.5rem;">
+            <strong>AI Impact:</strong> {{ rec.ai_impact_reason }}
+        </p>
+        {% endif %}
+
+        <details>
+            <summary style="font-size: 0.85rem; color: var(--primary); cursor: pointer; margin-bottom: 0.5rem;">View HTML Content</summary>
+
+            <!-- Rendered preview -->
+            <div style="margin-top: 0.5rem; padding: 1.25rem; background: #fff; border: 1px solid var(--border); border-radius: 6px; font-family: -apple-system, sans-serif; font-size: 14px; line-height: 1.6; max-height: 400px; overflow-y: auto;">
+                {{ rec.html_snippet | safe }}
+            </div>
+
+            <!-- Raw HTML -->
+            <details style="margin-top: 0.5rem;">
+                <summary style="font-size: 0.8rem; color: var(--muted); cursor: pointer;">View Raw HTML</summary>
+                <div class="snippet-code" style="margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ rec.html_snippet | e }}</div>
+                <button class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="copySnippet(this)">Copy HTML</button>
+            </details>
+        </details>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+{% if not recs %}
+<div class="card empty-state">
+    <p>No content recommendations{% if status_filter %} with status "{{ status_filter }}"{% endif %}.</p>
+    <p style="font-size: 0.85rem; margin-top: 0.5rem;">Click "Generate New" to analyze the site and get AI-powered content suggestions including blog posts, FAQ updates, expert quotes, and statistics.</p>
+</div>
+{% endif %}
+
+<script>
+function generateContent(customerId) {
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    fetch('/api/content/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Generated ' + data.generated + ' recs!';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            btn.textContent = 'Error';
+            alert(data.error || 'Generation failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Generate New'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Generate New'; }, 3000);
+    });
+}
+
+function updateRecStatus(recId, status, btn) {
+    fetch('/api/content/status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_id: recId, status: status})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) location.reload();
+    });
+}
+
+function copySnippet(btn) {
+    const code = btn.previousElementSibling;
+    navigator.clipboard.writeText(code.textContent).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+</script>
+
+{% endblock %}

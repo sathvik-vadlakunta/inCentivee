@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Alerts - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Alerts</h1>
+    <div class="flex">
+        {% if show_dismissed %}
+        <a href="{{ url_for('alerts') }}" class="btn btn-sm btn-outline">Show Active Only</a>
+        {% else %}
+        <a href="{{ url_for('alerts', dismissed='1') }}" class="btn btn-sm btn-outline">Show All</a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Summary -->
+<div class="grid grid-3" style="margin-bottom: 1rem;">
+    <div class="card stat">
+        <div class="number" style="color: var(--danger);">{{ counts.critical }}</div>
+        <div class="label">Critical</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--warning);">{{ counts.warning }}</div>
+        <div class="label">Warnings</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color: var(--primary);">{{ counts.info }}</div>
+        <div class="label">Info</div>
+    </div>
+</div>
+
+{% if alerts %}
+<div style="display: grid; gap: 0.5rem;">
+    {% for alert in alerts %}
+    <div class="card" id="alert-{{ alert.id }}" style="border-left: 3px solid {% if alert.severity == 'critical' %}var(--danger){% elif alert.severity == 'warning' %}var(--warning){% else %}var(--primary){% endif %}; {% if alert.dismissed %}opacity: 0.5;{% endif %}">
+        <div class="section-header" style="margin-bottom: 0.25rem;">
+            <div>
+                <span class="badge" style="background: {% if alert.severity == 'critical' %}#fee2e2; color: #991b1b{% elif alert.severity == 'warning' %}#fef3c7; color: #92400e{% else %}#dbeafe; color: #1e40af{% endif %}; font-size: 0.7rem;">{{ alert.severity | upper }}</span>
+                <span class="badge" style="background: var(--border); color: var(--text-light); font-size: 0.7rem; margin-left: 0.25rem;">{{ alert.alert_type | replace('_', ' ') | title }}</span>
+                <a href="{{ url_for('customer_detail', customer_id=alert.customer_id) }}" style="font-size: 0.8rem; margin-left: 0.5rem;">{{ alert.customer_name }}</a>
+            </div>
+            <div class="flex">
+                <span style="font-size: 0.75rem; color: var(--muted);">{{ alert.created_at[:10] }}</span>
+                {% if not alert.dismissed %}
+                <button class="btn btn-sm btn-outline" onclick="dismissAlert({{ alert.id }}, this)">Dismiss</button>
+                {% endif %}
+            </div>
+        </div>
+        <p style="font-size: 0.9rem; margin: 0;">{{ alert.message }}</p>
+        {% if alert.source %}
+        <span style="font-size: 0.75rem; color: var(--muted);">Source: {{ alert.source }}</span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card empty-state">
+    <p>No {% if not show_dismissed %}active {% endif %}alerts.</p>
+</div>
+{% endif %}
+
+<script>
+function dismissAlert(alertId, btn) {
+    fetch('/api/alert/dismiss', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({alert_id: alertId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            document.getElementById('alert-' + alertId).style.opacity = '0.3';
+            btn.remove();
+        }
+    });
+}
+</script>
+
+{% endblock %}

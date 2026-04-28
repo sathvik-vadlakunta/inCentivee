@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Case Study - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <div>
+        <h1>Case Study</h1>
+        <a href="{{ url_for('customer_detail', customer_id=customer_id) }}" style="color: var(--muted); font-size: 0.85rem;">&larr; Back to customer</a>
+    </div>
+    <div class="flex">
+        <a href="{{ url_for('customer_case_study', customer_id=customer_id, format='html') }}" class="btn btn-primary btn-sm" target="_blank">View as HTML</a>
+        <a href="{{ url_for('customer_case_study', customer_id=customer_id, format='markdown') }}" class="btn btn-outline btn-sm">Markdown</a>
+    </div>
+</div>
+
+<div class="card" style="font-family: -apple-system, sans-serif; font-size: 15px; line-height: 1.7;">
+    {{ body_html | safe }}
+</div>
+
+{% endblock %}

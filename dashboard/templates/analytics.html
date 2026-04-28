@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Analytics - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Analytics</h1>
+    <span style="color: var(--muted); font-size: 0.85rem;">AI search performance across all customers</span>
+</div>
+
+<!-- Aggregate Stats -->
+<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+    <div class="card stat">
+        <div class="number">{{ totals.total_hits | int }}</div>
+        <div class="label">Total llms.txt Hits</div>
+    </div>
+    <div class="card stat">
+        <div class="number">{{ totals.total_mentions | int }}</div>
+        <div class="label">AI Mentions</div>
+    </div>
+    <div class="card stat">
+        <div class="number">{{ totals.total_reviews | int }}</div>
+        <div class="label">Google Reviews</div>
+    </div>
+    <div class="card stat">
+        <div class="number">{{ totals.customers_tracked }}</div>
+        <div class="label">Customers Tracked</div>
+    </div>
+</div>
+
+<!-- Per-Customer Breakdown -->
+{% if data %}
+<div class="card">
+    <h2>Per-Customer Performance</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Practice</th>
+                <th style="text-align:right;">llms.txt Hits</th>
+                <th style="text-align:right;">AI Mentions</th>
+                <th style="text-align:right;">AI Position</th>
+                <th style="text-align:right;">Reviews</th>
+                <th>Trend (7 periods)</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in data | sort(attribute='llms_hits', reverse=True) %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('customer_detail', customer_id=d.id) }}">{{ d.name }}</a>
+                    <br><span style="font-size: 0.75rem; color: var(--muted);">{{ d.domain }}</span>
+                </td>
+                <td style="text-align:right;">
+                    {{ d.llms_hits | int }}
+                    {% if d.llms_hits_delta != 0 %}
+                    <span style="font-size: 0.75rem; color: {% if d.llms_hits_delta > 0 %}var(--success){% else %}var(--danger){% endif %};">
+                        {{ '%+d' | format(d.llms_hits_delta | int) }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">{{ d.ai_mentions | int }}</td>
+                <td style="text-align:right;">
+                    {% if d.ai_position %}
+                    <span style="color: {% if d.ai_position <= 2 %}var(--success){% elif d.ai_position <= 4 %}var(--warning){% else %}var(--danger){% endif %};">
+                        #{{ '%.1f' | format(d.ai_position) }}
+                    </span>
+                    {% else %}
+                    <span style="color: var(--muted);">--</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    {{ d.reviews | int }}
+                    {% if d.reviews_delta != 0 %}
+                    <span style="font-size: 0.75rem; color: {% if d.reviews_delta > 0 %}var(--success){% else %}var(--danger){% endif %};">
+                        {{ '%+d' | format(d.reviews_delta | int) }}
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if d.llms_history %}
+                    <div style="display: flex; align-items: flex-end; gap: 2px; height: 24px;">
+                        {% set max_val = d.llms_history | map(attribute='value') | max %}
+                        {% for point in d.llms_history %}
+                        <div style="width: 8px; background: var(--primary); border-radius: 1px; height: {{ (point.value / max_val * 24) | int if max_val > 0 else 2 }}px; min-height: 2px;" title="{{ point.date }}: {{ point.value | int }}"></div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <span style="color: var(--muted); font-size: 0.75rem;">No data</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- AI Agent Breakdown Info -->
+<div class="card" style="margin-top: 1rem;">
+    <h2>About llms.txt Analytics</h2>
+    <p style="font-size: 0.85rem; color: var(--text-light); line-height: 1.6;">
+        llms.txt hit counts track how often AI assistants read your clients' practice information.
+        The Cloudflare Worker identifies requests from:
+        <strong>ChatGPT</strong> (GPTBot),
+        <strong>Claude</strong> (ClaudeBot),
+        <strong>Perplexity</strong> (PerplexityBot),
+        <strong>Google</strong> (Googlebot/Gemini),
+        <strong>Bing</strong> (BingBot), and
+        <strong>Apple</strong> (Applebot).
+    </p>
+    <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">
+        AI Position tracks where the practice appears in AI recommendations (1 = mentioned first, lower is better).
+    </p>
+</div>
+{% else %}
+<div class="card empty-state">
+    <p>No analytics data yet. Run the KPI tracker to start collecting data.</p>
+</div>
+{% endif %}
+
+{% endblock %}

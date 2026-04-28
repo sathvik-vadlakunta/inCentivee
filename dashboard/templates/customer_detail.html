@@ -1,0 +1,617 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <div>
+        <h1>{{ customer.name }}</h1>
+        <span style="color: var(--muted);">{{ customer.domain }}</span>
+        <span class="badge badge-{{ customer.status }}" style="margin-left: 0.5rem;">{{ customer.status | title }}</span>
+    </div>
+    <div class="flex">
+        <a href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" class="btn btn-sm btn-outline" target="_blank">Case Study</a>
+        <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="display:inline;">
+            <select name="status" onchange="this.form.submit()" style="width:auto; padding:0.3rem 0.5rem; font-size:0.8rem;">
+                <option value="" disabled selected>Change Status</option>
+                <option value="onboarding">Onboarding</option>
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="churned">Churned</option>
+            </select>
+        </form>
+        {% if customer.status != 'archived' %}
+        <form method="POST" action="{{ url_for('archive_customer', customer_id=customer.id) }}" style="display:inline;" onsubmit="return confirm('Archive this customer?')">
+            <button type="submit" class="btn btn-sm btn-outline" style="color: var(--danger);">Archive</button>
+        </form>
+        {% else %}
+        <form method="POST" action="{{ url_for('restore_customer', customer_id=customer.id) }}" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-success">Restore</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab" onclick="switchTab('seo', this)">
+        SEO & GEO
+        {% if seo_tasks %}
+            {% set seo_done = seo_tasks | selectattr('done') | list | length %}
+            <span class="tab-badge">{{ seo_done }}/{{ seo_tasks | length }}</span>
+        {% endif %}
+    </button>
+    <button class="tab" onclick="switchTab('content', this)">
+        Content
+        {% if content_pending %}
+            <span class="tab-badge" style="background:#fef3c7; color:#92400e;">{{ content_pending }} pending</span>
+        {% endif %}
+    </button>
+    <button class="tab" onclick="switchTab('emails', this)">Emails</button>
+</div>
+
+<!-- ==================== OVERVIEW TAB ==================== -->
+<div id="tab-overview" class="tab-content active">
+
+    <!-- Top summary row -->
+    {% if places or (todos and todos | length > 0) %}
+    <div class="grid grid-3" style="margin-bottom: 1rem;">
+        {% if places %}
+        <div class="card stat">
+            <div class="number stars">{{ "%.1f" | format(places.rating) }}</div>
+            <div class="label">Google Rating ({{ places.review_count }} reviews)</div>
+        </div>
+        {% endif %}
+        {% if todos %}
+        {% set todo_done = todos | selectattr('done') | list | length %}
+        <div class="card stat">
+            <div class="number" style="color: {% if todo_done == todos | length %}var(--success){% else %}var(--warning){% endif %};">{{ todo_done }}/{{ todos | length }}</div>
+            <div class="label">VA Tasks Complete</div>
+        </div>
+        {% endif %}
+        {% if seo_tasks %}
+        {% set seo_done = seo_tasks | selectattr('done') | list | length %}
+        {% set seo_pct = (seo_done / seo_tasks | length * 100) | int if seo_tasks | length > 0 else 0 %}
+        <div class="card stat">
+            <div class="number" style="color: {% if seo_pct >= 80 %}var(--success){% elif seo_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %};">{{ seo_pct }}%</div>
+            <div class="label">SEO/GEO Complete</div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-2">
+        <!-- Left Column: Practice Info -->
+        <div>
+            <!-- Practice Details -->
+            <div class="card">
+                <div class="section-header">
+                    <h2>Practice Details</h2>
+                    <button class="btn btn-sm btn-outline" onclick="document.getElementById('edit-form').style.display = document.getElementById('edit-form').style.display === 'none' ? 'block' : 'none'">Edit</button>
+                </div>
+                <table>
+                    <tr><td style="width:35%; color:var(--muted);">Platform</td><td>{{ customer.platform | title }}</td></tr>
+                    <tr><td style="color:var(--muted);">Address</td><td>{{ customer.address or '--' }}</td></tr>
+                    <tr><td style="color:var(--muted);">City/State</td><td>{{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %} {{ customer.zip }}</td></tr>
+                    <tr><td style="color:var(--muted);">Phone</td><td>{{ customer.phone or '--' }}</td></tr>
+                    <tr><td style="color:var(--muted);">Email</td><td>{{ customer.email or '--' }}</td></tr>
+                    <tr><td style="color:var(--muted);">Hours</td><td style="font-size:0.8rem;">{{ customer.hours or '--' }}</td></tr>
+                    <tr><td style="color:var(--muted);">Emergency</td><td>{{ 'Yes' if customer.emergency_available else 'No' }}</td></tr>
+                    {% if customer.specialties %}
+                    <tr><td style="color:var(--muted);">Specialties</td><td>{{ customer.specialties | join(', ') }}</td></tr>
+                    {% endif %}
+                </table>
+
+                <div id="edit-form" style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
+                    <form method="POST" action="{{ url_for('edit_customer', customer_id=customer.id) }}">
+                        <div class="grid grid-2">
+                            <div class="form-group"><label>City</label><input type="text" name="city" value="{{ customer.city }}"></div>
+                            <div class="form-group"><label>State</label><input type="text" name="state" value="{{ customer.state }}"></div>
+                        </div>
+                        <div class="form-group"><label>Address</label><input type="text" name="address" value="{{ customer.address }}"></div>
+                        <div class="grid grid-2">
+                            <div class="form-group"><label>Phone</label><input type="text" name="phone" value="{{ customer.phone }}"></div>
+                            <div class="form-group"><label>ZIP</label><input type="text" name="zip" value="{{ customer.zip }}"></div>
+                        </div>
+                        <div class="form-group"><label>Email</label><input type="email" name="email" value="{{ customer.email }}"></div>
+                        <div class="form-group"><label>Hours</label><input type="text" name="hours" value="{{ customer.hours }}"></div>
+                        <div class="form-group"><label>Brand Voice</label><textarea name="brand_voice" rows="2">{{ customer.brand_voice }}</textarea></div>
+                        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Contacts & Providers -->
+            <div class="card">
+                <h2>Contacts</h2>
+                {% if contacts %}
+                <table>
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+                    <tbody>
+                    {% for c in contacts %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td><a href="mailto:{{ c.email }}">{{ c.email }}</a></td>
+                        <td>{{ c.role | title }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: var(--muted);">No contacts added yet.</p>
+                {% endif %}
+            </div>
+
+            {% if providers %}
+            <div class="card">
+                <h2>Providers</h2>
+                {% for p in providers %}
+                <div {% if not loop.last %}style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);"{% endif %}>
+                    <strong>{{ p.name }}</strong>
+                    {% if p.credentials %}<span style="color: var(--muted);">, {{ p.credentials }}</span>{% endif %}
+                    {% if p.specialties %}<br><span style="font-size: 0.85rem;">{{ p.specialties | join(', ') }}</span>{% endif %}
+                    {% if p.bio %}<br><span style="font-size: 0.85rem; color: var(--text-light);">{{ p.bio }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if competitors %}
+            <div class="card">
+                <h2>Competitors</h2>
+                <table>
+                    <thead><tr><th>Name</th><th>Rating</th><th>Reviews</th></tr></thead>
+                    <tbody>
+                    {% for c in competitors[:5] %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td class="stars">{{ "%.1f" | format(c.rating) }}</td>
+                        <td>{{ c.review_count }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column: Tasks & Status -->
+        <div>
+            <!-- VA Todo List -->
+            {% if todos %}
+            <div class="card">
+                <div class="section-header">
+                    <h2>VA Todo List</h2>
+                    <span style="font-size: 0.8rem; color: var(--muted);">{{ todos | selectattr('done') | list | length }}/{{ todos | length }} done</span>
+                </div>
+                {% for todo in todos %}
+                <div class="todo-item {{ 'done' if todo.done }}" {% if not todo.auto %}onclick="toggleTodo('{{ customer.id }}', '{{ todo.key }}', {{ 'false' if todo.done else 'true' }}, this)" style="cursor:pointer;"{% endif %}>
+                    <div class="todo-check {{ 'checked' if todo.done }}" {% if todo.auto %}title="Auto-detected"{% else %}title="Click to toggle"{% endif %}></div>
+                    <span>{{ todo.task }}</span>
+                    {% if todo.auto %}<span style="font-size:0.65rem; color:var(--muted); margin-left:auto;">auto</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Platform Access -->
+            <div class="card">
+                <h2>Platform Access</h2>
+                {% if access %}
+                <table>
+                    <thead><tr><th>Platform</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                    {% for a in access %}
+                    <tr>
+                        <td>{{ a.platform | upper }}</td>
+                        <td>
+                            <span class="badge badge-{{ a.status }}">{{ a.status | title }}</span>
+                            {% if a.granted_at %}<span style="font-size:0.75rem; color:var(--muted);">{{ a.granted_at[:10] }}</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if a.status == 'pending' %}
+                            <form method="POST" action="{{ url_for('update_access', customer_id=customer.id) }}" style="display:inline;">
+                                <input type="hidden" name="platform" value="{{ a.platform }}">
+                                <input type="hidden" name="status" value="granted">
+                                <button type="submit" class="btn btn-sm btn-success">Grant</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('update_access', customer_id=customer.id) }}" style="display:inline;">
+                                <input type="hidden" name="platform" value="{{ a.platform }}">
+                                <input type="hidden" name="status" value="not_needed">
+                                <button type="submit" class="btn btn-sm btn-outline">N/A</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: var(--muted);">No access tracking set up.</p>
+                {% endif %}
+            </div>
+
+            <!-- Staging / Approval -->
+            {% if staged %}
+            <div class="card" style="border-color: {% if approved %}var(--success){% else %}#7c3aed{% endif %};">
+                <div class="section-header">
+                    <h2>{% if approved %}Approved Changes{% else %}Staged Changes{% endif %}</h2>
+                    {% if not approved %}
+                    <form method="POST" action="{{ url_for('approve_staging', customer_id=customer.id) }}">
+                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% if diff_report %}<div class="diff-report">{{ diff_report }}</div>{% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Active Alerts -->
+            {% if customer_alerts %}
+            <div class="card" style="border-color: var(--danger);">
+                <div class="section-header">
+                    <h2 style="color: var(--danger);">Alerts ({{ customer_alerts | length }})</h2>
+                    <a href="{{ url_for('alerts', customer=customer.id) }}" style="font-size: 0.8rem;">View All</a>
+                </div>
+                {% for alert in customer_alerts[:5] %}
+                <div style="padding: 0.4rem 0; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %} display: flex; align-items: start; gap: 0.5rem;">
+                    <span style="font-size: 0.7rem; padding: 0.1rem 0.35rem; border-radius: 4px; white-space: nowrap; background: {% if alert.severity == 'critical' %}#fee2e2; color: #991b1b{% elif alert.severity == 'warning' %}#fef3c7; color: #92400e{% else %}#dbeafe; color: #1e40af{% endif %};">{{ alert.severity[:4] | upper }}</span>
+                    <span style="font-size: 0.85rem;">{{ alert.message[:100] }}{% if alert.message | length > 100 %}...{% endif %}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- KPIs -->
+            {% if kpis.review_count or kpis.ai_mentions or kpis.llms_txt_hits %}
+            <div class="card">
+                <h2>KPI History</h2>
+                {% for metric_name, display_name in [('review_count', 'Reviews'), ('rating', 'Rating'), ('ai_mentions', 'AI Mentions'), ('llms_txt_hits', 'llms.txt Hits')] %}
+                    {% if kpis[metric_name] %}
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>{{ display_name }}:</strong>
+                        {% for k in kpis[metric_name][:3] %}
+                            <span style="font-size: 0.85rem;">{{ k.value }}{% if not loop.last %} &larr; {% endif %}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Recent Runs -->
+            {% if runs %}
+            <div class="card">
+                <h2>Recent Runs</h2>
+                <table>
+                    <thead><tr><th>Date</th><th>Status</th><th>Pages</th></tr></thead>
+                    <tbody>
+                    {% for r in runs %}
+                    <tr>
+                        <td>{{ r.run_date[:10] }}</td>
+                        <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+                        <td>{{ r.pages_crawled }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SEO & GEO TAB ==================== -->
+<div id="tab-seo" class="tab-content">
+    {% if seo_tasks %}
+    {% set seo_done = seo_tasks | selectattr('done') | list | length %}
+    {% set seo_pct = (seo_done / seo_tasks | length * 100) | int if seo_tasks | length > 0 else 0 %}
+
+    <div class="card" style="margin-bottom: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
+                    <span style="font-weight: 600;">Overall Progress</span>
+                    <span style="color: var(--muted);">{{ seo_done }}/{{ seo_tasks | length }} tasks ({{ seo_pct }}%)</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: var(--border); border-radius: 5px;">
+                    <div style="width: {{ seo_pct }}%; height: 100%; background: {% if seo_pct >= 80 %}var(--success){% elif seo_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %}; border-radius: 5px; transition: width 0.3s;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% set categories = [] %}
+    {% for t in seo_tasks %}
+        {% if t.category not in categories %}
+            {% if categories.append(t.category) %}{% endif %}
+        {% endif %}
+    {% endfor %}
+
+    <div class="grid grid-2" style="gap: 1rem;">
+        {% for cat in categories %}
+        <div class="card">
+            {% set cat_tasks = seo_tasks | selectattr('category', 'equalto', cat) | list %}
+            {% set cat_done = cat_tasks | selectattr('done') | list | length %}
+            {% set cat_pct = (cat_done / cat_tasks | length * 100) | int if cat_tasks | length > 0 else 0 %}
+            <div class="section-header" style="margin-bottom: 0.5rem;">
+                <h3 style="font-size: 0.9rem;">{{ cat }}</h3>
+                <span style="font-size: 0.75rem; color: {% if cat_pct == 100 %}var(--success){% elif cat_pct > 0 %}var(--warning){% else %}var(--muted){% endif %}; font-weight: 600;">{{ cat_done }}/{{ cat_tasks | length }}</span>
+            </div>
+            <div style="width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 0.6rem;">
+                <div style="width: {{ cat_pct }}%; height: 100%; background: {% if cat_pct == 100 %}var(--success){% elif cat_pct > 0 %}var(--warning){% else %}var(--border){% endif %}; border-radius: 2px;"></div>
+            </div>
+            {% for t in seo_tasks %}
+                {% if t.category == cat %}
+                <div class="todo-item {{ 'done' if t.done }}" onclick="toggleTodo('{{ customer.id }}', '{{ t.key }}', {{ 'false' if t.done else 'true' }}, this)" style="cursor:pointer;">
+                    <div class="todo-check {{ 'checked' if t.done }}" title="Click to toggle"></div>
+                    <span>{{ t.task }}</span>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- ==================== CONTENT TAB ==================== -->
+<div id="tab-content" class="tab-content">
+    <div class="section-header" style="margin-bottom: 1rem;">
+        <div>
+            <h2 style="margin-bottom: 0.25rem;">Content Recommendations</h2>
+            <span style="color: var(--muted); font-size: 0.85rem;">AI-generated content changes to boost search visibility</span>
+        </div>
+        <div class="flex">
+            <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">
+                Generate Recommendations
+            </button>
+            <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-outline btn-sm">View All</a>
+        </div>
+    </div>
+
+    {% if content_recs %}
+    <div style="display: grid; gap: 0.75rem;">
+        {% for rec in content_recs %}
+        <div class="card content-rec" id="rec-{{ rec.id }}" style="border-left: 3px solid {% if rec.status == 'approved' %}var(--success){% elif rec.status == 'rejected' %}var(--danger){% elif rec.status == 'published' %}var(--primary){% else %}var(--warning){% endif %};">
+            <div class="section-header" style="margin-bottom: 0.5rem;">
+                <div>
+                    <span class="badge badge-{{ rec.rec_type }}" style="background: {% if rec.rec_type == 'blog_post' %}#dbeafe{% elif rec.rec_type == 'faq_update' %}#d1fae5{% elif rec.rec_type == 'expert_quote' %}#ede9fe{% elif rec.rec_type == 'stat_injection' %}#fef3c7{% else %}#e5e7eb{% endif %}; color: var(--text-light); font-size: 0.7rem;">{{ rec.rec_type | replace('_', ' ') | title }}</span>
+                    <span style="font-size: 0.7rem; color: var(--muted); margin-left: 0.5rem;">Priority {{ rec.priority }}</span>
+                </div>
+                <div class="flex">
+                    {% if rec.status == 'pending' %}
+                    <button class="btn btn-success btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'approved', this)">Approve</button>
+                    <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="updateRecStatus('{{ rec.id }}', 'rejected', this)">Reject</button>
+                    {% elif rec.status == 'approved' %}
+                    <span class="badge badge-approved">Approved</span>
+                    <button class="btn btn-primary btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
+                    {% elif rec.status == 'published' %}
+                    <span class="badge badge-active">Published</span>
+                    {% else %}
+                    <span class="badge badge-archived">Rejected</span>
+                    <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'pending', this)">Restore</button>
+                    {% endif %}
+                </div>
+            </div>
+            <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ rec.title }}</h3>
+            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.35rem;">{{ rec.description }}</p>
+            {% if rec.ai_impact_reason %}
+            <p style="font-size: 0.8rem; color: var(--primary); margin-bottom: 0.5rem;">AI Impact: {{ rec.ai_impact_reason }}</p>
+            {% endif %}
+            {% if rec.target_page and rec.target_page != 'new' %}
+            <span style="font-size: 0.75rem; color: var(--muted);">Target: {{ rec.target_page }}</span>
+            {% endif %}
+            <details style="margin-top: 0.5rem;">
+                <summary style="font-size: 0.8rem; color: var(--primary); cursor: pointer;">View HTML Snippet</summary>
+                <div style="margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ rec.html_snippet | e }}</div>
+                <button class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="copySnippet(this)">Copy HTML</button>
+            </details>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if content_recs | length >= 5 %}
+    <div style="text-align: center; margin-top: 1rem;">
+        <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-outline btn-sm">View All Recommendations</a>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card empty-state">
+        <p>No content recommendations yet.</p>
+        <p style="font-size: 0.85rem; margin-top: 0.5rem;">Click "Generate Recommendations" to analyze the site and get AI-powered content suggestions.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ==================== EMAILS TAB ==================== -->
+<div id="tab-emails" class="tab-content">
+    {% if email_templates %}
+    <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.85rem;">
+        Emails rendered for <strong>{{ customer.name }}</strong>. Click "Copy" to copy formatted text — paste directly into Outlook, Gmail, or any email client.
+    </p>
+
+    {% for t in email_templates %}
+    <div class="card" id="{{ t.slug }}">
+        <div class="section-header">
+            <h2 style="font-size: 1rem;">{{ t.slug | replace('-', ' ') | title }}</h2>
+            <div class="flex">
+                <button class="btn btn-sm btn-primary" onclick="copyFormatted('email-body-{{ loop.index }}', this)">Copy for Email</button>
+                <button class="btn btn-sm btn-outline" onclick="copySubject('email-subject-{{ loop.index }}', this)">Copy Subject</button>
+            </div>
+        </div>
+        <div class="email-subject-line" id="email-subject-{{ loop.index }}">{{ t.subject }}</div>
+        <div class="email-body" id="email-body-{{ loop.index }}">{{ t.body_html | safe }}</div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="card empty-state">
+        <p>No email templates found. Add templates to <code>templates/emails/</code></p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 1.25rem;
+    }
+    .tab {
+        padding: 0.6rem 1.25rem;
+        border: none;
+        background: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+        transition: color 0.15s, border-color 0.15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+    .tab-badge {
+        font-size: 0.7rem;
+        background: var(--border);
+        color: var(--muted);
+        padding: 0.1rem 0.4rem;
+        border-radius: 9999px;
+        margin-left: 0.35rem;
+    }
+    .tab.active .tab-badge {
+        background: #dbeafe;
+        color: var(--primary);
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    /* Email styles */
+    .email-subject-line {
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.6rem 0.75rem;
+        background: #f1f3f5;
+        border-radius: 6px;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+    }
+    .email-body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #222;
+        padding: 1.25rem;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+    }
+    .email-body p { margin: 0 0 12px 0; }
+    .email-body strong { font-weight: 600; }
+    .email-body ul, .email-body ol { margin: 0 0 12px 0; padding-left: 24px; }
+    .email-body li { margin-bottom: 4px; }
+    .email-body h1, .email-body h2, .email-body h3 { font-size: 14px; font-weight: 600; margin: 16px 0 8px 0; }
+    .email-body hr { border: none; border-top: 1px solid #ddd; margin: 16px 0; }
+    .email-body a { color: #2563eb; }
+</style>
+
+<script>
+function switchTab(tabName, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + tabName).classList.add('active');
+    btn.classList.add('active');
+}
+
+function copyFormatted(id, btn) {
+    const el = document.getElementById(id);
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('copy');
+    sel.removeAllRanges();
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 2000);
+}
+
+function copySubject(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+
+function generateContent(customerId) {
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    fetch('/api/content/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Generated ' + data.generated + ' recs!';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            btn.textContent = 'Error: ' + (data.error || 'Unknown');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Generate Recommendations'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Generate Recommendations'; }, 3000);
+    });
+}
+
+function updateRecStatus(recId, status, btn) {
+    fetch('/api/content/status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_id: recId, status: status})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) location.reload();
+    });
+}
+
+function copySnippet(btn) {
+    const code = btn.previousElementSibling;
+    navigator.clipboard.writeText(code.textContent).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+
+function toggleTodo(customerId, taskKey, completed, el) {
+    fetch('/api/checklist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId, task_key: taskKey, completed: completed})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            el.classList.toggle('done');
+            el.querySelector('.todo-check').classList.toggle('checked');
+        }
+    });
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,23 @@
+[project]
+name = "geo-agent"
+version = "0.1.0"
+description = "GEO Agent — AI-powered dental practice SEO optimizer"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.40.0",
+    "httpx>=0.27.0",
+    "sqlite-vec>=0.1.1",
+    "voyageai>=0.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "docker: tests that build/run the Docker image (deselect with -m 'not docker')",
+    "security: security control tests (select with -m 'security')",
+]

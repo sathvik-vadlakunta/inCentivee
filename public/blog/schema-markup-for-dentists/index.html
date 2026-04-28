@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schema Markup for Dentists: The Complete Guide to Structured Data | PracticeRank</title>
+<meta name="description" content="Schema markup helps Google and AI assistants understand your dental practice. Learn which schema types to implement, how they boost visibility, and see real JSON-LD examples.">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<link rel="canonical" href="https://practicerank.ai/blog/schema-markup-for-dentists/">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Schema Markup for Dentists: The Complete Guide to Structured Data">
+<meta property="og:description" content="Schema markup helps Google and AI assistants understand your dental practice. Learn which schema types to implement, how they boost visibility, and see real JSON-LD examples.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://practicerank.ai/blog/schema-markup-for-dentists/">
+
+<!-- JSON-LD: Article -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Schema Markup for Dentists: The Complete Guide to Structured Data",
+  "description": "Schema markup helps Google and AI assistants understand your dental practice. Learn which schema types to implement, how they boost visibility, and see real JSON-LD examples.",
+  "author": {
+    "@type": "Person",
+    "name": "Kody Doherty"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "PracticeRank",
+    "url": "https://practicerank.ai"
+  },
+  "datePublished": "2026-04-28",
+  "mainEntityOfPage": "https://practicerank.ai/blog/schema-markup-for-dentists/"
+}
+</script>
+
+<!-- JSON-LD: BreadcrumbList -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://practicerank.ai" },
+    { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://practicerank.ai/blog/" },
+    { "@type": "ListItem", "position": 3, "name": "Schema Markup for Dentists", "item": "https://practicerank.ai/blog/schema-markup-for-dentists/" }
+  ]
+}
+</script>
+
+<style>
+  /* ── Theme Variables ── */
+  :root {
+    --bg: #08080d;
+    --bg-nav: rgba(8,8,13,0.92);
+    --text: #f0f0f0;
+    --text-secondary: rgba(255,255,255,0.5);
+    --text-muted: rgba(255,255,255,0.35);
+    --text-faint: rgba(255,255,255,0.25);
+    --text-dim: rgba(255,255,255,0.15);
+    --text-ghost: rgba(255,255,255,0.06);
+    --accent: #4ade80;
+    --accent-hover: #22c55e;
+    --accent-bg: rgba(74,222,128,0.08);
+    --accent-border: rgba(74,222,128,0.15);
+    --accent-glow: rgba(74,222,128,0.2);
+    --card-bg: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.07);
+    --input-bg: rgba(255,255,255,0.06);
+    --divider: rgba(255,255,255,0.06);
+    --btn-text: #0a0f0a;
+    color-scheme: dark;
+  }
+
+  [data-theme="light"] {
+    --bg: #f8faf9;
+    --bg-nav: rgba(248,250,249,0.92);
+    --text: #1a1a2e;
+    --text-secondary: rgba(26,26,46,0.6);
+    --text-muted: rgba(26,26,46,0.45);
+    --text-faint: rgba(26,26,46,0.3);
+    --text-dim: rgba(26,26,46,0.15);
+    --text-ghost: rgba(26,26,46,0.06);
+    --accent: #16a34a;
+    --accent-hover: #15803d;
+    --accent-bg: rgba(22,163,74,0.08);
+    --accent-border: rgba(22,163,74,0.2);
+    --accent-glow: rgba(22,163,74,0.15);
+    --card-bg: #ffffff;
+    --card-border: rgba(26,26,46,0.1);
+    --input-bg: #ffffff;
+    --divider: rgba(26,26,46,0.08);
+    --btn-text: #ffffff;
+    color-scheme: light;
+  }
+
+  .theme-toggle { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 0.4rem 0.5rem; cursor: pointer; font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--text-secondary); }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .theme-toggle .icon-sun, .theme-toggle .icon-moon { display: none; }
+  [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+  [data-theme="light"] .theme-toggle .icon-moon { display: block; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── Nav ── */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 2rem; border-bottom: 1px solid var(--divider); position: sticky; top: 0; background: var(--bg-nav); backdrop-filter: blur(16px); z-index: 400; }
+  .nav-logo { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; align-items: center; gap: 1.8rem; font-size: 0.88rem; color: var(--text-secondary); }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { background: var(--accent); color: var(--btn-text); font-weight: 700; font-size: 0.85rem; border: none; border-radius: 8px; padding: 0.55rem 1.2rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; text-decoration: none; }
+  .nav-cta:hover { background: var(--accent-hover); color: var(--btn-text); }
+
+  /* ── Hamburger ── */
+  .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; z-index: 301; }
+  .hamburger span { display: block; width: 22px; height: 2px; background: var(--text); border-radius: 2px; transition: all 0.3s; }
+  .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+  /* ── Mobile Menu ── */
+  .mobile-menu { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg); z-index: 300; padding: 5rem 2rem 2rem; overflow-y: auto; }
+  .mobile-menu.active { display: block; }
+  .mobile-menu a { display: block; padding: 0.85rem 0; font-size: 1.1rem; color: var(--text-secondary); border-bottom: 1px solid var(--divider); transition: color 0.15s; }
+  .mobile-menu a:hover { color: var(--accent); }
+  .mobile-menu .mobile-sub { padding-left: 1.2rem; }
+  .mobile-menu .mobile-sub a { font-size: 0.95rem; color: var(--text-muted); border-bottom: 1px solid var(--text-ghost); transition: color 0.15s, background 0.15s, padding-left 0.15s; }
+  .mobile-menu .mobile-sub a:hover { color: var(--accent); background: var(--accent-bg); padding-left: 0.5rem; border-radius: 8px; }
+  .mobile-menu .mobile-cta { display: inline-block; margin-top: 1.5rem; background: var(--accent); color: var(--btn-text); font-weight: 700; font-size: 1rem; border-radius: 10px; padding: 0.85rem 2rem; text-align: center; width: 100%; }
+
+  /* ── Nav Dropdowns ── */
+  .nav-dropdown { position: relative; }
+  .nav-dropdown > a { cursor: pointer; }
+  .nav-dropdown-menu { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); padding-top: 0.5rem; z-index: 200; }
+  .nav-dropdown-menu-inner { background: var(--bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem 0; min-width: 220px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); backdrop-filter: blur(16px); }
+  .nav-dropdown-menu-inner a { display: block; padding: 0.55rem 1.2rem; color: var(--text-secondary); font-size: 0.85rem; transition: color 0.15s, background 0.15s; }
+  .nav-dropdown-menu-inner a:hover { color: var(--text); background: var(--accent-bg); }
+  .nav-dropdown:hover .nav-dropdown-menu { display: block; }
+
+  /* ── Footer ── */
+  footer { border-top: 1px solid var(--divider); padding: 3rem 2rem; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; }
+  .footer-brand { max-width: 320px; }
+  .footer-brand .nav-logo { margin-bottom: 0.75rem; }
+  .footer-brand p { font-size: 0.82rem; color: var(--text-faint); line-height: 1.7; }
+  .footer-links { display: flex; gap: 3rem; }
+  .footer-col h4 { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem; }
+  .footer-col a { display: block; font-size: 0.85rem; color: var(--text-faint); margin-bottom: 0.5rem; transition: color 0.2s; }
+  .footer-col a:hover { color: var(--text); }
+  .footer-bottom { text-align: center; padding-top: 2rem; margin-top: 2rem; border-top: 1px solid var(--text-ghost); font-size: 0.78rem; color: var(--text-faint); max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+  /* ── Article ── */
+  .article-wrapper { max-width: 760px; margin: 0 auto; padding: 3rem 2rem 4rem; }
+  .breadcrumb { font-size: 0.8rem; color: var(--text-faint); margin-bottom: 2rem; }
+  .breadcrumb a { color: var(--text-muted); transition: color 0.2s; }
+  .breadcrumb a:hover { color: var(--accent); }
+  .breadcrumb .sep { margin: 0 0.4rem; }
+
+  .article-meta { margin-bottom: 2.5rem; }
+  .article-meta h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; letter-spacing: -1px; line-height: 1.15; margin-bottom: 1rem; }
+  .article-meta .byline { font-size: 0.88rem; color: var(--text-muted); }
+  .article-meta .byline strong { color: var(--text-secondary); font-weight: 600; }
+
+  .article-body h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.3px; margin-top: 2.5rem; margin-bottom: 0.75rem; line-height: 1.25; }
+  .article-body h3 { font-size: 1.15rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.5rem; }
+  .article-body p { color: var(--text-secondary); font-size: 1.02rem; line-height: 1.8; margin-bottom: 1.25rem; }
+  .article-body ul, .article-body ol { color: var(--text-secondary); font-size: 1.02rem; line-height: 1.8; margin-bottom: 1.25rem; padding-left: 1.5rem; }
+  .article-body li { margin-bottom: 0.4rem; }
+  .article-body strong { color: var(--text); font-weight: 600; }
+  .article-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .article-body a:hover { color: var(--accent-hover); }
+
+  /* ── Code Blocks ── */
+  .code-block { background: #0d1117; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem 1.5rem; overflow-x: auto; margin-bottom: 1.5rem; }
+  [data-theme="light"] .code-block { background: #1e1e2e; border-color: rgba(0,0,0,0.1); }
+  .code-block code { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace; font-size: 0.82rem; line-height: 1.7; color: #e6edf3; white-space: pre; display: block; }
+  .code-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+
+  /* ── CTA Box ── */
+  .cta-box { background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 16px; padding: 2rem; margin-top: 2.5rem; text-align: center; }
+  .cta-box h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text); }
+  .cta-box p { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.25rem; }
+  .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: var(--btn-text); font-weight: 700; font-size: 1.05rem; border: none; border-radius: 12px; padding: 1rem 2rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px var(--accent-glow); text-decoration: none; }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 30px var(--accent-glow); transform: translateY(-1px); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .footer-inner { flex-direction: column; }
+    .article-wrapper { padding: 2rem 1.25rem 3rem; }
+  }
+</style>
+</head>
+<body>
+<script>
+  (function() {
+    var saved = localStorage.getItem('pr-theme');
+    var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+  function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('pr-theme', next);
+  }
+  function toggleMobileMenu() {
+    document.getElementById('mobileMenu').classList.toggle('active');
+    document.querySelector('.hamburger').classList.toggle('active');
+    document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('active') ? 'hidden' : '';
+  }
+  function closeMobileMenu() {
+    document.getElementById('mobileMenu').classList.remove('active');
+    document.querySelector('.hamburger').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  window.addEventListener('resize', function() {
+    if (window.innerWidth > 600) closeMobileMenu();
+  });
+</script>
+
+<nav>
+  <a href="/" class="nav-logo">Practice<span>Rank</span></a>
+  <div class="nav-links">
+    <div class="nav-dropdown">
+      <a href="/#what-we-do">Services &#9662;</a>
+      <div class="nav-dropdown-menu"><div class="nav-dropdown-menu-inner">
+        <a href="/ai-search-optimization">AI Search Optimization</a>
+        <a href="/dental-seo">Dental SEO</a>
+        <a href="/google-maps-optimization">Google Maps</a>
+      </div></div>
+    </div>
+    <a href="/#results">Results</a>
+    <a href="/#pricing">Pricing</a>
+    <div class="nav-dropdown">
+      <a href="/blog">Blog &#9662;</a>
+      <div class="nav-dropdown-menu"><div class="nav-dropdown-menu-inner">
+        <a href="/blog/what-is-aeo-for-dentists/">What Is AEO?</a>
+        <a href="/blog/how-chatgpt-recommends-dentists/">How ChatGPT Recommends</a>
+        <a href="/blog/schema-markup-for-dentists/">Schema Markup Guide</a>
+      </div></div>
+    </div>
+    <a href="/#faq">FAQ</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
+    <a href="https://calendly.com/ethan-practicerank" target="_blank" rel="noopener" class="nav-cta">Book a Free Call</a>
+  </div>
+  <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/#what-we-do" onclick="closeMobileMenu()">Services</a>
+  <div class="mobile-sub">
+    <a href="/ai-search-optimization" onclick="closeMobileMenu()">AI Search Optimization</a>
+    <a href="/dental-seo" onclick="closeMobileMenu()">Dental SEO</a>
+    <a href="/google-maps-optimization" onclick="closeMobileMenu()">Google Maps</a>
+  </div>
+  <a href="/#results" onclick="closeMobileMenu()">Results</a>
+  <a href="/#pricing" onclick="closeMobileMenu()">Pricing</a>
+  <a href="/#faq" onclick="closeMobileMenu()">FAQ</a>
+  <a href="#" onclick="event.preventDefault()">Blog</a>
+  <div class="mobile-sub">
+    <a href="/blog/what-is-aeo-for-dentists/" onclick="closeMobileMenu()">What Is AEO?</a>
+    <a href="/blog/how-chatgpt-recommends-dentists/" onclick="closeMobileMenu()">How ChatGPT Recommends</a>
+    <a href="/blog/schema-markup-for-dentists/" onclick="closeMobileMenu()">Schema Markup Guide</a>
+  </div>
+  <a href="https://calendly.com/ethan-practicerank" target="_blank" rel="noopener" class="mobile-cta">Book a Free Call</a>
+</div>
+
+<main class="article-wrapper">
+
+  <div class="breadcrumb">
+    <a href="/">Home</a><span class="sep">/</span>
+    <a href="/blog/">Blog</a><span class="sep">/</span>
+    Schema Markup for Dentists
+  </div>
+
+  <div class="article-meta">
+    <h1>Schema Markup for Dentists: The Complete Guide to Structured Data</h1>
+    <p class="byline">By <strong>Kody Doherty</strong> &middot; April 28, 2026 &middot; 10 min read</p>
+  </div>
+
+  <article class="article-body">
+
+    <h2>What Is Schema Markup?</h2>
+    <p>When a patient searches for "best dentist near me," Google does not read your website the way a human does. It scans code. Schema markup is a layer of structured data you add to your site's HTML that tells search engines and AI assistants <strong>exactly</strong> what your practice is, what services you offer, where you are located, and when you are open. Think of it as a translation layer between your website and every algorithm that decides whether to recommend you.</p>
+    <p>Schema markup uses a standardized vocabulary maintained by <a href="https://schema.org" target="_blank" rel="noopener">Schema.org</a> and is implemented as JSON-LD (JavaScript Object Notation for Linked Data) — a block of code placed in your page's <code>&lt;head&gt;</code> or <code>&lt;body&gt;</code>. It is invisible to visitors but extremely visible to machines. Google, Bing, ChatGPT, Gemini, Perplexity, and every other AI system that indexes the web can parse it instantly.</p>
+    <p>Without schema markup, search engines are guessing. They might figure out your phone number from the footer, or they might not. They might identify your address, or confuse it with a nearby business. Schema removes the guesswork entirely and gives you control over how your practice is represented in search results, knowledge panels, and AI-generated recommendations.</p>
+
+    <h2>Why Dentists Need Schema Markup</h2>
+    <p>Most dental websites do not have schema markup. That is both a problem and an opportunity. Here is why it matters:</p>
+    <ul>
+      <li><strong>Google Rich Results.</strong> Schema markup unlocks enhanced search listings — star ratings beneath your name, FAQ dropdowns, procedure details, and business hours displayed directly in results. These rich results get significantly higher click-through rates than plain blue links.</li>
+      <li><strong>AI Discoverability.</strong> Over 40% of patients now ask ChatGPT, Gemini, Grok, Claude, or Perplexity for dentist recommendations. AI assistants parse schema markup to determine which practices to surface. If your competitors have schema and you do not, the AI will recommend them instead of you.</li>
+      <li><strong>Competitive Advantage.</strong> Fewer than 15% of dental practice websites have properly implemented schema. Adding it puts you ahead of nearly every competitor in your market immediately — no waiting months for SEO to "kick in."</li>
+      <li><strong>People Also Ask.</strong> FAQ schema directly feeds Google's "People Also Ask" boxes. When a patient asks "Does dental insurance cover implants?" and your FAQ schema has that answer, Google can pull it directly from your site with a link back to you.</li>
+      <li><strong>Knowledge Panel Accuracy.</strong> Schema ensures Google's Knowledge Panel for your practice shows the correct name, address, phone number, hours, and rating — reducing errors that send patients to the wrong location or phone number.</li>
+    </ul>
+
+    <h2>The 6 Essential Schema Types for Dental Practices</h2>
+    <p>Not all schema types are relevant to dentists. These six are the ones that actually move the needle for patient acquisition and search visibility.</p>
+
+    <h3>1. Dentist / LocalBusiness</h3>
+    <p>This is the foundation. The <code>Dentist</code> schema type (a subtype of <code>LocalBusiness</code>) tells search engines your practice name, address, phone number, hours of operation, accepted insurance, and services offered. Every dental website needs this at minimum.</p>
+    <div class="code-label">JSON-LD: Dentist Schema</div>
+    <div class="code-block"><code>{
+  "@context": "https://schema.org",
+  "@type": "Dentist",
+  "name": "Bright Smile Dental",
+  "url": "https://www.brightsmiledental.com",
+  "telephone": "+1-512-555-0147",
+  "email": "info@brightsmiledental.com",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "4200 North Lamar Blvd, Suite 220",
+    "addressLocality": "Austin",
+    "addressRegion": "TX",
+    "postalCode": "78756",
+    "addressCountry": "US"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 30.3120,
+    "longitude": -97.7410
+  },
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday"],
+      "opens": "08:00",
+      "closes": "17:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": "Friday",
+      "opens": "08:00",
+      "closes": "14:00"
+    }
+  ],
+  "paymentAccepted": "Cash, Credit Card, Insurance",
+  "insuranceAccepted": ["Delta Dental", "Cigna", "Aetna", "MetLife"],
+  "medicalSpecialty": "Dentistry",
+  "availableService": [
+    "General Dentistry",
+    "Cosmetic Dentistry",
+    "Dental Implants",
+    "Teeth Whitening",
+    "Invisalign"
+  ],
+  "image": "https://www.brightsmiledental.com/images/office.jpg",
+  "priceRange": "$$"
+}</code></div>
+
+    <h3>2. FAQPage</h3>
+    <p>FAQ schema is one of the highest-impact schema types for dental practices. It maps common patient questions and answers directly into Google's search results, and it is one of the primary data sources AI assistants use when answering dental queries. Every question-and-answer pair you add is another opportunity to appear in "People Also Ask" and AI citations.</p>
+    <div class="code-label">JSON-LD: FAQPage Schema</div>
+    <div class="code-block"><code>{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Does dental insurance cover implants?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Many dental insurance plans cover a portion of implant costs, typically 25-50% after deductibles. At Bright Smile Dental, we accept Delta Dental, Cigna, Aetna, and MetLife, and our team will verify your benefits before treatment."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How often should I get a dental cleaning?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The American Dental Association recommends professional cleanings every six months. Patients with gum disease may need cleanings every three to four months. Bright Smile Dental offers flexible scheduling to keep your visits on track."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What should I do if I have a dental emergency?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Call our office immediately at (512) 555-0147. Bright Smile Dental reserves same-day appointments for emergencies including broken teeth, severe toothaches, and knocked-out teeth. After hours, follow our voicemail instructions for urgent care."
+      }
+    }
+  ]
+}</code></div>
+
+    <h3>3. MedicalProcedure</h3>
+    <p>This schema type tells search engines and AI assistants exactly what procedures your practice performs. It is especially valuable for specialty services like implants, cosmetic dentistry, and orthodontics — the high-revenue procedures you want to be found for. When an AI assistant is asked "Who does dental implants in Austin?", practices with <code>MedicalProcedure</code> schema for implants are far more likely to be recommended.</p>
+    <div class="code-label">JSON-LD: MedicalProcedure Schema</div>
+    <div class="code-block"><code>{
+  "@context": "https://schema.org",
+  "@type": "MedicalProcedure",
+  "name": "Dental Implant Placement",
+  "procedureType": "SurgicalProcedure",
+  "description": "A titanium implant post is placed into the jawbone to serve as a permanent root for a replacement tooth. Bright Smile Dental uses guided implant surgery for precision placement and faster healing.",
+  "bodyLocation": "Jaw",
+  "howPerformed": "The implant is placed under local anesthesia using 3D-guided surgical planning. After a healing period of 3-6 months, a custom crown is attached to the implant.",
+  "preparation": "Initial consultation includes a 3D cone beam CT scan, oral health assessment, and treatment planning. Patients should disclose all medications and medical conditions.",
+  "followup": "Follow-up visits at 1 week, 1 month, and 3 months post-surgery. Annual check-ups to monitor implant health.",
+  "provider": {
+    "@type": "Dentist",
+    "name": "Bright Smile Dental",
+    "url": "https://www.brightsmiledental.com"
+  }
+}</code></div>
+
+    <h3>4. Review / AggregateRating</h3>
+    <p>Star ratings in search results are powered by <code>AggregateRating</code> schema. When potential patients see "4.9 stars from 247 reviews" directly beneath your practice name in Google, that social proof dramatically increases click-through rates. This schema connects your review data to your search listing.</p>
+    <div class="code-label">JSON-LD: AggregateRating (embedded in Dentist schema)</div>
+    <div class="code-block"><code>{
+  "@context": "https://schema.org",
+  "@type": "Dentist",
+  "name": "Bright Smile Dental",
+  "url": "https://www.brightsmiledental.com",
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "4.9",
+    "reviewCount": "247",
+    "bestRating": "5",
+    "worstRating": "1"
+  },
+  "review": [
+    {
+      "@type": "Review",
+      "author": { "@type": "Person", "name": "Sarah M." },
+      "datePublished": "2026-03-15",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": "5"
+      },
+      "reviewBody": "Dr. Chen and the team at Bright Smile made my implant process completely painless. The office is modern, the staff is friendly, and they walked me through every step."
+    }
+  ]
+}</code></div>
+
+    <h3>5. Person (for Providers)</h3>
+    <p>Each dentist at your practice should have their own <code>Person</code> schema with credentials, specialties, and education. This helps AI assistants answer queries like "find a dentist who specializes in pediatric care" or "dentists with Invisalign certification near me." It also builds E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) signals that Google uses to rank health-related content.</p>
+    <div class="code-label">JSON-LD: Person Schema (Provider)</div>
+    <div class="code-block"><code>{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Dr. Lisa Chen, DDS",
+  "jobTitle": "Lead Dentist & Founder",
+  "description": "Dr. Lisa Chen is a general and cosmetic dentist in Austin, TX with over 14 years of experience. She specializes in dental implants, Invisalign, and full-mouth rehabilitation.",
+  "url": "https://www.brightsmiledental.com/team/dr-chen",
+  "image": "https://www.brightsmiledental.com/images/dr-chen.jpg",
+  "telephone": "+1-512-555-0147",
+  "worksFor": {
+    "@type": "Dentist",
+    "name": "Bright Smile Dental"
+  },
+  "alumniOf": {
+    "@type": "CollegeOrUniversity",
+    "name": "UT Health San Antonio School of Dentistry"
+  },
+  "hasCredential": [
+    {
+      "@type": "EducationalOccupationalCredential",
+      "credentialCategory": "degree",
+      "name": "Doctor of Dental Surgery (DDS)"
+    }
+  ],
+  "knowsAbout": ["Dental Implants", "Invisalign", "Cosmetic Dentistry", "Full-Mouth Rehabilitation"]
+}</code></div>
+
+    <h3>6. BreadcrumbList</h3>
+    <p>Breadcrumb schema gives search engines a clear map of your site's structure. Instead of showing a raw URL in search results, Google displays a clean navigation path like <strong>Home &gt; Services &gt; Dental Implants</strong>. It is a small detail that improves both click-through rates and crawl efficiency.</p>
+    <div class="code-label">JSON-LD: BreadcrumbList Schema</div>
+    <div class="code-block"><code>{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://www.brightsmiledental.com"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "Services",
+      "item": "https://www.brightsmiledental.com/services/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": "Dental Implants",
+      "item": "https://www.brightsmiledental.com/services/dental-implants/"
+    }
+  ]
+}</code></div>
+
+    <h2>How Schema Powers AI Search</h2>
+    <p>This is where schema goes from "nice to have" to "business critical." The rise of AI search has fundamentally changed how patients find dentists. When someone asks ChatGPT, Gemini, or Perplexity "Who is the best dentist in Austin for implants?", the AI does not show ten blue links. It gives one or two specific recommendations. Schema markup is one of the primary signals these AI systems use to decide which practices to recommend.</p>
+    <p>AI assistants are particularly good at parsing structured data. When your site has <code>Dentist</code> schema with services listed, <code>MedicalProcedure</code> schema for implants, <code>AggregateRating</code> schema showing 4.9 stars from 247 reviews, and <code>Person</code> schema for a dentist with implant credentials — the AI can construct a confident, specific recommendation. Without that data, it has to guess, and it will usually guess in favor of a competitor who has it.</p>
+    <p><strong>Schema markup is the single most impactful technical SEO investment a dental practice can make.</strong> It takes a few hours to implement correctly. It costs nothing to maintain. And it affects every search engine, every AI assistant, and every patient discovery channel simultaneously. No ad campaign can claim the same breadth of impact at zero ongoing cost.</p>
+
+    <h2>Common Schema Mistakes to Avoid</h2>
+    <p>Implementing schema incorrectly can be worse than not having it at all. Google may ignore malformed schema, or worse, flag your site for spammy structured data. Here are the most common mistakes we see on dental websites:</p>
+    <ul>
+      <li><strong>Wrong schema types.</strong> Using generic <code>LocalBusiness</code> instead of <code>Dentist</code>. The more specific type gives search engines better signals and qualifies you for dentist-specific features.</li>
+      <li><strong>Missing required fields.</strong> A <code>Dentist</code> schema without an address, phone number, or opening hours is incomplete. Google's Rich Results Test will flag these, and the schema may not generate any rich results.</li>
+      <li><strong>Outdated information.</strong> Schema that shows old hours, a disconnected phone number, or a previous address erodes trust with both search engines and patients. Every time your practice info changes, schema must be updated.</li>
+      <li><strong>Duplicate or conflicting schemas.</strong> Having two <code>Dentist</code> schema blocks with different addresses confuses search engines. Each page should have one authoritative set of structured data.</li>
+      <li><strong>Fake or inflated reviews.</strong> Google explicitly penalizes schema that includes fabricated reviews or inaccurate ratings. Only mark up genuine reviews that match your actual rating on Google or verified platforms.</li>
+      <li><strong>Schema on the wrong pages.</strong> Putting FAQ schema on a page that does not visibly display those FAQs violates Google's guidelines. The structured data must match the visible content on the page.</li>
+    </ul>
+
+    <h2>How to Test Your Schema Markup</h2>
+    <p>Before deploying schema to your live site, always validate it. Two free tools handle this:</p>
+    <ol>
+      <li><strong><a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener">Google Rich Results Test</a></strong> — Paste your URL or code snippet and Google will show you exactly which rich results your schema qualifies for. It will also flag errors and warnings. This is the definitive test because it shows what Google will actually do with your schema.</li>
+      <li><strong><a href="https://validator.schema.org/" target="_blank" rel="noopener">Schema Markup Validator</a></strong> — Validates your JSON-LD against the full Schema.org specification. It catches structural errors that Google's tool might not flag. Use this as a second check, especially for complex schema like <code>MedicalProcedure</code> and nested <code>Person</code> types.</li>
+    </ol>
+    <p>Run both tools after every change. Schema errors are silent — they will not break your website, but they will quietly prevent your practice from appearing in rich results and AI recommendations.</p>
+
+    <h2>Stop Leaving Patients on the Table</h2>
+    <p>Schema markup is not optional for dental practices that want to compete in 2026. Google rich results, AI assistant recommendations, People Also Ask boxes, knowledge panels — all of these are powered by structured data. The practices that implement it correctly will capture the patients. The ones that do not will wonder why their phone stopped ringing.</p>
+    <p>The good news: this is a solvable problem. The six schema types above cover everything a dental practice needs. Implementing them correctly, keeping them updated, and monitoring for errors is straightforward — if you know what you are doing.</p>
+
+    <div class="cta-box">
+      <h3>PracticeRank Implements All of This Automatically</h3>
+      <p>We audit your schema, fix errors, add missing types, and keep everything updated as your practice evolves. Schema markup is included in every PracticeRank plan — along with AI search optimization, review management, and content publishing.</p>
+      <a href="/#book" class="btn-primary">Get Your Free Audit</a>
+    </div>
+
+  </article>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="/" class="nav-logo">Practice<span>Rank</span></a>
+      <p>AI-powered dental marketing. Get found everywhere patients search — Google, Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, and AI Overviews.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/#what-we-do">Services</a>
+        <a href="/#results">Results</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/#faq">FAQ</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/#book">Contact</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/llms.txt">llms.txt</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PracticeRank</div>
+</footer>
+
+</body>
+</html>

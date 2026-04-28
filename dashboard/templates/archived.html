@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Archived Customers - PracticeRank{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>Archived Customers</h1>
+    <a href="{{ url_for('index') }}" class="btn btn-outline">Back to Dashboard</a>
+</div>
+
+{% if customers %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Practice</th>
+                <th>Domain</th>
+                <th>Platform</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in customers %}
+            <tr>
+                <td><a href="{{ url_for('customer_detail', customer_id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
+                <td style="color: var(--muted);">{{ c.domain }}</td>
+                <td>{{ c.platform | title }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('restore_customer', customer_id=c.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-success">Restore</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card empty-state">
+    <h2>No archived customers</h2>
+    <p style="color: var(--muted);">Archived customers will appear here.</p>
+</div>
+{% endif %}
+
+{% endblock %}

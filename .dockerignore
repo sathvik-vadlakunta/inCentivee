@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# Environment & secrets
+.env
+.env.*
+secrets/
+
+# Data (mounted as volume, not baked in)
+data/
+
+# Tests & dev tools
+tests/
+requirements-dev.txt
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Docs & non-runtime files
+docs/
+*.md
+LICENSE
+*.pdf
+*.zip
+
+# Worker (separate deployment)
+worker/
+
+# Landing page (separate deployment via Cloudflare Pages)
+public/
+practicerank-landing.html
+generate-pdf.js
+llms.txt
+llms-full.txt
+
+# Cloudflare Worker (separate deployment)
+.wrangler/
+
+# OS files
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
