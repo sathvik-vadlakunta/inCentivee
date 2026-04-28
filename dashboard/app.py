@@ -172,13 +172,19 @@ def customer_detail(customer_id):
         raw_templates = _get_email_templates()
         email_templates = []
         for t in raw_templates:
-            raw = _render_email_template(t["content"], customer, contacts)
+            raw = _render_email_template(
+                t["content"], customer, contacts,
+                kpis=kpis, runs=runs, places=places, diff_report=diff_report,
+            )
             lines = raw.splitlines()
             body_lines = [l for l in lines if not l.startswith("Subject:")]
-            body_html = markdown.markdown("\n".join(body_lines).strip())
+            body_html = markdown.markdown("\n".join(body_lines).strip(), extensions=["tables"])
             email_templates.append({
                 "slug": t["slug"],
-                "subject": _render_email_template(t["subject"], customer, contacts),
+                "subject": _render_email_template(
+                    t["subject"], customer, contacts,
+                    kpis=kpis, runs=runs, places=places,
+                ),
                 "body_html": body_html,
             })
 
@@ -432,8 +438,10 @@ def _get_email_templates() -> list[dict]:
     return templates
 
 
-def _render_email_template(content: str, customer: dict, contacts: list[dict]) -> str:
-    """Replace template variables with customer data."""
+def _render_email_template(content: str, customer: dict, contacts: list[dict],
+                           kpis: dict | None = None, runs: list[dict] | None = None,
+                           places: dict | None = None, diff_report: str = "") -> str:
+    """Replace template variables with real customer data from DB."""
     contact_name = contacts[0]["name"] if contacts else "there"
     contact_email = contacts[0].get("email", "") if contacts else ""
 
@@ -446,6 +454,72 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict]) -
     }
     access_steps = platform_steps.get(platform, f"**{platform.title()}** — Please share login or collaborator access")
 
+    # KPI data for monthly reports
+    kpis = kpis or {}
+
+    def _latest(metric: str) -> str:
+        vals = kpis.get(metric, [])
+        if vals:
+            return str(vals[0]["value"])
+        # Fall back to Google Places data if no KPI records yet
+        if places:
+            if metric == "review_count":
+                return str(places.get("review_count", "—"))
+            if metric == "rating":
+                return str(places.get("rating", "—"))
+        return "—"
+
+    def _prev(metric: str) -> str:
+        vals = kpis.get(metric, [])
+        return str(vals[1]["value"]) if len(vals) > 1 else "—"
+
+    def _delta(metric: str) -> str:
+        vals = kpis.get(metric, [])
+        if len(vals) < 2:
+            return "—"
+        curr, prev = vals[0]["value"], vals[1]["value"]
+        diff = curr - prev
+        if diff > 0:
+            return f"+{diff}"
+        return str(diff)
+
+    # Build changes list from most recent run
+    changes_list = "- No changes recorded"
+    next_month_plans = "- Continue monitoring and optimization"
+    if runs:
+        latest_run = runs[0]
+        changes = latest_run.get("changes") or []
+        if isinstance(changes, str):
+            import json as _json
+            try:
+                changes = _json.loads(changes)
+            except Exception:
+                changes = [changes]
+        if changes:
+            changes_list = "\n".join(f"- {c}" for c in changes)
+        next_month_plans = "- Monthly crawl and analysis\n- Update schema markup\n- Refresh llms.txt content\n- Track KPI improvements"
+
+    # Build staging diff summary
+    changes_summary = "No changes staged."
+    diff_summary = "No diff available."
+    if runs:
+        latest = runs[0]
+        changes = latest.get("changes") or []
+        if isinstance(changes, str):
+            import json as _json
+            try:
+                changes = _json.loads(changes)
+            except Exception:
+                changes = [changes]
+        if changes:
+            changes_summary = "\n".join(f"- {c}" for c in changes)
+    if diff_report:
+        diff_summary = diff_report
+
+    # Current month for report
+    from datetime import datetime
+    report_month = datetime.now().strftime("%B %Y")
+
     replacements = {
         "{practice_name}": customer.get("name", ""),
         "{contact_name}": contact_name,
@@ -457,6 +531,25 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict]) -
         "{domain}": customer.get("domain", ""),
         "{phone}": customer.get("phone", ""),
         "{address}": customer.get("address", ""),
+        # KPI placeholders
+        "{review_count}": _latest("review_count"),
+        "{prev_review_count}": _prev("review_count"),
+        "{review_delta}": _delta("review_count"),
+        "{rating}": _latest("rating"),
+        "{prev_rating}": _prev("rating"),
+        "{rating_delta}": _delta("rating"),
+        "{ai_mentions}": _latest("ai_mentions"),
+        "{prev_ai_mentions}": _prev("ai_mentions"),
+        "{ai_mentions_delta}": _delta("ai_mentions"),
+        "{llms_hits}": _latest("llms_txt_hits"),
+        "{prev_llms_hits}": _prev("llms_txt_hits"),
+        "{llms_hits_delta}": _delta("llms_txt_hits"),
+        # Report content
+        "{report_month}": report_month,
+        "{changes_list}": changes_list,
+        "{next_month_plans}": next_month_plans,
+        "{changes_summary}": changes_summary,
+        "{diff_summary}": diff_summary,
     }
     for k, v in replacements.items():
         content = content.replace(k, v)
