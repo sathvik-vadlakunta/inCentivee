@@ -1,0 +1,19 @@
+<div class="section-header">
+    <h2>VA Todo List</h2>
+    <span style="font-size: 0.8rem; color: var(--muted);">{{ todos | selectattr('done') | list | length }}/{{ todos | length }} done</span>
+</div>
+{% for todo in todos %}
+<div class="todo-item {{ 'done' if todo.done }}"
+    {% if not todo.auto %}
+    hx-post="/api/checklist"
+    hx-vals='{"customer_id":"{{ customer.id }}","task_key":"{{ todo.key }}","completed":{{ 'false' if todo.done else 'true' }}}'
+    hx-target="#todo-list"
+    hx-swap="innerHTML"
+    hx-headers='{"Content-Type":"application/json"}'
+    style="cursor:pointer;"
+    {% endif %}>
+    <div class="todo-check {{ 'checked' if todo.done }}" {% if todo.auto %}title="Auto-detected"{% else %}title="Click to toggle"{% endif %}></div>
+    <span>{{ todo.task }}</span>
+    {% if todo.auto %}<span style="font-size:0.65rem; color:var(--muted); margin-left:auto;">auto</span>{% endif %}
+</div>
+{% endfor %}

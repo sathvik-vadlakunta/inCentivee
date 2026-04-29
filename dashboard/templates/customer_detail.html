@@ -9,10 +9,16 @@
         <span class="badge badge-{{ customer.status }}" style="margin-left: 0.5rem;">{{ customer.status | title }}</span>
     </div>
     <div class="flex">
-        <form method="POST" action="{{ url_for('api_trigger_run') }}" style="display:inline;" onsubmit="return confirm('Trigger a full pipeline run for {{ customer.name }}?')">
-            <input type="hidden" name="customer_id" value="{{ customer.id }}">
-            <button type="submit" class="btn btn-sm btn-primary">Run Agent</button>
-        </form>
+        <button class="btn btn-sm btn-primary"
+            hx-post="{{ url_for('api_trigger_run') }}"
+            hx-vals='{"customer_id":"{{ customer.id }}"}'
+            hx-confirm="Trigger a full pipeline run for {{ customer.name }}?"
+            hx-swap="innerHTML"
+            hx-target="#run-status"
+            hx-indicator="#run-spinner">
+            Run Agent <span id="run-spinner" class="htmx-indicator spinner" style="margin-left:4px;"></span>
+        </button>
+        <span id="run-status"></span>
         <a href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" class="btn btn-sm btn-outline" target="_blank">Case Study</a>
         <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="display:inline;">
             <select name="status" onchange="this.form.submit()" style="width:auto; padding:0.3rem 0.5rem; font-size:0.8rem;">
@@ -184,55 +190,18 @@
             <!-- VA Todo List -->
             {% if todos %}
             <div class="card">
-                <div class="section-header">
-                    <h2>VA Todo List</h2>
-                    <span style="font-size: 0.8rem; color: var(--muted);">{{ todos | selectattr('done') | list | length }}/{{ todos | length }} done</span>
+                <div id="todo-list">
+                    {% include "partials/todo_list.html" %}
                 </div>
-                {% for todo in todos %}
-                <div class="todo-item {{ 'done' if todo.done }}" {% if not todo.auto %}onclick="toggleTodo('{{ customer.id }}', '{{ todo.key }}', {{ 'false' if todo.done else 'true' }}, this)" style="cursor:pointer;"{% endif %}>
-                    <div class="todo-check {{ 'checked' if todo.done }}" {% if todo.auto %}title="Auto-detected"{% else %}title="Click to toggle"{% endif %}></div>
-                    <span>{{ todo.task }}</span>
-                    {% if todo.auto %}<span style="font-size:0.65rem; color:var(--muted); margin-left:auto;">auto</span>{% endif %}
-                </div>
-                {% endfor %}
             </div>
             {% endif %}
 
             <!-- Platform Access -->
             <div class="card">
                 <h2>Platform Access</h2>
-                {% if access %}
-                <table>
-                    <thead><tr><th>Platform</th><th>Status</th><th>Action</th></tr></thead>
-                    <tbody>
-                    {% for a in access %}
-                    <tr>
-                        <td>{{ a.platform | upper }}</td>
-                        <td>
-                            <span class="badge badge-{{ a.status }}">{{ a.status | title }}</span>
-                            {% if a.granted_at %}<span style="font-size:0.75rem; color:var(--muted);">{{ a.granted_at[:10] }}</span>{% endif %}
-                        </td>
-                        <td>
-                            {% if a.status == 'pending' %}
-                            <form method="POST" action="{{ url_for('update_access', customer_id=customer.id) }}" style="display:inline;">
-                                <input type="hidden" name="platform" value="{{ a.platform }}">
-                                <input type="hidden" name="status" value="granted">
-                                <button type="submit" class="btn btn-sm btn-success">Grant</button>
-                            </form>
-                            <form method="POST" action="{{ url_for('update_access', customer_id=customer.id) }}" style="display:inline;">
-                                <input type="hidden" name="platform" value="{{ a.platform }}">
-                                <input type="hidden" name="status" value="not_needed">
-                                <button type="submit" class="btn btn-sm btn-outline">N/A</button>
-                            </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p style="color: var(--muted);">No access tracking set up.</p>
-                {% endif %}
+                <div id="access-table">
+                    {% include "partials/access_table.html" %}
+                </div>
             </div>
 
             <!-- Staging / Approval -->
@@ -347,7 +316,13 @@
             </div>
             {% for t in seo_tasks %}
                 {% if t.category == cat %}
-                <div class="todo-item {{ 'done' if t.done }}" onclick="toggleTodo('{{ customer.id }}', '{{ t.key }}', {{ 'false' if t.done else 'true' }}, this)" style="cursor:pointer;">
+                <div class="todo-item {{ 'done' if t.done }}"
+                    hx-post="/api/checklist"
+                    hx-vals='{"customer_id":"{{ customer.id }}","task_key":"{{ t.key }}","completed":{{ 'false' if t.done else 'true' }}}'
+                    hx-target="closest .todo-item"
+                    hx-swap="outerHTML"
+                    hx-headers='{"Content-Type":"application/json"}'
+                    style="cursor:pointer;">
                     <div class="todo-check {{ 'checked' if t.done }}" title="Click to toggle"></div>
                     <span>{{ t.task }}</span>
                 </div>
@@ -602,20 +577,7 @@ function copySnippet(btn) {
     });
 }
 
-function toggleTodo(customerId, taskKey, completed, el) {
-    fetch('/api/checklist', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({customer_id: customerId, task_key: taskKey, completed: completed})
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.ok) {
-            el.classList.toggle('done');
-            el.querySelector('.todo-check').classList.toggle('checked');
-        }
-    });
-}
+// toggleTodo replaced by HTMX — see partials/todo_list.html
 </script>
 
 {% endblock %}

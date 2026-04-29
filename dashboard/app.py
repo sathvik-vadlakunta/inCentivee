@@ -336,15 +336,25 @@ def update_access(customer_id):
         new_status = request.form["status"]
         if new_status in ("granted", "not_needed", "pending"):
             db.update_access_status(customer_id, platform, new_status)
-            flash(f"{platform.upper()} marked as {new_status}.", "success")
 
             # If all access granted, set status to active
             pending = db.get_pending_access(customer_id)
             if not pending:
                 customer = db.get_customer(customer_id)
                 if customer and customer["status"] == "onboarding":
-                    db.set_customer_status(customer_id, "active")
-                    flash("All access granted! Customer is now active.", "success")
+                    from geo_agent.fsm import InvalidTransition
+                    try:
+                        db.set_customer_status(customer_id, "active")
+                    except InvalidTransition:
+                        pass
+
+            # HTMX: return updated access table
+            if request.headers.get("HX-Request"):
+                customer = db.get_customer(customer_id)
+                access = db.get_platform_access(customer_id)
+                return render_template("partials/access_table.html", customer=customer, access=access)
+
+            flash(f"{platform.upper()} marked as {new_status}.", "success")
     finally:
         db.close()
     return redirect(url_for("customer_detail", customer_id=customer_id))
@@ -815,6 +825,38 @@ def api_checklist():
             # Only advance forward, never go backward automatically
             if steps.index(step) > steps.index(current):
                 db.set_onboarding_step(customer_id, step)
+
+        # HTMX: return updated HTML
+        if request.headers.get("HX-Request"):
+            hx_target = request.headers.get("HX-Target", "")
+
+            if hx_target == "todo-list":
+                # Full todo list refresh (overview tab)
+                customer = db.get_customer(customer_id)
+                contacts = db.get_contacts(customer_id)
+                access_list = db.get_platform_access(customer_id)
+                places = db.get_google_places(customer_id)
+                runs_list = db.get_runs(customer_id)
+                staged = get_staging().is_staged(customer_id)
+                approved = get_staging().is_approved(customer_id)
+                cl = db.get_checklist(customer_id)
+                todos = _get_va_todos(customer, access_list, contacts, places, runs_list, staged, approved, cl)
+                return render_template("partials/todo_list.html", customer=customer, todos=todos)
+            else:
+                # Single item swap (SEO tab)
+                next_val = "false" if completed else "true"
+                done_cls = "done" if completed else ""
+                check_cls = "checked" if completed else ""
+                return f'''<div class="todo-item {done_cls}"
+                    hx-post="/api/checklist"
+                    hx-vals='{{"customer_id":"{customer_id}","task_key":"{task_key}","completed":{next_val}}}'
+                    hx-target="closest .todo-item"
+                    hx-swap="outerHTML"
+                    hx-headers='{{"Content-Type":"application/json"}}'
+                    style="cursor:pointer;">
+                    <div class="todo-check {check_cls}" title="Click to toggle"></div>
+                    <span>{task_key}</span>
+                </div>'''
 
         return jsonify({"ok": True})
     finally:
@@ -1327,6 +1369,21 @@ def run_detail(run_id):
         db.close()
 
 
+@app.route("/api/run/<int:run_id>/steps")
+@login_required
+def api_run_steps(run_id):
+    """HTMX endpoint: return run steps partial for live polling."""
+    db = get_db()
+    try:
+        run = db.get_run(run_id)
+        if not run:
+            return "", 404
+        steps = db.get_run_steps(run_id)
+        return render_template("partials/run_steps.html", run=run, steps=steps)
+    finally:
+        db.close()
+
+
 @app.route("/api/run/trigger", methods=["POST"])
 @login_required
 def api_trigger_run():
@@ -1347,6 +1404,8 @@ def api_trigger_run():
         try:
             run_id = db.create_run(customer_id)
         except InvalidTransition as e:
+            if request.headers.get("HX-Request"):
+                return f'<span style="color:var(--danger);font-size:0.85rem;">Already running</span>'
             flash(f"Cannot start run: {e}", "error")
             return redirect(url_for("customer_detail", customer_id=customer_id))
 
@@ -1373,7 +1432,12 @@ def api_trigger_run():
         subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, cwd=str(Path(__file__).resolve().parent.parent))
 
     logger.info(f"Triggered pipeline run {run_id} for {customer_id}")
-    flash(f"Pipeline run #{run_id} triggered for {customer['name']}. Check run detail for progress.", "success")
+
+    if request.headers.get("HX-Request"):
+        run_url = url_for("run_detail", run_id=run_id)
+        return f'<a href="{run_url}" style="font-size:0.85rem;">Run #{run_id} started &rarr;</a>'
+
+    flash(f"Pipeline run #{run_id} triggered for {customer['name']}.", "success")
     return redirect(url_for("run_detail", run_id=run_id))
 
 

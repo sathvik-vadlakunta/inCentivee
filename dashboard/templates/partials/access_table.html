@@ -1,0 +1,31 @@
+<table>
+    <thead><tr><th>Platform</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+    {% for a in access %}
+    <tr>
+        <td>{{ a.platform | upper }}</td>
+        <td>
+            <span class="badge badge-{{ a.status }}">{{ a.status | title }}</span>
+            {% if a.granted_at %}<span style="font-size:0.75rem; color:var(--muted);">{{ a.granted_at[:10] }}</span>{% endif %}
+        </td>
+        <td>
+            {% if a.status == 'pending' %}
+            <button class="btn btn-sm btn-success"
+                hx-post="{{ url_for('update_access', customer_id=customer.id) }}"
+                hx-vals='{"platform":"{{ a.platform }}","status":"granted"}'
+                hx-target="#access-table"
+                hx-swap="innerHTML">Grant</button>
+            <button class="btn btn-sm btn-outline"
+                hx-post="{{ url_for('update_access', customer_id=customer.id) }}"
+                hx-vals='{"platform":"{{ a.platform }}","status":"not_needed"}'
+                hx-target="#access-table"
+                hx-swap="innerHTML">N/A</button>
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% if not access %}
+<p style="color: var(--muted); font-size: 0.85rem;">No platform access configured.</p>
+{% endif %}
