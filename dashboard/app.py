@@ -1271,10 +1271,13 @@ def api_content_generate():
 @app.route("/customer/<customer_id>/archive", methods=["POST"])
 @login_required
 def archive_customer(customer_id):
+    from geo_agent.fsm import InvalidTransition
     db = get_db()
     try:
         db.set_customer_status(customer_id, "archived")
-        flash(f"Customer archived.", "success")
+        flash("Customer archived.", "success")
+    except InvalidTransition as e:
+        flash(f"Cannot archive: {e}", "error")
     finally:
         db.close()
     return redirect(url_for("index"))
@@ -1283,10 +1286,13 @@ def archive_customer(customer_id):
 @app.route("/customer/<customer_id>/restore", methods=["POST"])
 @login_required
 def restore_customer(customer_id):
+    from geo_agent.fsm import InvalidTransition
     db = get_db()
     try:
         db.set_customer_status(customer_id, "onboarding")
-        flash(f"Customer restored to onboarding.", "success")
+        flash("Customer restored to onboarding.", "success")
+    except InvalidTransition as e:
+        flash(f"Cannot restore: {e}", "error")
     finally:
         db.close()
     return redirect(url_for("customer_detail", customer_id=customer_id))
@@ -1336,8 +1342,14 @@ def api_trigger_run():
         if not customer:
             return jsonify({"error": "Customer not found"}), 404
 
-        # Create a run record with steps
-        run_id = db.create_run(customer_id)
+        # FSM guard: prevent concurrent runs for the same customer
+        from geo_agent.fsm import InvalidTransition
+        try:
+            run_id = db.create_run(customer_id)
+        except InvalidTransition as e:
+            flash(f"Cannot start run: {e}", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
         db.init_run_steps(run_id)
     finally:
         db.close()

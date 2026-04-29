@@ -317,6 +317,10 @@ class CustomerDB:
         return self.conn.total_changes > 0
 
     def set_customer_status(self, customer_id: str, status: str):
+        from geo_agent.fsm import validate_customer_transition
+        current = self.get_customer(customer_id)
+        if current:
+            validate_customer_transition(current["status"], status)
         updates = {"status": status}
         if status == "active":
             updates["onboarded_at"] = datetime.now(timezone.utc).isoformat()
@@ -549,6 +553,8 @@ class CustomerDB:
     # --- Runs ---
 
     def create_run(self, customer_id: str) -> int:
+        from geo_agent.fsm import check_no_active_run
+        check_no_active_run(self, customer_id)
         cur = self.conn.execute(
             "INSERT INTO runs (customer_id) VALUES (?)", (customer_id,)
         )
@@ -560,6 +566,13 @@ class CustomerDB:
             fields["changes_json"] = json.dumps(fields.pop("changes"))
         if "errors" in fields and isinstance(fields["errors"], list):
             fields["errors_json"] = json.dumps(fields.pop("errors"))
+
+        # Validate state transition if status is changing
+        if "status" in fields:
+            from geo_agent.fsm import validate_run_transition
+            cur_row = self.conn.execute("SELECT status FROM runs WHERE id = ?", (run_id,)).fetchone()
+            if cur_row:
+                validate_run_transition(cur_row["status"], fields["status"])
 
         set_clause = ", ".join(f"{k} = ?" for k in fields)
         values = list(fields.values()) + [run_id]
@@ -645,6 +658,14 @@ class CustomerDB:
 
     def start_step(self, run_id: int, step_name: str):
         """Mark a step as running."""
+        from geo_agent.fsm import validate_step_transition
+        cur = self.conn.execute(
+            "SELECT status FROM run_steps WHERE run_id = ? AND step_name = ?",
+            (run_id, step_name),
+        )
+        row = cur.fetchone()
+        if row:
+            validate_step_transition(row["status"], "running")
         self.conn.execute(
             """UPDATE run_steps SET status = 'running', started_at = ?
             WHERE run_id = ? AND step_name = ?""",
@@ -657,7 +678,15 @@ class CustomerDB:
         log_text: str = "", result: dict | None = None, error_message: str = "",
     ):
         """Mark a step as completed (success/failed/skipped)."""
+        from geo_agent.fsm import validate_step_transition
         now = datetime.now(timezone.utc).isoformat()
+        # Validate transition
+        cur_status = self.conn.execute(
+            "SELECT status FROM run_steps WHERE run_id = ? AND step_name = ?",
+            (run_id, step_name),
+        ).fetchone()
+        if cur_status:
+            validate_step_transition(cur_status["status"], status)
         # Calculate duration
         cur = self.conn.execute(
             "SELECT started_at FROM run_steps WHERE run_id = ? AND step_name = ?",
