@@ -21,9 +21,8 @@ To get started, we need access to a few key platforms. Here's what we need and h
 
 {platform_access_steps}
 
-**DNS / Cloudflare (we handle this):**
-- We'll need access to your domain's DNS settings (GoDaddy, Namecheap, etc.)
-- We'll set up Cloudflare for faster loading and better security (free)
+**DNS Access ({dns_registrar}):**
+- We'll need access to your domain registrar ({dns_registrar}) to set up Cloudflare for faster loading and better security (free, no impact on your existing setup)
 
 ---
 
@@ -32,6 +31,10 @@ All access is used solely for SEO optimization and reporting. We never modify yo
 If you have any questions about granting access, just reply to this email and we'll walk you through it.
 
 Best,
-Kody Doherty
+**Kody Doherty**
+Chief Technology Officer
 PracticeRank
+
+(925) 819-2663
 kdoherty@practicerank.ai
+practicerank.ai

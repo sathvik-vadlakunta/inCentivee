@@ -222,10 +222,12 @@ class CustomerDB:
             self.conn.execute(
                 "INSERT INTO schema_version (version) VALUES (?)", (SCHEMA_VERSION,)
             )
-        # Migration: add onboarding_step if missing
+        # Migrations
         cols = [r[1] for r in self.conn.execute("PRAGMA table_info(customers)").fetchall()]
         if "onboarding_step" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN onboarding_step TEXT NOT NULL DEFAULT 'new'")
+        if "hosting_info" not in cols:
+            self.conn.execute("ALTER TABLE customers ADD COLUMN hosting_info TEXT NOT NULL DEFAULT '{}'")
         self.conn.commit()
 
     def close(self):
@@ -345,6 +347,7 @@ class CustomerDB:
         d["insurance_accepted"] = json.loads(d.get("insurance_accepted", "[]"))
         d["competitors"] = json.loads(d.pop("competitors_json", "[]"))
         d["emergency_available"] = bool(d.get("emergency_available", 0))
+        d["hosting_info"] = json.loads(d.get("hosting_info", "{}"))
         return d
 
     def to_config_customer(self, customer_id: str) -> Customer | None:

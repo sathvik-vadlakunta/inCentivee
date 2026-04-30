@@ -20,6 +20,14 @@
         </button>
         <span id="run-status"></span>
         <a href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" class="btn btn-sm btn-outline" target="_blank">Case Study</a>
+        <form method="POST" action="{{ url_for('api_generate_report') }}" style="display:inline;">
+            <input type="hidden" name="customer_id" value="{{ customer.id }}">
+            <button type="submit" class="btn btn-sm btn-outline" onclick="this.textContent='Generating...'">Generate Report</button>
+        </form>
+        {% if report_exists %}
+        <a href="{{ url_for('download_report_docx', customer_id=customer.id) }}" class="btn btn-sm btn-outline">Download Report</a>
+        <a href="{{ url_for('download_report', customer_id=customer.id) }}" class="btn btn-sm btn-outline" title="ZIP with all deploy files">Download ZIP</a>
+        {% endif %}
         <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="display:inline;">
             <select name="status" onchange="this.form.submit()" style="width:auto; padding:0.3rem 0.5rem; font-size:0.8rem;">
                 <option value="" disabled selected>Change Status</option>
@@ -111,6 +119,51 @@
                     <tr><td style="color:var(--muted);">Specialties</td><td>{{ customer.specialties | join(', ') }}</td></tr>
                     {% endif %}
                 </table>
+
+                <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
+                    <div class="section-header" style="margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 0.85rem; color: var(--muted);">Infrastructure</h3>
+                        <form method="POST" action="{{ url_for('api_detect_hosting') }}" style="display:inline;">
+                            <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline" style="font-size:0.7rem; padding:0.15rem 0.5rem;" onclick="this.textContent='Detecting...'">{% if customer.hosting_info and customer.hosting_info != {} %}Refresh{% else %}Detect{% endif %}</button>
+                        </form>
+                    </div>
+                {% if customer.hosting_info and customer.hosting_info != {} %}
+                    <table>
+                        {% if customer.hosting_info.registrar %}
+                        <tr><td style="width:35%; color:var(--muted);">Registrar</td><td>{{ customer.hosting_info.registrar }}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.nameservers %}
+                        <tr><td style="color:var(--muted);">Nameservers</td><td>{{ customer.hosting_info.nameservers | join(', ') }}{% if customer.hosting_info.nameserver_owner %} <span style="font-size:0.75rem; color:var(--muted);">({{ customer.hosting_info.nameserver_owner }})</span>{% endif %}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.cms %}
+                        <tr><td style="color:var(--muted);">CMS</td><td>{{ customer.hosting_info.cms }}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.hosting %}
+                        <tr><td style="color:var(--muted);">Hosting</td><td>{{ customer.hosting_info.hosting }}{% if customer.hosting_info.cdn %} + {{ customer.hosting_info.cdn }}{% endif %}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.web_server %}
+                        <tr><td style="color:var(--muted);">Web Server</td><td>{{ customer.hosting_info.web_server }}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.a_record %}
+                        <tr><td style="color:var(--muted);">A Record</td><td style="font-family:monospace; font-size:0.8rem;">{{ customer.hosting_info.a_record }}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.cname %}
+                        <tr><td style="color:var(--muted);">CNAME (www)</td><td style="font-family:monospace; font-size:0.8rem;">{{ customer.hosting_info.cname }}</td></tr>
+                        {% endif %}
+                        {% if customer.hosting_info.domain_expiry %}
+                        <tr><td style="color:var(--muted);">Domain Expires</td><td>
+                            {{ customer.hosting_info.domain_expiry }}
+                            {% if customer.hosting_info.domain_expiry and customer.hosting_info.domain_expiry < now_iso %}
+                            <span class="badge" style="background:#fee2e2; color:#991b1b; font-size:0.7rem;">EXPIRED</span>
+                            {% endif %}
+                        </td></tr>
+                        {% endif %}
+                    </table>
+                {% else %}
+                    <p style="color: var(--muted); font-size: 0.8rem;">No hosting data yet. Click "Detect" to scan.</p>
+                {% endif %}
+                </div>
 
                 <div id="edit-form" style="display:none; margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border);">
                     <form method="POST" action="{{ url_for('edit_customer', customer_id=customer.id) }}">

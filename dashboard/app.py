@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
 
 from geo_agent.db import CustomerDB
 from geo_agent.staging import StagingManager
@@ -195,6 +195,14 @@ def customer_detail(customer_id):
         # Active alerts for this customer
         customer_alerts = db.get_alerts(customer_id, active_only=True, limit=10)
 
+        # Current date for template comparisons
+        now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+        # Check if a report exists for this customer
+        slug = re.sub(r'[^a-z0-9]+', '-', customer['name'].lower()).strip('-')
+        report_zip = Path(DATA_DIR) / "customers" / slug / f"{slug}-ai-optimization.zip"
+        report_exists = report_zip.exists()
+
         return render_template(
             "customer_detail.html",
             customer=customer, providers=providers, contacts=contacts,
@@ -203,6 +211,7 @@ def customer_detail(customer_id):
             diff_report=diff_report, todos=todos, email_templates=email_templates,
             seo_tasks=seo_tasks, content_pending=content_pending,
             content_recs=content_recs, customer_alerts=customer_alerts,
+            report_exists=report_exists, now_iso=now_iso,
         )
     finally:
         db.close()
@@ -256,6 +265,25 @@ def add_customer():
             if contact_name:
                 db.add_contact(customer_id, contact_name, contact_email, contact_phone, "owner")
 
+            # Auto-detect DNS/hosting infrastructure
+            try:
+                from geo_agent.hosting_detector import detect_hosting
+                hosting_info = detect_hosting(domain)
+                db.update_customer(customer_id, hosting_info=json.dumps(hosting_info))
+                # If CMS was detected, update platform
+                if hosting_info.get("cms") and platform in ("unknown", "auto"):
+                    cms = hosting_info["cms"].lower()
+                    if "wordpress" in cms:
+                        db.update_customer(customer_id, platform="wordpress")
+                    elif "webflow" in cms:
+                        db.update_customer(customer_id, platform="webflow")
+                    elif "squarespace" in cms:
+                        db.update_customer(customer_id, platform="squarespace")
+                    elif "wix" in cms:
+                        db.update_customer(customer_id, platform="wix")
+            except Exception as e:
+                logger.warning(f"Hosting detection failed for {domain}: {e}")
+
             # Set up platform access tracking
             access_platforms = ["gsc", "ga", "gbp", "cloudflare"]
             if platform in ("webflow", "squarespace", "wordpress"):
@@ -290,7 +318,7 @@ def api_discover():
         url = "https://" + url
     domain = urlparse(url).netloc.removeprefix("www.")
 
-    result = {"platform": "unknown", "places": None, "competitors": []}
+    result = {"platform": "unknown", "places": None, "competitors": [], "hosting": None}
 
     # Detect platform
     try:
@@ -298,6 +326,25 @@ def api_discover():
         result["platform"] = detect_platform(domain)
     except Exception:
         pass
+
+    # Detect DNS/hosting infrastructure
+    try:
+        from geo_agent.hosting_detector import detect_hosting
+        hosting = detect_hosting(domain)
+        result["hosting"] = hosting
+        # Override platform with CMS if detected
+        if hosting.get("cms"):
+            cms = hosting["cms"].lower()
+            if "wordpress" in cms:
+                result["platform"] = "wordpress"
+            elif "webflow" in cms:
+                result["platform"] = "webflow"
+            elif "squarespace" in cms:
+                result["platform"] = "squarespace"
+            elif "wix" in cms:
+                result["platform"] = "wix"
+    except Exception as e:
+        result["hosting_error"] = str(e)
 
     # Google Places lookup
     api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
@@ -554,6 +601,13 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{llms_hits}": _latest("llms_txt_hits"),
         "{prev_llms_hits}": _prev("llms_txt_hits"),
         "{llms_hits_delta}": _delta("llms_txt_hits"),
+        # Hosting/DNS info
+        "{dns_registrar}": (customer.get("hosting_info") or {}).get("registrar", "your domain registrar (GoDaddy, Namecheap, etc.)"),
+        "{dns_nameservers}": ", ".join((customer.get("hosting_info") or {}).get("nameservers", [])) or "unknown",
+        "{hosting_provider}": (customer.get("hosting_info") or {}).get("hosting", "unknown"),
+        "{cdn_provider}": (customer.get("hosting_info") or {}).get("cdn", "none"),
+        "{cms_platform}": (customer.get("hosting_info") or {}).get("cms", platform.title()),
+        "{domain_expiry}": (customer.get("hosting_info") or {}).get("domain_expiry", "unknown"),
         # Report content
         "{report_month}": report_month,
         "{changes_list}": changes_list,
@@ -996,6 +1050,146 @@ def case_studies():
             })
 
         return render_template("case_studies.html", aggregate=aggregate, customers=customer_data)
+    finally:
+        db.close()
+
+
+# --- Hosting Detection ---
+
+@app.route("/api/hosting/detect", methods=["POST"])
+@login_required
+def api_detect_hosting():
+    """Run DNS/hosting detection for a customer and save results."""
+    customer_id = request.form.get("customer_id")
+    if not customer_id:
+        flash("Missing customer_id", "error")
+        return redirect(url_for("customers"))
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("customers"))
+
+        from geo_agent.hosting_detector import detect_hosting
+        hosting_info = detect_hosting(customer["domain"])
+        db.update_customer(customer_id, hosting_info=json.dumps(hosting_info))
+
+        # Auto-update platform if detected
+        if hosting_info.get("cms") and customer.get("platform") in ("unknown", "auto", ""):
+            cms = hosting_info["cms"].lower()
+            for keyword, platform in [("wordpress", "wordpress"), ("webflow", "webflow"),
+                                       ("squarespace", "squarespace"), ("wix", "wix")]:
+                if keyword in cms:
+                    db.update_customer(customer_id, platform=platform)
+                    break
+
+        flash(f"Hosting detected: {hosting_info.get('summary', 'Unknown')}", "success")
+    except Exception as e:
+        logger.exception("Hosting detection failed")
+        flash(f"Hosting detection failed: {e}", "error")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
+# --- AI Search Report ---
+
+@app.route("/api/report/generate", methods=["POST"])
+@login_required
+def api_generate_report():
+    """Generate AI Search Optimization report for a customer."""
+    customer_id = request.form.get("customer_id") or request.json.get("customer_id")
+    if not customer_id:
+        flash("Missing customer_id", "error")
+        return redirect(url_for("customers"))
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("customers"))
+
+        providers = db.get_providers(customer_id)
+        services = db.get_services(customer_id)
+        places = db.get_google_places(customer_id)
+
+        from geo_agent.report_generator import generate_report
+        result = generate_report(
+            customer=customer,
+            providers=providers,
+            services=services,
+            places=places,
+            data_dir=DATA_DIR,
+        )
+
+        flash(f"Report generated — score: {result['scores']['overall']}/100. "
+              f"{len(result['files'])} files created.", "success")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+    except Exception as e:
+        logger.exception("Report generation failed")
+        flash(f"Report generation failed: {e}", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/report/download")
+@login_required
+def download_report(customer_id):
+    """Download the generated report ZIP for a customer."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("customers"))
+
+        import re as _re
+        slug = _re.sub(r'[^a-z0-9]+', '-', customer['name'].lower()).strip('-')
+        zip_path = Path(DATA_DIR) / "customers" / slug / f"{slug}-ai-optimization.zip"
+
+        if not zip_path.exists():
+            flash("No report found — generate one first.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        return send_file(
+            str(zip_path),
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name=f"{slug}-ai-optimization.zip",
+        )
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/report/download-docx")
+@login_required
+def download_report_docx(customer_id):
+    """Download just the DOCX report for a customer."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            flash("Customer not found", "error")
+            return redirect(url_for("customers"))
+
+        import re as _re
+        slug = _re.sub(r'[^a-z0-9]+', '-', customer['name'].lower()).strip('-')
+        docx_path = Path(DATA_DIR) / "customers" / slug / "ai-search-optimization-report.docx"
+
+        if not docx_path.exists():
+            flash("No report found — generate one first.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        return send_file(
+            str(docx_path),
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            as_attachment=True,
+            download_name=f"{slug}-ai-search-report.docx",
+        )
     finally:
         db.close()
 
