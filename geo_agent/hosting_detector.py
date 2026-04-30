@@ -9,11 +9,15 @@ from __future__ import annotations
 import logging
 import re
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import httpx
 
 logger = logging.getLogger("practicerank.hosting")
+
+# Strict domain validation — only allow safe characters
+_DOMAIN_RE = re.compile(r'^[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?$')
 
 # Known hosting/CDN signatures from HTTP headers
 HOSTING_SIGNATURES = {
@@ -42,7 +46,6 @@ HOSTING_SIGNATURES = {
 CMS_SIGNATURES = {
     "wp-content": "WordPress",
     "wp-includes": "WordPress",
-    "wordpress": "WordPress",
     "squarespace": "Squarespace",
     "webflow": "Webflow",
     "wix.com": "Wix",
@@ -74,12 +77,43 @@ NAMESERVER_OWNERS = {
 }
 
 
+def _validate_domain(domain: str) -> str:
+    """Validate and clean a domain string. Raises ValueError if invalid."""
+    # Parse URL if full URL was passed
+    if "://" in domain:
+        parsed = urlparse(domain)
+        domain = parsed.hostname or ""
+    else:
+        # Strip paths, ports, query strings
+        domain = domain.split("/")[0].split("?")[0].split("#")[0]
+        if ":" in domain:
+            domain = domain.split(":")[0]
+
+    domain = domain.removeprefix("www.").strip().rstrip(".")
+
+    if not domain:
+        raise ValueError("Empty domain")
+    if not _DOMAIN_RE.match(domain):
+        raise ValueError(f"Invalid domain: {domain!r}")
+    if len(domain) > 253:
+        raise ValueError(f"Domain too long: {len(domain)} chars")
+
+    return domain
+
+
 def _run_cmd(cmd: list[str], timeout: int = 10) -> str:
     """Run a shell command and return stdout."""
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         return result.stdout
-    except Exception:
+    except FileNotFoundError:
+        logger.warning(f"Command not found: {cmd[0]}")
+        return ""
+    except subprocess.TimeoutExpired:
+        logger.warning(f"Command timed out: {' '.join(cmd)}")
+        return ""
+    except Exception as e:
+        logger.warning(f"Command failed: {' '.join(cmd)}: {e}")
         return ""
 
 
@@ -92,14 +126,14 @@ def _detect_nameservers(domain: str) -> list[str]:
 def _detect_a_record(domain: str) -> str:
     """Get A record for a domain."""
     out = _run_cmd(["dig", domain, "A", "+short"])
-    lines = [l.strip() for l in out.strip().split('\n') if l.strip()]
+    lines = [line.strip() for line in out.strip().split('\n') if line.strip()]
     return lines[0] if lines else ""
 
 
 def _detect_cname(domain: str) -> str:
     """Get CNAME for www subdomain."""
     out = _run_cmd(["dig", f"www.{domain}", "CNAME", "+short"])
-    lines = [l.strip().rstrip('.') for l in out.strip().split('\n') if l.strip()]
+    lines = [line.strip().rstrip('.') for line in out.strip().split('\n') if line.strip()]
     return lines[0] if lines else ""
 
 
@@ -110,14 +144,17 @@ def _detect_registrar(domain: str) -> dict:
 
     for line in out.split('\n'):
         line_lower = line.lower().strip()
-        if 'registrar:' in line_lower and not info["registrar"]:
+
+        # Skip URL lines first (must come before the generic "registrar:" check)
+        if 'registrar url:' in line_lower or 'registrar iana' in line_lower:
+            continue
+
+        if line_lower.startswith('registrar:') and not info["registrar"]:
             info["registrar"] = line.split(':', 1)[1].strip()
-        elif 'registrar url:' in line_lower:
-            pass  # skip URL line
         elif 'expir' in line_lower and 'date' in line_lower and not info["domain_expiry"]:
             val = line.split(':', 1)[1].strip() if ':' in line else ""
             if val:
-                info["domain_expiry"] = val[:10]  # Just the date part
+                info["domain_expiry"] = val[:10]
         elif 'creation date' in line_lower and not info["creation_date"]:
             val = line.split(':', 1)[1].strip() if ':' in line else ""
             if val:
@@ -133,11 +170,13 @@ def _detect_hosting_from_headers(domain: str) -> dict:
     try:
         r = httpx.get(f"https://{domain}", timeout=15, follow_redirects=True,
                       headers={"User-Agent": "PracticeRank-Auditor/1.0"})
-    except Exception:
+    except Exception as e:
+        logger.debug(f"HTTPS request to {domain} failed: {e}")
         try:
             r = httpx.get(f"https://www.{domain}", timeout=15, follow_redirects=True,
                           headers={"User-Agent": "PracticeRank-Auditor/1.0"})
-        except Exception:
+        except Exception as e2:
+            logger.debug(f"HTTPS request to www.{domain} also failed: {e2}")
             return info
 
     headers = {k.lower(): v.lower() for k, v in r.headers.items()}
@@ -180,11 +219,11 @@ def _detect_hosting_from_headers(domain: str) -> dict:
         if theme_match:
             info["cms"] = f"WordPress ({theme_match.group(1)} theme)"
 
-    # Platform-specific detection
+    # Platform-specific header detection
     if "x-wix-request-id" in headers:
         info["hosting"] = "Wix"
         info["cms"] = "Wix"
-    elif "x-shopify" in str(headers):
+    elif any(k.startswith("x-shopify") for k in headers):
         info["hosting"] = "Shopify"
         info["cms"] = "Shopify"
 
@@ -210,10 +249,8 @@ def detect_hosting(domain: str) -> dict:
 
     Returns a dict with all discovered infrastructure details.
     """
+    domain = _validate_domain(domain)
     logger.info(f"Detecting hosting for {domain}")
-
-    # Clean domain
-    domain = domain.removeprefix("https://").removeprefix("http://").removeprefix("www.").rstrip("/")
 
     result = {
         "domain": domain,
@@ -228,7 +265,7 @@ def detect_hosting(domain: str) -> dict:
         "cms": "",
         "domain_expiry": "",
         "creation_date": "",
-        "detected_at": datetime.utcnow().isoformat() + "Z",
+        "detected_at": datetime.now(timezone.utc).isoformat(),
     }
 
     # DNS lookups

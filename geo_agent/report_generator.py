@@ -10,8 +10,8 @@ import json
 import logging
 import os
 import re
-import shutil
 import zipfile
+from datetime import date
 from pathlib import Path
 from textwrap import dedent
 
@@ -26,13 +26,22 @@ logger = logging.getLogger("practicerank.report")
 def _fetch(url: str, timeout: int = 15) -> str | None:
     """Fetch URL text, return None on failure."""
     try:
-        r = httpx.get(url, timeout=timeout, follow_redirects=True,
-                      headers={"User-Agent": "PracticeRank-Auditor/1.0"})
-        if r.status_code < 400:
-            return r.text
-    except Exception:
-        pass
-    return None
+        with httpx.stream("GET", url, timeout=timeout, follow_redirects=True,
+                          headers={"User-Agent": "PracticeRank-Auditor/1.0"}) as r:
+            if r.status_code >= 400:
+                return None
+            # Limit to 2MB to avoid memory issues
+            chunks = []
+            total = 0
+            for chunk in r.iter_text():
+                total += len(chunk)
+                if total > 2_000_000:
+                    break
+                chunks.append(chunk)
+            return "".join(chunks)
+    except Exception as e:
+        logger.debug(f"Failed to fetch {url}: {e}")
+        return None
 
 
 def _check_file_exists(domain: str, path: str) -> bool:
@@ -82,25 +91,6 @@ def _extract_text_content(html: str, after: str | None = None) -> str:
     html = re.sub(r'<[^>]+>', ' ', html)
     return re.sub(r'\s+', ' ', html).strip()
 
-
-def _extract_doctors(html: str) -> list[dict]:
-    """Extract doctor names and bios from a doctors page."""
-    doctors = []
-    # Pattern: "Dr. FirstName LastName" followed by bio text
-    for m in re.finditer(r'(Dr\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)', html):
-        name = m.group(1).strip()
-        # Get bio text after the name (up to next Dr. or end)
-        start = m.end()
-        next_dr = re.search(r'Dr\.\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+', html[start:])
-        end = start + next_dr.start() if next_dr else start + 2000
-        bio_raw = html[start:end]
-        # Clean up
-        bio = re.sub(r'<[^>]+>', ' ', bio_raw)
-        bio = re.sub(r'\s+', ' ', bio).strip()
-        bio = bio[:500]  # Truncate
-        if name not in [d['name'] for d in doctors]:
-            doctors.append({'name': name, 'bio': bio})
-    return doctors
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +194,7 @@ def _generate_llms_txt(customer: dict, providers: list, services: list) -> str:
     # Summary line
     spec_text = ", ".join(specialties[:5]) if specialties else "general, cosmetic, and restorative dentistry"
     lines.append(f"> Dental practice in {city}, {state} offering {spec_text}. "
-                 f"{''.join(f'{len(providers)} providers. ' if providers else '')}"
+                 f"{f'{len(providers)} providers. ' if providers else ''}"
                  f"Serving {city} and surrounding communities.")
     lines.append("")
 
@@ -709,8 +699,15 @@ def generate_report(customer: dict, providers: list, services: list,
     Returns:
         dict with keys: output_dir, zip_path, files (list of generated file paths)
     """
-    slug = re.sub(r'[^a-z0-9]+', '-', customer['name'].lower()).strip('-')
+    name = customer.get('name', '')
+    if not name:
+        raise ValueError("Customer must have a name")
+    slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    if not slug:
+        raise ValueError(f"Could not generate slug from customer name: {name!r}")
     domain = customer.get('domain', '')
+    if not domain:
+        raise ValueError("Customer must have a domain")
 
     # Ensure www variant
     www_domain = domain if domain.startswith('www.') else f'www.{domain}'
@@ -765,8 +762,8 @@ def generate_report(customer: dict, providers: list, services: list,
 
     # Places data
     if places:
-        site_data['rating'] = places.get('rating', 0)
-        site_data['review_count'] = places.get('review_count', 0)
+        site_data['rating'] = places.get('rating') or 0
+        site_data['review_count'] = places.get('review_count') or 0
 
     # ---- Calculate scores ----
     scores = _calculate_scores(site_data)
@@ -811,7 +808,7 @@ def generate_report(customer: dict, providers: list, services: list,
     report_md = f"""# AI Search Optimization Report: {customer['name']}
 
 **Prepared for:** {customer['name']} ({city}, {state})
-**Date:** {__import__('datetime').date.today().strftime('%B %d, %Y')}
+**Date:** {date.today().strftime('%B %d, %Y')}
 **Prepared by:** PracticeRank AI Search Optimization
 
 ---

@@ -534,11 +534,14 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         vals = kpis.get(metric, [])
         if len(vals) < 2:
             return "—"
-        curr, prev = vals[0]["value"], vals[1]["value"]
+        try:
+            curr, prev = float(vals[0]["value"]), float(vals[1]["value"])
+        except (TypeError, ValueError):
+            return "—"
         diff = curr - prev
         if diff > 0:
-            return f"+{diff}"
-        return str(diff)
+            return f"+{diff:g}"
+        return f"{diff:g}"
 
     # Build changes list from most recent run
     changes_list = "- No changes recorded"
@@ -1100,7 +1103,7 @@ def api_detect_hosting():
 @login_required
 def api_generate_report():
     """Generate AI Search Optimization report for a customer."""
-    customer_id = request.form.get("customer_id") or request.json.get("customer_id")
+    customer_id = request.form.get("customer_id") or (request.json or {}).get("customer_id")
     if not customer_id:
         flash("Missing customer_id", "error")
         return redirect(url_for("customers"))
@@ -1212,15 +1215,21 @@ def analytics():
             mention_kpis = db.get_kpis(c["id"], "ai_mentions", limit=2)
             position_kpis = db.get_kpis(c["id"], "ai_avg_position", limit=2)
 
-            current_hits = hits_kpis[0]["value"] if hits_kpis else 0
-            prev_hits = hits_kpis[1]["value"] if len(hits_kpis) > 1 else 0
+            def _num(kpi_list, idx=0, default=0):
+                try:
+                    return float(kpi_list[idx]["value"]) if len(kpi_list) > idx else default
+                except (TypeError, ValueError):
+                    return default
+
+            current_hits = _num(hits_kpis)
+            prev_hits = _num(hits_kpis, 1)
             hits_delta = current_hits - prev_hits
 
-            current_reviews = review_kpis[0]["value"] if review_kpis else 0
-            prev_reviews = review_kpis[1]["value"] if len(review_kpis) > 1 else 0
+            current_reviews = _num(review_kpis)
+            prev_reviews = _num(review_kpis, 1)
 
-            current_mentions = mention_kpis[0]["value"] if mention_kpis else 0
-            avg_position = position_kpis[0]["value"] if position_kpis else None
+            current_mentions = _num(mention_kpis)
+            avg_position = _num(position_kpis, default=None)
 
             analytics_data.append({
                 "id": c["id"],
