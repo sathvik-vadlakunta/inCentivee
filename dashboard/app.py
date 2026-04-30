@@ -508,6 +508,7 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "webflow": "**Webflow** — Add kdoherty@practicerank.ai as a site collaborator\n   - Go to Site Settings > Members > Add collaborator\n   - Also generate an API token: Site Settings > Apps & Integrations > Generate API Token",
         "squarespace": "**Squarespace** — Add kdoherty@practicerank.ai as a contributor\n   - Go to Settings > Permissions > Contributors > Invite contributor",
         "wordpress": "**WordPress** — Create an admin account for kdoherty@practicerank.ai\n   - Go to Users > Add New > Set role to Administrator",
+        "shopify": "**Shopify** — Create a custom app for API access\n   - Go to Settings > Apps and sales channels > Develop apps\n   - Click \"Allow custom app development\" (if not already enabled)\n   - Click \"Create an app\" — name it \"PracticeRank\"\n   - Under Configuration > Admin API integration, click Configure and enable:\n     - `read_themes` / `write_themes`\n     - `read_content` / `write_content`\n     - `read_products` / `write_products`\n     - `read_online_store_pages` / `write_online_store_pages`\n   - Click Install app, then send us the Admin API access token",
     }
     access_steps = platform_steps.get(platform, f"**{platform.title()}** — Please share login or collaborator access")
 

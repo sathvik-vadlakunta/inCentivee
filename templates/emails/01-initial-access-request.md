@@ -22,7 +22,9 @@ To get started, we need access to a few key platforms. Here's what we need and h
 {platform_access_steps}
 
 **DNS Access ({dns_registrar}):**
-- We'll need access to your domain registrar ({dns_registrar}) to set up Cloudflare for faster loading and better security (free, no impact on your existing setup)
+- We'll need access to your DNS registrar ({dns_registrar}) to set up Cloudflare for faster loading, better security, and AI search discoverability (free, no impact on your existing setup)
+- Option A: Add kdoherty@practicerank.ai as a delegate in your registrar account
+- Option B: Share DNS login credentials so we can point DNS to Cloudflare
 
 ---
 
