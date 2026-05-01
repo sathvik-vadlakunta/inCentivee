@@ -708,6 +708,8 @@ def generate_report(customer: dict, providers: list, services: list,
     domain = customer.get('domain', '')
     if not domain:
         raise ValueError("Customer must have a domain")
+    city = customer.get('city', '')
+    state = customer.get('state', '')
 
     # Ensure www variant
     www_domain = domain if domain.startswith('www.') else f'www.{domain}'
