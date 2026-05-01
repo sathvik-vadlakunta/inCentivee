@@ -466,139 +466,272 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     city = customer.get('city', '')
     state = customer.get('state', '')
     domain = customer.get('domain', '')
+    hosting_info = customer.get('hosting_info') or {}
+    platform = customer.get('platform', 'unknown').title()
+    address = customer.get('address', '')
+    phone = customer.get('phone', '')
+    zipcode = customer.get('zip', '')
 
-    # Title page
+    def _grade(score):
+        if score >= 90: return 'A'
+        if score >= 80: return 'B'
+        if score >= 70: return 'C'
+        if score >= 60: return 'D'
+        return 'F'
+
+    schema_types = site_data.get('schema_types', [])
+
+    # ---- Title page ----
+    doc.add_paragraph()
     title = doc.add_heading('AI Search Optimization Report', level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     sub = doc.add_paragraph()
     sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = sub.add_run(f'{name} — {city}, {state}')
+    run = sub.add_run(f'{name} — {domain}')
     run.font.size = Pt(16)
     run.font.color.rgb = RGBColor(0x2B, 0x57, 0x97)
 
     meta = doc.add_paragraph()
     meta.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    meta.add_run('Prepared by: PracticeRank AI Search Optimization\n').font.size = Pt(10)
-    from datetime import date
-    meta.add_run(f'Date: {date.today().strftime("%B %d, %Y")}\n').font.size = Pt(10)
-    meta.add_run('Contact: kdoherty@practicerank.ai').font.size = Pt(10)
+    from datetime import date as _date
+    meta.add_run(f'Report Date: {_date.today().strftime("%B %d, %Y")}\n').font.size = Pt(11)
+    meta.add_run('Prepared by: PracticeRank AI Audit Engine\n').font.size = Pt(11)
+    meta.add_run('Contact: kdoherty@practicerank.ai | (925) 819-2663').font.size = Pt(10)
 
     doc.add_page_break()
 
-    # Executive Summary
+    # ---- Executive Summary ----
     doc.add_heading('Executive Summary', level=1)
     doc.add_paragraph(
         f'{name} is a dental practice in {city}, {state} with a website at {domain}. '
-        f'This report analyzes the practice\'s current AI search visibility and provides '
-        f'actionable recommendations to improve discoverability in AI-powered search engines '
-        f'like ChatGPT, Claude, Perplexity, and Google AI Overviews.'
+        f'This report analyzes the practice\'s current search visibility across both traditional search engines '
+        f'and AI-powered search (ChatGPT, Claude, Perplexity, Google AI Overviews) and provides actionable '
+        f'recommendations with deploy-ready files.'
     )
+    overall = scores['overall']
+    projected = min(overall + 40, 95)
+    summary_p = doc.add_paragraph()
+    summary_p.add_run(f'The site scores {overall}/100 overall').bold = True
+    gap_text = f' with {"critical gaps" if overall < 50 else "notable opportunities"} in AI search readiness ({scores["aeo"]}/100)'
+    if scores['technical_seo'] < 60:
+        gap_text += f' and technical SEO ({scores["technical_seo"]}/100)'
+    gap_text += '.'
+    summary_p.add_run(gap_text)
 
+    # Key findings
     p = doc.add_paragraph()
-    run = p.add_run('Key findings: ')
-    run.bold = True
-
-    issues = []
+    p.add_run('Key findings:').bold = True
+    findings = []
     if not site_data.get('has_llms_txt'):
-        issues.append('No llms.txt file (AI discoverability standard)')
+        findings.append('No llms.txt file — completely invisible to AI assistants')
     if not site_data.get('has_ai_robots'):
-        issues.append('No AI crawler permissions in robots.txt')
-    if 'FAQPage' not in site_data.get('schema_types', []):
-        issues.append('No FAQPage schema markup')
-    if 'Person' not in site_data.get('schema_types', []):
-        issues.append('No Person schema for providers')
-    if not issues:
-        issues.append('Good foundation — see recommendations for further optimization')
+        findings.append('No AI bot permissions in robots.txt')
+    if not schema_types:
+        findings.append('No schema markup found')
+    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types:
+        findings.append(f'Schema incomplete — found {", ".join(schema_types)} but no Dentist/LocalBusiness')
+    if 'FAQPage' not in schema_types:
+        findings.append('No FAQPage schema for AI answer extraction')
+    if 'Person' not in schema_types:
+        findings.append('No Person schema — doctors invisible to AI')
+    if not site_data.get('has_analytics'):
+        findings.append('No analytics tracking detected')
+    if not findings:
+        findings.append('Good foundation — see recommendations for optimization')
+    for f in findings:
+        doc.add_paragraph(f, style='List Bullet')
 
-    for issue in issues:
-        doc.add_paragraph(issue, style='List Bullet')
+    doc.add_page_break()
 
-    # Scores
-    doc.add_heading(f'Current Score: {scores["overall"]}/100', level=2)
+    # ---- Scores ----
+    doc.add_heading(f'Overall Score: {overall}/100', level=1)
     score_table = doc.add_table(rows=6, cols=3)
     score_table.style = 'Light Shading Accent 1'
-    for i, h in enumerate(['Category', 'Score', 'Notes']):
+    for i, h in enumerate(['Category', 'Score', 'Grade']):
         score_table.rows[0].cells[i].text = h
-        for p in score_table.rows[0].cells[i].paragraphs:
-            for r in p.runs:
+        for para in score_table.rows[0].cells[i].paragraphs:
+            for r in para.runs:
                 r.bold = True
     score_rows = [
-        ('Technical SEO', f'{scores["technical_seo"]}/100',
-         f'{len(site_data.get("schema_types", []))} schema types, {site_data.get("pages_indexed", 0)} pages'),
-        ('AI Search Readiness', f'{scores["aeo"]}/100',
-         f'llms.txt: {"Yes" if site_data.get("has_llms_txt") else "No"}, AI robots: {"Yes" if site_data.get("has_ai_robots") else "No"}'),
-        ('Content Quality', f'{scores["content_quality"]}/100',
-         f'{site_data.get("pages_indexed", 0)} pages indexed'),
-        ('Local Visibility', f'{scores["local_visibility"]}/100',
-         f'Rating: {site_data.get("rating", "N/A")}, Reviews: {site_data.get("review_count", "N/A")}'),
-        ('Review Presence', f'{scores["review_presence"]}/100',
-         f'{site_data.get("review_count", 0)} reviews'),
+        ('Technical SEO', scores['technical_seo']),
+        ('AI Search Readiness (AEO)', scores['aeo']),
+        ('Content Quality', scores['content_quality']),
+        ('Local Visibility', scores['local_visibility']),
+        ('Review Presence', scores['review_presence']),
     ]
-    for i, (cat, score, notes) in enumerate(score_rows):
+    for i, (cat, s) in enumerate(score_rows):
         score_table.rows[i + 1].cells[0].text = cat
-        score_table.rows[i + 1].cells[1].text = score
-        score_table.rows[i + 1].cells[2].text = notes
+        score_table.rows[i + 1].cells[1].text = f'{s}/100'
+        score_table.rows[i + 1].cells[2].text = _grade(s)
 
-    # Projected
-    projected = min(scores['overall'] + 40, 95)
     p = doc.add_paragraph()
-    run = p.add_run(f'\nProjected Improvement: {scores["overall"]} → {projected}/100 after implementation')
+    run = p.add_run(f'\nProjected Improvement: {overall} -> {projected}/100 after implementation')
     run.bold = True
     run.font.color.rgb = RGBColor(0x05, 0x6F, 0x46)
 
     doc.add_page_break()
 
-    # Business Snapshot
+    # ---- Infrastructure Summary ----
+    doc.add_heading('Infrastructure Summary', level=1)
+    infra_data = [
+        ('Platform', f'{platform}{" (" + hosting_info.get("cms", "") + ")" if hosting_info.get("cms") and hosting_info.get("cms","").lower() != platform.lower() else ""}'),
+        ('Hosting', hosting_info.get('hosting', 'Unknown')),
+        ('CDN', hosting_info.get('cdn', 'None detected')),
+        ('Registrar', hosting_info.get('registrar', 'Unknown')),
+        ('Nameservers', ', '.join(hosting_info.get('nameservers', [])) or 'Unknown'),
+        ('A Record', hosting_info.get('a_record', 'Unknown')),
+        ('CNAME (www)', hosting_info.get('cname', 'None')),
+        ('Web Server', hosting_info.get('web_server', 'Unknown')),
+        ('SSL', 'Active'),
+        ('Domain Expiry', hosting_info.get('domain_expiry', 'Unknown')),
+    ]
+    infra_table = doc.add_table(rows=len(infra_data), cols=2)
+    infra_table.style = 'Light Shading Accent 1'
+    for i, (field, val) in enumerate(infra_data):
+        infra_table.rows[i].cells[0].text = field
+        infra_table.rows[i].cells[1].text = str(val)
+        for para in infra_table.rows[i].cells[0].paragraphs:
+            for r in para.runs:
+                r.bold = True
+
+    # ---- Business Snapshot ----
     doc.add_heading('Business Snapshot', level=1)
     biz_data = [
         ('Business Name', name),
         ('Website', domain),
-        ('Address', f'{customer.get("address", "")}, {city}, {state} {customer.get("zip", "")}'),
-        ('Phone', customer.get('phone', '')),
-        ('Platform', customer.get('platform', 'unknown').title()),
+        ('Address', f'{address}, {city}, {state} {zipcode}'.strip(', ')),
+        ('Phone', phone),
+        ('Google Rating', f'{site_data.get("rating", "N/A")} ({site_data.get("review_count", 0)} reviews)'),
     ]
     biz_table = doc.add_table(rows=len(biz_data), cols=2)
     biz_table.style = 'Light Shading Accent 1'
     for i, (field, val) in enumerate(biz_data):
         biz_table.rows[i].cells[0].text = field
         biz_table.rows[i].cells[1].text = str(val)
-        for p in biz_table.rows[i].cells[0].paragraphs:
-            for r in p.runs:
+        for para in biz_table.rows[i].cells[0].paragraphs:
+            for r in para.runs:
                 r.bold = True
 
     if providers:
         doc.add_heading('Providers', level=2)
-        for p in providers:
+        for prov in providers:
             para = doc.add_paragraph()
-            run = para.add_run(f'{p["name"]} — ')
+            run = para.add_run(f'{prov["name"]}')
             run.bold = True
-            para.add_run(p.get('bio', '') or p.get('credentials', ''))
+            creds = prov.get('credentials', '') or prov.get('bio', '')
+            if creds:
+                para.add_run(f' — {creds}')
 
     doc.add_page_break()
 
-    # Issues & Fixes
-    doc.add_heading('Technical Issues & Fixes', level=1)
+    # ---- Detailed Audit: Technical SEO ----
+    doc.add_heading(f'1. Technical SEO Audit ({scores["technical_seo"]}/100 — {_grade(scores["technical_seo"])})', level=1)
+
+    doc.add_heading("What's Working", level=2)
+    working = ['HTTPS active with SSL certificate']
+    if site_data.get('has_sitemap'):
+        working.append(f'Sitemap.xml present ({site_data["pages_indexed"]} pages indexed)')
+    if schema_types:
+        working.append(f'Schema types found: {", ".join(schema_types)}')
+    if site_data.get('has_analytics'):
+        working.append('Analytics tracking installed')
+    for w in working:
+        doc.add_paragraph(w, style='List Bullet')
+
+    doc.add_heading('Issues Found', level=2)
+    if not schema_types:
+        doc.add_heading('No Schema Markup', level=3)
+        doc.add_paragraph(
+            'The site has zero JSON-LD structured data. Search engines and AI models rely on schema '
+            'to understand entities, services, and relationships. Missing: Dentist, FAQPage, Person, '
+            'MedicalProcedure, BreadcrumbList, AggregateRating.')
+    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types:
+        doc.add_heading('Incomplete Schema Markup', level=3)
+        doc.add_paragraph(
+            f'Found: {", ".join(schema_types)}. Missing critical types: Dentist/LocalBusiness, '
+            'FAQPage, Person, MedicalProcedure, BreadcrumbList.')
+    if not site_data.get('has_analytics'):
+        doc.add_heading('No Analytics Tracking', level=3)
+        doc.add_paragraph(
+            'No Google Analytics 4, Google Tag Manager, or other analytics platform detected. '
+            'Without analytics there is no visibility into traffic, conversions, or user behavior.')
+    if site_data.get('pages_indexed', 0) < 15:
+        doc.add_heading('Low Page Count', level=3)
+        doc.add_paragraph(
+            f'Only {site_data["pages_indexed"]} pages indexed. Practices with 30+ pages of quality '
+            'content rank significantly better in both traditional and AI search.')
+
+    doc.add_page_break()
+
+    # ---- Detailed Audit: AEO ----
+    doc.add_heading(f'2. AI Search Readiness — AEO ({scores["aeo"]}/100 — {_grade(scores["aeo"])})', level=1)
+
+    aeo_checks = [
+        ('llms.txt', site_data.get('has_llms_txt'), 'Found', 'NOT FOUND — AI assistants cannot discover this practice'),
+        ('AI bot permissions', site_data.get('has_ai_robots'), 'Configured', 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'),
+        ('FAQPage schema', 'FAQPage' in schema_types, 'Present', 'Missing — cannot appear in AI FAQ answers'),
+        ('Person schema', 'Person' in schema_types, 'Present', 'Missing — doctors invisible to AI'),
+        ('Dentist schema', any(t in schema_types for t in ['Dentist', 'LocalBusiness']), 'Present', 'Missing — practice not typed for AI'),
+    ]
+    aeo_table = doc.add_table(rows=len(aeo_checks) + 1, cols=2)
+    aeo_table.style = 'Light Shading Accent 1'
+    aeo_table.rows[0].cells[0].text = 'Check'
+    aeo_table.rows[0].cells[1].text = 'Status'
+    for para in aeo_table.rows[0].cells[0].paragraphs:
+        for r in para.runs:
+            r.bold = True
+    for para in aeo_table.rows[0].cells[1].paragraphs:
+        for r in para.runs:
+            r.bold = True
+    for i, (check, passed, yes_text, no_text) in enumerate(aeo_checks):
+        aeo_table.rows[i + 1].cells[0].text = check
+        aeo_table.rows[i + 1].cells[1].text = yes_text if passed else no_text
+
+    if not site_data.get('has_llms_txt'):
+        doc.add_paragraph()
+        doc.add_heading('No llms.txt File', level=3)
+        doc.add_paragraph(
+            'The llms.txt standard is the emerging way to make your business discoverable by AI assistants. '
+            'Without it, when someone asks ChatGPT "best dentist in ' + (city or 'your area') + '," '
+            'your practice is invisible to the AI\'s knowledge base.')
+    if not site_data.get('has_ai_robots'):
+        doc.add_heading('No AI Bot Permissions', level=3)
+        doc.add_paragraph(
+            'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
+            'Google-Extended, PerplexityBot, Applebot-Extended). Explicit Allow directives signal intent '
+            'and improve crawl priority for AI-powered search engines.')
+
+    doc.add_page_break()
+
+    # ---- Issues & Fixes Table ----
+    doc.add_heading('3. All Issues — Priority Matrix', level=1)
     fix_data = []
     if not site_data.get('has_llms_txt'):
-        fix_data.append(('CRITICAL', 'No llms.txt', 'AI assistants can\'t discover practice', 'Deploy llms.txt'))
+        fix_data.append(('CRITICAL', 'No llms.txt', 'Invisible to AI assistants', 'Deploy llms.txt to site root'))
     if not site_data.get('has_ai_robots'):
-        fix_data.append(('CRITICAL', 'No AI crawler permissions', 'AI bots may not crawl', 'Update robots.txt'))
-    if 'FAQPage' not in site_data.get('schema_types', []):
-        fix_data.append(('HIGH', 'No FAQPage schema', 'Missing from AI answers', 'Add FAQ schema'))
-    if 'Person' not in site_data.get('schema_types', []):
-        fix_data.append(('HIGH', 'No Person schema', 'Doctors not in AI results', 'Add Person schema'))
-    fix_data.append(('HIGH', 'Service pages lack expert quotes', '37-40% less AI citations', 'Add Dr. quotes'))
-    fix_data.append(('MEDIUM', 'No neighborhood pages', 'Missing local queries', 'Create area pages'))
-    fix_data.append(('LOW', 'No blog content', 'No freshness signals', 'Start monthly blog'))
+        fix_data.append(('CRITICAL', 'No AI crawler permissions', 'AI bots may not prioritize crawling', 'Update robots.txt'))
+    if not schema_types or ('Dentist' not in schema_types and 'LocalBusiness' not in schema_types):
+        fix_data.append(('CRITICAL', 'Missing Dentist schema', 'Practice not typed for search engines', 'Add Dentist JSON-LD'))
+    if 'FAQPage' not in schema_types:
+        fix_data.append(('HIGH', 'No FAQPage schema', '37-40% fewer AI citations', 'Add FAQ schema'))
+    if 'Person' not in schema_types:
+        fix_data.append(('HIGH', 'No Person schema', 'Doctors not in AI results', 'Add Person JSON-LD per provider'))
+    if not site_data.get('has_analytics'):
+        fix_data.append(('HIGH', 'No analytics', 'No traffic/conversion data', 'Install Google Analytics 4'))
+    if not site_data.get('has_sitemap'):
+        fix_data.append(('HIGH', 'No sitemap.xml', 'Pages may not be indexed', 'Generate and submit sitemap'))
+    fix_data.append(('HIGH', 'Service pages lack expert quotes', 'Reduces AI trust signals', 'Add Dr. quotes to top pages'))
+    fix_data.append(('MEDIUM', 'No neighborhood pages', 'Missing local search queries', 'Create area-specific pages'))
+    fix_data.append(('MEDIUM', 'No blog/content cadence', 'No freshness signals', 'Start 2-4 posts/month'))
 
     if fix_data:
         fix_table = doc.add_table(rows=len(fix_data) + 1, cols=4)
         fix_table.style = 'Light Shading Accent 1'
         for i, h in enumerate(['Priority', 'Issue', 'Impact', 'Fix']):
             fix_table.rows[0].cells[i].text = h
-            for p in fix_table.rows[0].cells[i].paragraphs:
-                for r in p.runs:
+            for para in fix_table.rows[0].cells[i].paragraphs:
+                for r in para.runs:
                     r.bold = True
         for i, row in enumerate(fix_data):
             for j, val in enumerate(row):
@@ -606,54 +739,57 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
 
     doc.add_page_break()
 
-    # Deploy Files
-    doc.add_heading('Files to Deploy', level=1)
+    # ---- Deploy Files ----
+    doc.add_heading('4. Deploy Files Included', level=1)
     doc.add_paragraph('The following files are included and ready to deploy:')
     files_info = [
-        ('llms.txt', 'AI discoverability file', 'Site root: /llms.txt'),
-        ('robots.txt', 'AI crawler permissions', 'Site root: /robots.txt'),
-        ('schema-homepage.html', 'Dentist + Organization JSON-LD', 'Homepage <head>'),
-        ('schema-faq.html', 'FAQPage JSON-LD', 'Homepage or FAQ page <head>'),
-        ('schema-doctors.html', 'Person JSON-LD for providers', 'Doctors page <head>'),
+        ('llms.txt', 'AI assistant discoverability file', 'Site root: /llms.txt'),
+        ('robots.txt', 'Updated with AI bot permissions', 'Site root: /robots.txt'),
+        ('schema-homepage.html', 'Dentist + Organization + Breadcrumb JSON-LD', 'Homepage <head>'),
+        ('schema-faq.html', 'FAQPage JSON-LD (10-15 questions)', 'Homepage or FAQ page <head>'),
+        ('schema-doctors.html', 'Person JSON-LD for each provider', 'Doctors/team page <head>'),
     ]
     files_table = doc.add_table(rows=len(files_info) + 1, cols=3)
     files_table.style = 'Light Shading Accent 1'
     for i, h in enumerate(['File', 'Purpose', 'Deploy Location']):
         files_table.rows[0].cells[i].text = h
-        for p in files_table.rows[0].cells[i].paragraphs:
-            for r in p.runs:
+        for para in files_table.rows[0].cells[i].paragraphs:
+            for r in para.runs:
                 r.bold = True
-    for i, (f, purpose, loc) in enumerate(files_info):
-        files_table.rows[i + 1].cells[0].text = f
+    for i, (fname, purpose, loc) in enumerate(files_info):
+        files_table.rows[i + 1].cells[0].text = fname
         files_table.rows[i + 1].cells[1].text = purpose
         files_table.rows[i + 1].cells[2].text = loc
 
     doc.add_page_break()
 
-    # Implementation Roadmap
-    doc.add_heading('Implementation Roadmap', level=1)
+    # ---- Implementation Roadmap ----
+    doc.add_heading('5. Implementation Roadmap', level=1)
     phases = [
-        ('Phase 1: Week 1 — Technical Foundation', [
+        ('Phase 1: Week 1-2 — Technical Foundation', [
             'Deploy llms.txt to site root',
             'Update robots.txt with AI crawler permissions',
-            'Add enhanced homepage schema',
-            'Add FAQPage schema',
-            'Add Person schema for providers',
+            'Add Dentist + Organization schema to homepage',
+            'Add FAQPage schema with top patient questions',
+            'Add Person schema for each provider',
+        ] + (['Set up Google Analytics 4'] if not site_data.get('has_analytics') else [])),
+        ('Phase 2: Week 3-4 — Content Enhancement', [
+            'Add expert quotes and statistics to service pages',
+            'Rewrite page intros to TLDR-first format for AI extraction',
+            'Create/optimize Google Business Profile',
+            'Verify all directory listings (Yelp, Healthgrades, Zocdoc)',
         ]),
-        ('Phase 2: Month 1 — Content Enhancement', [
-            'Add expert quotes to top service pages',
-            'Add statistics and data points',
-            'Rewrite page intros to TLDR-first format',
-        ]),
-        ('Phase 3: Month 2 — Local Expansion', [
+        ('Phase 3: Month 2-3 — Local Expansion', [
             'Create neighborhood landing pages for surrounding cities',
-            'Verify/optimize directory listings',
-            'Set up monthly blog cadence',
+            'Start monthly blog cadence (2-4 posts/month)',
+            'Build local citation and backlink profile',
+            'Set up review generation system',
         ]),
-        ('Phase 4: Month 3+ — Ongoing', [
-            'Monthly blog posts with expert quotes',
-            'KPI tracking (AI mentions, llms.txt hits)',
-            'Quarterly re-audit',
+        ('Phase 4: Month 3+ — Ongoing Optimization', [
+            'Monthly AI mention monitoring (ChatGPT, Claude, Perplexity)',
+            'Monthly llms.txt hit tracking via Cloudflare analytics',
+            'Quarterly full re-audit and score update',
+            'Competitor SEO/AEO monitoring',
         ]),
     ]
     for phase_title, tasks in phases:
@@ -661,14 +797,15 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         for task in tasks:
             doc.add_paragraph(task, style='List Bullet')
 
-    # Footer
+    # ---- Footer ----
     doc.add_page_break()
     doc.add_heading('About PracticeRank', level=1)
     doc.add_paragraph(
-        'PracticeRank specializes in AI Search Optimization (AEO) for dental practices. '
+        'PracticeRank specializes in AI Search Optimization (AEO) for dental and medical practices. '
         'We help practices appear in AI-powered search results from ChatGPT, Claude, Perplexity, '
-        'and Google AI Overviews.'
+        'and Google AI Overviews — the fastest-growing channel for how patients find healthcare providers.'
     )
+    doc.add_paragraph()
     p = doc.add_paragraph()
     p.add_run('Kody Doherty').bold = True
     p.add_run(' — Chief Technology Officer\n')
@@ -741,6 +878,7 @@ def generate_report(customer: dict, providers: list, services: list,
 
     # Check robots.txt for AI bot mentions
     robots = _fetch(f"https://{domain}/robots.txt") or _fetch(f"https://{www_domain}/robots.txt")
+    site_data['robots_txt'] = robots or ''
     if robots:
         ai_bots = ['ChatGPT-User', 'Claude-SearchBot', 'PerplexityBot', 'GPTBot']
         site_data['has_ai_robots'] = any(bot in robots for bot in ai_bots)
@@ -805,53 +943,218 @@ def generate_report(customer: dict, providers: list, services: list,
             schema_docs_path.write_text(schema_docs)
             files.append(str(schema_docs_path))
 
-    # ---- Generate markdown report ----
+    # ---- Build report context ----
     projected = min(scores['overall'] + 40, 95)
-    report_md = f"""# AI Search Optimization Report: {customer['name']}
+    hosting_info = customer.get('hosting_info') or {}
+    platform = customer.get('platform', 'unknown').title()
+    address = customer.get('address', '')
+    phone = customer.get('phone', '')
+    zipcode = customer.get('zip', '')
 
-**Prepared for:** {customer['name']} ({city}, {state})
-**Date:** {date.today().strftime('%B %d, %Y')}
-**Prepared by:** PracticeRank AI Search Optimization
+    def _grade(score):
+        if score >= 90: return 'A'
+        if score >= 80: return 'B'
+        if score >= 70: return 'C'
+        if score >= 60: return 'D'
+        return 'F'
+
+    # Build issues list
+    issues_critical = []
+    issues_high = []
+    issues_medium = []
+
+    if not site_data.get('has_llms_txt'):
+        issues_critical.append(('No llms.txt file',
+            'The llms.txt standard is the emerging way to make your business discoverable by AI assistants '
+            '(ChatGPT, Claude, Perplexity, Google AI Overviews). Without it, AI models have no structured '
+            'summary of what your practice offers. When someone asks ChatGPT "best dentist in '
+            f'{city}," your practice is invisible.'))
+    if not site_data.get('has_ai_robots'):
+        issues_critical.append(('No AI bot permissions in robots.txt',
+            'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
+            'Google-Extended, PerplexityBot, Applebot-Extended). Explicit Allow directives signal intent '
+            'and improve crawl priority for AI-powered search engines.'))
+    if 'FAQPage' not in site_data.get('schema_types', []):
+        issues_high.append(('No FAQPage schema markup',
+            'FAQ schema enables rich results in Google and provides structured answers that AI assistants '
+            'can cite directly. Practices with FAQ schema see 37-40% more AI search citations.'))
+    if 'Person' not in site_data.get('schema_types', []):
+        issues_high.append(('No Person schema for providers',
+            'Without Person schema, AI assistants cannot reliably identify your doctors, their credentials, '
+            'or specialties. This data is critical for queries like "Dr. [Name] dentist" or '
+            f'"best cosmetic dentist in {city}."'))
+    if not site_data.get('has_analytics'):
+        issues_high.append(('No analytics tracking detected',
+            'No Google Analytics 4, Google Tag Manager, or other analytics platform was detected. '
+            'Without analytics there is no visibility into traffic, conversions, or user behavior.'))
+    schema_types = site_data.get('schema_types', [])
+    if not schema_types:
+        issues_high.append(('No schema markup found',
+            'The site has zero JSON-LD structured data. Search engines and AI models rely on schema '
+            'to understand entities, services, and relationships.'))
+    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types:
+        issues_medium.append(('Missing Dentist/LocalBusiness schema',
+            f'Found schema types: {", ".join(schema_types)}. But no Dentist or LocalBusiness schema, '
+            'which is critical for local search visibility and Google Maps integration.'))
+    if site_data.get('pages_indexed', 0) < 15:
+        issues_medium.append(('Low page count',
+            f'Only {site_data["pages_indexed"]} pages indexed. Practices with 30+ pages of quality '
+            'content rank significantly better in both traditional and AI search.'))
+    if not site_data.get('has_sitemap'):
+        issues_high.append(('No sitemap.xml found',
+            'Without a sitemap, search engines may miss pages during crawling.'))
+
+    # Provider info for report
+    provider_names = [p.get('name', '') for p in (providers or [])]
+    provider_str = ', '.join(provider_names) if provider_names else 'None listed'
+
+    # Service info
+    service_names = [s.get('name', '') for s in (services or [])]
+    service_str = ', '.join(service_names[:10]) if service_names else 'None listed'
+    if len(service_names) > 10:
+        service_str += f', and {len(service_names) - 10} more'
+
+    # ---- Generate markdown report ----
+    report_md = f"""# AI Search Optimization Report
+## {customer['name']} — {domain}
+
+**Report Date:** {date.today().strftime('%B %d, %Y')}
+**Prepared by:** PracticeRank AI Audit Engine
 
 ---
 
-## Current Score: {scores['overall']}/100
+## Executive Summary
 
-| Category | Score |
-|----------|-------|
-| Technical SEO | {scores['technical_seo']}/100 |
-| AI Search Readiness (AEO) | {scores['aeo']}/100 |
-| Content Quality | {scores['content_quality']}/100 |
-| Local Visibility | {scores['local_visibility']}/100 |
-| Review Presence | {scores['review_presence']}/100 |
+{customer['name']} is a dental practice in {city}, {state} with a website at {domain}. This report analyzes the practice's current search visibility across both traditional search engines and AI-powered search (ChatGPT, Claude, Perplexity, Google AI Overviews) and provides actionable recommendations with deploy-ready files.
 
-**Projected Improvement: {scores['overall']} → {projected}/100 after implementation**
+The site scores **{scores['overall']}/100 overall** with {'critical gaps' if scores['overall'] < 50 else 'notable opportunities'} in AI search readiness ({scores['aeo']}/100){' and technical SEO (' + str(scores['technical_seo']) + '/100)' if scores['technical_seo'] < 60 else ''}.
 
-## Site Audit Summary
+---
 
-- **Domain:** {domain}
-- **Pages Indexed:** {site_data['pages_indexed']}
-- **Platform:** {site_data['platform']}
-- **llms.txt:** {'Found' if site_data['has_llms_txt'] else 'Missing (404)'}
-- **AI Crawler Permissions:** {'Configured' if site_data['has_ai_robots'] else 'Not configured'}
-- **Schema Types Found:** {', '.join(site_data['schema_types']) if site_data['schema_types'] else 'None'}
+## Overall Score: {scores['overall']}/100
+
+| Category | Score | Grade |
+|----------|-------|-------|
+| Technical SEO | {scores['technical_seo']}/100 | {_grade(scores['technical_seo'])} |
+| AI Search Readiness (AEO) | {scores['aeo']}/100 | {_grade(scores['aeo'])} |
+| Content Quality | {scores['content_quality']}/100 | {_grade(scores['content_quality'])} |
+| Local Visibility | {scores['local_visibility']}/100 | {_grade(scores['local_visibility'])} |
+| Review Presence | {scores['review_presence']}/100 | {_grade(scores['review_presence'])} |
+
+**Projected Improvement: {scores['overall']} -> {projected}/100 after implementation**
+
+---
+
+## Infrastructure Summary
+
+| Component | Status |
+|-----------|--------|
+| Platform | {platform}{' (' + hosting_info.get('cms', '') + ')' if hosting_info.get('cms') and hosting_info.get('cms','').lower() != platform.lower() else ''} |
+| Hosting | {hosting_info.get('hosting', 'Unknown')} |
+| CDN | {hosting_info.get('cdn', 'None detected')} |
+| Registrar | {hosting_info.get('registrar', 'Unknown')} |
+| Nameservers | {', '.join(hosting_info.get('nameservers', [])) or 'Unknown'} |
+| A Record | {hosting_info.get('a_record', 'Unknown')} |
+| CNAME (www) | {hosting_info.get('cname', 'None')} |
+| Web Server | {hosting_info.get('web_server', 'Unknown')} |
+| SSL | Active |
+| Domain Expiry | {hosting_info.get('domain_expiry', 'Unknown')} |
+
+---
+
+## 1. Technical SEO Audit (Score: {scores['technical_seo']}/100 — {_grade(scores['technical_seo'])})
+
+### What's Working
+- {'HTTPS active with SSL certificate' if True else ''}
+- {'Sitemap.xml present' if site_data.get('has_sitemap') else 'Sitemap.xml NOT found (critical)'}
+- {str(site_data['pages_indexed']) + ' pages indexed in sitemap' if site_data['pages_indexed'] else 'Could not determine page count'}
+- Schema types found: {', '.join(schema_types) if schema_types else 'None'}
+- Analytics: {'Installed' if site_data.get('has_analytics') else 'NOT detected'}
+
+### Issues Found
+"""
+    # Add issues to markdown
+    for title, desc in issues_critical:
+        report_md += f"\n#### CRITICAL: {title}\n{desc}\n"
+    for title, desc in issues_high:
+        report_md += f"\n#### HIGH: {title}\n{desc}\n"
+    for title, desc in issues_medium:
+        report_md += f"\n#### MEDIUM: {title}\n{desc}\n"
+
+    report_md += f"""
+---
+
+## 2. AI Search Readiness — AEO (Score: {scores['aeo']}/100 — {_grade(scores['aeo'])})
+
+| Check | Status |
+|-------|--------|
+| llms.txt | {'Found' if site_data['has_llms_txt'] else 'NOT FOUND — AI assistants cannot discover practice'} |
+| AI bot permissions (robots.txt) | {'Configured' if site_data['has_ai_robots'] else 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'} |
+| FAQPage schema | {'Present' if 'FAQPage' in schema_types else 'Missing — cannot appear in AI FAQ answers'} |
+| Person schema (providers) | {'Present' if 'Person' in schema_types else 'Missing — doctors invisible to AI'} |
+| Dentist/LocalBusiness schema | {'Present' if any(t in schema_types for t in ['Dentist', 'LocalBusiness']) else 'Missing — practice not typed for AI'} |
+| MedicalProcedure schema | {'Present' if 'MedicalProcedure' in schema_types else 'Missing — services not structured for AI'} |
+
+---
+
+## 3. Content & Local Visibility
+
 - **Google Rating:** {site_data['rating']} ({site_data['review_count']} reviews)
-- **Analytics:** {'Installed' if site_data['has_analytics'] else 'Not detected'}
+- **Providers:** {provider_str}
+- **Services:** {service_str}
+- **Pages Indexed:** {site_data['pages_indexed']}
+- **Address:** {address}, {city}, {state} {zipcode}
+- **Phone:** {phone}
 
-## Files Included
+---
+
+## 4. Recommendations — Priority Order
+
+### Immediate (Week 1-2)
+
+1. **Deploy llms.txt** — Make practice discoverable by AI assistants
+2. **Update robots.txt** — Add explicit AI bot permissions (ChatGPT-User, GPTBot, ClaudeBot, PerplexityBot)
+3. **Add Dentist + Organization schema** — Complete JSON-LD with address, phone, providers, services
+4. **Add FAQPage schema** — Top 10-15 patient questions with answers
+5. **Add Person schema for providers** — Each doctor with credentials and specialties
+{'6. **Set up Google Analytics 4** — Start tracking traffic and conversions' if not site_data.get('has_analytics') else ''}
+
+### Short-Term (Week 3-4)
+
+{'7' if not site_data.get('has_analytics') else '6'}. Add expert quotes and statistics to service pages
+{'8' if not site_data.get('has_analytics') else '7'}. Rewrite page intros to TLDR-first format for AI extraction
+{'9' if not site_data.get('has_analytics') else '8'}. Create/optimize Google Business Profile
+
+### Medium-Term (Month 2-3)
+
+- Create neighborhood landing pages for surrounding cities
+- Start monthly blog cadence (2-4 posts/month)
+- Build local citation listings (Yelp, Healthgrades, Zocdoc)
+- Set up review generation system
+
+### Ongoing
+
+- Monthly AI mention monitoring (ChatGPT, Claude, Perplexity)
+- Monthly llms.txt hit tracking via Cloudflare analytics
+- Quarterly full re-audit
+- Competitor SEO/AEO monitoring
+
+---
+
+## Deploy Files Included
 
 | File | Purpose | Deploy Location |
 |------|---------|----------------|
-| llms.txt | AI discoverability | Site root: /llms.txt |
+| llms.txt | AI assistant discoverability file | Site root: /llms.txt |
 | robots.txt | AI crawler permissions | Site root: /robots.txt |
-| schema-homepage.html | Dentist + Organization JSON-LD | Homepage <head> |
-| schema-faq.html | FAQPage JSON-LD | Homepage or FAQ page <head> |
-| schema-doctors.html | Person JSON-LD for providers | Doctors page <head> |
+| schema-homepage.html | Dentist + Organization + BreadcrumbList JSON-LD | Homepage `<head>` |
+| schema-faq.html | FAQPage JSON-LD | Homepage or FAQ page `<head>` |
+| schema-doctors.html | Person JSON-LD for providers | Doctors/team page `<head>` |
 
 ---
 
-*Report generated by PracticeRank AI Search Optimization*
-*Contact: kdoherty@practicerank.ai | practicerank.ai*
+*Report generated by PracticeRank AI Audit Engine v1.0*
+*Contact: kdoherty@practicerank.ai | (925) 819-2663 | practicerank.ai*
 """
 
     md_path = out_dir / "ai-search-optimization-report.md"
