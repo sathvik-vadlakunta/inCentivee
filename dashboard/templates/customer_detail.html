@@ -121,11 +121,25 @@
                         {% if webflow_connected %}
                             <span style="color: var(--success); font-size: 0.8rem; margin-left: 0.5rem;">OAuth connected</span>
                             <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}" style="font-size: 0.7rem; margin-left: 0.25rem;">(reconnect)</a>
-                        {% else %}
+                        {% elif webflow_app %}
                             <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}" class="btn btn-sm btn-outline" style="margin-left: 0.5rem; font-size: 0.7rem;">Connect Webflow</a>
+                        {% else %}
+                            <span style="color: var(--muted); font-size: 0.8rem; margin-left: 0.5rem;">No OAuth app configured</span>
                         {% endif %}
+                        <button class="btn btn-sm btn-outline" style="margin-left: 0.25rem; font-size: 0.65rem;" onclick="document.getElementById('webflow-app-form').style.display = document.getElementById('webflow-app-form').style.display === 'none' ? 'block' : 'none'">&#9881;</button>
                         {% endif %}
                     </td></tr>
+                    {% if customer.platform == 'webflow' %}
+                    <tr id="webflow-app-form" style="display:none;"><td colspan="2">
+                        <form method="POST" action="{{ url_for('save_webflow_app', customer_id=customer.id) }}" style="padding: 0.5rem; background: #f8fafc; border-radius: 6px; font-size: 0.8rem;">
+                            <div style="margin-bottom: 0.4rem; font-weight: 600;">Webflow OAuth App</div>
+                            <div style="margin-bottom: 0.3rem; color: var(--muted); font-size: 0.75rem;">Create an app in the client's workspace: Apps & Integrations → Develop → Create App</div>
+                            <input type="text" name="webflow_client_id" placeholder="Client ID" value="{{ webflow_app.client_id if webflow_app else '' }}" style="width:100%; padding:0.3rem; margin-bottom:0.3rem; font-size:0.8rem; border:1px solid var(--border); border-radius:4px;">
+                            <input type="text" name="webflow_client_secret" placeholder="Client Secret" value="{{ webflow_app.client_secret if webflow_app else '' }}" style="width:100%; padding:0.3rem; margin-bottom:0.3rem; font-size:0.8rem; border:1px solid var(--border); border-radius:4px;">
+                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                        </form>
+                    </td></tr>
+                    {% endif %}
                     <tr><td style="color:var(--muted);">Address</td><td>{{ customer.address or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">City/State</td><td>{{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %} {{ customer.zip }}</td></tr>
                     <tr><td style="color:var(--muted);">Phone</td><td>{{ customer.phone or '--' }}</td></tr>

@@ -221,6 +221,7 @@ def customer_detail(customer_id):
 
         # Webflow OAuth connection status
         webflow_connected = db.get_webflow_oauth_token(customer_id) is not None
+        webflow_app = db.get_webflow_oauth_app(customer_id)
 
         # Check if there are previously published files (for re-publish button)
         published_schema = Path(DATA_DIR) / "published" / customer_id / "schema.html"
@@ -245,6 +246,7 @@ def customer_detail(customer_id):
             content_recs=content_recs, customer_alerts=customer_alerts,
             report_exists=report_exists, now_iso=now_iso,
             webflow_connected=webflow_connected,
+            webflow_app=webflow_app,
             has_published_schema=has_published_schema,
         )
     finally:
@@ -649,18 +651,31 @@ def republish_webflow(customer_id):
 
 # --- Webflow OAuth ---
 
-WEBFLOW_CLIENT_ID = os.environ.get("WEBFLOW_CLIENT_ID", "")
-WEBFLOW_CLIENT_SECRET = os.environ.get("WEBFLOW_CLIENT_SECRET", "")
+WEBFLOW_DEFAULT_CLIENT_ID = os.environ.get("WEBFLOW_CLIENT_ID", "")
+WEBFLOW_DEFAULT_CLIENT_SECRET = os.environ.get("WEBFLOW_CLIENT_SECRET", "")
 WEBFLOW_AUTH_URL = "https://webflow.com/oauth/authorize"
 WEBFLOW_TOKEN_URL = "https://api.webflow.com/oauth/access_token"
+
+
+def _get_webflow_app(customer_id: str) -> tuple[str, str]:
+    """Get Webflow OAuth app credentials for a customer. Falls back to global default."""
+    db = get_db()
+    try:
+        app = db.get_webflow_oauth_app(customer_id)
+        if app:
+            return app["client_id"], app["client_secret"]
+        return WEBFLOW_DEFAULT_CLIENT_ID, WEBFLOW_DEFAULT_CLIENT_SECRET
+    finally:
+        db.close()
 
 
 @app.route("/customer/<customer_id>/connect-webflow")
 @login_required
 def connect_webflow(customer_id):
     """Start Webflow OAuth flow for a customer."""
-    if not WEBFLOW_CLIENT_ID:
-        flash("WEBFLOW_CLIENT_ID not configured in .env", "error")
+    client_id, _ = _get_webflow_app(customer_id)
+    if not client_id:
+        flash("No Webflow OAuth app configured for this customer. Add client ID/secret in settings.", "error")
         return redirect(url_for("customer_detail", customer_id=customer_id))
 
     # Store customer_id in session so callback knows who authorized
@@ -669,10 +684,10 @@ def connect_webflow(customer_id):
     session["webflow_oauth_state"] = state
 
     redirect_uri = url_for("webflow_oauth_callback", _external=True)
-    scopes = "sites:read sites:write custom_code:read custom_code:write pages:read pages:write authorized_user:read"
+    scopes = "sites:read sites:write custom_code:read custom_code:write pages:read pages:write cms:read cms:write authorized_user:read"
     auth_url = (
         f"{WEBFLOW_AUTH_URL}"
-        f"?client_id={WEBFLOW_CLIENT_ID}"
+        f"?client_id={client_id}"
         f"&response_type=code"
         f"&redirect_uri={redirect_uri}"
         f"&scope={scopes}"
@@ -704,14 +719,15 @@ def webflow_oauth_callback():
         flash("OAuth state mismatch. Try connecting again.", "error")
         return redirect(url_for("customer_detail", customer_id=customer_id) if customer_id else url_for("index"))
 
-    # Exchange code for access token
+    # Exchange code for access token — use per-customer app if available
+    client_id, client_secret = _get_webflow_app(customer_id) if customer_id else (WEBFLOW_DEFAULT_CLIENT_ID, WEBFLOW_DEFAULT_CLIENT_SECRET)
     redirect_uri = url_for("webflow_oauth_callback", _external=True)
     try:
         resp = httpx.post(
             WEBFLOW_TOKEN_URL,
             data={
-                "client_id": WEBFLOW_CLIENT_ID,
-                "client_secret": WEBFLOW_CLIENT_SECRET,
+                "client_id": client_id,
+                "client_secret": client_secret,
                 "code": code,
                 "grant_type": "authorization_code",
                 "redirect_uri": redirect_uri,
@@ -802,6 +818,29 @@ def webflow_oauth_callback():
             return redirect(url_for("index"))
     finally:
         db.close()
+
+
+# --- Webflow OAuth App Settings (per-customer) ---
+
+@app.route("/customer/<customer_id>/webflow-app", methods=["POST"])
+@login_required
+def save_webflow_app(customer_id):
+    """Save per-customer Webflow OAuth app credentials."""
+    db = get_db()
+    try:
+        client_id = request.form.get("webflow_client_id", "").strip()
+        client_secret = request.form.get("webflow_client_secret", "").strip()
+        if client_id and client_secret:
+            db.save_webflow_oauth_app(customer_id, client_id, client_secret)
+            flash("Webflow OAuth app saved. Click 'Connect Webflow' to authorize.", "success")
+        elif not client_id and not client_secret:
+            db.delete_webflow_oauth_app(customer_id)
+            flash("Webflow OAuth app removed. Will use default.", "info")
+        else:
+            flash("Both Client ID and Client Secret are required.", "error")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id))
 
 
 # --- Update Customer Fields ---

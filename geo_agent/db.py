@@ -204,6 +204,13 @@ CREATE TABLE IF NOT EXISTS webflow_oauth_tokens (
     access_token TEXT NOT NULL,
     granted_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+
+CREATE TABLE IF NOT EXISTS webflow_oauth_apps (
+    customer_id TEXT PRIMARY KEY REFERENCES customers(id),
+    client_id TEXT NOT NULL,
+    client_secret TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
 """
 
 
@@ -987,6 +994,33 @@ class CustomerDB:
         )
         row = cur.fetchone()
         return row["access_token"] if row else None
+
+    # --- Webflow OAuth Apps (per-customer) ---
+
+    def save_webflow_oauth_app(self, customer_id: str, client_id: str, client_secret: str):
+        """Store per-customer Webflow OAuth app credentials."""
+        self.conn.execute(
+            """INSERT INTO webflow_oauth_apps (customer_id, client_id, client_secret)
+               VALUES (?, ?, ?)
+               ON CONFLICT(customer_id) DO UPDATE SET
+                   client_id = excluded.client_id,
+                   client_secret = excluded.client_secret""",
+            (customer_id, client_id, client_secret),
+        )
+        self.conn.commit()
+
+    def get_webflow_oauth_app(self, customer_id: str) -> dict | None:
+        """Get per-customer Webflow OAuth app credentials."""
+        cur = self.conn.execute(
+            "SELECT client_id, client_secret FROM webflow_oauth_apps WHERE customer_id = ?",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        return {"client_id": row["client_id"], "client_secret": row["client_secret"]} if row else None
+
+    def delete_webflow_oauth_app(self, customer_id: str):
+        self.conn.execute("DELETE FROM webflow_oauth_apps WHERE customer_id = ?", (customer_id,))
+        self.conn.commit()
 
     # --- Migration helper: import from customers.json ---
 
