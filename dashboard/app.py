@@ -709,14 +709,13 @@ def webflow_oauth_callback():
     try:
         resp = httpx.post(
             WEBFLOW_TOKEN_URL,
-            json={
+            data={
                 "client_id": WEBFLOW_CLIENT_ID,
                 "client_secret": WEBFLOW_CLIENT_SECRET,
                 "code": code,
                 "grant_type": "authorization_code",
                 "redirect_uri": redirect_uri,
             },
-            headers={"Content-Type": "application/json"},
             timeout=30.0,
         )
         resp.raise_for_status()
