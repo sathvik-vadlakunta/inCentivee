@@ -252,6 +252,15 @@ export default {
       };
       await env.LEADS.put(leadId, JSON.stringify(lead));
 
+      // Send email notifications (non-blocking — don't fail the audit if email fails)
+      if (env.RESEND_API_KEY) {
+        try {
+          await sendAuditEmails(env, report, email, name, practiceUrl);
+        } catch (emailErr) {
+          console.error("Email send failed:", emailErr.message);
+        }
+      }
+
       return new Response(JSON.stringify(report), {
         headers: { ...corsHeaders(env), "Content-Type": "application/json" },
       });
@@ -512,17 +521,19 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
       report.categories.reviews.score = calculateReviewScore(realCount, realRating, competitors);
       report.categories.reviews.status = scoreToStatus(report.categories.reviews.score);
 
-      // Fix findings if they mentioned wrong review count
-      report.categories.reviews.findings = report.categories.reviews.findings.map(f => {
-        // Replace any mention of wrong review counts
-        return f.replace(/\b\d+\s*reviews?\b/gi, (match) => {
-          const num = parseInt(match);
-          if (num !== realCount && num < 1000) {
-            return `${realCount} reviews`;
-          }
-          return match;
-        });
+      // Fix findings across ALL categories if they mentioned wrong review count
+      const fixReviewCount = (f) => f.replace(/\b\d+\s*reviews?\b/gi, (match) => {
+        const num = parseInt(match);
+        if (num !== realCount && num < 1000) {
+          return `${realCount} reviews`;
+        }
+        return match;
       });
+      for (const cat of Object.values(report.categories)) {
+        if (Array.isArray(cat.findings)) {
+          cat.findings = cat.findings.map(fixReviewCount);
+        }
+      }
     }
   }
 
@@ -627,6 +638,154 @@ function scoreToGrade(score) {
   if (score >= 70) return "C";
   if (score >= 60) return "D";
   return "F";
+}
+
+// ════════════════════════════════════════════════════════════════
+// ── Email Notifications via Resend ──
+// ════════════════════════════════════════════════════════════════
+
+async function sendAuditEmails(env, report, prospectEmail, prospectName, practiceUrl) {
+  const cats = [
+    { key: 'gbp', label: 'Google Business Profile' },
+    { key: 'ai_readiness', label: 'AI Search Readiness' },
+    { key: 'reviews', label: 'Review Strength' },
+    { key: 'local_seo', label: 'Local SEO & Citations' },
+    { key: 'content', label: 'Content & On-Page SEO' },
+    { key: 'technical', label: 'Technical SEO' },
+  ];
+
+  const scoreColor = (s) => s >= 70 ? '#10b981' : s >= 45 ? '#f59e0b' : '#f87171';
+  const statusLabel = (s) => s === 'critical' ? 'Critical' : s === 'needs_work' ? 'Needs Work' : s === 'good' ? 'Good' : 'Excellent';
+
+  const categoryRows = cats.map(cat => {
+    const d = report.categories?.[cat.key];
+    if (!d) return '';
+    return `<tr>
+      <td style="padding:10px 16px;border-bottom:1px solid #eee;font-weight:600;">${cat.label}</td>
+      <td style="padding:10px 16px;border-bottom:1px solid #eee;text-align:center;">
+        <span style="color:${scoreColor(d.score)};font-weight:800;font-size:18px;">${d.score}</span><span style="color:#999;font-size:13px;">/100</span>
+      </td>
+      <td style="padding:10px 16px;border-bottom:1px solid #eee;text-align:center;">
+        <span style="background:${scoreColor(d.score)}22;color:${scoreColor(d.score)};padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700;">${statusLabel(d.status)}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const topFindings = [];
+  for (const cat of cats) {
+    const d = report.categories?.[cat.key];
+    if (d?.findings) {
+      for (const f of d.findings.slice(0, 2)) {
+        topFindings.push(`<li style="margin-bottom:6px;color:#555;font-size:14px;">${f}</li>`);
+      }
+    }
+    if (topFindings.length >= 6) break;
+  }
+
+  const practiceName = report.practice_name || practiceUrl;
+  const city = report.city || '';
+  const state = report.state || '';
+  const location = city && state ? `${city}, ${state}` : city || state || '';
+
+  // ── Prospect email ──
+  const prospectHtml = `
+  <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:640px;margin:0 auto;background:#fff;">
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:40px 32px;text-align:center;border-radius:12px 12px 0 0;">
+      <h1 style="color:#fff;margin:0 0 8px;font-size:24px;">Your PracticeRank Score</h1>
+      <p style="color:#94a3b8;margin:0;font-size:14px;">${practiceName}${location ? ' — ' + location : ''}</p>
+    </div>
+
+    <div style="padding:32px;text-align:center;">
+      <div style="display:inline-block;width:120px;height:120px;border-radius:50%;border:4px solid ${scoreColor(report.overall_score)};line-height:120px;margin-bottom:16px;">
+        <span style="font-size:48px;font-weight:800;color:${scoreColor(report.overall_score)};">${report.overall_score}</span>
+      </div>
+      <p style="color:#64748b;font-size:15px;line-height:1.7;max-width:500px;margin:0 auto 24px;">${report.executive_summary || ''}</p>
+      ${report.revenue_lost_annually ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 20px;display:inline-block;margin-bottom:24px;">
+        <span style="color:#ef4444;font-weight:700;font-size:14px;">Estimated revenue lost: ${report.revenue_lost_annually}/year</span>
+      </div>` : ''}
+
+      <table style="width:100%;border-collapse:collapse;margin:24px 0;text-align:left;">
+        <thead>
+          <tr style="background:#f8fafc;">
+            <th style="padding:10px 16px;border-bottom:2px solid #e2e8f0;font-size:13px;color:#64748b;">Category</th>
+            <th style="padding:10px 16px;border-bottom:2px solid #e2e8f0;font-size:13px;color:#64748b;text-align:center;">Score</th>
+            <th style="padding:10px 16px;border-bottom:2px solid #e2e8f0;font-size:13px;color:#64748b;text-align:center;">Status</th>
+          </tr>
+        </thead>
+        <tbody>${categoryRows}</tbody>
+      </table>
+
+      <div style="text-align:left;margin:24px 0;">
+        <h3 style="margin:0 0 12px;font-size:16px;color:#1e293b;">Key Findings</h3>
+        <ul style="margin:0;padding-left:20px;">${topFindings.join('')}</ul>
+      </div>
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px;margin:24px 0;">
+        <h3 style="margin:0 0 8px;color:#16a34a;font-size:16px;">Ready to fix this?</h3>
+        <p style="margin:0 0 16px;color:#555;font-size:14px;">PracticeRank can implement all these fixes in your first month — no effort from you.</p>
+        <a href="https://practicerank.ai/#book" style="background:#10b981;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;display:inline-block;">Book Your Free Strategy Call</a>
+      </div>
+    </div>
+
+    <div style="background:#f8fafc;padding:20px 32px;text-align:center;border-radius:0 0 12px 12px;border-top:1px solid #e2e8f0;">
+      <p style="margin:0;color:#94a3b8;font-size:12px;">PracticeRank — AI-Powered Dental Marketing</p>
+      <p style="margin:4px 0 0;color:#94a3b8;font-size:12px;">practicerank.ai</p>
+    </div>
+  </div>`;
+
+  // ── Internal lead notification ──
+  const leadHtml = `
+  <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;background:#fff;padding:24px;">
+    <h2 style="color:#1e293b;margin:0 0 16px;">New PracticeRank Lead</h2>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <tr><td style="padding:8px 0;color:#64748b;width:140px;">Practice</td><td style="padding:8px 0;font-weight:700;">${practiceName}</td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">Location</td><td style="padding:8px 0;">${location || 'Unknown'}</td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">Contact</td><td style="padding:8px 0;">${prospectName || 'Not provided'}</td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">Email</td><td style="padding:8px 0;"><a href="mailto:${prospectEmail}" style="color:#10b981;">${prospectEmail}</a></td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">URL</td><td style="padding:8px 0;"><a href="${practiceUrl}" style="color:#10b981;">${practiceUrl}</a></td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">Overall Score</td><td style="padding:8px 0;font-weight:800;color:${scoreColor(report.overall_score)};">${report.overall_score}/100 (${report.grade})</td></tr>
+      <tr><td style="padding:8px 0;color:#64748b;">Revenue Lost</td><td style="padding:8px 0;color:#ef4444;font-weight:700;">${report.revenue_lost_annually || 'N/A'}</td></tr>
+    </table>
+    <h3 style="margin:0 0 8px;font-size:14px;color:#64748b;">Category Breakdown</h3>
+    <table style="width:100%;border-collapse:collapse;">${categoryRows}</table>
+  </div>`;
+
+  const fromAddr = env.RESEND_FROM || 'PracticeRank <scores@practicerank.ai>';
+  const internalRecipients = (env.LEAD_NOTIFY_EMAILS || 'kdoherty@practicerank.ai,jonlucas@lostrelic.com').split(',').map(e => e.trim());
+
+  // Send both emails in parallel
+  await Promise.all([
+    // Prospect email
+    sendResendEmail(env.RESEND_API_KEY, {
+      from: fromAddr,
+      to: [prospectEmail],
+      subject: `Your PracticeRank Score: ${report.overall_score}/100 — ${practiceName}`,
+      html: prospectHtml,
+    }),
+    // Internal lead notification
+    sendResendEmail(env.RESEND_API_KEY, {
+      from: fromAddr,
+      to: internalRecipients,
+      subject: `[Lead] ${practiceName} — ${report.overall_score}/100 (${prospectEmail})`,
+      html: leadHtml,
+    }),
+  ]);
+}
+
+async function sendResendEmail(apiKey, payload) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Resend API error ${res.status}: ${err}`);
+  }
+  return res.json();
 }
 
 // ════════════════════════════════════════════════════════════════

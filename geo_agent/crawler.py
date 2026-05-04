@@ -46,9 +46,13 @@ def _guess_category(slug: str, title: str) -> str:
     if any(kw in combined for kw in ["service", "implant", "cosmetic", "whitening",
                                       "crown", "veneer", "invisalign", "orthodont",
                                       "cleaning", "filling", "root canal", "extraction",
-                                      "denture", "bridge", "sedation", "emergency"]):
+                                      "denture", "bridge", "sedation", "emergency",
+                                      "product", "solution", "platform", "feature",
+                                      "integration", "api", "pricing", "demo",
+                                      "case-study", "partner"]):
         return "service"
-    if any(kw in combined for kw in ["about", "team", "doctor", "dr-", "provider", "staff"]):
+    if any(kw in combined for kw in ["about", "team", "doctor", "dr-", "provider", "staff",
+                                      "career"]):
         return "about"
     if any(kw in combined for kw in ["contact", "location", "direction", "appointment", "schedule"]):
         return "contact"
@@ -152,15 +156,26 @@ class WebflowCrawler:
         self.client.close()
 
 
-# Common dental site paths to crawl
+# Universal paths that apply to any business website
 COMMON_SLUGS = [
-    "/", "/about", "/about-us", "/our-team", "/team", "/doctors",
-    "/services", "/our-services", "/dental-services",
-    "/contact", "/contact-us", "/location", "/locations",
+    "/", "/about", "/about-us", "/team", "/our-team",
+    "/services", "/our-services",
+    "/contact", "/contact-us",
+    "/pricing", "/faq",
+    "/blog", "/news",
+    "/careers",
+    "/products", "/resources", "/support",
+    "/partners", "/integrations",
+    "/demo", "/case-studies",
+    "/testimonials", "/reviews",
+]
+
+# Dental-specific paths (only probed for practice sites)
+DENTAL_SLUGS = [
+    "/doctors", "/dental-services",
+    "/location", "/locations",
     "/insurance", "/financing", "/payment",
     "/new-patients", "/patient-info", "/patient-resources", "/first-visit",
-    "/faq", "/reviews", "/testimonials",
-    "/blog", "/news",
     "/emergency", "/emergency-dentist",
     # Common service pages
     "/dental-implants", "/implants",
@@ -185,7 +200,8 @@ class GenericCrawler:
     Scrapes common dental site paths and follows internal links.
     """
 
-    def __init__(self, domain: str, extra_slugs: list[str] | None = None):
+    def __init__(self, domain: str, extra_slugs: list[str] | None = None,
+                 business_type: str = "practice"):
         self.domain = domain.removeprefix("www.")
         self.base_url = f"https://{domain}"
         self.client = httpx.Client(
@@ -194,12 +210,16 @@ class GenericCrawler:
             headers={"User-Agent": "PracticeRank-Crawler/1.0"},
         )
         self.extra_slugs = extra_slugs or []
+        self.business_type = business_type
         self._visited: set[str] = set()
 
     def get_pages(self) -> list[PageData]:
         """Crawl the site and return extracted pages."""
         pages = []
-        slugs_to_try = list(COMMON_SLUGS) + self.extra_slugs
+        slugs_to_try = list(COMMON_SLUGS)
+        if self.business_type == "practice":
+            slugs_to_try += DENTAL_SLUGS
+        slugs_to_try += self.extra_slugs
 
         for slug in slugs_to_try:
             url = f"{self.base_url}{slug}"
@@ -326,4 +346,4 @@ def get_crawler(platform: str, domain: str, **kwargs):
             site_id=kwargs["site_id"],
             domain=domain,
         )
-    return GenericCrawler(domain=domain)
+    return GenericCrawler(domain=domain, business_type=kwargs.get("business_type", "practice"))

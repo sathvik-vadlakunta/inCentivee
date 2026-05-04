@@ -164,10 +164,11 @@ def customer_detail(customer_id):
         staged = staging.is_staged(customer_id)
         approved = staging.is_approved(customer_id)
         diff_report = staging.generate_diff_report(customer_id) if staged else ""
+        staged_files = list(staging.get_staged_files(customer_id).keys()) if staged else []
 
         checklist = db.get_checklist(customer_id)
         todos = _get_va_todos(customer, access, contacts, places, runs, staged, approved, checklist)
-        seo_tasks = _get_seo_tasks(checklist)
+        seo_tasks = _get_seo_tasks(checklist, customer.get("business_type", "practice"))
         import markdown
         raw_templates = _get_email_templates()
         email_templates = []
@@ -208,7 +209,8 @@ def customer_detail(customer_id):
             customer=customer, providers=providers, contacts=contacts,
             access=access, places=places, competitors=competitors,
             runs=runs, kpis=kpis, staged=staged, approved=approved,
-            diff_report=diff_report, todos=todos, email_templates=email_templates,
+            diff_report=diff_report, staged_files=staged_files,
+            todos=todos, email_templates=email_templates,
             seo_tasks=seo_tasks, content_pending=content_pending,
             content_recs=content_recs, customer_alerts=customer_alerts,
             report_exists=report_exists, now_iso=now_iso,
@@ -231,6 +233,7 @@ def add_customer():
             contact_email = request.form.get("contact_email", "").strip()
             contact_phone = request.form.get("contact_phone", "").strip()
             platform = request.form.get("platform", "unknown")
+            business_type = request.form.get("business_type", "practice")
 
             if not name or not url:
                 flash("Practice name and website URL are required.", "error")
@@ -259,6 +262,7 @@ def add_customer():
                 name=name,
                 domain=domain,
                 platform=platform,
+                business_type=business_type,
                 email=contact_email,
             )
 
@@ -505,7 +509,7 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
     # Platform-specific access steps
     platform = customer.get("platform", "unknown")
     platform_steps = {
-        "webflow": "**Webflow** — Add kdoherty@practicerank.ai as a site collaborator\n   - Go to Site Settings > Members > Add collaborator\n   - Also generate an API token: Site Settings > Apps & Integrations > Generate API Token",
+        "webflow": "**Webflow** — We need API access to manage your site's SEO\n   - **Important**: Your Workspace must be on the **Core plan** ($19/mo) or higher for API access\n     - Go to Workspace Settings > Plans to check/upgrade\n   - Generate a **Site API token**: Site Settings > Integrations > API Access > Generate API Token\n     - Enable these scopes: Sites (Read), Pages (Read+Write), Custom Code (Read+Write), CMS (Read+Write), Assets (Read+Write)\n   - Also send us the **Site ID** from Site Settings > General\n   - Optionally, add kdoherty@practicerank.ai as a site collaborator for visual editing",
         "squarespace": "**Squarespace** — Add kdoherty@practicerank.ai as a contributor\n   - Go to Settings > Permissions > Contributors > Invite contributor",
         "wordpress": "**WordPress** — Create an admin account for kdoherty@practicerank.ai\n   - Go to Users > Add New > Set role to Administrator",
         "shopify": "**Shopify** — Create a custom app for API access\n   - Go to Settings > Apps and sales channels > Develop apps\n   - Click \"Allow custom app development\" (if not already enabled)\n   - Click \"Create an app\" — name it \"PracticeRank\"\n   - Under Configuration > Admin API integration, click Configure and enable:\n     - `read_themes` / `write_themes`\n     - `read_content` / `write_content`\n     - `read_products` / `write_products`\n     - `read_online_store_pages` / `write_online_store_pages`\n   - Click Install app, then send us the Admin API access token",
@@ -685,10 +689,12 @@ def _get_va_todos(customer: dict, access: list[dict], contacts: list[dict],
 
 SEO_GEO_TASKS = [
     # Schema Markup
-    {"key": "seo_schema_localbusiness", "task": "LocalBusiness (Dentist) schema markup", "category": "Schema Markup"},
+    {"key": "seo_schema_localbusiness", "task": "LocalBusiness (Dentist) schema markup", "category": "Schema Markup", "practice_only": True},
+    {"key": "seo_schema_org", "task": "Organization / SoftwareApplication schema markup", "category": "Schema Markup", "practice_only": False, "non_practice_only": True},
     {"key": "seo_schema_faq", "task": "FAQPage schema on all service pages", "category": "Schema Markup"},
-    {"key": "seo_schema_medical", "task": "MedicalProcedure schema for each service", "category": "Schema Markup"},
-    {"key": "seo_schema_review", "task": "AggregateRating / Review schema", "category": "Schema Markup"},
+    {"key": "seo_schema_medical", "task": "MedicalProcedure schema for each service", "category": "Schema Markup", "practice_only": True},
+    {"key": "seo_schema_review", "task": "AggregateRating / Review schema", "category": "Schema Markup", "practice_only": True},
+    {"key": "seo_schema_product", "task": "Product / SoftwareApplication schema for offerings", "category": "Schema Markup", "practice_only": False, "non_practice_only": True},
     # llms.txt & AI Readiness
     {"key": "seo_llms_txt", "task": "Deploy llms.txt on domain", "category": "AI Readiness (GEO)"},
     {"key": "seo_llms_full", "task": "Deploy llms-full.txt with detailed content", "category": "AI Readiness (GEO)"},
@@ -701,38 +707,51 @@ SEO_GEO_TASKS = [
     {"key": "seo_stats_embedded", "task": "Statistics embedded every 150-200 words (+22% lift)", "category": "Content Optimization"},
     {"key": "seo_faq_sections", "task": "4-6 FAQ entries per service page", "category": "Content Optimization"},
     {"key": "seo_content_depth", "task": "Service pages 2,000+ words with structured headings", "category": "Content Optimization"},
-    {"key": "seo_provider_bios", "task": "Provider bios with credentials, specialties, years", "category": "Content Optimization"},
-    {"key": "seo_emergency_page", "task": "Emergency dentist page", "category": "Content Optimization"},
-    {"key": "seo_cost_page", "task": "Dental implant / procedure cost page", "category": "Content Optimization"},
-    {"key": "seo_insurance_page", "task": "Insurance / financing page", "category": "Content Optimization"},
-    {"key": "seo_neighborhood_pages", "task": "Neighborhood landing pages", "category": "Content Optimization"},
+    {"key": "seo_provider_bios", "task": "Provider bios with credentials, specialties, years", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_emergency_page", "task": "Emergency dentist page", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_cost_page", "task": "Dental implant / procedure cost page", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_insurance_page", "task": "Insurance / financing page", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_neighborhood_pages", "task": "Neighborhood landing pages", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_use_cases", "task": "Use case / case study pages for each product", "category": "Content Optimization", "practice_only": False, "non_practice_only": True},
+    {"key": "seo_comparison_pages", "task": "Competitor comparison / alternatives pages", "category": "Content Optimization", "practice_only": False, "non_practice_only": True},
     # Technical SEO
     {"key": "seo_xml_sitemap", "task": "XML sitemap present and submitted", "category": "Technical SEO"},
     {"key": "seo_structured_headings", "task": "Proper H1/H2/H3 heading hierarchy", "category": "Technical SEO"},
     {"key": "seo_dns_cloudflare", "task": "DNS migrated to Cloudflare", "category": "Technical SEO"},
-    # Local SEO & Citations
-    {"key": "seo_gbp_optimized", "task": "Google Business Profile fully optimized", "category": "Local SEO"},
-    {"key": "seo_gbp_photos", "task": "10+ photos on GBP (exterior, interior, team)", "category": "Local SEO"},
-    {"key": "seo_gbp_qa", "task": "GBP Q&A pre-populated (10-15 questions)", "category": "Local SEO"},
-    {"key": "seo_apple_business", "task": "Apple Business listing claimed & optimized", "category": "Local SEO"},
-    {"key": "seo_yelp", "task": "Yelp listing claimed & optimized", "category": "Local SEO"},
-    {"key": "seo_healthgrades", "task": "Healthgrades profile claimed", "category": "Local SEO"},
-    {"key": "seo_zocdoc", "task": "Zocdoc listing claimed", "category": "Local SEO"},
-    {"key": "seo_facebook", "task": "Facebook Business page set up", "category": "Local SEO"},
-    {"key": "seo_bing_places", "task": "Bing Places imported from GBP", "category": "Local SEO"},
-    {"key": "seo_nap_consistent", "task": "NAP consistent across all directories", "category": "Local SEO"},
-    {"key": "seo_tier2_citations", "task": "Tier 2 citation directories submitted", "category": "Local SEO"},
-    # Reviews
-    {"key": "seo_review_cards", "task": "QR review cards printed & at front desk", "category": "Reviews & Reputation"},
-    {"key": "seo_gradeus_setup", "task": "Grade.us review funnel configured", "category": "Reviews & Reputation"},
-    {"key": "seo_review_responses", "task": "Review response workflow active", "category": "Reviews & Reputation"},
+    # Local SEO & Citations (practice only)
+    {"key": "seo_gbp_optimized", "task": "Google Business Profile fully optimized", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_gbp_photos", "task": "10+ photos on GBP (exterior, interior, team)", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_gbp_qa", "task": "GBP Q&A pre-populated (10-15 questions)", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_apple_business", "task": "Apple Business listing claimed & optimized", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_yelp", "task": "Yelp listing claimed & optimized", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_healthgrades", "task": "Healthgrades profile claimed", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_zocdoc", "task": "Zocdoc listing claimed", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_facebook", "task": "Facebook Business page set up", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_bing_places", "task": "Bing Places imported from GBP", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_nap_consistent", "task": "NAP consistent across all directories", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_tier2_citations", "task": "Tier 2 citation directories submitted", "category": "Local SEO", "practice_only": True},
+    # Reviews (practice only)
+    {"key": "seo_review_cards", "task": "QR review cards printed & at front desk", "category": "Reviews & Reputation", "practice_only": True},
+    {"key": "seo_gradeus_setup", "task": "Grade.us review funnel configured", "category": "Reviews & Reputation", "practice_only": True},
+    {"key": "seo_review_responses", "task": "Review response workflow active", "category": "Reviews & Reputation", "practice_only": True},
 ]
 
 
-def _get_seo_tasks(checklist: dict[str, bool]) -> list[dict]:
-    """Return SEO/GEO tasks grouped by category with completion status."""
+def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice") -> list[dict]:
+    """Return SEO/GEO tasks grouped by category with completion status.
+
+    Filters tasks based on business_type — practice-only tasks (Local SEO,
+    Reviews, dental-specific content) are excluded for non-practice customers.
+    """
+    is_practice = business_type == "practice"
     tasks = []
     for t in SEO_GEO_TASKS:
+        # Skip practice-only tasks for non-practices
+        if t.get("practice_only") and not is_practice:
+            continue
+        # Skip non-practice-only tasks for practices
+        if t.get("non_practice_only") and is_practice:
+            continue
         tasks.append({
             "key": t["key"],
             "task": t["task"],
@@ -1588,6 +1607,51 @@ def api_run_steps(run_id):
         db.close()
 
 
+# --- Staging Preview ---
+
+@app.route("/staging/<customer_id>")
+@login_required
+def staging_preview(customer_id):
+    """Preview all staged files for a customer in a single page."""
+    staging_dir = Path(DATA_DIR) / "staging" / customer_id
+    if not staging_dir.exists():
+        flash("No staged changes found for this customer.", "warning")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    files = {}
+    for f in sorted(staging_dir.iterdir()):
+        if f.name.startswith("_"):
+            continue
+        files[f.name] = f.read_text(errors="replace")
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+    finally:
+        db.close()
+
+    return render_template("staging_preview.html", customer=customer, files=files, customer_id=customer_id)
+
+
+@app.route("/staging/<customer_id>/<filename>")
+@login_required
+def staging_file(customer_id, filename):
+    """Serve a single staged file with proper content type."""
+    staging_dir = Path(DATA_DIR) / "staging" / customer_id
+    filepath = staging_dir / filename
+    if not filepath.exists() or ".." in filename:
+        return "Not found", 404
+
+    content = filepath.read_text(errors="replace")
+    content_type = "text/plain; charset=utf-8"
+    if filename.endswith(".html"):
+        content_type = "text/html; charset=utf-8"
+    elif filename.endswith(".json"):
+        content_type = "application/json; charset=utf-8"
+
+    return content, 200, {"Content-Type": content_type}
+
+
 @app.route("/api/run/trigger", methods=["POST"])
 @login_required
 def api_trigger_run():
@@ -1643,6 +1707,47 @@ def api_trigger_run():
 
     flash(f"Pipeline run #{run_id} triggered for {customer['name']}.", "success")
     return redirect(url_for("run_detail", run_id=run_id))
+
+
+@app.route("/api/run/cancel", methods=["POST"])
+@login_required
+def api_cancel_run():
+    """Cancel a running pipeline run."""
+    customer_id = request.form.get("customer_id", "").strip()
+    run_id = request.form.get("run_id", type=int)
+
+    db = get_db()
+    try:
+        # Find the active run for this customer
+        if run_id:
+            run = db.get_run(run_id)
+        elif customer_id:
+            runs = db.conn.execute(
+                "SELECT * FROM runs WHERE customer_id = ? AND status = 'running' ORDER BY id DESC LIMIT 1",
+                (customer_id,)
+            ).fetchone()
+            run = dict(runs) if runs else None
+            run_id = run["id"] if run else None
+        else:
+            return jsonify({"error": "customer_id or run_id required"}), 400
+
+        if not run:
+            if request.headers.get("HX-Request"):
+                return '<span style="color:var(--warning);font-size:0.85rem;">No active run found</span>'
+            return jsonify({"error": "No active run found"}), 404
+
+        db.conn.execute("UPDATE runs SET status = 'failed', errors_json = ? WHERE id = ?",
+                        ('["Cancelled by user"]', run_id))
+        db.conn.commit()
+        logger.info(f"Cancelled run #{run_id} for {customer_id or run.get('customer_id')}")
+
+        if request.headers.get("HX-Request"):
+            return f'<span style="color:var(--warning);font-size:0.85rem;">Run #{run_id} cancelled</span>'
+
+        flash(f"Run #{run_id} cancelled.", "warning")
+        return redirect(url_for("customer_detail", customer_id=customer_id or run.get("customer_id")))
+    finally:
+        db.close()
 
 
 @app.route("/api/run/retry-step", methods=["POST"])

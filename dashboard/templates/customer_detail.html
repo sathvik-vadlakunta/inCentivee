@@ -18,6 +18,14 @@
             hx-indicator="#run-spinner">
             Run Agent <span id="run-spinner" class="htmx-indicator spinner" style="margin-left:4px;"></span>
         </button>
+        <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);"
+            hx-post="{{ url_for('api_cancel_run') }}"
+            hx-vals='{"customer_id":"{{ customer.id }}"}'
+            hx-confirm="Cancel the active run for {{ customer.name }}?"
+            hx-swap="innerHTML"
+            hx-target="#run-status">
+            Cancel Run
+        </button>
         <span id="run-status"></span>
         <a href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" class="btn btn-sm btn-outline" target="_blank">Case Study</a>
         <form method="POST" action="{{ url_for('api_generate_report') }}" style="display:inline;">
@@ -74,7 +82,7 @@
     <!-- Top summary row -->
     {% if places or (todos and todos | length > 0) %}
     <div class="grid grid-3" style="margin-bottom: 1rem;">
-        {% if places %}
+        {% if places and customer.business_type == 'practice' %}
         <div class="card stat">
             <div class="number stars">{{ "%.1f" | format(places.rating) }}</div>
             <div class="label">Google Rating ({{ places.review_count }} reviews)</div>
@@ -101,10 +109,10 @@
     <div class="grid grid-2">
         <!-- Left Column: Practice Info -->
         <div>
-            <!-- Practice Details -->
+            <!-- Business Details -->
             <div class="card">
                 <div class="section-header">
-                    <h2>Practice Details</h2>
+                    <h2>{% if customer.business_type == 'practice' %}Practice Details{% else %}Company Details{% endif %}</h2>
                     <button class="btn btn-sm btn-outline" onclick="document.getElementById('edit-form').style.display = document.getElementById('edit-form').style.display === 'none' ? 'block' : 'none'">Edit</button>
                 </div>
                 <table>
@@ -114,7 +122,9 @@
                     <tr><td style="color:var(--muted);">Phone</td><td>{{ customer.phone or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">Email</td><td>{{ customer.email or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">Hours</td><td style="font-size:0.8rem;">{{ customer.hours or '--' }}</td></tr>
+                    {% if customer.business_type == 'practice' %}
                     <tr><td style="color:var(--muted);">Emergency</td><td>{{ 'Yes' if customer.emergency_available else 'No' }}</td></tr>
+                    {% endif %}
                     {% if customer.specialties %}
                     <tr><td style="color:var(--muted);">Specialties</td><td>{{ customer.specialties | join(', ') }}</td></tr>
                     {% endif %}
@@ -219,7 +229,7 @@
             </div>
             {% endif %}
 
-            {% if competitors %}
+            {% if competitors and customer.business_type == 'practice' %}
             <div class="card">
                 <h2>Competitors</h2>
                 <table>
@@ -262,13 +272,25 @@
             <div class="card" style="border-color: {% if approved %}var(--success){% else %}#7c3aed{% endif %};">
                 <div class="section-header">
                     <h2>{% if approved %}Approved Changes{% else %}Staged Changes{% endif %}</h2>
-                    {% if not approved %}
-                    <form method="POST" action="{{ url_for('approve_staging', customer_id=customer.id) }}">
-                        <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                    </form>
-                    {% endif %}
+                    <div class="flex">
+                        <a href="{{ url_for('staging_preview', customer_id=customer.id) }}" class="btn btn-sm btn-outline">Preview Files</a>
+                        {% if not approved %}
+                        <form method="POST" action="{{ url_for('approve_staging', customer_id=customer.id) }}">
+                            <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </div>
-                {% if diff_report %}<div class="diff-report">{{ diff_report }}</div>{% endif %}
+                {% if staged_files %}
+                <div style="margin-top: 0.5rem;">
+                    {% for fname in staged_files %}
+                    <div style="padding: 0.3rem 0; font-size: 0.85rem; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+                        {% if fname.endswith('.html') %}🧩{% elif fname.endswith('.txt') %}📄{% else %}📋{% endif %}
+                        {{ fname }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
             {% endif %}
 

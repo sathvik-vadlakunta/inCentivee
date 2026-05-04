@@ -5,6 +5,8 @@ account_id = "64057faec3376a9cd325386637e90127"
 
 [vars]
 ALLOWED_ORIGIN = "https://practicerank.ai"
+RESEND_FROM = "PracticeRank <scores@practicerank.ai>"
+LEAD_NOTIFY_EMAILS = "kdoherty@practicerank.ai,jonlucas@lostrelic.com"
 
 [[kv_namespaces]]
 binding = "LEADS"

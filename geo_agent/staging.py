@@ -71,7 +71,7 @@ class StagingManager:
 
         staged_files = [
             f for f in stage_path.iterdir()
-            if f.is_file() and f.name != "_meta.json"
+            if f.is_file() and not f.name.startswith("_")
         ]
 
         for staged_file in sorted(staged_files):

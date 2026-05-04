@@ -254,7 +254,7 @@ Return ONLY valid JSON, no markdown code fences.
 
     response = client.messages.create(
         model="claude-opus-4-6",
-        max_tokens=4096,
+        max_tokens=8192,
         system=ANALYSIS_SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}],
     )

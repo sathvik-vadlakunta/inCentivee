@@ -418,7 +418,7 @@
     const html = document.documentElement;
     const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+    localStorage.setItem('pr-theme', next);
   }
   function toggleMobileMenu() {
     document.getElementById('mobileMenu').classList.toggle('active');
@@ -434,7 +434,7 @@
     if (window.innerWidth > 600) closeMobileMenu();
   });
   (function() {
-    const saved = localStorage.getItem('theme');
+    const saved = localStorage.getItem('pr-theme');
     if (saved) document.documentElement.setAttribute('data-theme', saved);
     else if (window.matchMedia('(prefers-color-scheme: light)').matches) document.documentElement.setAttribute('data-theme', 'light');
   })();

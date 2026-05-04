@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS customers (
     name TEXT NOT NULL,
     domain TEXT NOT NULL,
     platform TEXT NOT NULL DEFAULT 'webflow',  -- webflow/squarespace/wordpress
+    business_type TEXT NOT NULL DEFAULT 'practice',  -- practice/technology/product/service
     city TEXT NOT NULL DEFAULT '',
     state TEXT NOT NULL DEFAULT '',
     zip TEXT NOT NULL DEFAULT '',
@@ -228,6 +229,8 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE customers ADD COLUMN onboarding_step TEXT NOT NULL DEFAULT 'new'")
         if "hosting_info" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN hosting_info TEXT NOT NULL DEFAULT '{}'")
+        if "business_type" not in cols:
+            self.conn.execute("ALTER TABLE customers ADD COLUMN business_type TEXT NOT NULL DEFAULT 'practice'")
         self.conn.commit()
 
     def close(self):
@@ -247,6 +250,7 @@ class CustomerDB:
         name: str,
         domain: str,
         platform: str = "webflow",
+        business_type: str = "practice",
         city: str = "",
         state: str = "",
         zip: str = "",
@@ -263,12 +267,12 @@ class CustomerDB:
     ) -> str:
         self.conn.execute(
             """INSERT INTO customers
-            (id, name, domain, platform, city, state, zip, address, phone, email,
+            (id, name, domain, platform, business_type, city, state, zip, address, phone, email,
              brand_voice, webflow_site_id, specialties, insurance_accepted, hours,
              emergency_available, competitors_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
-                id, name, domain, platform, city, state, zip, address, phone, email,
+                id, name, domain, platform, business_type, city, state, zip, address, phone, email,
                 brand_voice, webflow_site_id,
                 json.dumps(specialties or []),
                 json.dumps(insurance_accepted or []),
@@ -381,6 +385,7 @@ class CustomerDB:
             address=data.get("address", ""),
             phone=data.get("phone", ""),
             zip_code=data.get("zip", ""),
+            business_type=data.get("business_type", "practice"),
             webflow_site_id=data.get("webflow_site_id", ""),
             webflow_api_key=webflow_api_key,
             specialties=data.get("specialties", []),
@@ -957,6 +962,7 @@ class CustomerDB:
                 name=c["name"],
                 domain=c["domain"],
                 platform="webflow" if c.get("webflow_site_id") else "unknown",
+                business_type=c.get("business_type", "practice"),
                 city=c.get("city", ""),
                 state=c.get("state", ""),
                 zip=c.get("zip_code", ""),

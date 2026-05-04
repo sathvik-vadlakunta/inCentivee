@@ -31,6 +31,7 @@ class Customer:
     phone: str = ""
     zip_code: str = ""
     platform: str = "webflow"  # webflow/squarespace/wordpress/generic
+    business_type: str = "practice"  # practice/technology/product/service
     webflow_site_id: str = ""
     webflow_api_key: str = ""
     specialties: list[str] = field(default_factory=list)
@@ -40,6 +41,7 @@ class Customer:
     insurance_accepted: list[str] = field(default_factory=list)
     hours: str = ""
     emergency_available: bool = False
+    business_type: str = "practice"  # practice/technology/product/service
 
     @classmethod
     def from_dict(cls, data: dict) -> Customer:

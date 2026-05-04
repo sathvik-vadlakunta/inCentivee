@@ -21,44 +21,84 @@ from geo_agent.google_places import (
 )
 
 
-def generate_dentist_schema(customer: Customer, verified_data: VerifiedBusinessData | None = None) -> dict:
-    """Generate the main Dentist/LocalBusiness schema for the homepage."""
+def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessData | None = None) -> dict:
+    """Generate the main schema for the homepage, adapted by business_type."""
+    bt = getattr(customer, "business_type", "practice")
+    is_practice = bt == "practice"
+
+    # Determine @type and @id suffix
+    if bt == "technology":
+        schema_type = "Organization"
+        id_suffix = "organization"
+    elif bt == "product":
+        schema_type = "Organization"
+        id_suffix = "organization"
+    elif bt == "service":
+        schema_type = "Organization"
+        id_suffix = "organization"
+    else:
+        schema_type = "Dentist"
+        id_suffix = "dentist"
+
     schema = {
         "@context": "https://schema.org",
-        "@type": "Dentist",
-        "@id": f"https://{customer.domain}/#dentist",
+        "@type": schema_type,
+        "@id": f"https://{customer.domain}/#{id_suffix}",
         "name": customer.name,
         "url": f"https://{customer.domain}/",
-        "telephone": customer.phone,
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": customer.address,
-            "addressLocality": customer.city,
-            "addressRegion": customer.state,
-            "postalCode": customer.zip_code,
-            "addressCountry": "US",
-        },
-        "priceRange": "$$-$$$$",
-        "medicalSpecialty": customer.specialties or ["General Dentistry"],
     }
 
-    if customer.hours:
+    if customer.phone:
+        schema["telephone"] = customer.phone
+
+    # Build address — only include fields that have values
+    address_fields = {}
+    if customer.address:
+        address_fields["streetAddress"] = customer.address
+    if customer.city:
+        address_fields["addressLocality"] = customer.city
+    if customer.state:
+        address_fields["addressRegion"] = customer.state
+    if customer.zip_code:
+        address_fields["postalCode"] = customer.zip_code
+    if address_fields:
+        address_fields["@type"] = "PostalAddress"
+        address_fields["addressCountry"] = "US"
+        schema["address"] = address_fields
+
+    # Practice-specific fields
+    if is_practice:
+        schema["priceRange"] = "$$-$$$$"
+        schema["medicalSpecialty"] = customer.specialties or ["General Dentistry"]
+    else:
+        # Non-practice: use knowsAbout instead of medicalSpecialty
+        if customer.specialties:
+            schema["knowsAbout"] = customer.specialties
+
+    if is_practice and customer.hours:
         schema["openingHours"] = customer.hours
 
-    if customer.insurance_accepted:
+    if is_practice and customer.insurance_accepted:
         schema["paymentAccepted"] = "Cash, Credit Card, Insurance"
         schema["currenciesAccepted"] = "USD"
 
-    if customer.emergency_available:
+    if is_practice and customer.emergency_available:
         schema["availableService"] = {
             "@type": "MedicalProcedure",
             "name": "Emergency Dental Care",
             "description": f"Same-day emergency dental appointments available at {customer.name}.",
         }
 
-    # Add AggregateRating from verified Google review data
-    # Only when confidence meets threshold — prevents using another business's reviews
-    if is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
+    # Nested type for technology businesses
+    if bt == "technology":
+        schema["additionalType"] = "https://schema.org/SoftwareApplication"
+
+    # Nested type for service businesses
+    if bt == "service":
+        schema["additionalType"] = "https://schema.org/LocalBusiness"
+
+    # Add AggregateRating from verified Google review data (practice only)
+    if is_practice and is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
         schema["aggregateRating"] = {
             "@type": "AggregateRating",
             "ratingValue": str(verified_data.rating),
@@ -69,6 +109,8 @@ def generate_dentist_schema(customer: Customer, verified_data: VerifiedBusinessD
 
     # Override address with Google-verified data when confidence is high
     if is_trusted(verified_data, CONFIDENCE_FOR_ADDRESS):
+        if "address" not in schema:
+            schema["address"] = {"@type": "PostalAddress", "addressCountry": "US"}
         if verified_data.address:
             schema["address"]["streetAddress"] = verified_data.address
         if verified_data.city:
@@ -92,8 +134,20 @@ def generate_dentist_schema(customer: Customer, verified_data: VerifiedBusinessD
     return schema
 
 
+# Keep backward-compatible alias
+generate_dentist_schema = generate_primary_schema
+
+
 def generate_provider_schemas(customer: Customer) -> list[dict]:
-    """Generate Person schema for each dentist/provider."""
+    """Generate Person schema for each provider/team member."""
+    bt = getattr(customer, "business_type", "practice")
+    if bt == "practice":
+        works_for_type = "Dentist"
+        works_for_id = f"https://{customer.domain}/#dentist"
+    else:
+        works_for_type = "Organization"
+        works_for_id = f"https://{customer.domain}/#organization"
+
     schemas = []
     for provider in customer.providers:
         schema = {
@@ -102,8 +156,8 @@ def generate_provider_schemas(customer: Customer) -> list[dict]:
             "name": provider.name,
             "jobTitle": provider.credentials,
             "worksFor": {
-                "@type": "Dentist",
-                "@id": f"https://{customer.domain}/#dentist",
+                "@type": works_for_type,
+                "@id": works_for_id,
                 "name": customer.name,
             },
         }
@@ -172,8 +226,8 @@ def generate_all_schemas(customer: Customer, verified_data: VerifiedBusinessData
     """Generate all schema markup as injectable HTML script tags."""
     tags = []
 
-    # Main dentist schema
-    tags.append(schema_to_script_tag(generate_dentist_schema(customer, verified_data=verified_data)))
+    # Main business schema (Dentist for practices, Organization for others)
+    tags.append(schema_to_script_tag(generate_primary_schema(customer, verified_data=verified_data)))
 
     # Provider schemas
     for provider_schema in generate_provider_schemas(customer):

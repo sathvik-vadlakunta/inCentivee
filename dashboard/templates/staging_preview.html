@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Staged Changes — {{ customer.name }}{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <div>
+        <h1>Staged Changes</h1>
+        <span style="color: var(--muted);">{{ customer.name }} &mdash; {{ customer.domain }}</span>
+    </div>
+    <div class="flex">
+        <a href="{{ url_for('customer_detail', customer_id=customer_id) }}" class="btn btn-sm btn-outline">&larr; Back</a>
+    </div>
+</div>
+
+<p style="color: var(--muted); margin-bottom: 1.5rem;">
+    These files will be published to <strong>{{ customer.domain }}</strong> when approved.
+    Review each file below before approving.
+</p>
+
+{% for filename, content in files.items() %}
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+        <h3 style="margin: 0;">
+            {% if filename.endswith('.txt') %}📄{% elif filename.endswith('.html') %}🧩{% else %}📋{% endif %}
+            {{ filename }}
+        </h3>
+        <div class="flex" style="gap: 0.5rem;">
+            <span style="color: var(--muted); font-size: 0.8rem;">{{ content | length | filesizeformat }}</span>
+            <a href="{{ url_for('staging_file', customer_id=customer_id, filename=filename) }}"
+               class="btn btn-sm btn-outline" target="_blank">Raw</a>
+        </div>
+    </div>
+
+    {% if filename.endswith('.html') %}
+    <div style="margin-bottom: 0.75rem;">
+        <strong style="font-size: 0.8rem; color: var(--muted);">Preview (rendered):</strong>
+        <div style="background: #fff; color: #333; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-top: 0.5rem; max-height: 300px; overflow-y: auto;">
+            {{ content | safe }}
+        </div>
+    </div>
+    <details>
+        <summary style="cursor: pointer; font-size: 0.85rem; color: var(--primary); margin-bottom: 0.5rem;">View source code</summary>
+        <pre style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.8rem; max-height: 400px; overflow-y: auto;">{{ content }}</pre>
+    </details>
+    {% elif filename == 'robots.txt' %}
+    <pre style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.8rem; max-height: 400px; overflow-y: auto;">{{ content }}</pre>
+    {% elif filename.endswith('.txt') %}
+    <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; max-height: 500px; overflow-y: auto;">
+        {% for line in content.split('\n') %}
+            {% if line.startswith('# ') %}
+                <h2 style="margin: 0.5rem 0;">{{ line[2:] }}</h2>
+            {% elif line.startswith('## ') %}
+                <h3 style="margin: 0.5rem 0; color: var(--primary);">{{ line[3:] }}</h3>
+            {% elif line.startswith('> ') %}
+                <blockquote style="border-left: 3px solid var(--primary); padding-left: 1rem; margin: 0.75rem 0; color: var(--muted); font-style: italic;">{{ line[2:] }}</blockquote>
+            {% elif line.startswith('- ') %}
+                <div style="padding: 0.2rem 0 0.2rem 1rem;">{{ line }}</div>
+            {% elif line.strip() %}
+                <p style="margin: 0.25rem 0;">{{ line }}</p>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <pre style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; overflow-x: auto; font-size: 0.8rem; max-height: 400px; overflow-y: auto;">{{ content }}</pre>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% if not files %}
+<div class="card" style="text-align: center; padding: 2rem;">
+    <p style="color: var(--muted);">No staged files found. Run the agent first.</p>
+</div>
+{% endif %}
+
+{% endblock %}
