@@ -161,7 +161,10 @@ CREATE TABLE IF NOT EXISTS content_recommendations (
     ai_impact_reason TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     reviewed_at TEXT,
-    published_at TEXT
+    published_at TEXT,
+    webflow_item_id TEXT,
+    webflow_collection_id TEXT,
+    publish_error TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_content_recs_customer ON content_recommendations(customer_id);
@@ -210,6 +213,16 @@ CREATE TABLE IF NOT EXISTS webflow_oauth_apps (
     client_id TEXT NOT NULL,
     client_secret TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+CREATE TABLE IF NOT EXISTS webflow_collections (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    collection_type TEXT NOT NULL,  -- blog_posts/faqs
+    webflow_collection_id TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE(customer_id, collection_type)
 );
 """
 
@@ -904,6 +917,62 @@ class CustomerDB:
             (customer_id,),
         )
         return cur.fetchone()[0]
+
+    def get_content_recommendation(self, rec_id: str) -> dict | None:
+        """Get a single content recommendation by ID."""
+        cur = self.conn.execute(
+            "SELECT * FROM content_recommendations WHERE id = ?", (rec_id,)
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def update_recommendation_webflow_ids(
+        self, rec_id: str, webflow_item_id: str, webflow_collection_id: str
+    ) -> None:
+        """Store Webflow item/collection IDs after successful publish."""
+        self.conn.execute(
+            """UPDATE content_recommendations
+            SET webflow_item_id = ?, webflow_collection_id = ?, publish_error = NULL,
+                status = 'published', published_at = ?
+            WHERE id = ?""",
+            (webflow_item_id, webflow_collection_id,
+             datetime.now(timezone.utc).isoformat(), rec_id),
+        )
+        self.conn.commit()
+
+    def set_recommendation_publish_error(self, rec_id: str, error: str) -> None:
+        """Store a publish error on a recommendation."""
+        self.conn.execute(
+            "UPDATE content_recommendations SET publish_error = ? WHERE id = ?",
+            (error, rec_id),
+        )
+        self.conn.commit()
+
+    # --- Webflow Collections Cache ---
+
+    def save_webflow_collection(
+        self, customer_id: str, collection_type: str,
+        webflow_collection_id: str, display_name: str
+    ) -> None:
+        """Cache a Webflow collection mapping."""
+        import uuid
+        self.conn.execute(
+            """INSERT OR REPLACE INTO webflow_collections
+            (id, customer_id, collection_type, webflow_collection_id, display_name)
+            VALUES (?, ?, ?, ?, ?)""",
+            (str(uuid.uuid4()), customer_id, collection_type, webflow_collection_id, display_name),
+        )
+        self.conn.commit()
+
+    def get_webflow_collection(self, customer_id: str, collection_type: str) -> dict | None:
+        """Get cached Webflow collection for a customer/type."""
+        cur = self.conn.execute(
+            """SELECT * FROM webflow_collections
+            WHERE customer_id = ? AND collection_type = ?""",
+            (customer_id, collection_type),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
     # --- Alerts ---
 

@@ -7,7 +7,10 @@
         <h1>Content Recommendations</h1>
         <a href="{{ url_for('customer_detail', customer_id=customer.id) }}" style="color: var(--muted); font-size: 0.85rem;">&larr; {{ customer.name }}</a>
     </div>
-    <div class="flex">
+    <div class="flex" style="gap: 0.5rem;">
+        {% if counts.approved > 0 %}
+        <button class="btn btn-success btn-sm" onclick="publishAllToWebflow('{{ customer.id }}')" id="publish-all-btn">Publish All to Webflow ({{ counts.approved }})</button>
+        {% endif %}
         <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">Generate New</button>
     </div>
 </div>
@@ -54,7 +57,12 @@
     <div class="card" id="rec-{{ rec.id }}" style="border-left: 3px solid {% if rec.status == 'approved' %}var(--success){% elif rec.status == 'rejected' %}var(--danger){% elif rec.status == 'published' %}var(--primary){% else %}var(--warning){% endif %}; margin-bottom: 0.75rem;">
         <div class="section-header" style="margin-bottom: 0.35rem;">
             <div style="flex: 1;">
-                <h3 style="font-size: 0.95rem; margin-bottom: 0.15rem;">{{ rec.title }}</h3>
+                <h3 style="font-size: 0.95rem; margin-bottom: 0.15rem;">
+                    {{ rec.title }}
+                    {% if rec.webflow_item_id %}
+                    <span style="display: inline-block; background: var(--primary); color: #fff; font-size: 0.65rem; padding: 1px 6px; border-radius: 3px; vertical-align: middle; margin-left: 0.5rem;">Webflow</span>
+                    {% endif %}
+                </h3>
                 <div style="display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--muted);">
                     <span>Priority {{ rec.priority }}</span>
                     <span>{{ rec.category | title }}</span>
@@ -62,13 +70,16 @@
                     <span>{{ rec.created_at[:10] }}</span>
                 </div>
             </div>
-            <div class="flex">
+            <div class="flex" style="gap: 0.35rem;">
                 {% if rec.status == 'pending' %}
                 <button class="btn btn-success btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'approved', this)">Approve</button>
                 <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="updateRecStatus('{{ rec.id }}', 'rejected', this)">Reject</button>
                 {% elif rec.status == 'approved' %}
                 <span class="badge badge-approved" style="margin-right: 0.5rem;">Approved</span>
-                <button class="btn btn-primary btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
+                {% if rec.rec_type in ('blog_post', 'faq_update', 'new_page') %}
+                <button class="btn btn-primary btn-sm" onclick="publishToWebflow('{{ rec.id }}', this)">Publish to Webflow</button>
+                {% endif %}
+                <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
                 {% elif rec.status == 'published' %}
                 <span class="badge badge-active">Published</span>
                 {% else %}
@@ -78,6 +89,12 @@
             </div>
         </div>
 
+        {% if rec.publish_error %}
+        <p style="font-size: 0.8rem; color: var(--danger); margin-bottom: 0.35rem; background: rgba(220,53,69,0.05); padding: 0.35rem 0.5rem; border-radius: 4px;">
+            <strong>Publish Error:</strong> {{ rec.publish_error }}
+        </p>
+        {% endif %}
+
         <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.35rem;">{{ rec.description }}</p>
 
         {% if rec.ai_impact_reason %}
@@ -86,21 +103,28 @@
         </p>
         {% endif %}
 
+        <!-- Visual Preview -->
+        {% if rec.html_snippet %}
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem;">
+            <span style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;">Preview</span>
+            <a href="{{ url_for('content_preview', customer_id=customer.id, rec_id=rec.id) }}" target="_blank" style="font-size: 0.75rem; color: var(--primary); text-decoration: none;">Open full preview &rarr;</a>
+        </div>
+        <iframe class="content-preview" sandbox="allow-same-origin"
+                data-rec-id="{{ rec.id }}"
+                data-rec-type="{{ rec.rec_type }}"
+                data-title="{{ rec.title | e }}"
+                data-category="{{ rec.category | title | e }}"
+                data-date="{{ rec.created_at[:10] }}"
+                style="width:100%; border:1px solid var(--border); border-radius:6px; background:#fff; margin-bottom:0.5rem; min-height:120px;"></iframe>
+        <script type="text/html" id="html-{{ rec.id }}">{{ rec.html_snippet }}</script>
+
+        <!-- Raw HTML toggle -->
         <details>
-            <summary style="font-size: 0.85rem; color: var(--primary); cursor: pointer; margin-bottom: 0.5rem;">View HTML Content</summary>
-
-            <!-- Rendered preview -->
-            <div style="margin-top: 0.5rem; padding: 1.25rem; background: #fff; border: 1px solid var(--border); border-radius: 6px; font-family: -apple-system, sans-serif; font-size: 14px; line-height: 1.6; max-height: 400px; overflow-y: auto;">
-                {{ rec.html_snippet | safe }}
-            </div>
-
-            <!-- Raw HTML -->
-            <details style="margin-top: 0.5rem;">
-                <summary style="font-size: 0.8rem; color: var(--muted); cursor: pointer;">View Raw HTML</summary>
-                <div class="snippet-code" style="margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ rec.html_snippet | e }}</div>
-                <button class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="copySnippet(this)">Copy HTML</button>
-            </details>
+            <summary style="font-size: 0.8rem; color: var(--muted); cursor: pointer;">View Raw HTML</summary>
+            <div class="snippet-code" style="margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ rec.html_snippet | e }}</div>
+            <button class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="copySnippet(this)">Copy HTML</button>
         </details>
+        {% endif %}
     </div>
     {% endfor %}
 </div>
@@ -114,6 +138,90 @@
 {% endif %}
 
 <script>
+// --- Preview rendering ---
+const BLOG_STYLE = `
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         line-height: 1.75; color: #1a1a2e; max-width: 700px; margin: 0 auto;
+         padding: 2rem 1.5rem; font-size: 15px; }
+  h1 { font-size: 1.6rem; margin: 0 0 0.25rem; color: #111; }
+  h2 { font-size: 1.25rem; margin-top: 1.75rem; color: #222; border-bottom: 1px solid #eee; padding-bottom: 0.35rem; }
+  h3 { font-size: 1.1rem; margin-top: 1.25rem; color: #333; }
+  p { margin: 0.75rem 0; }
+  .byline { color: #888; font-size: 0.85rem; margin-bottom: 1.5rem;
+            border-bottom: 1px solid #eee; padding-bottom: 0.75rem; }
+  img { max-width: 100%; border-radius: 8px; margin: 1rem 0; }
+  blockquote { border-left: 3px solid #4361ee; padding: 0.5rem 1rem; color: #555;
+               margin: 1rem 0; background: #f8f9ff; border-radius: 0 6px 6px 0; }
+  ul, ol { padding-left: 1.5rem; }
+  li { margin: 0.35rem 0; }
+  a { color: #4361ee; }
+  strong { color: #111; }
+`;
+const FAQ_STYLE = `
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         line-height: 1.65; color: #1a1a2e; padding: 1.25rem 1.5rem; font-size: 15px; }
+  .faq-q { font-weight: 700; font-size: 1.1rem; margin-bottom: 0.75rem; color: #111;
+           display: flex; align-items: flex-start; gap: 0.5rem; }
+  .faq-q::before { content: 'Q'; display: inline-flex; align-items: center; justify-content: center;
+                   min-width: 26px; height: 26px; background: #4361ee; color: #fff;
+                   border-radius: 50%; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; }
+  .faq-a { color: #444; padding: 0.75rem 1rem; border-left: 3px solid #4361ee;
+           background: #f8f9ff; border-radius: 0 6px 6px 0; margin-left: 0.25rem; }
+  .faq-a p { margin: 0.5rem 0; }
+  .faq-a p:first-child { margin-top: 0; }
+`;
+const GENERIC_STYLE = `
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         line-height: 1.65; color: #1a1a2e; padding: 1.25rem 1.5rem; font-size: 14px; }
+  img { max-width: 100%; } p { margin: 0.5rem 0; }
+  blockquote { border-left: 3px solid #4361ee; padding-left: 1rem; color: #555; margin: 1rem 0; }
+`;
+
+function renderPreviews() {
+    document.querySelectorAll('iframe.content-preview').forEach(frame => {
+        const recId = frame.dataset.recId;
+        const recType = frame.dataset.recType;
+        const title = frame.dataset.title;
+        const category = frame.dataset.category;
+        const date = frame.dataset.date;
+        const htmlEl = document.getElementById('html-' + recId);
+        if (!htmlEl) return;
+        const snippet = htmlEl.innerHTML;
+
+        let body, style;
+        if (recType === 'blog_post' || recType === 'new_page') {
+            style = BLOG_STYLE;
+            body = '<article><h1>' + title + '</h1>'
+                 + '<div class="byline">By PracticeRank &middot; ' + category + ' &middot; ' + date + '</div>'
+                 + snippet + '</article>';
+        } else if (recType === 'faq_update') {
+            style = FAQ_STYLE;
+            body = '<div class="faq-q"><span>' + title + '</span></div>'
+                 + '<div class="faq-a">' + snippet + '</div>';
+        } else {
+            style = GENERIC_STYLE;
+            body = snippet;
+        }
+
+        const doc = frame.contentDocument;
+        doc.open();
+        doc.write('<!DOCTYPE html><html><head><meta charset="utf-8"><style>' + style + '</style></head><body>' + body + '</body></html>');
+        doc.close();
+
+        // Auto-resize to content height
+        function resize() {
+            const h = doc.documentElement.scrollHeight;
+            frame.style.height = Math.min(Math.max(h + 8, 100), 500) + 'px';
+        }
+        resize();
+        // Resize again after images load
+        frame.contentWindow.addEventListener('load', resize);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', renderPreviews);
+
+// --- Actions ---
 function generateContent(customerId) {
     const btn = document.getElementById('gen-btn');
     btn.disabled = true;
@@ -151,6 +259,77 @@ function updateRecStatus(recId, status, btn) {
     .then(r => r.json())
     .then(data => {
         if (data.ok) location.reload();
+    });
+}
+
+function publishToWebflow(recId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Publishing...';
+    fetch('/api/content/publish', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_id: recId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Published!';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            btn.textContent = 'Failed';
+            alert(data.error || data.results?.[0]?.error || 'Publish failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Publish to Webflow'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Publish to Webflow'; }, 3000);
+    });
+}
+
+function publishAllToWebflow(customerId) {
+    const btn = document.getElementById('publish-all-btn');
+    if (!confirm('Publish all approved CMS-compatible content to Webflow?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Publishing...';
+
+    const recIds = [];
+    document.querySelectorAll('[id^="rec-"]').forEach(card => {
+        const publishBtn = card.querySelector('button[onclick^="publishToWebflow"]');
+        if (publishBtn) {
+            recIds.push(card.id.replace('rec-', ''));
+        }
+    });
+
+    if (recIds.length === 0) {
+        btn.textContent = 'Nothing to publish';
+        btn.disabled = false;
+        return;
+    }
+
+    fetch('/api/content/publish', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_ids: recIds})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Published ' + data.published + '/' + data.total + '!';
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            btn.textContent = 'Failed';
+            alert(data.error || 'Batch publish failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Publish All to Webflow'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Publish All to Webflow'; }, 3000);
     });
 }
 

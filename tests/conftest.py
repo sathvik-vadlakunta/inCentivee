@@ -219,6 +219,24 @@ def customers_json_file(tmp_path, sample_customer, monkeypatch):
 
 
 @pytest.fixture
+def sample_content_recommendation() -> dict:
+    """A sample content recommendation matching the DB schema."""
+    return {
+        "id": "rec-test-001",
+        "customer_id": "hilltop-dental",
+        "rec_type": "blog_post",
+        "target_page": "new",
+        "title": "5 Signs You Need a Dental Implant",
+        "description": "Educational blog post targeting 'dental implant signs' keyword cluster.",
+        "html_snippet": "<h2>5 Signs You Need a Dental Implant</h2><p>Missing teeth can affect more than your smile...</p><h3>1. You have a missing tooth</h3><p>Even a single missing tooth can lead to bone loss.</p>",
+        "priority": 2,
+        "category": "implants",
+        "status": "approved",
+        "ai_impact_reason": "Targets 1,200 monthly searches with low competition.",
+    }
+
+
+@pytest.fixture
 def sample_verified_data() -> VerifiedBusinessData:
     """Verified Google Places data for Hilltop Family Dental."""
     return VerifiedBusinessData(

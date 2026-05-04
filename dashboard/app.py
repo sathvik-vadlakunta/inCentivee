@@ -2024,6 +2024,21 @@ def customer_content(customer_id):
         db.close()
 
 
+@app.route("/customer/<customer_id>/content/preview/<rec_id>")
+@login_required
+def content_preview(customer_id, rec_id):
+    """Full-page rendered preview of a content recommendation."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        rec = db.get_content_recommendation(rec_id)
+        if not customer or not rec or rec["customer_id"] != customer_id:
+            return "Not found", 404
+        return render_template("content_preview.html", customer=customer, rec=rec)
+    finally:
+        db.close()
+
+
 @app.route("/api/content/status", methods=["POST"])
 @login_required
 def api_content_status():
@@ -2039,6 +2054,59 @@ def api_content_status():
     try:
         ok = db.update_content_recommendation_status(rec_id, new_status)
         return jsonify({"ok": ok, "status": new_status})
+    finally:
+        db.close()
+
+
+@app.route("/api/content/publish", methods=["POST"])
+@login_required
+def api_content_publish():
+    """Publish approved content recommendations to Webflow CMS."""
+    data = request.get_json()
+    rec_ids = data.get("rec_ids", [])
+    if not rec_ids and data.get("rec_id"):
+        rec_ids = [data["rec_id"]]
+
+    if not rec_ids:
+        return jsonify({"error": "rec_id or rec_ids[] required"}), 400
+
+    db = get_db()
+    try:
+        # Get customer from first rec
+        rec = db.get_content_recommendation(rec_ids[0])
+        if not rec:
+            return jsonify({"error": "Recommendation not found"}), 404
+
+        customer_id = rec["customer_id"]
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        # Get OAuth token
+        oauth_token = db.get_webflow_oauth_token(customer_id)
+        if not oauth_token:
+            return jsonify({"error": "No Webflow OAuth token. Connect Webflow first."}), 400
+
+        site_id = customer.get("webflow_site_id", "")
+        if not site_id:
+            return jsonify({"error": "No Webflow site_id configured for this customer."}), 400
+
+        from geo_agent.publishers.webflow import WebflowPublisher
+        from geo_agent.publishers.webflow_content import WebflowContentPublisher
+
+        publisher = WebflowPublisher(api_key=oauth_token, site_id=site_id)
+        try:
+            content_pub = WebflowContentPublisher(publisher, db, customer_id)
+            results = content_pub.publish_batch(rec_ids)
+            success_count = sum(1 for r in results if r["ok"])
+            return jsonify({
+                "ok": success_count > 0,
+                "published": success_count,
+                "total": len(rec_ids),
+                "results": results,
+            })
+        finally:
+            publisher.close()
     finally:
         db.close()
 

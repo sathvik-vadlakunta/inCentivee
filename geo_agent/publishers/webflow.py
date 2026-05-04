@@ -145,5 +145,159 @@ class WebflowPublisher:
             logger.error(f"Failed to publish site: {e}")
             return False
 
+    # --- CMS Collection Management ---
+
+    def list_collections(self) -> list[dict]:
+        """List all CMS collections on the site."""
+        try:
+            resp = self.client.get(f"/sites/{self.site_id}/collections")
+            resp.raise_for_status()
+            return resp.json().get("collections", [])
+        except Exception as e:
+            logger.error(f"Failed to list collections: {e}")
+            return []
+
+    def get_collection(self, collection_id: str) -> dict | None:
+        """Get collection details including fields."""
+        try:
+            resp = self.client.get(f"/collections/{collection_id}")
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.error(f"Failed to get collection {collection_id}: {e}")
+            return None
+
+    def find_collection(self, display_name: str) -> dict | None:
+        """Find a collection by display name (case-insensitive)."""
+        for col in self.list_collections():
+            if col.get("displayName", "").lower() == display_name.lower():
+                return col
+        return None
+
+    def create_collection(self, display_name: str, slug: str) -> dict | None:
+        """Create a new CMS collection."""
+        try:
+            resp = self.client.post(
+                f"/sites/{self.site_id}/collections",
+                json={"displayName": display_name, "singularName": display_name, "slug": slug},
+            )
+            resp.raise_for_status()
+            collection = resp.json()
+            logger.info(f"Created collection: {display_name} ({collection.get('id', '')})")
+            return collection
+        except Exception as e:
+            logger.error(f"Failed to create collection {display_name}: {e}")
+            return None
+
+    def list_collection_items(self, collection_id: str) -> list[dict]:
+        """List all items in a collection."""
+        items = []
+        offset = 0
+        while True:
+            try:
+                resp = self.client.get(
+                    f"/collections/{collection_id}/items",
+                    params={"offset": offset, "limit": 100},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                batch = data.get("items", [])
+                items.extend(batch)
+                if len(batch) < 100:
+                    break
+                offset += 100
+            except Exception as e:
+                logger.error(f"Failed to list collection items: {e}")
+                break
+        return items
+
+    def create_collection_item(self, collection_id: str, fields: dict, publish: bool = False) -> dict | None:
+        """Create a new item in a CMS collection."""
+        try:
+            payload = {"fieldData": fields}
+            resp = self.client.post(
+                f"/collections/{collection_id}/items",
+                json=payload,
+                params={"live": "true"} if publish else {},
+            )
+            resp.raise_for_status()
+            item = resp.json()
+            logger.info(f"Created collection item: {fields.get('name', fields.get('slug', 'unknown'))}")
+            return item
+        except Exception as e:
+            logger.error(f"Failed to create collection item: {e}")
+            return None
+
+    def update_collection_item(self, collection_id: str, item_id: str, fields: dict, publish: bool = False) -> bool:
+        """Update an existing CMS collection item."""
+        try:
+            payload = {"fieldData": fields}
+            resp = self.client.patch(
+                f"/collections/{collection_id}/items/{item_id}",
+                json=payload,
+                params={"live": "true"} if publish else {},
+            )
+            resp.raise_for_status()
+            logger.info(f"Updated collection item: {item_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update collection item {item_id}: {e}")
+            return False
+
+    def delete_collection_item(self, collection_id: str, item_id: str) -> bool:
+        """Delete a CMS collection item."""
+        try:
+            resp = self.client.delete(f"/collections/{collection_id}/items/{item_id}")
+            resp.raise_for_status()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete collection item {item_id}: {e}")
+            return False
+
+    # --- Page Content ---
+
+    def list_pages(self) -> list[dict]:
+        """List all pages on the site."""
+        pages = []
+        offset = 0
+        while True:
+            try:
+                resp = self.client.get(
+                    f"/sites/{self.site_id}/pages",
+                    params={"offset": offset, "limit": 100},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                batch = data.get("pages", [])
+                pages.extend(batch)
+                if len(batch) < 100:
+                    break
+                offset += 100
+            except Exception as e:
+                logger.error(f"Failed to list pages: {e}")
+                break
+        return pages
+
+    def update_page_seo(self, page_id: str, title: str | None = None,
+                        description: str | None = None) -> bool:
+        """Update a page's SEO title and meta description."""
+        try:
+            body: dict = {}
+            if title:
+                body["seo"] = body.get("seo", {})
+                body["seo"]["title"] = title
+            if description:
+                body["seo"] = body.get("seo", {})
+                body["seo"]["description"] = description
+            if not body:
+                return True
+            resp = self.client.put(f"/pages/{page_id}", json=body)
+            resp.raise_for_status()
+            logger.info(f"Updated SEO for page {page_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update page SEO {page_id}: {e}")
+            return False
+
     def close(self):
         self.client.close()

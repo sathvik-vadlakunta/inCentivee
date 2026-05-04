@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ rec.title }} — Preview</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            line-height: 1.75;
+            color: #1a1a2e;
+            background: #f5f5f7;
+        }
+
+        /* Preview banner */
+        .preview-banner {
+            background: #111;
+            color: #fff;
+            padding: 0.5rem 1.5rem;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .preview-banner a { color: #7aa2f7; text-decoration: none; }
+        .preview-banner .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-pending { background: #f59e0b; color: #000; }
+        .badge-approved { background: #22c55e; color: #fff; }
+        .badge-published { background: #4361ee; color: #fff; }
+        .badge-rejected { background: #ef4444; color: #fff; }
+
+        /* Article layout */
+        .page-container {
+            max-width: 780px;
+            margin: 2rem auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 8px 30px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        /* Blog post style */
+        .article-header {
+            padding: 3rem 3rem 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        .article-header h1 {
+            font-size: 2rem;
+            line-height: 1.25;
+            color: #111;
+            margin-bottom: 0.75rem;
+        }
+        .article-meta {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        .article-meta span + span::before {
+            content: '\00b7';
+            margin: 0 0.5rem;
+        }
+        .article-body {
+            padding: 2rem 3rem 3rem;
+            font-size: 1.05rem;
+        }
+        .article-body h2 {
+            font-size: 1.5rem;
+            margin-top: 2.5rem;
+            margin-bottom: 0.75rem;
+            color: #111;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 0.5rem;
+        }
+        .article-body h3 {
+            font-size: 1.2rem;
+            margin-top: 1.75rem;
+            margin-bottom: 0.5rem;
+            color: #222;
+        }
+        .article-body p {
+            margin: 1rem 0;
+        }
+        .article-body ul, .article-body ol {
+            margin: 1rem 0;
+            padding-left: 1.75rem;
+        }
+        .article-body li {
+            margin: 0.35rem 0;
+        }
+        .article-body blockquote {
+            border-left: 4px solid #4361ee;
+            margin: 1.5rem 0;
+            padding: 1rem 1.5rem;
+            background: #f8f9ff;
+            border-radius: 0 8px 8px 0;
+            color: #444;
+            font-style: italic;
+        }
+        .article-body blockquote cite {
+            display: block;
+            margin-top: 0.5rem;
+            font-style: normal;
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .article-body img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 1.5rem 0;
+        }
+        .article-body a {
+            color: #4361ee;
+        }
+        .article-body strong {
+            color: #111;
+        }
+
+        /* FAQ style */
+        .faq-container {
+            padding: 2.5rem 3rem;
+        }
+        .faq-container h1 {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .faq-container .faq-subtitle {
+            color: #888;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        /* Generic content */
+        .generic-container {
+            padding: 2.5rem 3rem;
+        }
+        .generic-container h1 {
+            font-size: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .article-header, .article-body, .faq-container, .generic-container {
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+            }
+            .article-header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="preview-banner">
+        <div>
+            <strong>STAGING PREVIEW</strong> &mdash; {{ rec.rec_type | replace('_', ' ') | title }}
+            <span class="badge badge-{{ rec.status }}">{{ rec.status }}</span>
+        </div>
+        <div>
+            <a href="{{ url_for('customer_content', customer_id=customer.id) }}">&larr; Back to Content</a>
+        </div>
+    </div>
+
+    <div class="page-container">
+        {% if rec.rec_type in ('blog_post', 'new_page') %}
+        <div class="article-header">
+            <h1>{{ rec.title }}</h1>
+            <div class="article-meta">
+                <span>{{ customer.name }}</span>
+                <span>{{ rec.category | title }}</span>
+                <span>{{ rec.created_at[:10] }}</span>
+            </div>
+        </div>
+        <div class="article-body">
+            {{ rec.html_snippet | safe }}
+        </div>
+
+        {% elif rec.rec_type == 'faq_update' %}
+        <div class="faq-container">
+            <h1>{{ rec.title }}</h1>
+            <p class="faq-subtitle">{{ rec.category | title }} &mdash; {{ customer.name }}</p>
+            <div class="article-body">
+                {{ rec.html_snippet | safe }}
+            </div>
+        </div>
+
+        {% else %}
+        <div class="generic-container">
+            <h1>{{ rec.title }}</h1>
+            <div class="article-body">
+                {{ rec.html_snippet | safe }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
