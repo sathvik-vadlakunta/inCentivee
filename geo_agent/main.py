@@ -199,13 +199,38 @@ def process_customer(
             audit.log(customer.id, "crawl_complete", {"pages_found": len(pages), "platform": platform})
             _finish("crawl", result={"pages_found": len(pages), "platform": platform})
         except Exception as e:
-            logger.error(f"  Crawl failed for {customer.id}: {type(e).__name__}")
-            summary["errors"].append(f"Crawl failed: {type(e).__name__}")
-            audit.log(customer.id, "crawl_failed", {"error": type(e).__name__})
-            _finish("crawl", status="failed", error_message=str(e))
-            if db and run_id:
-                db.update_run(run_id, status="failed", errors=summary["errors"])
-            return summary
+            if crawler:
+                crawler.close()
+                crawler = None
+            # Fall back to generic crawler if platform-specific one fails
+            if platform != "generic":
+                logger.warning(f"  {platform} crawler failed ({type(e).__name__}), falling back to generic")
+                try:
+                    crawler = get_crawler(
+                        platform="generic",
+                        domain=customer.domain,
+                    )
+                    pages = crawler.get_pages()
+                    summary["pages_crawled"] = len(pages)
+                    logger.info(f"  Crawled {len(pages)} pages (generic fallback)")
+                    audit.log(customer.id, "crawl_complete", {"pages_found": len(pages), "platform": "generic"})
+                    _finish("crawl", result={"pages_found": len(pages), "platform": "generic"})
+                except Exception as e2:
+                    logger.error(f"  Crawl failed for {customer.id}: {type(e2).__name__}")
+                    summary["errors"].append(f"Crawl failed: {type(e2).__name__}")
+                    audit.log(customer.id, "crawl_failed", {"error": type(e2).__name__})
+                    _finish("crawl", status="failed", error_message=str(e2))
+                    if db and run_id:
+                        db.update_run(run_id, status="failed", errors=summary["errors"])
+                    return summary
+            else:
+                logger.error(f"  Crawl failed for {customer.id}: {type(e).__name__}")
+                summary["errors"].append(f"Crawl failed: {type(e).__name__}")
+                audit.log(customer.id, "crawl_failed", {"error": type(e).__name__})
+                _finish("crawl", status="failed", error_message=str(e))
+                if db and run_id:
+                    db.update_run(run_id, status="failed", errors=summary["errors"])
+                return summary
         finally:
             if crawler:
                 crawler.close()
