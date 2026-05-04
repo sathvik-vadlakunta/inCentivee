@@ -187,7 +187,9 @@ def customer_detail(customer_id):
 
         checklist = db.get_checklist(customer_id)
         todos = _get_va_todos(customer, access, contacts, places, runs, staged, approved, checklist)
-        seo_tasks = _get_seo_tasks(checklist, customer.get("business_type", "practice"))
+        domain = customer.get("domain", "")
+        auto_detected = _auto_detect_seo_status(domain, customer_id) if domain else {}
+        seo_tasks = _get_seo_tasks(checklist, customer.get("business_type", "practice"), auto_detected=auto_detected)
         import markdown
         raw_templates = _get_email_templates()
         email_templates = []
@@ -495,11 +497,14 @@ def _verify_publish(customer_id: str, db) -> str:
 
     results = []
     try:
-        # Check if schema markup is in the live site head
+        # Check if schema markup is in the live site head (inline or via JS loader)
         resp = httpx.get(f"https://{domain}", timeout=15.0, follow_redirects=True)
         if resp.status_code == 200:
             body = resp.text
-            if "DentalRank Schema Start" in body or "PracticeRank" in body:
+            if ("PracticeRank Schema Start" in body
+                    or "practicerank_schema" in body
+                    or "PracticeRank Schema" in body
+                    or "application/ld+json" in body):
                 results.append("schema confirmed on site")
             else:
                 results.append("schema NOT detected on site yet (may take a few minutes)")
@@ -507,16 +512,62 @@ def _verify_publish(customer_id: str, db) -> str:
         logger.warning(f"Verification fetch failed for {domain}: {e}")
 
     try:
-        # Check llms.txt
+        # Check llms.txt — first try the domain directly, then fall back to Worker URL
         resp = httpx.get(f"https://{domain}/llms.txt", timeout=10.0, follow_redirects=True)
         if resp.status_code == 200 and len(resp.text) > 50:
-            results.append("llms.txt live")
+            results.append("llms.txt live on domain")
+        elif WORKER_API_URL:
+            resp2 = httpx.get(f"{WORKER_API_URL}/geo/{domain}/llms.txt", timeout=10.0)
+            if resp2.status_code == 200 and len(resp2.text) > 50:
+                results.append(f"llms.txt served via Worker ({WORKER_API_URL}/geo/{domain}/llms.txt)")
+            else:
+                results.append("llms.txt not found")
         else:
-            results.append("llms.txt not found (needs Cloudflare Worker)")
+            results.append("llms.txt not found (configure WORKER_API_URL)")
     except Exception:
         pass
 
     return "; ".join(results) if results else ""
+
+
+WORKER_API_URL = os.environ.get("WORKER_API_URL", "")
+WORKER_SECRET = os.environ.get("WORKER_SECRET", "")
+
+
+def _publish_llms_to_worker(customer_id: str, db, stage_path: Path) -> list[str]:
+    """Push llms.txt and llms-full.txt to the PracticeRank Worker for serving. Returns warnings."""
+    warnings = []
+    if not WORKER_API_URL or not WORKER_SECRET:
+        return warnings  # Silently skip if not configured
+
+    customer = db.get_customer(customer_id)
+    domain = customer.get("domain", "") if customer else ""
+    if not domain:
+        return warnings
+
+    for filename in ("llms.txt", "llms-full.txt", "robots.txt"):
+        filepath = stage_path / filename
+        if not filepath.exists():
+            continue
+        content = filepath.read_text()
+        try:
+            resp = httpx.put(
+                f"{WORKER_API_URL}/geo/{domain}/{filename}",
+                content=content,
+                headers={
+                    "Authorization": f"Bearer {WORKER_SECRET}",
+                    "Content-Type": "text/plain",
+                },
+                timeout=15.0,
+            )
+            if resp.status_code == 200:
+                logger.info(f"Pushed {filename} to Worker for {domain}")
+            else:
+                warnings.append(f"Failed to push {filename} to Worker: {resp.status_code}")
+        except Exception as e:
+            warnings.append(f"Worker upload error for {filename}: {e}")
+
+    return warnings
 
 
 def _publish_to_webflow(customer_id: str, db, staging) -> list[str]:
@@ -570,6 +621,10 @@ def publish_staging(customer_id):
         # Try auto-publish to Webflow
         webflow_warnings = _publish_to_webflow(customer_id, db, staging)
 
+        # Push llms.txt/robots.txt to Worker for serving
+        stage_path = Path(DATA_DIR) / "staging" / customer_id
+        worker_warnings = _publish_llms_to_worker(customer_id, db, stage_path)
+
         # Move staged → published
         published = staging.publish_staged(customer_id)
 
@@ -584,13 +639,14 @@ def publish_staging(customer_id):
         db.dismiss_alerts_for_customer(customer_id, publish_alerts_to_clear)
         cleared_count = len(publish_alerts_to_clear)
 
-        if webflow_warnings:
-            msg = f"Published {len(published)} files locally. {' '.join(webflow_warnings)}"
+        all_warnings = webflow_warnings + worker_warnings
+        if all_warnings:
+            msg = f"Published {len(published)} files. {' '.join(all_warnings)}"
             if verification:
                 msg += f" Verification: {verification}"
             flash(msg, "warning")
         else:
-            msg = f"Published {len(published)} files and pushed schema to Webflow."
+            msg = f"Published {len(published)} files."
             if verification:
                 msg += f" {verification}"
             flash(msg, "success")
@@ -1132,13 +1188,108 @@ SEO_GEO_TASKS = [
 ]
 
 
-def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice") -> list[dict]:
+_seo_cache: dict[str, tuple[float, dict[str, bool]]] = {}
+_SEO_CACHE_TTL = 300  # 5 minutes
+
+
+def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
+    """Auto-detect which SEO/GEO tasks are done by checking live site. Cached for 5 min."""
+    import time
+    cache_key = f"{domain}:{customer_id}"
+    if cache_key in _seo_cache:
+        cached_at, cached_result = _seo_cache[cache_key]
+        if time.time() - cached_at < _SEO_CACHE_TTL:
+            return cached_result
+
+    detected = {}
+    if not domain:
+        return detected
+
+    try:
+        resp = httpx.get(f"https://{domain}", timeout=10.0, follow_redirects=True)
+        if resp.status_code == 200:
+            body = resp.text
+            # Schema detection — check for inline JSON-LD or PracticeRank script loader
+            has_schema = "application/ld+json" in body or "practicerank_schema" in body
+            if has_schema:
+                # If using JS loader (practicerank_schema.js), we can't see the schema
+                # types in the HTML — mark the base schema as done based on business type
+                if "practicerank_schema" in body and "application/ld+json" not in body:
+                    # JS-injected schema — mark org schema as present
+                    detected["seo_schema_org"] = True
+                    detected["seo_schema_localbusiness"] = True
+                else:
+                    # Inline JSON-LD — check specific types
+                    if '"Dentist"' in body or '"LocalBusiness"' in body:
+                        detected["seo_schema_localbusiness"] = True
+                    if '"Organization"' in body or '"SoftwareApplication"' in body:
+                        detected["seo_schema_org"] = True
+                    if '"FAQPage"' in body:
+                        detected["seo_schema_faq"] = True
+                    if '"MedicalProcedure"' in body:
+                        detected["seo_schema_medical"] = True
+                    if '"AggregateRating"' in body or '"Review"' in body:
+                        detected["seo_schema_review"] = True
+                    if '"Product"' in body:
+                        detected["seo_schema_product"] = True
+            # Heading hierarchy
+            if "<h1" in body and "<h2" in body:
+                detected["seo_structured_headings"] = True
+    except Exception:
+        pass
+
+    # Check llms.txt — try domain first, then Worker
+    for key, filename in [("seo_llms_txt", "llms.txt"), ("seo_llms_full", "llms-full.txt")]:
+        try:
+            resp = httpx.get(f"https://{domain}/{filename}", timeout=8.0, follow_redirects=True)
+            if resp.status_code == 200 and len(resp.text) > 50:
+                detected[key] = True
+            elif WORKER_API_URL:
+                resp2 = httpx.get(f"{WORKER_API_URL}/geo/{domain}/{filename}", timeout=8.0)
+                if resp2.status_code == 200 and len(resp2.text) > 50:
+                    detected[key] = True
+        except Exception:
+            pass
+
+    # Check robots.txt
+    try:
+        resp = httpx.get(f"https://{domain}/robots.txt", timeout=8.0, follow_redirects=True)
+        if resp.status_code == 200 and ("ChatGPT-User" in resp.text or "PerplexityBot" in resp.text):
+            detected["seo_robots_txt"] = True
+    except Exception:
+        pass
+
+    # Check if Worker is serving files for this domain
+    if WORKER_API_URL:
+        try:
+            resp = httpx.get(f"{WORKER_API_URL}/geo/{domain}/llms.txt", timeout=5.0)
+            if resp.status_code == 200:
+                detected["seo_cloudflare_worker"] = True
+        except Exception:
+            pass
+
+    # Check XML sitemap
+    try:
+        resp = httpx.get(f"https://{domain}/sitemap.xml", timeout=8.0, follow_redirects=True)
+        if resp.status_code == 200 and "<urlset" in resp.text:
+            detected["seo_xml_sitemap"] = True
+    except Exception:
+        pass
+
+    _seo_cache[cache_key] = (time.time(), detected)
+    return detected
+
+
+def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
+                   auto_detected: dict[str, bool] | None = None) -> list[dict]:
     """Return SEO/GEO tasks grouped by category with completion status.
 
     Filters tasks based on business_type — practice-only tasks (Local SEO,
     Reviews, dental-specific content) are excluded for non-practice customers.
+    Auto-detected status overrides manual checklist for verifiable tasks.
     """
     is_practice = business_type == "practice"
+    ad = auto_detected or {}
     tasks = []
     for t in SEO_GEO_TASKS:
         # Skip practice-only tasks for non-practices
@@ -1147,11 +1298,15 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice") 
         # Skip non-practice-only tasks for practices
         if t.get("non_practice_only") and is_practice:
             continue
+        # Auto-detected takes priority over manual checklist
+        done = ad.get(t["key"], checklist.get(t["key"], False))
+        auto = t["key"] in ad
         tasks.append({
             "key": t["key"],
             "task": t["task"],
             "category": t["category"],
-            "done": checklist.get(t["key"], False),
+            "done": done,
+            "auto": auto,
         })
     return tasks
 

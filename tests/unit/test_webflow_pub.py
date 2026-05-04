@@ -30,8 +30,8 @@ class TestInjectSchema:
 
         assert result is True
         body = put_route.calls[0].request.content.decode()
-        assert "DentalRank Schema Start" in body
-        assert "DentalRank Schema End" in body
+        assert "PracticeRank Schema Start" in body
+        assert "PracticeRank Schema End" in body
         assert "Dentist" in body
 
     @respx.mock
@@ -39,9 +39,9 @@ class TestInjectSchema:
         site_id = "site_test"
         existing = (
             '<meta name="test">\n'
-            "<!-- DentalRank Schema Start -->\n"
+            "<!-- PracticeRank Schema Start -->\n"
             "<script>OLD</script>\n"
-            "<!-- DentalRank Schema End -->\n"
+            "<!-- PracticeRank Schema End -->\n"
             '<meta name="other">'
         )
 
@@ -61,7 +61,7 @@ class TestInjectSchema:
         body = put_route.calls[0].request.content.decode()
         assert "OLD" not in body
         assert "NEW" in body
-        assert "test" in body  # preserved non-DentalRank code
+        assert "test" in body  # preserved non-PracticeRank code
 
     @respx.mock
     def test_handles_404_custom_code(self):

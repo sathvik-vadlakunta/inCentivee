@@ -460,14 +460,18 @@
             {% for t in seo_tasks %}
                 {% if t.category == cat %}
                 <div class="todo-item {{ 'done' if t.done }}"
+                    {% if not t.auto is defined and t.auto %}
                     hx-post="/api/checklist"
                     hx-vals='{"customer_id":"{{ customer.id }}","task_key":"{{ t.key }}","completed":{{ 'false' if t.done else 'true' }}}'
                     hx-target="closest .todo-item"
                     hx-swap="outerHTML"
                     hx-headers='{"Content-Type":"application/json"}'
-                    style="cursor:pointer;">
-                    <div class="todo-check {{ 'checked' if t.done }}" title="Click to toggle"></div>
-                    <span>{{ t.task }}</span>
+                    style="cursor:pointer;"
+                    {% else %}
+                    style="cursor:default;"
+                    {% endif %}>
+                    <div class="todo-check {{ 'checked' if t.done }}" title="{{ 'Auto-detected' if t.auto is defined and t.auto else 'Click to toggle' }}"></div>
+                    <span>{{ t.task }}{% if t.auto is defined and t.auto and t.done %} <span style="font-size:0.65rem; color:var(--success); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">auto</span>{% endif %}</span>
                 </div>
                 {% endif %}
             {% endfor %}

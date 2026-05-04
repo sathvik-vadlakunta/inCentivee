@@ -2,13 +2,13 @@
 
 ## What This Is
 
-An AI-powered dental marketing agency/platform built for **Jon Lucas** (jonlucas@lostrelic.com) at **Lost Relic**. The core product is **DentalRank** (dentalrank.ai) — a platform that automates SEO, AEO (AI Engine Optimization), local visibility, and content publishing for dental practices.
+An AI-powered dental marketing agency/platform built for **Jon Lucas** (jonlucas@lostrelic.com) at **Lost Relic**. The core product is **PracticeRank** (practicerank.ai) — a platform that automates SEO, AEO (AI Engine Optimization), local visibility, and content publishing for dental practices.
 
 The business model: charge ~$3,000/month per dental practice, automate 85%+ of the work, and scale with minimal staff.
 
-## Core Product: DentalRank
+## Core Product: PracticeRank
 
-DentalRank generates comprehensive SEO & AEO intelligence reports for dental practices and then executes the recommendations automatically. A sample report for myaustindds.com (38th Street Dental, Austin TX) scored the practice 64/100 overall with critical gaps in AI search readiness (20/100) and local visibility (45/100).
+PracticeRank generates comprehensive SEO & AEO intelligence reports for dental practices and then executes the recommendations automatically. A sample report for myaustindds.com (38th Street Dental, Austin TX) scored the practice 64/100 overall with critical gaps in AI search readiness (20/100) and local visibility (45/100).
 
 ### What the platform does:
 
@@ -23,7 +23,7 @@ DentalRank generates comprehensive SEO & AEO intelligence reports for dental pra
 
 Based on the email thread with Dr. David Gallup / Adam Milmont (Hilltop Dental):
 
-1. Jon runs a site audit (DentalRank report)
+1. Jon runs a site audit (PracticeRank report)
 2. Client grants access to:
    - Google Search Console (Full user)
    - Google Analytics (Editor)
@@ -49,7 +49,7 @@ Based on the email thread with Dr. David Gallup / Adam Milmont (Hilltop Dental):
 
 ## Key People
 
-- **Jon Lucas** — Founder, jonlucas@lostrelic.com, runs DentalRank
+- **Jon Lucas** — Founder, jonlucas@lostrelic.com, runs PracticeRank
 - **Dr. David Gallup** — Client (gallupster@gmail.com), Hilltop Dental
 - **Adam Milmont** — Client partner (amilmont@gmail.com), handles tech access
 - **Matt Toone** — CC'd (matt@vcsmedical.com)
@@ -58,7 +58,7 @@ Based on the email thread with Dr. David Gallup / Adam Milmont (Hilltop Dental):
 ## Current Status
 
 - First client (Hilltop Dental) is in onboarding — Google Search Console linked, Webflow API token pending
-- DentalRank report generation is working (sample: myaustindds.com)
+- PracticeRank report generation is working (sample: myaustindds.com)
 - Platform automation/tooling needs to be built out
 
 ## GEO Agent (Primary Deliverable)

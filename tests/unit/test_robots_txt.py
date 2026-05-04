@@ -29,6 +29,6 @@ class TestGenerateRobotsTxt:
         result = generate_robots_txt(sample_customer)
         assert "Hilltop Family Dental" in result
 
-    def test_dentalrank_attribution(self, sample_customer):
+    def test_practicerank_attribution(self, sample_customer):
         result = generate_robots_txt(sample_customer)
-        assert "DentalRank GEO Agent" in result
+        assert "PracticeRank GEO Agent" in result

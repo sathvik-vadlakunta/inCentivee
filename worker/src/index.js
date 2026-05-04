@@ -126,6 +126,58 @@ export default {
       });
     }
 
+    // GET /geo/:domain/llms.txt or /geo/:domain/llms-full.txt — serve generated files from KV
+    const geoMatch = url.pathname.match(/^\/geo\/([^/]+)\/(llms\.txt|llms-full\.txt|robots\.txt)$/);
+    if (geoMatch && request.method === "GET") {
+      const domain = geoMatch[1];
+      const filename = geoMatch[2];
+      const kvKey = `geo:${domain}:${filename}`;
+      const content = await env.LEADS.get(kvKey);
+      if (content) {
+        // Track hit for llms.txt files
+        if (filename.startsWith("llms")) {
+          const userAgent = request.headers.get("User-Agent") || "";
+          try {
+            await fetch(new URL("/track-hit", url.origin), {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ domain, path: `/${filename}`, userAgent }),
+            });
+          } catch (_) { /* don't block response */ }
+        }
+        return new Response(content, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "public, max-age=86400",
+            "X-Generated-By": "PracticeRank GEO Agent",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+      return new Response("Not found", { status: 404, headers: { "Content-Type": "text/plain" } });
+    }
+
+    // PUT /geo/:domain/:filename — upload generated files to KV (auth required)
+    const geoPutMatch = url.pathname.match(/^\/geo\/([^/]+)\/(llms\.txt|llms-full\.txt|robots\.txt)$/);
+    if (geoPutMatch && request.method === "PUT") {
+      const authHeader = request.headers.get("Authorization") || "";
+      const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!env.LEADS_SECRET || bearerToken !== env.LEADS_SECRET) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      const domain = geoPutMatch[1];
+      const filename = geoPutMatch[2];
+      const kvKey = `geo:${domain}:${filename}`;
+      const content = await request.text();
+      await env.LEADS.put(kvKey, content);
+      return new Response(JSON.stringify({ ok: true, key: kvKey }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     if (url.pathname !== "/audit" || request.method !== "POST") {
       return new Response(JSON.stringify({ error: "Not found" }), {
         status: 404,
