@@ -1150,8 +1150,8 @@ SEO_GEO_TASKS = [
     {"key": "seo_llms_txt", "task": "Deploy llms.txt on domain", "category": "AI Readiness (GEO)"},
     {"key": "seo_llms_full", "task": "Deploy llms-full.txt with detailed content", "category": "AI Readiness (GEO)"},
     {"key": "seo_robots_txt", "task": "robots.txt allows AI crawlers (GPTBot, ClaudeBot, etc.)", "category": "AI Readiness (GEO)"},
-    {"key": "seo_cloudflare_worker", "task": "Cloudflare Worker serving .txt files", "category": "AI Readiness (GEO)"},
-    {"key": "seo_cloudflare_bot_rules", "task": "Audit Cloudflare WAF — not blocking AI bots", "category": "AI Readiness (GEO)"},
+    {"key": "seo_cloudflare_worker", "task": "Worker serving llms.txt + robots.txt (via redirect)", "category": "AI Readiness (GEO)"},
+    {"key": "seo_robots_redirected", "task": "Webflow redirect /robots.txt → Worker", "category": "AI Readiness (GEO)"},
     {"key": "seo_ai_monitoring", "task": "AI mention monitoring set up (ChatGPT/Claude/Perplexity)", "category": "AI Readiness (GEO)"},
     # Content Optimization
     {"key": "seo_expert_quotes", "task": "Expert quotes on all service pages (+37-40% AI citation lift)", "category": "Content Optimization"},
@@ -1168,7 +1168,7 @@ SEO_GEO_TASKS = [
     # Technical SEO
     {"key": "seo_xml_sitemap", "task": "XML sitemap present and submitted", "category": "Technical SEO"},
     {"key": "seo_structured_headings", "task": "Proper H1/H2/H3 heading hierarchy", "category": "Technical SEO"},
-    {"key": "seo_dns_cloudflare", "task": "DNS migrated to Cloudflare", "category": "Technical SEO"},
+    {"key": "seo_webflow_redirects", "task": "Webflow redirects configured (llms.txt, llms-full.txt, robots.txt)", "category": "Technical SEO"},
     # Local SEO & Citations (practice only)
     {"key": "seo_gbp_optimized", "task": "Google Business Profile fully optimized", "category": "Local SEO", "practice_only": True},
     {"key": "seo_gbp_photos", "task": "10+ photos on GBP (exterior, interior, team)", "category": "Local SEO", "practice_only": True},
@@ -1251,11 +1251,17 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
         except Exception:
             pass
 
-    # Check robots.txt
+    # Check robots.txt — on domain or via Worker
     try:
         resp = httpx.get(f"https://{domain}/robots.txt", timeout=8.0, follow_redirects=True)
         if resp.status_code == 200 and ("ChatGPT-User" in resp.text or "PerplexityBot" in resp.text):
             detected["seo_robots_txt"] = True
+            detected["seo_robots_redirected"] = True
+        elif WORKER_API_URL:
+            resp2 = httpx.get(f"{WORKER_API_URL}/geo/{domain}/robots.txt", timeout=5.0)
+            if resp2.status_code == 200 and ("ChatGPT-User" in resp2.text or "PerplexityBot" in resp2.text):
+                detected["seo_robots_txt"] = True
+                # Worker has it but domain doesn't redirect — redirect not set up yet
     except Exception:
         pass
 
@@ -1267,6 +1273,11 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
                 detected["seo_cloudflare_worker"] = True
         except Exception:
             pass
+
+    # Check all 3 redirects configured
+    redirects_ok = all(detected.get(k) for k in ("seo_llms_txt", "seo_llms_full", "seo_robots_redirected"))
+    if redirects_ok:
+        detected["seo_webflow_redirects"] = True
 
     # Check XML sitemap
     try:
