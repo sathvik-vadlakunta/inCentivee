@@ -197,6 +197,13 @@ CREATE TABLE IF NOT EXISTS run_steps (
 );
 
 CREATE INDEX IF NOT EXISTS idx_run_steps_run ON run_steps(run_id);
+
+CREATE TABLE IF NOT EXISTS webflow_oauth_tokens (
+    site_id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    access_token TEXT NOT NULL,
+    granted_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
 """
 
 
@@ -942,6 +949,29 @@ class CustomerDB:
         else:
             cur = self.conn.execute("SELECT COUNT(*) FROM alerts WHERE dismissed = 0")
         return cur.fetchone()[0]
+
+    # --- Webflow OAuth Tokens ---
+
+    def save_webflow_oauth_token(self, site_id: str, customer_id: str, access_token: str):
+        """Store a Webflow OAuth access token for a site."""
+        self.conn.execute(
+            """INSERT INTO webflow_oauth_tokens (site_id, customer_id, access_token)
+               VALUES (?, ?, ?)
+               ON CONFLICT(site_id) DO UPDATE SET
+                   access_token = excluded.access_token,
+                   granted_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')""",
+            (site_id, customer_id, access_token),
+        )
+        self.conn.commit()
+
+    def get_webflow_oauth_token(self, customer_id: str) -> str | None:
+        """Get the OAuth access token for a customer's Webflow site."""
+        cur = self.conn.execute(
+            "SELECT access_token FROM webflow_oauth_tokens WHERE customer_id = ?",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        return row["access_token"] if row else None
 
     # --- Migration helper: import from customers.json ---
 

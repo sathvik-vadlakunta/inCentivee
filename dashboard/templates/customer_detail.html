@@ -116,7 +116,15 @@
                     <button class="btn btn-sm btn-outline" onclick="document.getElementById('edit-form').style.display = document.getElementById('edit-form').style.display === 'none' ? 'block' : 'none'">Edit</button>
                 </div>
                 <table>
-                    <tr><td style="width:35%; color:var(--muted);">Platform</td><td>{{ customer.platform | title }}</td></tr>
+                    <tr><td style="width:35%; color:var(--muted);">Platform</td><td>{{ customer.platform | title }}
+                        {% if customer.platform == 'webflow' %}
+                        {% if webflow_connected %}
+                            <span style="color: var(--success); font-size: 0.8rem; margin-left: 0.5rem;">OAuth connected</span>
+                        {% else %}
+                            <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}" class="btn btn-sm btn-outline" style="margin-left: 0.5rem; font-size: 0.7rem;">Connect Webflow</a>
+                        {% endif %}
+                        {% endif %}
+                    </td></tr>
                     <tr><td style="color:var(--muted);">Address</td><td>{{ customer.address or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">City/State</td><td>{{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %} {{ customer.zip }}</td></tr>
                     <tr><td style="color:var(--muted);">Phone</td><td>{{ customer.phone or '--' }}</td></tr>
@@ -278,18 +286,49 @@
                         <form method="POST" action="{{ url_for('approve_staging', customer_id=customer.id) }}">
                             <button type="submit" class="btn btn-success btn-sm">Approve</button>
                         </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('publish_staging', customer_id=customer.id) }}"
+                              onsubmit="return confirm('{% if webflow_connected %}Publish changes and push schema to Webflow?{% else %}Mark these changes as published?{% endif %}')">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                {% if webflow_connected %}Publish to Webflow{% else %}Publish{% endif %}
+                            </button>
+                        </form>
                         {% endif %}
                     </div>
                 </div>
                 {% if staged_files %}
                 <div style="margin-top: 0.5rem;">
                     {% for fname in staged_files %}
-                    <div style="padding: 0.3rem 0; font-size: 0.85rem; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
-                        {% if fname.endswith('.html') %}🧩{% elif fname.endswith('.txt') %}📄{% else %}📋{% endif %}
-                        {{ fname }}
+                    <div style="padding: 0.3rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+                        <span>{% if fname.endswith('.html') %}🧩{% elif fname.endswith('.txt') %}📄{% else %}📋{% endif %} {{ fname }}</span>
+                        {% if fname == 'schema.html' and approved %}
+                        <button class="btn btn-sm btn-outline" onclick="copySchemaCode(this)" style="font-size:0.7rem;">Copy for Webflow</button>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>
+                {% if approved %}
+                {% if webflow_connected %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #ecfdf5; border-radius: 6px; font-size: 0.8rem; color: #065f46;">
+                    <strong>Webflow connected</strong> — Click "Publish to Webflow" to auto-push schema markup and publish the site.
+                </div>
+                {% else %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
+                    <strong>Manual steps:</strong>
+                    <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
+                        <li>Click "Copy for Webflow" above → paste into <strong>Site Settings → Custom Code → Head Code</strong></li>
+                        <li>llms.txt and robots.txt will deploy automatically via Cloudflare</li>
+                        <li>Click <strong>Publish</strong> to mark complete</li>
+                    </ol>
+                    <div style="margin-top: 0.5rem;">
+                        Or <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}">connect Webflow</a> to auto-publish.
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% endif %}
+                {% if schema_content and approved %}
+                <textarea id="schema-code" style="display:none;">{{ schema_content }}</textarea>
                 {% endif %}
             </div>
             {% endif %}
@@ -629,6 +668,18 @@ function generateContent(customerId) {
         btn.disabled = false;
         setTimeout(() => { btn.textContent = 'Generate Recommendations'; }, 3000);
     });
+}
+
+function copySchemaCode(btn) {
+    const el = document.getElementById('schema-code');
+    if (el) {
+        navigator.clipboard.writeText(el.value).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.style.color = 'var(--success)';
+            setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+        });
+    }
 }
 
 function updateRecStatus(recId, status, btn) {

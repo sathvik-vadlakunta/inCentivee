@@ -183,10 +183,31 @@ export default {
           env.GOOGLE_PLACES_API_KEY
         );
 
-        // If Google found the place, get nearby competitors
+        // If Google found the place, search for additional locations + competitors
         if (placeData && placeData.location) {
           const lat = placeData.location.latitude || placeData.location.lat;
           const lng = placeData.location.longitude || placeData.location.lng;
+
+          // Search for other locations of the same practice
+          const otherLocations = await fetchOtherLocations(
+            siteData.practiceName,
+            siteData.domain,
+            placeData,
+            env.GOOGLE_PLACES_API_KEY
+          );
+          if (otherLocations.length > 0) {
+            placeData.locations = [
+              { name: placeData.name, address: placeData.address, city: placeData.city, state: placeData.state, rating: placeData.rating, reviewCount: placeData.reviewCount, placeId: placeData.placeId },
+              ...otherLocations,
+            ];
+            // Aggregate: combined review count, weighted average rating
+            const totalReviews = placeData.locations.reduce((sum, l) => sum + l.reviewCount, 0);
+            const weightedRating = placeData.locations.reduce((sum, l) => sum + l.rating * l.reviewCount, 0) / totalReviews;
+            placeData.combinedReviewCount = totalReviews;
+            placeData.combinedRating = Math.round(weightedRating * 10) / 10;
+            placeData.isMultiLocation = true;
+          }
+
           competitors = await fetchNearbyCompetitors(
             lat,
             lng,
@@ -374,6 +395,77 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
   }
 }
 
+async function fetchOtherLocations(practiceName, domain, primaryPlace, apiKey) {
+  // Search for other locations of the same practice by name (without city filter)
+  if (!practiceName) return [];
+
+  try {
+    const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.addressComponents";
+
+    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": FIELD_MASK,
+      },
+      body: JSON.stringify({
+        textQuery: `${practiceName} dentist`,
+        includedType: "dentist",
+        maxResultCount: 10,
+      }),
+    });
+    const data = await res.json();
+
+    if (!data.places || data.places.length === 0) return [];
+
+    const inputDomain = (domain || "").replace(/^www\./, "").toLowerCase();
+    const primaryId = primaryPlace.placeId;
+    const locations = [];
+
+    for (const place of data.places) {
+      // Skip the primary location we already found
+      if (place.id === primaryId) continue;
+
+      // Check if this is the same business (domain match or strong name match)
+      const placeWebsite = (place.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/+$/, "").replace(/^www\./, "").toLowerCase();
+      const placeName = (place.displayName?.text || "").toLowerCase();
+      const primaryName = (primaryPlace.name || "").toLowerCase();
+
+      const domainMatch = inputDomain && placeWebsite && (placeWebsite.includes(inputDomain) || inputDomain.includes(placeWebsite));
+      // Strong name match: names share significant overlap (not just a few chars)
+      const nameMatch = primaryName.length > 5 && placeName.length > 5 &&
+        (placeName.includes(primaryName) || primaryName.includes(placeName) ||
+         placeName.replace(/\s+(dental|dentistry|dds|dmd)\s*/gi, "").trim() === primaryName.replace(/\s+(dental|dentistry|dds|dmd)\s*/gi, "").trim());
+
+      if (!domainMatch && !nameMatch) continue;
+
+      // Parse city from address components
+      let city = "";
+      for (const comp of place.addressComponents || []) {
+        if ((comp.types || []).includes("locality")) {
+          city = comp.longText || comp.shortText || "";
+        }
+      }
+
+      locations.push({
+        name: place.displayName?.text || "",
+        address: place.formattedAddress || "",
+        city,
+        state: "",
+        rating: place.rating || 0,
+        reviewCount: place.userRatingCount || 0,
+        placeId: place.id,
+      });
+    }
+
+    return locations;
+  } catch (e) {
+    console.error("Multi-location search error:", e.message);
+    return [];
+  }
+}
+
 function findBestMatch(results, practiceName, domain, phone, city) {
   const inputDomain = (domain || "").replace(/^www\./, "").toLowerCase();
   const inputName = (practiceName || "").toLowerCase();
@@ -501,11 +593,12 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
     }
 
     // Fix review count and rating — this is the big one
+    // For multi-location practices, use combined totals
     if (placeData.reviewCount > 0) {
       const claudeCount = report.categories?.reviews?.count || 0;
       const claudeRating = report.categories?.reviews?.rating || 0;
-      const realCount = placeData.reviewCount;
-      const realRating = placeData.rating;
+      const realCount = placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount;
+      const realRating = placeData.isMultiLocation ? placeData.combinedRating : placeData.rating;
 
       // If Claude's numbers are more than 20% off, override
       if (Math.abs(claudeCount - realCount) > realCount * 0.2 || claudeCount === 0) {
@@ -586,6 +679,21 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
   }
   report.data_corrections = corrections.length > 0 ? corrections : undefined;
   report.google_verified = !!(placeData && placeData.matchConfidence !== "low");
+
+  // Add multi-location data so the frontend can display it
+  if (placeData?.isMultiLocation) {
+    report.multi_location = {
+      location_count: placeData.locations.length,
+      locations: placeData.locations.map(l => ({
+        name: l.name,
+        city: l.city || l.address,
+        rating: l.rating,
+        review_count: l.reviewCount,
+      })),
+      combined_reviews: placeData.combinedReviewCount,
+      combined_rating: placeData.combinedRating,
+    };
+  }
 
   return report;
 }
@@ -1142,9 +1250,17 @@ Match confidence: ${placeData.matchConfidence} (domain match: ${placeData.domain
 - Business Status: ${placeData.businessStatus}
 - Website (Google): ${placeData.website}
 
+${placeData.isMultiLocation ? `
+MULTI-LOCATION PRACTICE: This practice has ${placeData.locations.length} Google Business listings:
+${placeData.locations.map((l, i) => `  ${i + 1}. ${l.name} — ${l.city || l.address} — ${l.rating} stars, ${l.reviewCount} reviews`).join("\n")}
+Combined total: ${placeData.combinedReviewCount} reviews, ${placeData.combinedRating} avg rating
+
+CRITICAL: For the reviews category, you MUST use the COMBINED totals:
+- count: ${placeData.combinedReviewCount}
+- rating: ${placeData.combinedRating}` : `
 CRITICAL: For the reviews category, you MUST use:
 - count: ${placeData.reviewCount}
-- rating: ${placeData.rating}
+- rating: ${placeData.rating}`}
 These are REAL numbers from Google. Do NOT change them. Do NOT make up different numbers.
 Use the Google-verified city and state for the report location fields.`;
   } else {

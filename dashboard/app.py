@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
+import httpx
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
 
 from geo_agent.db import CustomerDB
@@ -46,6 +47,17 @@ logger = logging.getLogger("practicerank.dashboard")
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
+app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+
+@app.after_request
+def add_no_cache_headers(response):
+    """Prevent browser and proxy caching of HTML responses."""
+    if response.content_type and "text/html" in response.content_type:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
 
 # Globals set at startup
 DB_PATH: str | None = None
@@ -164,7 +176,9 @@ def customer_detail(customer_id):
         staged = staging.is_staged(customer_id)
         approved = staging.is_approved(customer_id)
         diff_report = staging.generate_diff_report(customer_id) if staged else ""
-        staged_files = list(staging.get_staged_files(customer_id).keys()) if staged else []
+        staged_file_contents = staging.get_staged_files(customer_id) if staged else {}
+        staged_files = list(staged_file_contents.keys())
+        schema_content = staged_file_contents.get("schema.html", "")
 
         checklist = db.get_checklist(customer_id)
         todos = _get_va_todos(customer, access, contacts, places, runs, staged, approved, checklist)
@@ -179,7 +193,11 @@ def customer_detail(customer_id):
             )
             lines = raw.splitlines()
             body_lines = [l for l in lines if not l.startswith("Subject:")]
-            body_html = markdown.markdown("\n".join(body_lines).strip(), extensions=["tables"])
+            body_md = "\n".join(body_lines).strip()
+            body_html = markdown.markdown(body_md, extensions=["tables"])
+            # Neutralize any <script> tags that leaked from staged content
+            # (e.g. schema.html JSON-LD in diff reports) — they break page parsing
+            body_html = body_html.replace("<script", "&lt;script").replace("</script>", "&lt;/script&gt;")
             email_templates.append({
                 "slug": t["slug"],
                 "subject": _render_email_template(
@@ -196,6 +214,9 @@ def customer_detail(customer_id):
         # Active alerts for this customer
         customer_alerts = db.get_alerts(customer_id, active_only=True, limit=10)
 
+        # Webflow OAuth connection status
+        webflow_connected = db.get_webflow_oauth_token(customer_id) is not None
+
         # Current date for template comparisons
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -209,11 +230,12 @@ def customer_detail(customer_id):
             customer=customer, providers=providers, contacts=contacts,
             access=access, places=places, competitors=competitors,
             runs=runs, kpis=kpis, staged=staged, approved=approved,
-            diff_report=diff_report, staged_files=staged_files,
+            diff_report=diff_report, staged_files=staged_files, schema_content=schema_content,
             todos=todos, email_templates=email_templates,
             seo_tasks=seo_tasks, content_pending=content_pending,
             content_recs=content_recs, customer_alerts=customer_alerts,
             report_exists=report_exists, now_iso=now_iso,
+            webflow_connected=webflow_connected,
         )
     finally:
         db.close()
@@ -445,6 +467,210 @@ def approve_staging(customer_id):
             flash("No staged changes to approve.", "error")
     finally:
         db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
+# --- Publish Approved Changes ---
+
+def _publish_to_webflow(customer_id: str, db, staging) -> list[str]:
+    """Try to auto-publish schema to Webflow via OAuth token. Returns list of warnings."""
+    warnings = []
+    oauth_token = db.get_webflow_oauth_token(customer_id)
+    if not oauth_token:
+        warnings.append("No Webflow OAuth connection. Connect Webflow from the customer page to enable auto-publish.")
+        return warnings
+
+    customer = db.get_customer(customer_id)
+    site_id = customer.get("webflow_site_id", "") if customer else ""
+    if not site_id:
+        warnings.append("No Webflow site ID configured. Set it in customer settings.")
+        return warnings
+
+    # Read the staged schema.html
+    stage_path = Path(DATA_DIR) / "staging" / customer_id
+    schema_file = stage_path / "schema.html"
+    if not schema_file.exists():
+        return warnings  # No schema to publish, that's fine
+
+    schema_html = schema_file.read_text()
+
+    from geo_agent.publishers.webflow import WebflowPublisher
+    publisher = WebflowPublisher(api_key=oauth_token, site_id=site_id)
+    try:
+        if not publisher.inject_schema_to_site(schema_html):
+            warnings.append("Failed to inject schema to Webflow.")
+        elif not publisher.publish_site():
+            warnings.append("Schema injected but failed to publish Webflow site.")
+        else:
+            logger.info(f"Auto-published schema to Webflow for {customer_id}")
+    finally:
+        publisher.close()
+
+    return warnings
+
+
+@app.route("/customer/<customer_id>/publish", methods=["POST"])
+@login_required
+def publish_staging(customer_id):
+    """Publish approved staged changes — auto-push to Webflow if OAuth connected."""
+    staging = get_staging()
+    db = get_db()
+    try:
+        if not staging.is_approved(customer_id):
+            flash("Changes must be approved before publishing.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        # Try auto-publish to Webflow
+        webflow_warnings = _publish_to_webflow(customer_id, db, staging)
+
+        # Move staged → published
+        published = staging.publish_staged(customer_id)
+
+        # Update run status
+        latest_run = db.get_latest_run(customer_id)
+        if latest_run and latest_run["status"] == "approved":
+            db.mark_run_published(latest_run["id"])
+
+        if webflow_warnings:
+            flash(f"Published {len(published)} files locally. {' '.join(webflow_warnings)}", "warning")
+        else:
+            flash(f"Published {len(published)} files and pushed schema to Webflow.", "success")
+    except Exception as e:
+        flash(f"Publish failed: {e}", "error")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
+# --- Webflow OAuth ---
+
+WEBFLOW_CLIENT_ID = os.environ.get("WEBFLOW_CLIENT_ID", "")
+WEBFLOW_CLIENT_SECRET = os.environ.get("WEBFLOW_CLIENT_SECRET", "")
+WEBFLOW_AUTH_URL = "https://webflow.com/oauth/authorize"
+WEBFLOW_TOKEN_URL = "https://api.webflow.com/oauth/access_token"
+
+
+@app.route("/customer/<customer_id>/connect-webflow")
+@login_required
+def connect_webflow(customer_id):
+    """Start Webflow OAuth flow for a customer."""
+    if not WEBFLOW_CLIENT_ID:
+        flash("WEBFLOW_CLIENT_ID not configured in .env", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    # Store customer_id in session so callback knows who authorized
+    session["webflow_oauth_customer"] = customer_id
+    state = secrets.token_urlsafe(32)
+    session["webflow_oauth_state"] = state
+
+    redirect_uri = url_for("webflow_oauth_callback", _external=True)
+    auth_url = (
+        f"{WEBFLOW_AUTH_URL}"
+        f"?client_id={WEBFLOW_CLIENT_ID}"
+        f"&response_type=code"
+        f"&redirect_uri={redirect_uri}"
+        f"&state={state}"
+    )
+    return redirect(auth_url)
+
+
+@app.route("/oauth/webflow/callback")
+@login_required
+def webflow_oauth_callback():
+    """Handle Webflow OAuth callback — exchange code for access token."""
+    customer_id = session.pop("webflow_oauth_customer", None)
+    expected_state = session.pop("webflow_oauth_state", None)
+
+    if not customer_id:
+        flash("OAuth session expired. Try connecting again.", "error")
+        return redirect(url_for("index"))
+
+    error = request.args.get("error")
+    if error:
+        flash(f"Webflow authorization denied: {error}", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    state = request.args.get("state", "")
+    if state != expected_state:
+        flash("OAuth state mismatch. Try connecting again.", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    code = request.args.get("code")
+    if not code:
+        flash("No authorization code received from Webflow.", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    # Exchange code for access token
+    redirect_uri = url_for("webflow_oauth_callback", _external=True)
+    try:
+        resp = httpx.post(
+            WEBFLOW_TOKEN_URL,
+            json={
+                "client_id": WEBFLOW_CLIENT_ID,
+                "client_secret": WEBFLOW_CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri,
+            },
+            headers={"Content-Type": "application/json"},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        token_data = resp.json()
+    except Exception as e:
+        flash(f"Failed to exchange OAuth code: {e}", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    access_token = token_data.get("access_token")
+    if not access_token:
+        flash(f"No access token in response: {token_data}", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    # Get the authorized sites to find the site_id
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        site_id = customer.get("webflow_site_id", "") if customer else ""
+
+        if not site_id:
+            # Try to auto-detect: list sites with the new token and match by domain
+            try:
+                sites_resp = httpx.get(
+                    "https://api.webflow.com/v2/sites",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                    timeout=30.0,
+                )
+                sites_resp.raise_for_status()
+                sites = sites_resp.json().get("sites", [])
+                domain = customer.get("domain", "") if customer else ""
+                for s in sites:
+                    custom_domains = s.get("customDomains", [])
+                    default_domain = s.get("defaultDomain", "")
+                    all_domains = [d.get("url", "") for d in custom_domains] + [default_domain]
+                    if any(domain in d for d in all_domains if d):
+                        site_id = s["id"]
+                        db.update_customer(customer_id, webflow_site_id=site_id)
+                        logger.info(f"Auto-detected Webflow site_id {site_id} for {customer_id}")
+                        break
+                if not site_id and sites:
+                    # Just use the first site if there's only one
+                    if len(sites) == 1:
+                        site_id = sites[0]["id"]
+                        db.update_customer(customer_id, webflow_site_id=site_id)
+                        logger.info(f"Using only available Webflow site {site_id} for {customer_id}")
+            except Exception as e:
+                logger.warning(f"Could not auto-detect site: {e}")
+
+        if site_id:
+            db.save_webflow_oauth_token(site_id, customer_id, access_token)
+            flash("Webflow connected! Schema will auto-publish when you click Publish.", "success")
+        else:
+            # Save with empty site_id placeholder — they'll need to set site_id
+            db.save_webflow_oauth_token("pending", customer_id, access_token)
+            flash("Webflow authorized, but no site ID found. Set the Webflow Site ID in customer settings.", "warning")
+    finally:
+        db.close()
+
     return redirect(url_for("customer_detail", customer_id=customer_id))
 
 
