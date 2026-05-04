@@ -48,6 +48,11 @@ logger = logging.getLogger("practicerank.dashboard")
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+app.config["PREFERRED_URL_SCHEME"] = "https"
+
+# Trust proxy headers from Caddy so url_for generates https:// URLs
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 
 @app.after_request
@@ -217,6 +222,10 @@ def customer_detail(customer_id):
         # Webflow OAuth connection status
         webflow_connected = db.get_webflow_oauth_token(customer_id) is not None
 
+        # Check if there are previously published files (for re-publish button)
+        published_schema = Path(DATA_DIR) / "published" / customer_id / "schema.html"
+        has_published_schema = published_schema.exists()
+
         # Current date for template comparisons
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -236,6 +245,7 @@ def customer_detail(customer_id):
             content_recs=content_recs, customer_alerts=customer_alerts,
             report_exists=report_exists, now_iso=now_iso,
             webflow_connected=webflow_connected,
+            has_published_schema=has_published_schema,
         )
     finally:
         db.close()
@@ -589,6 +599,54 @@ def publish_staging(customer_id):
     return redirect(url_for("customer_detail", customer_id=customer_id))
 
 
+# --- Re-publish to Webflow ---
+
+@app.route("/customer/<customer_id>/republish-webflow", methods=["POST"])
+@login_required
+def republish_webflow(customer_id):
+    """Push previously published schema to Webflow using OAuth token."""
+    db = get_db()
+    try:
+        oauth_token = db.get_webflow_oauth_token(customer_id)
+        if not oauth_token:
+            flash("No Webflow OAuth connection. Click 'Connect Webflow' first.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        customer = db.get_customer(customer_id)
+        site_id = customer.get("webflow_site_id", "") if customer else ""
+        if not site_id:
+            flash("No Webflow site ID configured.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        schema_file = Path(DATA_DIR) / "published" / customer_id / "schema.html"
+        if not schema_file.exists():
+            flash("No published schema.html found. Run the agent first.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        schema_html = schema_file.read_text()
+
+        from geo_agent.publishers.webflow import WebflowPublisher
+        publisher = WebflowPublisher(api_key=oauth_token, site_id=site_id)
+        try:
+            if not publisher.inject_schema_to_site(schema_html):
+                flash("Failed to inject schema to Webflow. Check OAuth permissions.", "error")
+            elif not publisher.publish_site():
+                flash("Schema injected but failed to publish Webflow site.", "warning")
+            else:
+                verification = _verify_publish(customer_id, db)
+                msg = "Schema pushed to Webflow and site published."
+                if verification:
+                    msg += f" {verification}"
+                flash(msg, "success")
+        finally:
+            publisher.close()
+    except Exception as e:
+        flash(f"Re-publish failed: {e}", "error")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
 # --- Webflow OAuth ---
 
 WEBFLOW_CLIENT_ID = os.environ.get("WEBFLOW_CLIENT_ID", "")
@@ -611,11 +669,13 @@ def connect_webflow(customer_id):
     session["webflow_oauth_state"] = state
 
     redirect_uri = url_for("webflow_oauth_callback", _external=True)
+    scopes = "sites:read sites:write custom_code:read custom_code:write pages:read pages:write authorized_user:read"
     auth_url = (
         f"{WEBFLOW_AUTH_URL}"
         f"?client_id={WEBFLOW_CLIENT_ID}"
         f"&response_type=code"
         f"&redirect_uri={redirect_uri}"
+        f"&scope={scopes}"
         f"&state={state}"
     )
     return redirect(auth_url)
@@ -628,24 +688,21 @@ def webflow_oauth_callback():
     customer_id = session.pop("webflow_oauth_customer", None)
     expected_state = session.pop("webflow_oauth_state", None)
 
-    if not customer_id:
-        flash("OAuth session expired. Try connecting again.", "error")
-        return redirect(url_for("index"))
-
     error = request.args.get("error")
     if error:
         flash(f"Webflow authorization denied: {error}", "error")
-        return redirect(url_for("customer_detail", customer_id=customer_id))
-
-    state = request.args.get("state", "")
-    if state != expected_state:
-        flash("OAuth state mismatch. Try connecting again.", "error")
-        return redirect(url_for("customer_detail", customer_id=customer_id))
+        return redirect(url_for("customer_detail", customer_id=customer_id) if customer_id else url_for("index"))
 
     code = request.args.get("code")
     if not code:
         flash("No authorization code received from Webflow.", "error")
-        return redirect(url_for("customer_detail", customer_id=customer_id))
+        return redirect(url_for("customer_detail", customer_id=customer_id) if customer_id else url_for("index"))
+
+    # Validate state if we have one (skip for external installs)
+    state = request.args.get("state", "")
+    if expected_state and state != expected_state:
+        flash("OAuth state mismatch. Try connecting again.", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id) if customer_id else url_for("index"))
 
     # Exchange code for access token
     redirect_uri = url_for("webflow_oauth_callback", _external=True)
@@ -666,29 +723,34 @@ def webflow_oauth_callback():
         token_data = resp.json()
     except Exception as e:
         flash(f"Failed to exchange OAuth code: {e}", "error")
-        return redirect(url_for("customer_detail", customer_id=customer_id))
+        return redirect(url_for("customer_detail", customer_id=customer_id) if customer_id else url_for("index"))
 
     access_token = token_data.get("access_token")
     if not access_token:
         flash(f"No access token in response: {token_data}", "error")
-        return redirect(url_for("customer_detail", customer_id=customer_id))
+        return redirect(url_for("customer_detail", customer_id=customer_id) if customer_id else url_for("index"))
 
-    # Get the authorized sites to find the site_id
+    # List authorized sites from the token
     db = get_db()
     try:
-        customer = db.get_customer(customer_id)
-        site_id = customer.get("webflow_site_id", "") if customer else ""
+        sites = []
+        try:
+            sites_resp = httpx.get(
+                "https://api.webflow.com/v2/sites",
+                headers={"Authorization": f"Bearer {access_token}"},
+                timeout=30.0,
+            )
+            sites_resp.raise_for_status()
+            sites = sites_resp.json().get("sites", [])
+        except Exception as e:
+            logger.warning(f"Could not list sites: {e}")
 
-        if not site_id:
-            # Try to auto-detect: list sites with the new token and match by domain
-            try:
-                sites_resp = httpx.get(
-                    "https://api.webflow.com/v2/sites",
-                    headers={"Authorization": f"Bearer {access_token}"},
-                    timeout=30.0,
-                )
-                sites_resp.raise_for_status()
-                sites = sites_resp.json().get("sites", [])
+        if customer_id:
+            # Flow initiated from dashboard — match to specific customer
+            customer = db.get_customer(customer_id)
+            site_id = customer.get("webflow_site_id", "") if customer else ""
+
+            if not site_id:
                 domain = customer.get("domain", "") if customer else ""
                 for s in sites:
                     custom_domains = s.get("customDomains", [])
@@ -699,26 +761,48 @@ def webflow_oauth_callback():
                         db.update_customer(customer_id, webflow_site_id=site_id)
                         logger.info(f"Auto-detected Webflow site_id {site_id} for {customer_id}")
                         break
-                if not site_id and sites:
-                    # Just use the first site if there's only one
-                    if len(sites) == 1:
-                        site_id = sites[0]["id"]
-                        db.update_customer(customer_id, webflow_site_id=site_id)
-                        logger.info(f"Using only available Webflow site {site_id} for {customer_id}")
-            except Exception as e:
-                logger.warning(f"Could not auto-detect site: {e}")
+                if not site_id and sites and len(sites) == 1:
+                    site_id = sites[0]["id"]
+                    db.update_customer(customer_id, webflow_site_id=site_id)
 
-        if site_id:
-            db.save_webflow_oauth_token(site_id, customer_id, access_token)
-            flash("Webflow connected! Schema will auto-publish when you click Publish.", "success")
+            if site_id:
+                db.save_webflow_oauth_token(site_id, customer_id, access_token)
+                flash("Webflow connected! Schema will auto-publish when you click Publish.", "success")
+            else:
+                db.save_webflow_oauth_token("pending", customer_id, access_token)
+                flash("Webflow authorized, but no site ID found. Set the Webflow Site ID in customer settings.", "warning")
+
+            return redirect(url_for("customer_detail", customer_id=customer_id))
         else:
-            # Save with empty site_id placeholder — they'll need to set site_id
-            db.save_webflow_oauth_token("pending", customer_id, access_token)
-            flash("Webflow authorized, but no site ID found. Set the Webflow Site ID in customer settings.", "warning")
+            # External install — match sites to customers by domain
+            matched = 0
+            for s in sites:
+                custom_domains = s.get("customDomains", [])
+                default_domain = s.get("defaultDomain", "")
+                all_domains = [d.get("url", "") for d in custom_domains] + [default_domain]
+
+                for cust in db.list_customers():
+                    domain = cust.get("domain", "")
+                    if domain and any(domain in d for d in all_domains if d):
+                        db.update_customer(cust["id"], webflow_site_id=s["id"])
+                        db.save_webflow_oauth_token(s["id"], cust["id"], access_token)
+                        logger.info(f"Matched Webflow site {s['id']} to customer {cust['id']}")
+                        matched += 1
+                        break
+
+            if matched:
+                flash(f"Webflow connected! Matched {matched} site(s) to customers.", "success")
+            elif sites:
+                # Save token for first site even if no customer match
+                db.save_webflow_oauth_token(sites[0]["id"], "unmatched", access_token)
+                site_names = ", ".join(s.get("displayName", s.get("shortName", s["id"])) for s in sites)
+                flash(f"Webflow authorized ({site_names}) but no matching customers found. Set Webflow Site IDs in customer settings.", "warning")
+            else:
+                flash("Webflow authorized but no sites found in workspace.", "warning")
+
+            return redirect(url_for("index"))
     finally:
         db.close()
-
-    return redirect(url_for("customer_detail", customer_id=customer_id))
 
 
 # --- Update Customer Fields ---

@@ -120,6 +120,7 @@
                         {% if customer.platform == 'webflow' %}
                         {% if webflow_connected %}
                             <span style="color: var(--success); font-size: 0.8rem; margin-left: 0.5rem;">OAuth connected</span>
+                            <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}" style="font-size: 0.7rem; margin-left: 0.25rem;">(reconnect)</a>
                         {% else %}
                             <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}" class="btn btn-sm btn-outline" style="margin-left: 0.5rem; font-size: 0.7rem;">Connect Webflow</a>
                         {% endif %}
@@ -330,6 +331,20 @@
                 {% if schema_content and approved %}
                 <textarea id="schema-code" style="display:none;">{{ schema_content }}</textarea>
                 {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Re-publish to Webflow (when no staged content but published files exist) -->
+            {% if not staged and has_published_schema and webflow_connected %}
+            <div class="card" style="border-color: var(--success);">
+                <div class="section-header">
+                    <h2>Published Content</h2>
+                    <form method="POST" action="{{ url_for('republish_webflow', customer_id=customer.id) }}"
+                          onsubmit="return confirm('Push published schema to Webflow?')">
+                        <button type="submit" class="btn btn-primary btn-sm">Re-publish to Webflow</button>
+                    </form>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">Push the current published schema markup to Webflow's Custom Code.</p>
             </div>
             {% endif %}
 
