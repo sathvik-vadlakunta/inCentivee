@@ -940,6 +940,21 @@ class CustomerDB:
         self.conn.execute("UPDATE alerts SET dismissed = 1 WHERE id = ?", (alert_id,))
         self.conn.commit()
 
+    def dismiss_alerts_for_customer(self, customer_id: str, alert_types: list[str] | None = None):
+        """Dismiss all active alerts for a customer, optionally filtered by type."""
+        if alert_types:
+            placeholders = ",".join("?" for _ in alert_types)
+            self.conn.execute(
+                f"UPDATE alerts SET dismissed = 1 WHERE customer_id = ? AND dismissed = 0 AND alert_type IN ({placeholders})",
+                [customer_id] + alert_types,
+            )
+        else:
+            self.conn.execute(
+                "UPDATE alerts SET dismissed = 1 WHERE customer_id = ? AND dismissed = 0",
+                (customer_id,),
+            )
+        self.conn.commit()
+
     def get_active_alert_count(self, customer_id: str | None = None) -> int:
         if customer_id:
             cur = self.conn.execute(

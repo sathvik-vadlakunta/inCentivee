@@ -472,6 +472,41 @@ def approve_staging(customer_id):
 
 # --- Publish Approved Changes ---
 
+def _verify_publish(customer_id: str, db) -> str:
+    """Verify published content is live on the customer's site. Returns status message."""
+    customer = db.get_customer(customer_id)
+    if not customer:
+        return ""
+    domain = customer.get("domain", "")
+    if not domain:
+        return ""
+
+    results = []
+    try:
+        # Check if schema markup is in the live site head
+        resp = httpx.get(f"https://{domain}", timeout=15.0, follow_redirects=True)
+        if resp.status_code == 200:
+            body = resp.text
+            if "DentalRank Schema Start" in body or "PracticeRank" in body:
+                results.append("schema confirmed on site")
+            else:
+                results.append("schema NOT detected on site yet (may take a few minutes)")
+    except Exception as e:
+        logger.warning(f"Verification fetch failed for {domain}: {e}")
+
+    try:
+        # Check llms.txt
+        resp = httpx.get(f"https://{domain}/llms.txt", timeout=10.0, follow_redirects=True)
+        if resp.status_code == 200 and len(resp.text) > 50:
+            results.append("llms.txt live")
+        else:
+            results.append("llms.txt not found (needs Cloudflare Worker)")
+    except Exception:
+        pass
+
+    return "; ".join(results) if results else ""
+
+
 def _publish_to_webflow(customer_id: str, db, staging) -> list[str]:
     """Try to auto-publish schema to Webflow via OAuth token. Returns list of warnings."""
     warnings = []
@@ -531,10 +566,22 @@ def publish_staging(customer_id):
         if latest_run and latest_run["status"] == "approved":
             db.mark_run_published(latest_run["id"])
 
+        # Post-publish: verify live site and clear resolved alerts
+        verification = _verify_publish(customer_id, db)
+        publish_alerts_to_clear = ["schema_invalid", "stale_content", "new_schema"]
+        db.dismiss_alerts_for_customer(customer_id, publish_alerts_to_clear)
+        cleared_count = len(publish_alerts_to_clear)
+
         if webflow_warnings:
-            flash(f"Published {len(published)} files locally. {' '.join(webflow_warnings)}", "warning")
+            msg = f"Published {len(published)} files locally. {' '.join(webflow_warnings)}"
+            if verification:
+                msg += f" Verification: {verification}"
+            flash(msg, "warning")
         else:
-            flash(f"Published {len(published)} files and pushed schema to Webflow.", "success")
+            msg = f"Published {len(published)} files and pushed schema to Webflow."
+            if verification:
+                msg += f" {verification}"
+            flash(msg, "success")
     except Exception as e:
         flash(f"Publish failed: {e}", "error")
     finally:
