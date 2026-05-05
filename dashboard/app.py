@@ -1950,6 +1950,30 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
     if redirects_ok:
         detected["seo_robots_redirected"] = True
         detected["seo_webflow_redirects"] = True
+        detected["seo_sqsp_url_redirects"] = True
+
+    # Squarespace-specific auto-detection
+    if _platform == "squarespace":
+        # Code injection — if schema is on page, code injection is configured
+        if detected.get("seo_schema_localbusiness") or detected.get("seo_schema_org"):
+            detected["seo_sqsp_code_injection"] = True
+        # Blog page — check if /blog exists
+        try:
+            blog_resp = httpx.get(f"https://{domain}/blog", timeout=8.0, follow_redirects=True)
+            if blog_resp.status_code == 200 and ("<article" in blog_resp.text or "blog" in blog_resp.text.lower()):
+                detected["seo_sqsp_blog_setup"] = True
+        except Exception:
+            pass
+        # SEO meta — check if pages have custom meta descriptions (not default Squarespace)
+        try:
+            meta_resp = httpx.get(f"https://{domain}", timeout=8.0, follow_redirects=True)
+            if meta_resp.status_code == 200:
+                import re as _re
+                meta_desc = _re.search(r'<meta\s+name="description"\s+content="([^"]*)"', meta_resp.text)
+                if meta_desc and len(meta_desc.group(1)) > 20:
+                    detected["seo_sqsp_seo_meta"] = True
+        except Exception:
+            pass
 
     # Check XML sitemap
     try:
@@ -2516,6 +2540,32 @@ def api_run_ai_mentions(customer_id):
             "total_queries": len(results),
             "results": results,
             "engines": engine_summary,
+        })
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>/history")
+@login_required
+def api_ai_mention_history(customer_id):
+    """Get AI mention KPI history for charting trends."""
+    db = CustomerDB()
+    try:
+        mentions = db.get_kpis(customer_id, metric="ai_mentions", limit=52)
+        positions = db.get_kpis(customer_id, metric="ai_avg_position", limit=52)
+
+        # Per-engine history
+        engine_history = {}
+        for engine in ["claude", "chatgpt", "perplexity", "gemini", "grok"]:
+            data = db.get_kpis(customer_id, metric=f"ai_mentions_{engine}", limit=52)
+            if data:
+                engine_history[engine] = [{"date": r["date"], "value": r["value"]} for r in data]
+
+        return jsonify({
+            "ok": True,
+            "mentions": [{"date": r["date"], "value": r["value"]} for r in mentions],
+            "avg_position": [{"date": r["date"], "value": r["value"]} for r in positions],
+            "engines": engine_history,
         })
     finally:
         db.close()

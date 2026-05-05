@@ -200,6 +200,32 @@ def check_mention(text: str, practice_name: str) -> dict:
     if not found:
         return {"mentioned": False, "position": None, "context": ""}
 
+    # Filter out false positives — AI just echoing the name in a disclaimer
+    disclaimer_phrases = [
+        "i don't have specific information",
+        "i can't access real-time",
+        "i don't have access to",
+        "i cannot verify",
+        "i'm not able to",
+        "i do not have",
+        "i cannot provide specific",
+        "i'm unable to",
+        "i don't have real-time",
+        "not have current data",
+        "cannot confirm",
+        "no specific information",
+    ]
+    # Check if the mention is just in a disclaimer context
+    for phrase in disclaimer_phrases:
+        if phrase in text_lower:
+            # Find which sentence has the name
+            import re as _re
+            sentences = _re.split(r'[.!?]\s+', text)
+            for sent in sentences:
+                if name_lower in sent.lower() and any(p in sent.lower() for p in disclaimer_phrases):
+                    return {"mentioned": False, "position": None, "context": sent.strip()[:150], "disclaimer": True}
+            break
+
     # Find position — split response into numbered items or paragraphs
     position = _find_position(text, practice_name)
 

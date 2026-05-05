@@ -1047,7 +1047,11 @@ function runAiMentionCheck(customerId) {
                     if (data.mention_count > 0) {
                         html += '<p style="margin-top:8px;color:green;">Task marked complete. Reload the page to update the checklist.</p>';
                     }
+
+                    // Load history chart
+                    html += '<div id="ai-mention-history" style="margin-top:16px;"></div>';
                     resultsDiv.innerHTML = html;
+                    loadAiMentionHistory(customerId);
                 }
             } else {
                 if (status) status.textContent = data.error || 'Check failed';
@@ -1058,6 +1062,68 @@ function runAiMentionCheck(customerId) {
             btn.disabled = false;
             if (status) status.textContent = 'Check failed — see console for details';
         });
+}
+
+function loadAiMentionHistory(customerId) {
+    fetch('/api/ai-mentions/' + customerId + '/history')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok || !data.mentions || data.mentions.length === 0) return;
+            const div = document.getElementById('ai-mention-history');
+            if (!div) return;
+
+            let html = '<h4 style="margin-bottom:8px;">Mention Trend Over Time</h4>';
+
+            // Simple table-based trend (no chart library needed)
+            html += '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
+            html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">Date</th><th>Total Mentions</th>';
+
+            // Engine columns
+            const engineNames = Object.keys(data.engines || {});
+            engineNames.forEach(e => {
+                html += '<th>' + e.charAt(0).toUpperCase() + e.slice(1) + '</th>';
+            });
+            html += '<th>Avg Position</th></tr>';
+
+            // Build date-indexed lookup for engines and positions
+            const posMap = {};
+            (data.avg_position || []).forEach(r => { posMap[r.date] = r.value; });
+            const engMaps = {};
+            engineNames.forEach(e => {
+                engMaps[e] = {};
+                (data.engines[e] || []).forEach(r => { engMaps[e][r.date] = r.value; });
+            });
+
+            data.mentions.forEach(r => {
+                const pos = posMap[r.date] ? '#' + posMap[r.date].toFixed(1) : '-';
+                html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">' + r.date + '</td>';
+                html += '<td style="text-align:center;font-weight:bold;">' + r.value + '</td>';
+                engineNames.forEach(e => {
+                    const val = engMaps[e][r.date];
+                    html += '<td style="text-align:center;">' + (val !== undefined ? val : '-') + '</td>';
+                });
+                html += '<td style="text-align:center;">' + pos + '</td></tr>';
+            });
+            html += '</table>';
+
+            // Visual bar chart
+            if (data.mentions.length > 1) {
+                const maxVal = Math.max(...data.mentions.map(r => r.value), 1);
+                html += '<div style="display:flex;align-items:flex-end;gap:4px;margin-top:12px;height:80px;">';
+                data.mentions.reverse().forEach(r => {
+                    const pct = Math.max((r.value / maxVal) * 100, 4);
+                    const color = r.value > 0 ? '#22c55e' : '#e5e7eb';
+                    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;">';
+                    html += '<div style="width:100%;background:' + color + ';height:' + pct + '%;border-radius:4px 4px 0 0;min-height:4px;" title="' + r.date + ': ' + r.value + ' mentions"></div>';
+                    html += '<span style="font-size:0.7em;color:#999;margin-top:2px;">' + r.date.slice(5) + '</span>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            div.innerHTML = html;
+        })
+        .catch(() => {});
 }
 
 function copyGeoSchema(btn) {
