@@ -2159,14 +2159,97 @@ def customer_emails(customer_id):
 # --- Kanban Board ---
 
 BOARD_COLUMNS = [
-    ("new", "New Lead", "#6b7280"),
-    ("contacted", "Email Sent", "#2563eb"),
-    ("access_pending", "Awaiting Access", "#d97706"),
-    ("access_granted", "Access Complete", "#059669"),
-    ("audit_setup", "Audit & Setup", "#7c3aed"),
-    ("review_approve", "Review & Approve", "#db2777"),
-    ("live", "Live", "#059669"),
+    ("new", "New Lead", "#6b7280", "Just added, no action yet"),
+    ("outreach", "Outreach", "#2563eb", "Contact initiated"),
+    ("setup", "Setup", "#d97706", "Granting access, configuring"),
+    ("review", "Review", "#7c3aed", "Audit complete, awaiting approval"),
+    ("live", "Live", "#059669", "Approved and launched"),
+    ("content", "Content", "#8b5cf6", "Pending content to review/publish"),
+    ("monitoring", "Monitoring", "#0ea5e9", "Steady state, all caught up"),
+    ("attention", "Attention", "#ef4444", "Health score dropped, needs action"),
+    ("paused", "Paused", "#9ca3af", "Customer paused/churned"),
 ]
+
+
+def compute_health_score(db, customer_id: str) -> int:
+    """Compute 0-100 health score from SEO tasks, AI mentions, content freshness, GBP."""
+    from datetime import datetime, timezone
+
+    # SEO task completion: 30%
+    checklist = db.get_checklist(customer_id)
+    total_tasks = len(checklist) if checklist else 1
+    done_tasks = sum(1 for v in checklist.values() if v)
+    seo_pct = (done_tasks / total_tasks * 100) if total_tasks else 0
+
+    # AI mention rate: 30%
+    ai_summary = db.get_latest_ai_run_summary(customer_id)
+    ai_pct = (ai_summary["mention_rate"] * 100) if ai_summary else 0
+
+    # Content freshness: 25% — 100 if published in last 14 days, degrades to 0 at 60+
+    last_pub = db.get_last_publish_date(customer_id)
+    if last_pub:
+        try:
+            pub_dt = datetime.fromisoformat(last_pub.replace("Z", "+00:00"))
+            days = (datetime.now(timezone.utc) - pub_dt).days
+            freshness = max(0, 100 - (days - 14) * (100 / 46)) if days > 14 else 100
+        except (ValueError, TypeError):
+            freshness = 0
+    else:
+        freshness = 0
+
+    # GBP/Review health: 15%
+    places = db.get_google_places(customer_id)
+    rating = places["rating"] if places else 0
+    gbp = 100 if rating and rating >= 4.0 else (50 if rating else 0)
+
+    return int(seo_pct * 0.30 + ai_pct * 0.30 + freshness * 0.25 + gbp * 0.15)
+
+
+def recompute_board_step(db, customer: dict) -> str:
+    """Compute the correct board column for a customer based on their state."""
+    cid = customer["id"]
+    status = customer.get("status", "")
+    current = customer.get("onboarding_step", "new")
+
+    # Paused/churned override
+    if status in ("paused", "churned"):
+        return "paused"
+
+    # Onboarding phase
+    if current in ("new", "outreach", "setup", "review"):
+        checklist = db.get_checklist(cid)
+        access = db.get_platform_access(cid)
+        pending = db.get_pending_access(cid)
+        all_access_done = not pending and bool(access)
+
+        if status == "active":
+            return "live"  # promoted to lifecycle
+
+        if customer.get("staging_url"):
+            return "review"
+
+        if all_access_done:
+            return "setup"
+
+        if checklist.get("onboard_email_sent") or checklist.get("contact_added"):
+            return "outreach"
+
+        return current  # stay put
+
+    # Lifecycle phase (live customers rotate between live/content/monitoring/attention)
+    if status == "active":
+        health = compute_health_score(db, cid)
+
+        if health < 50:
+            return "attention"
+
+        rec_counts = db.get_content_recommendation_counts(cid)
+        if rec_counts["approved"] > 0:
+            return "content"
+
+        return "monitoring"
+
+    return current
 
 @app.route("/board")
 @login_required
@@ -2176,7 +2259,18 @@ def board():
         all_customers = db.list_customers()
         staging = get_staging()
 
-        for c in all_customers:
+        # Exclude archived from board
+        customers = [c for c in all_customers if c["status"] != "archived"]
+
+        for c in customers:
+            # Recompute board step based on current state
+            new_step = recompute_board_step(db, c)
+            if new_step != c.get("onboarding_step", "new"):
+                db.set_onboarding_step(c["id"], new_step)
+                c["onboarding_step"] = new_step
+
+            # Enrich card data
+            c["health_score"] = compute_health_score(db, c["id"])
             c["pending_count"] = len(db.get_pending_access(c["id"]))
             c["is_staged"] = staging.is_staged(c["id"])
             c["is_approved"] = staging.is_approved(c["id"])
@@ -2184,13 +2278,26 @@ def board():
             c["rating"] = places["rating"] if places else None
             c["review_count"] = places["review_count"] if places else None
 
-        # Exclude archived from board
-        customers = [c for c in all_customers if c["status"] != "archived"]
+            # SEO completion %
+            checklist = db.get_checklist(c["id"])
+            total = len(checklist) if checklist else 0
+            done = sum(1 for v in checklist.values() if v) if checklist else 0
+            c["seo_pct"] = int(done / total * 100) if total else 0
+
+            # AI mention stats
+            ai = db.get_latest_ai_run_summary(c["id"])
+            c["ai_mention_count"] = ai["mention_count"] if ai else 0
+            c["ai_total_queries"] = ai["total_queries"] if ai else 0
+            c["ai_mention_pct"] = int(ai["mention_rate"] * 100) if ai else 0
+
+            # Content pending count (approved but not yet published)
+            rec_counts = db.get_content_recommendation_counts(c["id"])
+            c["content_pending"] = rec_counts["approved"]
 
         columns = []
-        for step, label, color in BOARD_COLUMNS:
+        for step, label, color, desc in BOARD_COLUMNS:
             cards = [c for c in customers if c.get("onboarding_step", "new") == step]
-            columns.append({"step": step, "label": label, "color": color, "cards": cards})
+            columns.append({"step": step, "label": label, "color": color, "desc": desc, "cards": cards})
 
         return render_template("board.html", columns=columns)
     finally:
@@ -2205,7 +2312,7 @@ def api_board_move():
     customer_id = data.get("customer_id", "")
     new_step = data.get("step", "")
 
-    valid_steps = [s for s, _, _ in BOARD_COLUMNS]
+    valid_steps = [s for s, _, _, _ in BOARD_COLUMNS]
     if not customer_id or new_step not in valid_steps:
         return jsonify({"error": "Invalid customer or step"}), 400
 
@@ -2967,34 +3074,13 @@ def api_checklist():
     try:
         db.set_checklist_item(customer_id, task_key, completed)
 
-        # Auto-advance kanban step based on completed tasks
+        # Auto-advance kanban step based on current state
         customer = db.get_customer(customer_id)
-        if customer and customer.get("status") == "onboarding":
-            checklist = db.get_checklist(customer_id)
-            access = db.get_platform_access(customer_id)
-            pending = db.get_pending_access(customer_id)
-            runs = db.get_runs(customer_id)
-
-            all_access_done = not pending and bool(access)
-            has_audit = bool(runs)
-
-            # Determine the right step
-            if has_audit or checklist.get("first_audit"):
-                step = "audit_setup"
-            elif all_access_done:
-                step = "access_granted"
-            elif checklist.get("onboard_email_sent"):
-                step = "access_pending"
-            elif checklist.get("onboard_email_sent") or checklist.get("contact_added"):
-                step = "contacted"
-            else:
-                step = "new"
-
+        if customer:
+            new_step = recompute_board_step(db, customer)
             current = customer.get("onboarding_step", "new")
-            steps = CustomerDB.ONBOARDING_STEPS
-            # Only advance forward, never go backward automatically
-            if steps.index(step) > steps.index(current):
-                db.set_onboarding_step(customer_id, step)
+            if new_step != current:
+                db.set_onboarding_step(customer_id, new_step)
 
         # HTMX: return updated HTML
         if request.headers.get("HX-Request"):
@@ -3047,6 +3133,11 @@ def api_board_status():
     db = get_db()
     try:
         db.set_customer_status(customer_id, new_status)
+        # Recompute board step after status change
+        customer = db.get_customer(customer_id)
+        if customer:
+            new_step = recompute_board_step(db, customer)
+            db.set_onboarding_step(customer_id, new_step)
         return jsonify({"ok": True, "status": new_status})
     finally:
         db.close()

@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS customers (
     emergency_available INTEGER NOT NULL DEFAULT 0,
     competitors_json TEXT NOT NULL DEFAULT '[]',  -- JSON array of domain strings
     verified_quotes TEXT NOT NULL DEFAULT '[]',  -- JSON array of {"quote": "...", "attribution": "Name, Title"}
-    onboarding_step TEXT NOT NULL DEFAULT 'new'  -- new/contacted/access_pending/access_granted/audit_setup/review_approve/live
+    onboarding_step TEXT NOT NULL DEFAULT 'new'  -- new/outreach/setup/review/live/content/monitoring/attention/paused
 );
 
 CREATE TABLE IF NOT EXISTS providers (
@@ -325,6 +325,11 @@ class CustomerDB:
             CREATE INDEX IF NOT EXISTS idx_ai_results_run ON ai_mention_results(run_id);
             CREATE INDEX IF NOT EXISTS idx_ai_results_customer ON ai_mention_results(customer_id, engine);
         """)
+        # Migration: map old onboarding_step values to new 9-column board
+        self.conn.execute("UPDATE customers SET onboarding_step = 'outreach' WHERE onboarding_step = 'contacted'")
+        self.conn.execute("UPDATE customers SET onboarding_step = 'setup' WHERE onboarding_step IN ('access_pending', 'access_granted')")
+        self.conn.execute("UPDATE customers SET onboarding_step = 'review' WHERE onboarding_step IN ('audit_setup', 'review_approve')")
+
         self.conn.execute(
             "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
         )
@@ -430,8 +435,8 @@ class CustomerDB:
         self.update_customer(customer_id, **updates)
 
     ONBOARDING_STEPS = [
-        "new", "contacted", "access_pending", "access_granted",
-        "audit_setup", "review_approve", "live",
+        "new", "outreach", "setup", "review", "live",
+        "content", "monitoring", "attention", "paused",
     ]
 
     def set_onboarding_step(self, customer_id: str, step: str):
@@ -998,6 +1003,47 @@ class CustomerDB:
             (customer_id,),
         )
         return {r["task_key"]: bool(r["completed"]) for r in cur.fetchall()}
+
+    def get_content_recommendation_counts(self, customer_id: str) -> dict:
+        """Return {approved: N, published: N, total: N} for a customer."""
+        cur = self.conn.execute(
+            """SELECT status, COUNT(*) as cnt FROM content_recommendations
+               WHERE customer_id = ? GROUP BY status""",
+            (customer_id,),
+        )
+        counts = {"approved": 0, "published": 0, "total": 0}
+        for r in cur.fetchall():
+            counts[r["status"]] = r["cnt"]
+            counts["total"] += r["cnt"]
+        return counts
+
+    def get_latest_ai_run_summary(self, customer_id: str) -> dict | None:
+        """Return {mention_count, total_queries, mention_rate} from most recent run."""
+        cur = self.conn.execute(
+            """SELECT total_mentions, total_queries, mention_rate
+               FROM ai_mention_runs WHERE customer_id = ?
+               ORDER BY run_date DESC LIMIT 1""",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        return {
+            "mention_count": row["total_mentions"],
+            "total_queries": row["total_queries"],
+            "mention_rate": row["mention_rate"],
+        }
+
+    def get_last_publish_date(self, customer_id: str) -> str | None:
+        """Return most recent content publish date (ISO string) or None."""
+        cur = self.conn.execute(
+            """SELECT published_at FROM content_recommendations
+               WHERE customer_id = ? AND status = 'published' AND published_at IS NOT NULL
+               ORDER BY published_at DESC LIMIT 1""",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        return row["published_at"] if row else None
 
     # --- Content Recommendations ---
 
