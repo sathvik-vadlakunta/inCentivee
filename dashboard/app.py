@@ -2875,6 +2875,82 @@ def api_ai_mention_trends(customer_id):
         db.close()
 
 
+@app.route("/api/ai-mentions/<customer_id>/report")
+@login_required
+def api_ai_mention_report_docx(customer_id):
+    """Download a polished AI Mention Report as DOCX."""
+    db = CustomerDB()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        # Get latest completed run
+        runs = db.get_ai_mention_runs(customer_id, limit=1)
+        valid_runs = [r for r in runs if r.get("total_queries", 0) > 0]
+        if not valid_runs:
+            return jsonify({"error": "No completed runs. Run an AI mention check first."}), 404
+
+        latest = valid_runs[0]
+        run_id = latest["id"]
+        engines_data = json.loads(latest.get("engines_json", "{}")) if isinstance(latest.get("engines_json"), str) else latest.get("engines_json", {})
+
+        run_data = {
+            "date": latest["run_date"],
+            "mention_count": latest["total_mentions"],
+            "total_queries": latest["total_queries"],
+            "mention_rate": latest["mention_rate"],
+            "avg_position": latest.get("avg_position"),
+            "engines": engines_data,
+        }
+
+        # Get results for this run
+        results = db.get_ai_mention_results(run_id)
+        result_list = [{
+            "prompt": r["prompt"],
+            "category": r.get("prompt_category", "general"),
+            "ai": r["engine"],
+            "mentioned": bool(r["mentioned"]),
+            "position": r.get("position"),
+            "quality_score": r.get("quality_score", 0),
+            "context": r.get("context", ""),
+        } for r in results]
+
+        # Get history for trend section
+        all_runs = db.get_ai_mention_runs(customer_id, limit=12)
+        history = [{
+            "date": r["run_date"],
+            "mentions": r["total_mentions"],
+            "total": r["total_queries"],
+            "rate": r["mention_rate"],
+            "avg_position": r.get("avg_position"),
+            "delta": None,
+        } for r in all_runs if r.get("total_queries", 0) > 0]
+
+        # Compute deltas
+        for i, h in enumerate(history):
+            if i + 1 < len(history):
+                h["delta"] = h["mentions"] - history[i + 1]["mentions"]
+
+        from geo_agent.ai_report_docx import generate_ai_mention_report
+        buf = generate_ai_mention_report(
+            customer=dict(customer),
+            run_data=run_data,
+            results=result_list,
+            history=history if len(history) >= 2 else None,
+        )
+
+        filename = f"AI-Mention-Report-{customer.get('name', customer_id).replace(' ', '-')}-{latest['run_date']}.docx"
+        return send_file(
+            buf,
+            as_attachment=True,
+            download_name=filename,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+    finally:
+        db.close()
+
+
 @app.route("/api/checklist", methods=["POST"])
 @login_required
 def api_checklist():

@@ -697,6 +697,7 @@
             <p style="color:var(--muted);font-size:0.85em;margin:4px 0 0;">Track how AI engines (ChatGPT, Claude, Grok, Perplexity, Gemini) recommend this practice across different search types.</p>
         </div>
         <div style="display:flex;gap:8px;">
+            <a href="/api/ai-mentions/{{ customer.id }}/report" class="btn btn-outline btn-sm" title="Download branded DOCX report for client review">Download Report</a>
             <button class="btn btn-outline btn-sm" onclick="exportAiMentionsCsv('{{ customer.id }}')" title="Export latest run as CSV">Export CSV</button>
             <button class="btn btn-primary" onclick="runFullAiCheck('{{ customer.id }}')" id="ai-full-check-btn">
                 Run AI Mention Check
@@ -1315,8 +1316,8 @@ function renderTrends(data) {
     const dates = data.dates || [];
     let trends = data.trends || [];
 
-    if (dates.length < 2) {
-        div.innerHTML = '<p style="color:var(--muted);font-size:0.85em;">Trends require 2+ runs on different dates. Run weekly checks to build trend data.</p>';
+    if (dates.length === 0 || trends.length === 0) {
+        div.innerHTML = '<p style="color:var(--muted);font-size:0.85em;">No trend data yet. Run an AI mention check to get started.</p>';
         return;
     }
 
@@ -1442,9 +1443,9 @@ function loadAiRunsHistory(customerId) {
 
             let html = '';
 
-            // Trend chart — only show when we have 2+ different dates
+            // Trend chart — always show
             const uniqueDates = [...new Set(validRuns.map(r => r.date))];
-            if (uniqueDates.length >= 2) {
+            if (uniqueDates.length >= 1) {
                 // Aggregate by date (latest run per date)
                 const byDate = {};
                 validRuns.forEach(r => { if (!byDate[r.date] || r.mentions > byDate[r.date].mentions) byDate[r.date] = r; });
@@ -1461,8 +1462,6 @@ function loadAiRunsHistory(customerId) {
                     html += '</div>';
                 });
                 html += '</div>';
-            } else {
-                html += '<p style="color:var(--muted);font-size:0.85em;">Trend chart will appear after 2+ weekly runs.</p>';
             }
 
             // History table

@@ -182,6 +182,61 @@ def main():
         report_path.write_text(json.dumps(all_results, indent=2))
         print(f"Report saved: {report_path}")
 
+        # Generate per-customer DOCX reports
+        docx_paths = []
+        try:
+            from geo_agent.ai_report_docx import generate_ai_mention_report
+            for summary in all_results:
+                cust = db.get_customer(summary["customer_id"])
+                if not cust:
+                    continue
+                # Get the full results for this run
+                run_results = db.get_ai_mention_results(summary.get("run_id", "")) if summary.get("run_id") else summary.get("results", [])
+                result_list = []
+                if isinstance(run_results, list) and run_results:
+                    for r in run_results:
+                        result_list.append({
+                            "prompt": r.get("prompt", ""),
+                            "category": r.get("prompt_category", r.get("category", "general")),
+                            "ai": r.get("engine", r.get("ai", "")),
+                            "mentioned": bool(r.get("mentioned")),
+                            "position": r.get("position"),
+                            "quality_score": r.get("quality_score", 0),
+                            "context": r.get("context", ""),
+                        })
+
+                run_data = {
+                    "date": today,
+                    "mention_count": summary["mention_count"],
+                    "total_queries": summary["total_queries"],
+                    "mention_rate": summary.get("mention_rate", 0),
+                    "avg_position": None,
+                    "engines": summary.get("engines", {}),
+                }
+
+                # Get history for trend
+                hist_runs = db.get_ai_mention_runs(summary["customer_id"], limit=12)
+                history = [{"date": r["run_date"], "mentions": r["total_mentions"], "total": r["total_queries"],
+                            "rate": r["mention_rate"], "avg_position": r.get("avg_position"), "delta": None}
+                           for r in hist_runs if r.get("total_queries", 0) > 0]
+                for i, h in enumerate(history):
+                    if i + 1 < len(history):
+                        h["delta"] = h["mentions"] - history[i + 1]["mentions"]
+
+                buf = generate_ai_mention_report(
+                    customer=dict(cust),
+                    run_data=run_data,
+                    results=result_list or summary.get("results", []),
+                    history=history if len(history) >= 2 else None,
+                )
+                name_slug = cust.get("name", "customer").replace(" ", "-")
+                docx_path = reports_dir / f"AI-Report-{name_slug}-{today}.docx"
+                docx_path.write_bytes(buf.read())
+                docx_paths.append(docx_path)
+                print(f"DOCX report saved: {docx_path}")
+        except Exception as e:
+            print(f"DOCX generation error: {e}")
+
         # Send email report
         send_weekly_email(db, all_results, today)
 
