@@ -19,6 +19,10 @@ import os
 import re
 import secrets
 import sys
+import threading
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
@@ -31,7 +35,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import httpx
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file, Response
 
 from geo_agent.db import CustomerDB
 from geo_agent.staging import StagingManager
@@ -67,6 +71,11 @@ def add_no_cache_headers(response):
 # Globals set at startup
 DB_PATH: str | None = None
 DATA_DIR: str = str(Path(__file__).resolve().parent.parent / "data")
+
+# In-memory progress tracking for background AI mention checks
+# Key: run_id, Value: dict with progress info
+_ai_check_progress: dict[str, dict] = {}
+_ai_check_progress_lock = threading.Lock()
 
 
 def get_db() -> CustomerDB:
@@ -2473,22 +2482,15 @@ def api_check_local_listings(customer_id):
         db.close()
 
 
-@app.route("/api/ai-mentions/<customer_id>", methods=["POST"])
-@login_required
-def api_run_ai_mentions(customer_id):
-    """Run comprehensive AI mention check. Saves to ai_mention_runs/results tables."""
+def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
+    """Background thread: run AI mention check and update progress via _ai_check_progress."""
+    from scripts.check_ai_mentions import (
+        build_comprehensive_prompts, query_claude, query_openai,
+        query_perplexity, query_gemini, query_grok, check_mention,
+    )
+
     db = get_db()
     try:
-        customer = db.get_customer(customer_id)
-        if not customer:
-            return jsonify({"error": "Customer not found"}), 404
-
-        from scripts.check_ai_mentions import (
-            build_comprehensive_prompts, query_claude, query_openai,
-            query_perplexity, query_gemini, query_grok, check_mention,
-        )
-        import uuid
-
         competitors = json.loads(customer.get("competitors_json", "[]")) if customer.get("competitors_json") else []
         prompt_defs = build_comprehensive_prompts(
             customer["name"], customer.get("city", ""), customer.get("state", ""),
@@ -2498,15 +2500,34 @@ def api_run_ai_mentions(customer_id):
         )
 
         engines = [("Claude", query_claude), ("ChatGPT", query_openai), ("Perplexity", query_perplexity), ("Gemini", query_gemini), ("Grok", query_grok)]
-        results = []
-        mention_count = 0
-        engines_checked = {}
 
-        run_id = str(uuid.uuid4())
-        from datetime import datetime, timezone
+        # Detect which engines have API keys (quick check)
+        active_engines = []
+        for ai_name, query_fn in engines:
+            # We'll detect no_key on first real query
+            active_engines.append((ai_name, query_fn))
+
+        total_steps = len(prompt_defs) * len(active_engines)
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-        # Create run record first (FK constraint requires it before results)
+        with _ai_check_progress_lock:
+            _ai_check_progress[run_id] = {
+                "status": "running",
+                "total_steps": total_steps,
+                "completed_steps": 0,
+                "current_prompt": "",
+                "current_engine": "",
+                "current_category": "",
+                "mention_count": 0,
+                "total_queries": 0,
+                "engines": {},
+                "prompt_index": 0,
+                "total_prompts": len(prompt_defs),
+                "results": [],
+                "error": None,
+            }
+
+        # Create run record (FK constraint)
         db.save_ai_mention_run({
             "id": run_id,
             "customer_id": customer_id,
@@ -2518,53 +2539,103 @@ def api_run_ai_mentions(customer_id):
             "engines": {},
         })
 
-        for pdef in prompt_defs:
-            prompt = pdef["prompt"]
-            category = pdef["category"]
-            for ai_name, query_fn in engines:
+        results = []
+        mention_count = 0
+        engines_checked = {}
+        completed_steps = 0
+
+        def query_single_engine(ai_name, query_fn, prompt, category, pi):
+            """Query one engine for one prompt. Returns result dict or None."""
+            try:
                 response = query_fn(prompt)
-                if response is None:
-                    engines_checked.setdefault(ai_name, "no_api_key")
-                    continue
-                engines_checked[ai_name] = "active"
-                result = check_mention(response, customer["name"])
-                is_mentioned = result["mentioned"]
-                if is_mentioned:
-                    mention_count += 1
+            except Exception as e:
+                logger.warning(f"AI check error ({ai_name}): {e}")
+                response = None
+            return {"ai_name": ai_name, "prompt": prompt, "category": category,
+                    "prompt_index": pi, "response": response}
 
-                result_row = {
-                    "run_id": run_id,
-                    "customer_id": customer_id,
-                    "engine": ai_name,
-                    "prompt": prompt,
-                    "prompt_category": category,
-                    "mentioned": is_mentioned,
-                    "position": result["position"],
-                    "quality_score": result.get("quality_score", 0),
-                    "context": result["context"][:500] if result.get("context") else "",
-                    "full_response": response[:2000] if response else "",
-                    "is_disclaimer": result.get("disclaimer", False),
+        # Process prompts in batches — for each prompt, query all engines in parallel
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            for pi, pdef in enumerate(prompt_defs):
+                prompt = pdef["prompt"]
+                category = pdef["category"]
+
+                with _ai_check_progress_lock:
+                    prog = _ai_check_progress[run_id]
+                    prog["current_prompt"] = prompt[:80]
+                    prog["current_category"] = category
+                    prog["prompt_index"] = pi + 1
+                    prog["current_engine"] = "all (parallel)"
+
+                # Submit all engines for this prompt in parallel
+                futures = {
+                    executor.submit(query_single_engine, ai_name, query_fn, prompt, category, pi): ai_name
+                    for ai_name, query_fn in active_engines
                 }
-                db.save_ai_mention_result(result_row)
 
-                results.append({
-                    "prompt": prompt,
-                    "category": category,
-                    "ai": ai_name,
-                    "mentioned": is_mentioned,
-                    "position": result["position"],
-                    "quality_score": result.get("quality_score", 0),
-                    "context": result["context"][:150] if result.get("context") else "",
-                    "full_response": response[:1000] if response else "",
-                })
+                for future in as_completed(futures):
+                    res = future.result()
+                    ai_name = res["ai_name"]
+                    response = res["response"]
+                    completed_steps += 1
 
-        # Compute stats
+                    if response is None:
+                        engines_checked.setdefault(ai_name, "no_api_key")
+                        with _ai_check_progress_lock:
+                            prog = _ai_check_progress[run_id]
+                            prog["completed_steps"] = completed_steps
+                            prog["engines"].setdefault(ai_name, {"status": "no_api_key", "mentions": 0, "total": 0})
+                        continue
+
+                    engines_checked[ai_name] = "active"
+                    result = check_mention(response, customer["name"])
+                    is_mentioned = result["mentioned"]
+                    if is_mentioned:
+                        mention_count += 1
+
+                    db.save_ai_mention_result({
+                        "run_id": run_id,
+                        "customer_id": customer_id,
+                        "engine": ai_name,
+                        "prompt": prompt,
+                        "prompt_category": category,
+                        "mentioned": is_mentioned,
+                        "position": result["position"],
+                        "quality_score": result.get("quality_score", 0),
+                        "context": result["context"][:500] if result.get("context") else "",
+                        "full_response": response[:2000] if response else "",
+                        "is_disclaimer": result.get("disclaimer", False),
+                    })
+
+                    result_item = {
+                        "prompt": prompt,
+                        "category": category,
+                        "ai": ai_name,
+                        "mentioned": is_mentioned,
+                        "position": result["position"],
+                        "quality_score": result.get("quality_score", 0),
+                        "context": result["context"][:150] if result.get("context") else "",
+                        "full_response": response[:1000] if response else "",
+                    }
+                    results.append(result_item)
+
+                    with _ai_check_progress_lock:
+                        prog = _ai_check_progress[run_id]
+                        prog["completed_steps"] = completed_steps
+                        prog["mention_count"] = mention_count
+                        prog["total_queries"] = len(results)
+                        eng_stats = prog["engines"].setdefault(ai_name, {"status": "active", "mentions": 0, "total": 0})
+                        eng_stats["status"] = "active"
+                        eng_stats["total"] += 1
+                        if is_mentioned:
+                            eng_stats["mentions"] += 1
+
+        # Compute final stats
         total_queries = len(results)
         mention_rate = mention_count / total_queries if total_queries > 0 else 0.0
         positions = [r["position"] for r in results if r["mentioned"] and r["position"]]
         avg_position = sum(positions) / len(positions) if positions else None
 
-        # Save run summary
         engine_summary = {}
         for ai_name, status in engines_checked.items():
             if status == "no_api_key":
@@ -2585,10 +2656,9 @@ def api_run_ai_mentions(customer_id):
             "engines": engine_summary,
         })
 
-        # Also save to KPI for backward compat
         db.record_kpi(customer_id, "ai_mentions", mention_count, today)
 
-        # Per-category breakdown
+        # Category breakdown
         category_summary = {}
         for r in results:
             cat = r["category"]
@@ -2601,24 +2671,88 @@ def api_run_ai_mentions(customer_id):
             stats["avg_quality"] = round(sum(stats["qualities"]) / len(stats["qualities"])) if stats["qualities"] else 0
             del stats["qualities"]
 
-        # Clear SEO cache so checklist updates
+        # Clear SEO cache
         domain = customer.get("domain", "")
         cache_key = f"{domain}:{customer_id}"
         _seo_cache.pop(cache_key, None)
 
-        return jsonify({
-            "ok": True,
-            "run_id": run_id,
-            "mention_count": mention_count,
-            "total_queries": total_queries,
-            "mention_rate": round(mention_rate * 100, 1),
-            "avg_position": round(avg_position, 1) if avg_position else None,
-            "results": results,
-            "engines": engine_summary,
-            "categories": category_summary,
-        })
+        # Mark complete
+        with _ai_check_progress_lock:
+            _ai_check_progress[run_id] = {
+                "status": "complete",
+                "total_steps": total_steps,
+                "completed_steps": total_steps,
+                "mention_count": mention_count,
+                "total_queries": total_queries,
+                "mention_rate": round(mention_rate * 100, 1),
+                "avg_position": round(avg_position, 1) if avg_position else None,
+                "engines": engine_summary,
+                "categories": category_summary,
+                "results": results,
+                "error": None,
+            }
+
+    except Exception as e:
+        logger.exception(f"AI check background error for {customer_id}")
+        with _ai_check_progress_lock:
+            if run_id in _ai_check_progress:
+                _ai_check_progress[run_id]["status"] = "error"
+                _ai_check_progress[run_id]["error"] = str(e)
     finally:
         db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>", methods=["POST"])
+@login_required
+def api_run_ai_mentions(customer_id):
+    """Start AI mention check in background. Returns run_id immediately."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        run_id = str(uuid.uuid4())
+
+        # Start background thread
+        t = threading.Thread(
+            target=_run_ai_check_background,
+            args=(customer_id, run_id, dict(customer)),
+            daemon=True,
+        )
+        t.start()
+
+        return jsonify({"ok": True, "run_id": run_id})
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>/run/<run_id>/progress")
+@login_required
+def api_ai_mention_progress(customer_id, run_id):
+    """SSE endpoint for live progress updates during an AI mention check."""
+    def generate():
+        while True:
+            with _ai_check_progress_lock:
+                prog = _ai_check_progress.get(run_id)
+
+            if prog is None:
+                yield f"data: {json.dumps({'status': 'not_found'})}\n\n"
+                break
+
+            yield f"data: {json.dumps(prog, default=str)}\n\n"
+
+            if prog["status"] in ("complete", "error"):
+                # Clean up after sending final state (keep for 60s for late subscribers)
+                threading.Timer(60.0, lambda: _ai_check_progress.pop(run_id, None)).start()
+                break
+
+            time.sleep(1.5)
+
+    return Response(generate(), mimetype="text/event-stream", headers={
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no",
+    })
 
 
 @app.route("/api/ai-mentions/<customer_id>/history")
