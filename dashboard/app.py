@@ -2309,6 +2309,130 @@ def api_check_local_listings(customer_id):
             except Exception as e:
                 results[dir_key] = {"found": False, "name": dir_name, "error": str(e)}
 
+        # 3. Tier 2 citation directories
+        tier2_dirs = [
+            ("yellowpages", "YellowPages", f"site:yellowpages.com \"{name}\""),
+            ("mapquest", "MapQuest", f"site:mapquest.com \"{name}\" {city}"),
+            ("bbb", "BBB", f"site:bbb.org \"{name}\""),
+            ("bing_places", "Bing Places", f"site:bing.com/maps \"{name}\" {city}"),
+        ]
+        tier2_found = 0
+        for dir_key, dir_name, query in tier2_dirs:
+            try:
+                resp = httpx.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+                    timeout=8.0, follow_redirects=True,
+                )
+                if resp.status_code == 200:
+                    found = name.lower() in resp.text.lower()
+                    results[f"tier2_{dir_key}"] = {"found": found, "name": dir_name}
+                    if found:
+                        tier2_found += 1
+                        if dir_key == "bing_places":
+                            db.set_checklist_item(customer_id, "seo_bing_places", True)
+            except Exception:
+                pass
+
+        if tier2_found >= 2:
+            db.set_checklist_item(customer_id, "seo_tier2_citations", True)
+
+        # 4. NAP consistency check — compare address/phone across found listings
+        nap_sources = []
+        if results.get("gbp", {}).get("found"):
+            gbp = results["gbp"]
+            nap_sources.append({"source": "Google", "phone": phone, "address": customer.get("address", "")})
+
+        # Check website NAP
+        try:
+            resp = httpx.get(f"https://{domain}", timeout=8.0, follow_redirects=True)
+            if resp.status_code == 200:
+                body = resp.text
+                has_phone = phone and phone.replace("(", "").replace(")", "").replace("-", "").replace(" ", "") in body.replace("(", "").replace(")", "").replace("-", "").replace(" ", "")
+                results["nap_website_phone"] = has_phone
+                if has_phone:
+                    nap_sources.append({"source": "Website", "phone": phone})
+        except Exception:
+            pass
+
+        if len(nap_sources) >= 2:
+            results["nap_consistent"] = True
+            db.set_checklist_item(customer_id, "seo_nap_consistent", True)
+
+        # 5. Content page analysis — check service pages for expert quotes, FAQs, stats, word count
+        content_checks = {}
+        try:
+            # Get crawled pages from DB
+            import re as _re
+            pages = db.conn.execute(
+                "SELECT url, title, content, html, category FROM crawled_pages WHERE customer_id = ? AND category = 'service'",
+                (customer_id,)
+            ).fetchall()
+
+            pages_with_quotes = 0
+            pages_with_faqs = 0
+            pages_with_stats = 0
+            pages_over_2k = 0
+
+            for page in pages:
+                html_content = page[3] or ""
+                text_content = page[2] or ""
+                word_count = len(text_content.split())
+
+                if word_count >= 2000:
+                    pages_over_2k += 1
+                if "<blockquote" in html_content or "— Dr." in text_content or "- Dr." in text_content:
+                    pages_with_quotes += 1
+                if _re.search(r'<h[2-4][^>]*>.*?\?</h[2-4]>', html_content):
+                    pages_with_faqs += 1
+                if _re.search(r'\d+%|\d+\s+(?:percent|million|billion)', text_content):
+                    pages_with_stats += 1
+
+            total_service = len(pages)
+            content_checks = {
+                "total_service_pages": total_service,
+                "pages_with_quotes": pages_with_quotes,
+                "pages_with_faqs": pages_with_faqs,
+                "pages_with_stats": pages_with_stats,
+                "pages_over_2k_words": pages_over_2k,
+            }
+
+            if total_service > 0:
+                if pages_with_quotes == total_service:
+                    db.set_checklist_item(customer_id, "seo_expert_quotes", True)
+                if pages_with_faqs == total_service:
+                    db.set_checklist_item(customer_id, "seo_faq_entries", True)
+                if pages_with_stats >= total_service * 0.8:
+                    db.set_checklist_item(customer_id, "seo_stats_embedded", True)
+                if pages_over_2k >= total_service * 0.5:
+                    db.set_checklist_item(customer_id, "seo_long_service_pages", True)
+        except Exception:
+            pass
+
+        results["content_analysis"] = content_checks
+
+        # Check for specific pages
+        special_pages = {
+            "seo_emergency_page": ["emergency", "urgent"],
+            "seo_cost_page": ["cost", "pricing", "price", "implant cost", "financing"],
+            "seo_insurance_page": ["insurance", "financing", "payment"],
+        }
+        try:
+            all_pages = db.conn.execute(
+                "SELECT url, title, category FROM crawled_pages WHERE customer_id = ?",
+                (customer_id,)
+            ).fetchall()
+            for task_key, keywords in special_pages.items():
+                for page in all_pages:
+                    url_lower = (page[0] or "").lower()
+                    title_lower = (page[1] or "").lower()
+                    if any(kw in url_lower or kw in title_lower for kw in keywords):
+                        db.set_checklist_item(customer_id, task_key, True)
+                        break
+        except Exception:
+            pass
+
         # Clear SEO cache so checklist updates show
         cache_key = f"{domain}:{customer_id}"
         _seo_cache.pop(cache_key, None)

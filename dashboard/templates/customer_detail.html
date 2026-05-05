@@ -924,7 +924,7 @@ function scanLocalListings(customerId) {
     var resultsDiv = document.getElementById('scan-listings-results');
     btn.textContent = 'Scanning...';
     btn.disabled = true;
-    if (resultsDiv) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<span style="color:var(--muted)">Checking Google Business Profile, Yelp, Facebook, Healthgrades, Zocdoc... (takes ~15s)</span>'; }
+    if (resultsDiv) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<span style="color:var(--muted)">Checking GBP, Yelp, Facebook, Healthgrades, Zocdoc, Bing, Tier 2 citations, NAP consistency, content pages... (takes ~30s)</span>'; }
 
     fetch('/api/local-listings/' + customerId, { method: 'POST' })
         .then(function(r) { return r.json(); })
@@ -951,7 +951,7 @@ function scanLocalListings(customerId) {
                 html += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px;"><b>Google Business Profile</b></td><td style="text-align:center;">' + gbpStatus + '</td><td style="padding:4px;">' + gbpDetails + '</td></tr>';
             }
 
-            // Directories
+            // Main directories
             ['yelp','facebook','healthgrades','zocdoc'].forEach(function(key) {
                 if (r[key]) {
                     var status = r[key].found ? '<span style="color:var(--success)">Found</span>' : '<span style="color:var(--muted)">Not found</span>';
@@ -960,11 +960,34 @@ function scanLocalListings(customerId) {
                 }
             });
 
+            // Tier 2 & Bing
+            ['tier2_bing_places','tier2_yellowpages','tier2_mapquest','tier2_bbb'].forEach(function(key) {
+                if (r[key]) {
+                    var status = r[key].found ? '<span style="color:var(--success)">Found</span>' : '<span style="color:var(--muted)">Not found</span>';
+                    html += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px;">' + (r[key].name || key) + '</td><td style="text-align:center;">' + status + '</td><td></td></tr>';
+                }
+            });
+
+            // NAP consistency
+            if (r.nap_consistent) {
+                html += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px;"><b>NAP Consistency</b></td><td style="text-align:center;"><span style="color:var(--success)">Consistent</span></td><td style="padding:4px;">Phone matches across website & GBP</td></tr>';
+            }
+
             html += '</table>';
 
-            if (data.results.auto_checked && data.results.auto_checked.length > 0) {
-                html += '<p style="margin-top:8px;color:var(--success);font-size:0.75rem;">Auto-checked ' + data.results.auto_checked.length + ' task(s). Reload to update checklist.</p>';
+            // Content analysis
+            if (r.content_analysis && r.content_analysis.total_service_pages > 0) {
+                var ca = r.content_analysis;
+                html += '<div style="margin-top:10px;padding:8px;background:var(--bg-alt);border-radius:6px;font-size:0.78rem;">';
+                html += '<b>Content Analysis</b> (' + ca.total_service_pages + ' service pages)<br>';
+                html += 'Expert quotes: ' + ca.pages_with_quotes + '/' + ca.total_service_pages + (ca.pages_with_quotes == ca.total_service_pages ? ' ✅' : '') + '<br>';
+                html += 'FAQ sections: ' + ca.pages_with_faqs + '/' + ca.total_service_pages + (ca.pages_with_faqs == ca.total_service_pages ? ' ✅' : '') + '<br>';
+                html += 'Statistics: ' + ca.pages_with_stats + '/' + ca.total_service_pages + '<br>';
+                html += '2,000+ words: ' + ca.pages_over_2k_words + '/' + ca.total_service_pages;
+                html += '</div>';
             }
+
+            html += '<p style="margin-top:8px;color:var(--success);font-size:0.75rem;">Scan complete. Reload to update checklist.</p>';
 
             if (resultsDiv) resultsDiv.innerHTML = html;
         })
