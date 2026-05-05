@@ -360,7 +360,22 @@ def add_customer():
             for p in access_platforms:
                 db.add_platform_access(customer_id, p)
 
-            flash(f"Customer '{name}' added successfully!", "success")
+            # Auto-run first AI mention check in background
+            try:
+                customer_data = db.get_customer(customer_id)
+                if customer_data:
+                    first_run_id = str(uuid.uuid4())
+                    t = threading.Thread(
+                        target=_run_ai_check_background,
+                        args=(customer_id, first_run_id, dict(customer_data)),
+                        daemon=True,
+                    )
+                    t.start()
+                    logger.info(f"Auto-started first AI mention check for {customer_id} (run_id={first_run_id})")
+            except Exception as e:
+                logger.warning(f"Failed to auto-start AI check for {customer_id}: {e}")
+
+            flash(f"Customer '{name}' added successfully! First AI mention check running in background.", "success")
             return redirect(url_for("customer_detail", customer_id=customer_id))
         except Exception as e:
             flash(f"Error adding customer: {e}", "error")
@@ -2822,6 +2837,40 @@ def api_ai_mention_run_detail(customer_id, run_id):
                 "is_disclaimer": bool(r.get("is_disclaimer")),
             })
         return jsonify({"ok": True, "categories": by_category, "total": len(results)})
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>/trends")
+@login_required
+def api_ai_mention_trends(customer_id):
+    """Get per-prompt trend data across runs for sparkline/trend visualization."""
+    db = CustomerDB()
+    try:
+        rows = db.get_ai_mention_trends(customer_id, limit_runs=12)
+        if not rows:
+            return jsonify({"ok": True, "trends": [], "dates": []})
+
+        # Collect unique dates
+        dates = sorted(set(r["run_date"] for r in rows))
+
+        # Build trend data: {prompt: {engine: {date: {mentioned, position, quality}}}}
+        trends = {}
+        for r in rows:
+            key = r["prompt"]
+            if key not in trends:
+                trends[key] = {"prompt": r["prompt"], "category": r["prompt_category"], "engines": {}}
+            eng = trends[key]["engines"].setdefault(r["engine"], {})
+            eng[r["run_date"]] = {
+                "mentioned": bool(r["mentioned"]),
+                "position": r["position"],
+                "quality": r["quality_score"],
+            }
+
+        # Convert to list sorted by category then prompt
+        trend_list = sorted(trends.values(), key=lambda t: (t["category"], t["prompt"]))
+
+        return jsonify({"ok": True, "trends": trend_list, "dates": dates})
     finally:
         db.close()
 

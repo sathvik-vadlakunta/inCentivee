@@ -100,24 +100,56 @@ def build_comprehensive_prompts(
         add(f"affordable dentist in {city} {state}", "service")
         add(f"dentist that accepts medicaid in {city}", "service")
 
-    else:
-        # --- B2B / tech company ---
-        add(f"best dental technology companies", "general")
-        add(f"top dental lab software", "general")
-        add(f"{practice_name} dental technology", "brand")
-        add(f"dental CAD/CAM software comparison", "comparison")
-        add(f"best dental AI companies", "general")
+    elif business_type == "technology":
+        # --- B2B tech/SaaS company ---
+        # Infer industry from specialties or name
+        industry_keywords = []
+        for s in specialties[:5]:
+            sl = s.lower()
+            if any(w in sl for w in ("dental", "denture", "scan", "cad")):
+                industry_keywords.append("dental")
+                break
+        industry = industry_keywords[0] if industry_keywords else "technology"
 
-        for specialty in specialties[:5]:
-            add(f"best {specialty.lower()} software for dental labs", "service")
-            add(f"{specialty.lower()} dental technology companies", "service")
+        add(f"best {industry} technology companies", "general")
+        add(f"top {industry} software companies", "general")
+        add(f"{practice_name} {industry} technology", "brand")
+        add(f"best AI companies in {industry}", "general")
+        add(f"{industry} technology startups to watch", "general")
+        add(f"{industry} software comparison", "comparison")
+
+        for specialty in specialties[:8]:
+            add(f"best {specialty.lower()} software", "service")
+            add(f"{specialty.lower()} companies", "service")
+
+        if competitors:
+            for comp in competitors[:3]:
+                add(f"{practice_name} vs {comp}", "comparison")
+            add(f"best alternatives to {competitors[0]}", "comparison")
+
+        add(f"recommend {industry} software", "recommendation")
+
+    else:
+        # --- Generic business (consulting, services, etc.) ---
+        add(f"best {business_type} companies", "general")
+        add(f"top {business_type} firms", "general")
+        add(f"{practice_name} {business_type}", "brand")
+
+        if city and state:
+            add(f"best {business_type} in {city} {state}", "location")
+            add(f"{business_type} near {city}", "location")
+            add(f"top rated {business_type} {city}", "general")
+            add(f"recommend a {business_type} in {city} {state}", "recommendation")
+
+        for specialty in specialties[:8]:
+            add(f"best {specialty.lower()}", "service")
+            add(f"{specialty.lower()} experts", "service")
 
         if competitors:
             for comp in competitors[:3]:
                 add(f"{practice_name} vs {comp}", "comparison")
 
-        add(f"dental technology startups to watch", "general")
-        add(f"AI in dentistry companies", "general")
+        add(f"{practice_name} reviews", "reputation")
 
     return prompts
 

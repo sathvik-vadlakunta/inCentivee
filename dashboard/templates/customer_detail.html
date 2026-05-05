@@ -721,6 +721,25 @@
         <h4>Run History</h4>
         <div id="ai-runs-table">Loading...</div>
     </div>
+
+    <!-- Per-query trends over time -->
+    <div id="ai-trends-section" style="margin-top:24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h4 style="margin:0;">Query Trends Over Time</h4>
+            <select id="ai-trends-filter" onchange="filterTrends()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:0.85em;">
+                <option value="all">All Categories</option>
+                <option value="brand">Brand Awareness</option>
+                <option value="general">General Discovery</option>
+                <option value="service">Service-Specific</option>
+                <option value="location">Location/Area</option>
+                <option value="comparison">Competitor Comparison</option>
+                <option value="reputation">Reputation</option>
+                <option value="recommendation">Recommendations</option>
+            </select>
+        </div>
+        <p style="color:var(--muted);font-size:0.8em;margin:4px 0 12px;">Track how each search query performs across AI engines over multiple runs. Green = mentioned, red = not found.</p>
+        <div id="ai-trends-content">Loading trends...</div>
+    </div>
 </div>
 
 <!-- ==================== EMAILS TAB ==================== -->
@@ -867,7 +886,7 @@ function switchTab(tabName, btn) {
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     btn.classList.add('active');
-    if (tabName === 'ai-mentions') loadAiRunsHistory('{{ customer.id }}');
+    if (tabName === 'ai-mentions') { loadAiRunsHistory('{{ customer.id }}'); loadAiTrends('{{ customer.id }}'); }
 }
 
 function copyFormatted(id, btn) {
@@ -1264,6 +1283,143 @@ function exportAiMentionsCsv(customerId) {
     a.download = 'ai-mentions-' + customerId + '-' + new Date().toISOString().slice(0, 10) + '.csv';
     a.click();
     URL.revokeObjectURL(url);
+}
+
+// Store trend data globally for filtering
+window._aiTrendData = null;
+window._aiTrendCustomerId = null;
+
+function loadAiTrends(customerId) {
+    window._aiTrendCustomerId = customerId;
+    fetch('/api/ai-mentions/' + customerId + '/trends')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) return;
+            window._aiTrendData = data;
+            renderTrends(data);
+        })
+        .catch(() => {
+            const div = document.getElementById('ai-trends-content');
+            if (div) div.innerHTML = '<p style="color:#ef4444;">Failed to load trends</p>';
+        });
+}
+
+function filterTrends() {
+    if (window._aiTrendData) renderTrends(window._aiTrendData);
+}
+
+function renderTrends(data) {
+    const div = document.getElementById('ai-trends-content');
+    if (!div) return;
+    const filter = document.getElementById('ai-trends-filter')?.value || 'all';
+    const dates = data.dates || [];
+    let trends = data.trends || [];
+
+    if (dates.length < 2) {
+        div.innerHTML = '<p style="color:var(--muted);font-size:0.85em;">Trends require 2+ runs on different dates. Run weekly checks to build trend data.</p>';
+        return;
+    }
+
+    if (filter !== 'all') {
+        trends = trends.filter(t => t.category === filter);
+    }
+
+    if (trends.length === 0) {
+        div.innerHTML = '<p style="color:var(--muted);">No data for this category.</p>';
+        return;
+    }
+
+    const catLabels = {brand:'Brand',general:'General',service:'Service',location:'Location',comparison:'Comparison',reputation:'Reputation',recommendation:'Recommend'};
+    const engines = [...new Set(trends.flatMap(t => Object.keys(t.engines)))];
+    const dateLabels = dates.map(d => d.slice(5)); // MM-DD
+
+    let html = '';
+
+    // Group by category
+    const byCategory = {};
+    trends.forEach(t => {
+        if (!byCategory[t.category]) byCategory[t.category] = [];
+        byCategory[t.category].push(t);
+    });
+
+    for (const [cat, catTrends] of Object.entries(byCategory)) {
+        html += '<details open style="margin-bottom:16px;">';
+        html += '<summary style="cursor:pointer;padding:8px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;font-weight:600;">' + (catLabels[cat] || cat) + ' (' + catTrends.length + ' queries)</summary>';
+        html += '<div style="overflow-x:auto;margin-top:8px;">';
+
+        catTrends.forEach(trend => {
+            html += '<div style="margin-bottom:14px;padding:8px 10px;background:white;border:1px solid #e5e7eb;border-radius:6px;">';
+            html += '<div style="font-size:0.85em;font-weight:600;color:#374151;margin-bottom:6px;">' + trend.prompt + '</div>';
+
+            // One sparkline row per engine
+            engines.forEach(eng => {
+                const engData = trend.engines[eng];
+                if (!engData) return;
+
+                // Count mentions across dates
+                const mentionCount = dates.filter(d => engData[d]?.mentioned).length;
+                const total = dates.filter(d => engData[d]).length;
+                if (total === 0) return;
+
+                html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
+                html += '<span style="font-size:0.72em;color:#6b7280;min-width:60px;text-align:right;">' + eng + '</span>';
+
+                // Sparkline cells
+                html += '<div style="display:flex;gap:2px;align-items:center;">';
+                dates.forEach(d => {
+                    const point = engData[d];
+                    if (!point) {
+                        html += '<div style="width:20px;height:16px;background:#f3f4f6;border-radius:2px;" title="' + d + ': no data"></div>';
+                    } else if (point.mentioned) {
+                        const q = point.quality || 0;
+                        const bg = q >= 50 ? '#22c55e' : q >= 25 ? '#86efac' : '#bbf7d0';
+                        const pos = point.position ? '#' + point.position : '✓';
+                        html += '<div style="width:20px;height:16px;background:' + bg + ';border-radius:2px;text-align:center;font-size:0.6em;line-height:16px;color:#166534;font-weight:600;" title="' + d + ': Mentioned ' + pos + ' (Q:' + q + ')">' + (point.position || '✓') + '</div>';
+                    } else {
+                        html += '<div style="width:20px;height:16px;background:#fecaca;border-radius:2px;" title="' + d + ': Not found"></div>';
+                    }
+                });
+                html += '</div>';
+
+                // Summary
+                const pct = Math.round(mentionCount / total * 100);
+                const trendColor = pct > 50 ? '#22c55e' : pct > 0 ? '#f59e0b' : '#ef4444';
+                html += '<span style="font-size:0.7em;color:' + trendColor + ';min-width:30px;">' + pct + '%</span>';
+
+                // Direction arrow (compare last two dates)
+                const recentDates = dates.filter(d => engData[d]);
+                if (recentDates.length >= 2) {
+                    const prev = engData[recentDates[recentDates.length - 2]];
+                    const curr = engData[recentDates[recentDates.length - 1]];
+                    if (curr.mentioned && !prev.mentioned) {
+                        html += '<span style="color:#22c55e;font-size:0.75em;">▲</span>';
+                    } else if (!curr.mentioned && prev.mentioned) {
+                        html += '<span style="color:#ef4444;font-size:0.75em;">▼</span>';
+                    }
+                }
+
+                html += '</div>';
+            });
+            html += '</div>';
+        });
+
+        html += '</div></details>';
+    }
+
+    // Date legend
+    html += '<div style="display:flex;gap:2px;align-items:center;margin-top:8px;padding-left:66px;">';
+    dateLabels.forEach(d => {
+        html += '<div style="width:20px;text-align:center;font-size:0.6em;color:#9ca3af;">' + d + '</div>';
+    });
+    html += '</div>';
+    html += '<div style="display:flex;gap:12px;margin-top:8px;font-size:0.72em;color:#6b7280;">';
+    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#22c55e;border-radius:2px;"></span> Mentioned (high quality)</span>';
+    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#bbf7d0;border-radius:2px;"></span> Mentioned</span>';
+    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#fecaca;border-radius:2px;"></span> Not found</span>';
+    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#f3f4f6;border-radius:2px;"></span> No data</span>';
+    html += '</div>';
+
+    div.innerHTML = html;
 }
 
 function loadAiRunsHistory(customerId) {

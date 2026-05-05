@@ -923,6 +923,28 @@ class CustomerDB:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    def get_ai_mention_trends(self, customer_id: str, limit_runs: int = 12) -> list[dict]:
+        """Get per-prompt, per-engine results across recent runs for trend tracking.
+
+        Returns list of dicts with: run_date, prompt, prompt_category, engine, mentioned, position, quality_score
+        Ordered by run_date ASC so charts go left-to-right chronologically.
+        """
+        cur = self.conn.execute(
+            """SELECT mr.run_date, r.prompt, r.prompt_category, r.engine,
+                      r.mentioned, r.position, r.quality_score
+               FROM ai_mention_results r
+               JOIN ai_mention_runs mr ON r.run_id = mr.id
+               WHERE r.customer_id = ?
+                 AND mr.id IN (
+                     SELECT id FROM ai_mention_runs
+                     WHERE customer_id = ? AND total_queries > 0
+                     ORDER BY run_date DESC LIMIT ?
+                 )
+               ORDER BY mr.run_date ASC, r.prompt, r.engine""",
+            (customer_id, customer_id, limit_runs),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
     # --- KPIs ---
 
     def record_kpi(self, customer_id: str, metric: str, value: float, date: str | None = None):
