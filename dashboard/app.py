@@ -1383,24 +1383,31 @@ SEO_GEO_TASKS = [
              "</ol>"
          ),
      }},
-    {"key": "seo_ai_monitoring", "task": "AI mention monitoring set up (ChatGPT/Claude/Perplexity)", "category": "AI Readiness (GEO)",
+    {"key": "seo_ai_monitoring", "task": "AI mention monitoring set up (ChatGPT/Claude/Gemini/Grok/Perplexity)", "category": "AI Readiness (GEO)",
      "guide": {
          "_default": (
-             "<b>Run an automated AI mention check</b> — queries ChatGPT and Claude with practice-relevant prompts "
-             "and checks if the practice appears in the responses."
+             "<b>Run an automated AI mention check</b> — queries up to 5 AI engines and checks if the practice appears in responses."
              "<br><br>"
              "<button class='btn btn-primary btn-sm' onclick='runAiMentionCheck(\"{customer_id}\")' id='ai-check-btn'>"
              "Run AI Mention Check</button>"
              "<span id='ai-check-status' style='margin-left:8px;'></span>"
              "<div id='ai-check-results' style='margin-top:12px;display:none;'></div>"
              "<br>"
+             "<b>API keys configured:</b> Set these env vars on the server to enable each engine:"
+             "<ul style='font-size:0.9em;margin:4px 0;'>"
+             "<li><code>ANTHROPIC_API_KEY</code> — Claude (already set)</li>"
+             "<li><code>OPENAI_API_KEY</code> — ChatGPT ($5 minimum)</li>"
+             "<li><code>PERPLEXITY_API_KEY</code> — Perplexity Sonar ($5/mo, live web search)</li>"
+             "<li><code>GEMINI_API_KEY</code> — Google Gemini (free tier, 15 RPM)</li>"
+             "<li><code>XAI_API_KEY</code> — Grok ($5 free credits)</li>"
+             "</ul>"
              "<b>Manual check:</b>"
              "<ol>"
              "<li>Open <a href='https://chatgpt.com' target='_blank'>ChatGPT</a> and ask: <i>\"Who is the best dentist in {city}?\"</i></li>"
-             "<li>Open <a href='https://claude.ai' target='_blank'>Claude</a> and ask the same question</li>"
-             "<li>Open <a href='https://perplexity.ai' target='_blank'>Perplexity</a> and ask the same question</li>"
+             "<li>Open <a href='https://claude.ai' target='_blank'>Claude</a> and ask the same</li>"
+             "<li>Open <a href='https://gemini.google.com' target='_blank'>Gemini</a>, <a href='https://grok.x.ai' target='_blank'>Grok</a>, <a href='https://perplexity.ai' target='_blank'>Perplexity</a></li>"
              "</ol>"
-             "Once the check runs (automated or manual), this task will be marked complete automatically."
+             "Once the check runs, this task will be marked complete automatically."
          ),
      }},
     # Content Optimization
@@ -2452,21 +2459,26 @@ def api_run_ai_mentions(customer_id):
         if not customer:
             return jsonify({"error": "Customer not found"}), 404
 
-        from scripts.check_ai_mentions import build_prompts, query_claude, query_openai, check_mention
+        from scripts.check_ai_mentions import build_prompts, query_claude, query_openai, query_perplexity, query_gemini, query_grok, check_mention
 
         prompts = build_prompts(
             customer["name"], customer["city"], customer["state"],
             customer.get("specialties", []),
+            business_type=customer.get("business_type", "practice"),
         )
 
+        engines = [("Claude", query_claude), ("ChatGPT", query_openai), ("Perplexity", query_perplexity), ("Gemini", query_gemini), ("Grok", query_grok)]
         results = []
         mention_count = 0
+        engines_checked = {}  # track which engines had API keys
 
         for prompt in prompts:
-            for ai_name, query_fn in [("Claude", query_claude), ("ChatGPT", query_openai)]:
+            for ai_name, query_fn in engines:
                 response = query_fn(prompt)
                 if response is None:
+                    engines_checked.setdefault(ai_name, "no_api_key")
                     continue
+                engines_checked[ai_name] = "active"
                 result = check_mention(response, customer["name"])
                 if result["mentioned"]:
                     mention_count += 1
@@ -2483,6 +2495,16 @@ def api_run_ai_mentions(customer_id):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         db.record_kpi(customer_id, "ai_mentions", mention_count, today)
 
+        # Compute per-engine summary
+        engine_summary = {}
+        for ai_name, status in engines_checked.items():
+            if status == "no_api_key":
+                engine_summary[ai_name] = {"status": "no_api_key", "mentions": 0, "total": 0}
+            else:
+                ai_results = [r for r in results if r["ai"] == ai_name]
+                ai_mentions = sum(1 for r in ai_results if r["mentioned"])
+                engine_summary[ai_name] = {"status": "active", "mentions": ai_mentions, "total": len(ai_results)}
+
         # Clear SEO cache so checklist updates
         domain = customer.get("domain", "")
         cache_key = f"{domain}:{customer_id}"
@@ -2493,6 +2515,7 @@ def api_run_ai_mentions(customer_id):
             "mention_count": mention_count,
             "total_queries": len(results),
             "results": results,
+            "engines": engine_summary,
         })
     finally:
         db.close()

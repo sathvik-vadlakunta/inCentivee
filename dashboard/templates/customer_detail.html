@@ -1012,16 +1012,38 @@ function runAiMentionCheck(customerId) {
             btn.disabled = false;
             if (data.ok) {
                 if (status) status.innerHTML = '<b>' + data.mention_count + '/' + data.total_queries + ' mentions found</b>';
-                if (resultsDiv && data.results) {
+                if (resultsDiv) {
                     resultsDiv.style.display = 'block';
-                    let html = '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
-                    html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">Prompt</th><th>AI</th><th>Found?</th><th>Position</th></tr>';
-                    data.results.forEach(r => {
-                        const found = r.mentioned ? '<span style="color:green;">Yes</span>' : '<span style="color:#999;">No</span>';
-                        const pos = r.position ? '#' + r.position : '-';
-                        html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">' + r.prompt + '</td><td style="text-align:center;">' + r.ai + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td></tr>';
-                    });
-                    html += '</table>';
+                    let html = '';
+
+                    // Engine status summary
+                    if (data.engines) {
+                        html += '<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">';
+                        for (const [name, info] of Object.entries(data.engines)) {
+                            const color = info.status === 'no_api_key' ? '#f59e0b' : (info.mentions > 0 ? '#22c55e' : '#ef4444');
+                            const icon = info.status === 'no_api_key' ? '⚠️' : (info.mentions > 0 ? '✅' : '❌');
+                            const label = info.status === 'no_api_key'
+                                ? 'No API key'
+                                : info.mentions + '/' + info.total + ' mentions';
+                            html += '<div style="padding:8px 12px;border-radius:8px;border:1px solid ' + color + ';background:' + color + '10;">'
+                                + '<b>' + icon + ' ' + name + '</b><br><span style="font-size:0.85em;">' + label + '</span></div>';
+                        }
+                        html += '</div>';
+                    }
+
+                    // Results table
+                    if (data.results && data.results.length > 0) {
+                        html += '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
+                        html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">Prompt</th><th>AI</th><th>Found?</th><th>Position</th><th style="text-align:left;">Context</th></tr>';
+                        data.results.forEach(r => {
+                            const found = r.mentioned ? '<span style="color:green;">✓ Yes</span>' : '<span style="color:#999;">No</span>';
+                            const pos = r.position ? '#' + r.position : '-';
+                            const ctx = r.context ? r.context.substring(0, 80) + '...' : '';
+                            html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">' + r.prompt + '</td><td style="text-align:center;">' + r.ai + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td><td style="padding:4px;font-size:0.85em;color:#666;">' + ctx + '</td></tr>';
+                        });
+                        html += '</table>';
+                    }
+
                     if (data.mention_count > 0) {
                         html += '<p style="margin-top:8px;color:green;">Task marked complete. Reload the page to update the checklist.</p>';
                     }

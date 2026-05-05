@@ -32,15 +32,27 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def build_prompts(practice_name: str, city: str, state: str, specialties: list[str]) -> list[str]:
-    """Build search prompts to test AI mention of the practice."""
-    prompts = [
-        f"best dentist in {city} {state}",
-        f"top rated dental practice in {city}",
-        f"{practice_name} reviews",
-    ]
-    for specialty in specialties[:2]:
-        prompts.append(f"best {specialty.lower()} in {city} {state}")
+def build_prompts(practice_name: str, city: str, state: str, specialties: list[str], business_type: str = "practice") -> list[str]:
+    """Build search prompts to test AI mention of the practice/company."""
+    prompts = [f"{practice_name} reviews"]
+
+    if business_type in ("practice", "dental_practice"):
+        prompts += [
+            f"best dentist in {city} {state}",
+            f"top rated dental practice in {city}",
+        ]
+        for specialty in specialties[:2]:
+            prompts.append(f"best {specialty.lower()} in {city} {state}")
+    else:
+        # B2B / tech company — product-focused prompts
+        prompts += [
+            f"best dental technology companies",
+            f"top dental lab software",
+            f"{practice_name} dental technology",
+        ]
+        for specialty in specialties[:2]:
+            prompts.append(f"best {specialty.lower()} software for dental labs")
+
     return prompts
 
 
@@ -54,7 +66,7 @@ def query_claude(prompt: str) -> str | None:
         import anthropic
         client = anthropic.Anthropic(api_key=api_key)
         resp = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=1000,
             messages=[{"role": "user", "content": prompt}],
         )
@@ -86,6 +98,79 @@ def query_openai(prompt: str) -> str | None:
             return resp.json()["choices"][0]["message"]["content"]
     except Exception as e:
         logger.warning(f"OpenAI query failed: {e}")
+        return None
+
+
+def query_perplexity(prompt: str) -> str | None:
+    """Query Perplexity Sonar (searches live web, respects llms.txt)."""
+    api_key = os.environ.get("PERPLEXITY_API_KEY", "")
+    if not api_key:
+        return None
+
+    try:
+        import httpx
+        with httpx.Client(timeout=45.0) as client:
+            resp = client.post(
+                "https://api.perplexity.ai/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "sonar",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1000,
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.warning(f"Perplexity query failed: {e}")
+        return None
+
+
+def query_gemini(prompt: str) -> str | None:
+    """Query Google Gemini (free tier, 15 RPM)."""
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return None
+
+    try:
+        import httpx
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "contents": [{"parts": [{"text": prompt}]}],
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception as e:
+        logger.warning(f"Gemini query failed: {e}")
+        return None
+
+
+def query_grok(prompt: str) -> str | None:
+    """Query xAI Grok (OpenAI-compatible API)."""
+    api_key = os.environ.get("XAI_API_KEY", "")
+    if not api_key:
+        return None
+
+    try:
+        import httpx
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                "https://api.x.ai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "grok-3-mini",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1000,
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        logger.warning(f"Grok query failed: {e}")
         return None
 
 
@@ -195,6 +280,7 @@ def main():
         prompts = build_prompts(
             customer["name"], customer["city"], customer["state"],
             customer.get("specialties", []),
+            business_type=customer.get("business_type", "practice"),
         )
 
         results = []
@@ -203,8 +289,8 @@ def main():
         for prompt in prompts:
             print(f"\nQuery: \"{prompt}\"")
 
-            # Query each AI
-            for ai_name, query_fn in [("Claude", query_claude), ("ChatGPT", query_openai)]:
+            # Query each AI engine
+            for ai_name, query_fn in [("Claude", query_claude), ("ChatGPT", query_openai), ("Perplexity", query_perplexity), ("Gemini", query_gemini), ("Grok", query_grok)]:
                 response = query_fn(prompt)
                 if response is None:
                     print(f"  {ai_name}: (no API key)")
