@@ -50,7 +50,10 @@ def get_db() -> CustomerDB:
 
 
 def translate_post(client: anthropic.Anthropic, title: str, description: str, html_snippet: str, locale: str) -> dict:
-    """Translate a blog post's title, description, and HTML content."""
+    """Translate a blog post's title, description, and HTML content.
+
+    Uses XML-style output to avoid JSON parsing issues with HTML content.
+    """
     lang_name = LOCALE_NAMES[locale]
 
     response = client.messages.create(
@@ -58,10 +61,11 @@ def translate_post(client: anthropic.Anthropic, title: str, description: str, ht
         max_tokens=8000,
         messages=[{
             "role": "user",
-            "content": f"""Translate this blog post into {lang_name}. Return ONLY a JSON object with these keys:
-- "title": translated title
-- "description": translated description
-- "html_snippet": translated HTML (keep all HTML tags, only translate text content)
+            "content": f"""Translate this blog post into {lang_name}. Return the translation using these XML tags:
+
+<translated_title>translated title here</translated_title>
+<translated_description>translated description here</translated_description>
+<translated_html>translated HTML here</translated_html>
 
 IMPORTANT:
 - Keep product names untranslated: SmileShape, SmartScan, SmartCAD, SmartRX
@@ -79,16 +83,25 @@ HTML:
         }],
     )
 
-    # Parse JSON from response
+    import re
     text = response.content[0].text.strip()
-    # Handle markdown code blocks
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1]  # Remove first line
-        text = text.rsplit("```", 1)[0]  # Remove last ```
-        text = text.strip()
 
-    import json
-    return json.loads(text)
+    def extract_tag(tag_name: str) -> str:
+        match = re.search(f'<{tag_name}>(.*?)</{tag_name}>', text, re.DOTALL)
+        return match.group(1).strip() if match else ""
+
+    translated_title = extract_tag("translated_title")
+    translated_desc = extract_tag("translated_description")
+    translated_html = extract_tag("translated_html")
+
+    if not translated_title:
+        raise ValueError(f"No translated_title found in response")
+
+    return {
+        "title": translated_title,
+        "description": translated_desc,
+        "html_snippet": translated_html,
+    }
 
 
 def main():
