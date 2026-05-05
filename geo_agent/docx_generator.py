@@ -230,6 +230,7 @@ class ContentDocxGenerator:
 
         Detects question headings (h2-h4) and treats subsequent paragraphs as answers,
         adding visual separation between each Q&A pair.
+        Handles Schema.org FAQPage markup with nested div structure.
         """
         if not html:
             return
@@ -251,8 +252,27 @@ class ContentDocxGenerator:
                 self._html_to_docx(doc, preamble)
 
             for match in matches:
+                heading_level = int(match.group(1))
                 question = self._strip_tags(match.group(2)).strip()
                 answer_html = match.group(3).strip()
+
+                # Extract answer <p> tags (may be nested inside schema.org divs)
+                answer_parts = re.findall(r'<p[^>]*>(.*?)</p>', answer_html, re.DOTALL)
+
+                # If this is an h2 with no direct <p> answers but contains h3s,
+                # it's a section title — render as heading, not Q&A
+                has_sub_headings = re.search(r'<h[3-4]', answer_html)
+                if heading_level == 2 and not answer_parts and has_sub_headings:
+                    doc.add_heading(question, level=2)
+                    continue
+
+                # If no <p> tags, try stripping all tags for plain text answer
+                if not answer_parts:
+                    plain = self._strip_tags(answer_html).strip()
+                    if not plain:
+                        # No answer at all — render as section heading, not Q
+                        doc.add_heading(question, level=heading_level)
+                        continue
 
                 # Question as bold heading with "Q:" prefix
                 q_para = doc.add_paragraph()
@@ -263,7 +283,6 @@ class ContentDocxGenerator:
                 q_run.font.color.rgb = RGBColor(0x1E, 0x40, 0xAF)
 
                 # Answer paragraphs
-                answer_parts = re.findall(r'<p[^>]*>(.*?)</p>', answer_html, re.DOTALL)
                 if answer_parts:
                     for part in answer_parts:
                         a_para = doc.add_paragraph()
@@ -272,14 +291,13 @@ class ContentDocxGenerator:
                         a_run.font.size = Pt(10)
                         self._add_inline_runs(a_para, part)
                 else:
-                    # No <p> tags, use raw text
-                    text = self._strip_tags(answer_html).strip()
-                    if text:
+                    plain = self._strip_tags(answer_html).strip()
+                    if plain:
                         a_para = doc.add_paragraph()
                         a_run = a_para.add_run("A: ")
                         a_run.bold = True
                         a_run.font.size = Pt(10)
-                        a_para.add_run(text)
+                        a_para.add_run(plain)
 
                 # Add spacing after each Q&A pair
                 spacer = doc.add_paragraph()

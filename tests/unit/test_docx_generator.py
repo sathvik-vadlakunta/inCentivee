@@ -196,6 +196,58 @@ class TestHtmlToDOCX:
         assert "Just some plain text" in full_text
 
 
+class TestFaqSchemaOrg:
+    """Test FAQ rendering with Schema.org FAQPage markup (nested divs)."""
+
+    def test_section_title_not_rendered_as_question(self, generator):
+        """H2 section titles with sub-headings should render as headings, not Q&A."""
+        html = (
+            '<div itemscope itemtype="https://schema.org/FAQPage">'
+            '<h2>Frequently Asked Questions About Implants</h2>'
+            '<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">'
+            '<h3 itemprop="name">How long do implants last?</h3>'
+            '<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">'
+            '<div itemprop="text"><p>With proper care, implants can last a lifetime.</p></div>'
+            '</div></div>'
+            '<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">'
+            '<h3 itemprop="name">Are implants painful?</h3>'
+            '<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">'
+            '<div itemprop="text"><p>Most patients report minimal discomfort.</p></div>'
+            '</div></div></div>'
+        )
+        rec = {
+            "id": "faq-schema", "rec_type": "faq_update",
+            "title": "Implant FAQ", "html_snippet": html,
+            "priority": 1, "status": "approved",
+        }
+        buf = generator.generate_single(rec)
+        doc = Document(buf)
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        # Section title should NOT have "Q:" prefix
+        assert "Q: Frequently Asked Questions" not in full_text
+        # But actual questions should
+        assert "Q: How long do implants last?" in full_text
+        assert "Q: Are implants painful?" in full_text
+        # Answers should be present
+        assert "implants can last a lifetime" in full_text
+        assert "minimal discomfort" in full_text
+
+    def test_heading_without_answer_rendered_as_heading(self, generator):
+        """Headings with no answer content should be section headings, not Q&A."""
+        html = '<h2>Our FAQ Section</h2><h3>What do you offer?</h3><p>We offer everything.</p>'
+        rec = {
+            "id": "faq-no-answer", "rec_type": "faq_update",
+            "title": "FAQ No Answer", "html_snippet": html,
+            "priority": 2, "status": "approved",
+        }
+        buf = generator.generate_single(rec)
+        doc = Document(buf)
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        assert "Q: Our FAQ Section" not in full_text
+        assert "Q: What do you offer?" in full_text
+        assert "We offer everything" in full_text
+
+
 class TestBranding:
     def test_header_includes_brand_and_customer(self, generator):
         doc = Document()
