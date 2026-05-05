@@ -17,7 +17,7 @@ from geo_agent.config import Customer, Provider
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -291,6 +291,39 @@ class CustomerDB:
                 last_login TEXT,
                 created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             )
+        """)
+        # Migration v2 → v3: AI mention tracking tables
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS ai_mention_runs (
+                id TEXT PRIMARY KEY,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                run_date TEXT NOT NULL,
+                total_mentions INTEGER NOT NULL DEFAULT 0,
+                total_queries INTEGER NOT NULL DEFAULT 0,
+                mention_rate REAL NOT NULL DEFAULT 0.0,
+                avg_position REAL,
+                engines_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_ai_runs_customer ON ai_mention_runs(customer_id, run_date);
+
+            CREATE TABLE IF NOT EXISTS ai_mention_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL REFERENCES ai_mention_runs(id),
+                customer_id TEXT NOT NULL,
+                engine TEXT NOT NULL,
+                prompt TEXT NOT NULL,
+                prompt_category TEXT NOT NULL DEFAULT 'general',
+                mentioned INTEGER NOT NULL DEFAULT 0,
+                position INTEGER,
+                quality_score INTEGER NOT NULL DEFAULT 0,
+                context TEXT NOT NULL DEFAULT '',
+                full_response TEXT NOT NULL DEFAULT '',
+                is_disclaimer INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_ai_results_run ON ai_mention_results(run_id);
+            CREATE INDEX IF NOT EXISTS idx_ai_results_customer ON ai_mention_results(customer_id, engine);
         """)
         self.conn.execute(
             "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
@@ -833,6 +866,62 @@ class CustomerDB:
             (datetime.now(timezone.utc).isoformat(), run_id),
         )
         self.conn.commit()
+
+    # --- AI Mention Tracking ---
+
+    def save_ai_mention_run(self, run: dict):
+        """Save an AI mention check run summary."""
+        self.conn.execute(
+            """INSERT OR REPLACE INTO ai_mention_runs
+               (id, customer_id, run_date, total_mentions, total_queries, mention_rate, avg_position, engines_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (run["id"], run["customer_id"], run["run_date"], run["total_mentions"],
+             run["total_queries"], run["mention_rate"], run.get("avg_position"),
+             json.dumps(run.get("engines", {}))),
+        )
+        self.conn.commit()
+
+    def save_ai_mention_result(self, result: dict):
+        """Save a single AI mention check result."""
+        self.conn.execute(
+            """INSERT INTO ai_mention_results
+               (run_id, customer_id, engine, prompt, prompt_category, mentioned,
+                position, quality_score, context, full_response, is_disclaimer)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (result["run_id"], result["customer_id"], result["engine"],
+             result["prompt"], result.get("prompt_category", "general"),
+             1 if result["mentioned"] else 0, result.get("position"),
+             result.get("quality_score", 0),
+             result.get("context", ""), result.get("full_response", ""),
+             1 if result.get("is_disclaimer") else 0),
+        )
+        self.conn.commit()
+
+    def get_ai_mention_runs(self, customer_id: str, limit: int = 52) -> list[dict]:
+        """Get recent AI mention runs for a customer."""
+        cur = self.conn.execute(
+            "SELECT * FROM ai_mention_runs WHERE customer_id = ? ORDER BY run_date DESC LIMIT ?",
+            (customer_id, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_ai_mention_results(self, run_id: str) -> list[dict]:
+        """Get all results for a specific run."""
+        cur = self.conn.execute(
+            "SELECT * FROM ai_mention_results WHERE run_id = ? ORDER BY engine, prompt",
+            (run_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_ai_mention_results_by_customer(self, customer_id: str, limit: int = 200) -> list[dict]:
+        """Get recent results across all runs for a customer."""
+        cur = self.conn.execute(
+            """SELECT r.*, mr.run_date FROM ai_mention_results r
+               JOIN ai_mention_runs mr ON r.run_id = mr.id
+               WHERE r.customer_id = ? ORDER BY mr.run_date DESC, r.engine LIMIT ?""",
+            (customer_id, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
 
     # --- KPIs ---
 

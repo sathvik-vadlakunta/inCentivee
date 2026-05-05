@@ -1011,7 +1011,9 @@ function runAiMentionCheck(customerId) {
             btn.textContent = 'Run AI Mention Check';
             btn.disabled = false;
             if (data.ok) {
-                if (status) status.innerHTML = '<b>' + data.mention_count + '/' + data.total_queries + ' mentions found</b>';
+                const rate = data.mention_rate || 0;
+                const avgPos = data.avg_position ? ' · Avg position #' + data.avg_position : '';
+                if (status) status.innerHTML = '<b>' + data.mention_count + '/' + data.total_queries + ' mentions (' + rate + '%)' + avgPos + '</b>';
                 if (resultsDiv) {
                     resultsDiv.style.display = 'block';
                     let html = '';
@@ -1031,15 +1033,41 @@ function runAiMentionCheck(customerId) {
                         html += '</div>';
                     }
 
+                    // Category breakdown
+                    if (data.categories) {
+                        const catLabels = {brand:'Brand Awareness',general:'General Discovery',service:'Service-Specific',location:'Location/Area',comparison:'Competitor Comparison',reputation:'Reputation',recommendation:'Recommendations'};
+                        html += '<div style="margin:12px 0;"><b>By Search Category:</b></div>';
+                        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">';
+                        for (const [cat, stats] of Object.entries(data.categories)) {
+                            const pct = stats.total > 0 ? Math.round(stats.mentions / stats.total * 100) : 0;
+                            const color = pct > 50 ? '#22c55e' : pct > 20 ? '#f59e0b' : '#ef4444';
+                            const label = catLabels[cat] || cat;
+                            html += '<div style="padding:6px 10px;border-radius:6px;border:1px solid #e5e7eb;background:white;font-size:0.85em;">';
+                            html += '<b>' + label + '</b><br>';
+                            html += '<span style="color:' + color + ';">' + stats.mentions + '/' + stats.total + ' (' + pct + '%)</span>';
+                            if (stats.avg_quality > 0) html += ' · Q:' + stats.avg_quality;
+                            html += '</div>';
+                        }
+                        html += '</div>';
+                    }
+
                     // Results table
                     if (data.results && data.results.length > 0) {
                         html += '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
-                        html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">Prompt</th><th>AI</th><th>Found?</th><th>Position</th><th style="text-align:left;">Context</th></tr>';
-                        data.results.forEach(r => {
+                        html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">Prompt</th><th>Cat</th><th>AI</th><th>Found?</th><th>Pos</th><th>Quality</th><th style="text-align:left;">Context</th></tr>';
+                        data.results.forEach((r, i) => {
                             const found = r.mentioned ? '<span style="color:green;">✓ Yes</span>' : '<span style="color:#999;">No</span>';
                             const pos = r.position ? '#' + r.position : '-';
-                            const ctx = r.context ? r.context.substring(0, 80) + '...' : '';
-                            html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">' + r.prompt + '</td><td style="text-align:center;">' + r.ai + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td><td style="padding:4px;font-size:0.85em;color:#666;">' + ctx + '</td></tr>';
+                            const catShort = (r.category || '').substring(0, 6);
+                            const qScore = r.quality_score || 0;
+                            const qColor = qScore >= 50 ? '#22c55e' : qScore >= 25 ? '#f59e0b' : '#6b7280';
+                            const shortCtx = r.context ? r.context.substring(0, 60) + '...' : '';
+                            const fullCtx = (r.full_response || r.context || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                            const ctxCell = (r.context || r.full_response)
+                                ? '<span style="cursor:pointer;text-decoration:underline dotted;" onclick="document.getElementById(\'ai-ctx-' + i + '\').style.display=document.getElementById(\'ai-ctx-' + i + '\').style.display===\'none\'?\'block\':\'none\'">' + (shortCtx || 'View response') + '</span>'
+                                  + '<div id="ai-ctx-' + i + '" style="display:none;margin-top:6px;padding:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-size:0.85em;line-height:1.4;">' + fullCtx + '</div>'
+                                : '';
+                            html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">' + r.prompt + '</td><td style="text-align:center;font-size:0.75em;">' + catShort + '</td><td style="text-align:center;">' + r.ai + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td><td style="text-align:center;color:' + qColor + ';">' + (r.mentioned ? qScore : '-') + '</td><td style="padding:4px;font-size:0.85em;color:#666;">' + ctxCell + '</td></tr>';
                         });
                         html += '</table>';
                     }

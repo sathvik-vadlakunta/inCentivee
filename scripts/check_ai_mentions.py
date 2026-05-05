@@ -33,25 +33,91 @@ logger = logging.getLogger(__name__)
 
 
 def build_prompts(practice_name: str, city: str, state: str, specialties: list[str], business_type: str = "practice") -> list[str]:
-    """Build search prompts to test AI mention of the practice/company."""
-    prompts = [f"{practice_name} reviews"]
+    """Build basic search prompts (backward compat). Use build_comprehensive_prompts for full checks."""
+    return [p["prompt"] for p in build_comprehensive_prompts(practice_name, city, state, specialties, business_type)]
+
+
+def build_comprehensive_prompts(
+    practice_name: str, city: str, state: str, specialties: list[str],
+    business_type: str = "practice", competitors: list[str] | None = None,
+    neighborhoods: list[str] | None = None,
+) -> list[dict]:
+    """Build comprehensive categorized prompts for AI mention tracking.
+
+    Returns list of {"prompt": str, "category": str} dicts.
+    Categories: brand, general, service, location, comparison, reputation, recommendation
+    """
+    prompts = []
+
+    def add(prompt: str, category: str):
+        prompts.append({"prompt": prompt, "category": category})
+
+    # --- Brand queries (do they know us?) ---
+    add(f"{practice_name} reviews", "brand")
+    add(f"tell me about {practice_name}", "brand")
+    add(f"is {practice_name} good", "brand")
 
     if business_type in ("practice", "dental_practice"):
-        prompts += [
-            f"best dentist in {city} {state}",
-            f"top rated dental practice in {city}",
-        ]
-        for specialty in specialties[:2]:
-            prompts.append(f"best {specialty.lower()} in {city} {state}")
+        # --- General discovery (top of funnel) ---
+        add(f"best dentist in {city} {state}", "general")
+        add(f"top rated dental practice in {city}", "general")
+        add(f"dentist near me {city} {state}", "general")
+        add(f"find a dentist in {city}", "general")
+        add(f"who is the best dentist in {city}", "general")
+        add(f"recommend a dentist in {city} {state}", "recommendation")
+
+        # --- Service-specific (high intent) ---
+        # ONLY use the customer's actual services/specialties
+        # Generic fallbacks only if no specialties are set
+        if specialties:
+            for service in specialties[:10]:
+                add(f"best {service.lower()} in {city} {state}", "service")
+                add(f"{service.lower()} near {city}", "service")
+        else:
+            # Minimal fallback for practices with no specialties configured
+            for s in ["dentist", "dental care"]:
+                add(f"best {s} in {city} {state}", "service")
+
+        # --- Location-specific (neighborhood level) ---
+        if neighborhoods:
+            for hood in neighborhoods[:3]:
+                add(f"dentist in {hood} {city}", "location")
+                add(f"best dental practice near {hood}", "location")
+        # County/region level
+        add(f"best dentist near {city} {state}", "location")
+
+        # --- Comparison/competitor queries ---
+        if competitors:
+            for comp in competitors[:3]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"best dentist in {city} compared", "comparison")
+
+        # --- Reputation/trust queries ---
+        add(f"{practice_name} patient reviews", "reputation")
+        add(f"is {practice_name} in {city} good", "reputation")
+
+        # --- Cost/insurance queries (high intent) ---
+        add(f"affordable dentist in {city} {state}", "service")
+        add(f"dentist that accepts medicaid in {city}", "service")
+
     else:
-        # B2B / tech company — product-focused prompts
-        prompts += [
-            f"best dental technology companies",
-            f"top dental lab software",
-            f"{practice_name} dental technology",
-        ]
-        for specialty in specialties[:2]:
-            prompts.append(f"best {specialty.lower()} software for dental labs")
+        # --- B2B / tech company ---
+        add(f"best dental technology companies", "general")
+        add(f"top dental lab software", "general")
+        add(f"{practice_name} dental technology", "brand")
+        add(f"dental CAD/CAM software comparison", "comparison")
+        add(f"best dental AI companies", "general")
+
+        for specialty in specialties[:5]:
+            add(f"best {specialty.lower()} software for dental labs", "service")
+            add(f"{specialty.lower()} dental technology companies", "service")
+
+        if competitors:
+            for comp in competitors[:3]:
+                add(f"{practice_name} vs {comp}", "comparison")
+
+        add(f"dental technology startups to watch", "general")
+        add(f"AI in dentistry companies", "general")
 
     return prompts
 
@@ -232,7 +298,67 @@ def check_mention(text: str, practice_name: str) -> dict:
     # Extract context sentence
     context = _extract_context(text, practice_name)
 
-    return {"mentioned": True, "position": position, "context": context}
+    # Quality score: how good is this mention?
+    quality = _score_mention_quality(text, practice_name, position, context)
+
+    return {"mentioned": True, "position": position, "context": context, "quality_score": quality}
+
+
+def _score_mention_quality(text: str, practice_name: str, position: int | None, context: str) -> int:
+    """Score the quality of a mention from 0-100.
+
+    Factors:
+    - Position in list (1st = 100, 2nd = 80, etc.)
+    - Sentiment (recommendation vs neutral mention)
+    - Detail level (address, phone, services mentioned)
+    - Context (listed as recommendation vs just mentioned)
+    """
+    score = 0
+    text_lower = text.lower()
+    ctx_lower = context.lower() if context else ""
+
+    # Position score (0-40 points)
+    if position is not None:
+        if position == 1:
+            score += 40
+        elif position == 2:
+            score += 32
+        elif position == 3:
+            score += 25
+        elif position <= 5:
+            score += 15
+        else:
+            score += 5
+    else:
+        score += 10  # Mentioned but not in a ranked list
+
+    # Recommendation language (0-25 points)
+    rec_phrases = ["recommend", "top pick", "excellent", "highly rated", "great choice",
+                   "best", "outstanding", "leading", "top-rated", "well-known", "renowned"]
+    for phrase in rec_phrases:
+        if phrase in ctx_lower:
+            score += 25
+            break
+
+    # Detail level (0-20 points) — AI knows real info about the practice
+    detail_signals = [
+        (r'\d{3}[-.)\s]\d{3}[-.]\d{4}', 5),  # phone number
+        (r'\d+\s+\w+\s+(st|ave|blvd|rd|dr|way|ln)', 5),  # address
+        (r'\d\.\d\s*(star|rating|out of)', 5),  # rating
+        (r'(specializ|known for|offer)', 5),  # services detail
+    ]
+    import re as _re
+    for pattern, pts in detail_signals:
+        if _re.search(pattern, text_lower):
+            score += pts
+
+    # Negative signals (deductions)
+    if "i'm not sure" in ctx_lower or "may not be" in ctx_lower:
+        score -= 10
+    if "verify" in ctx_lower or "check" in ctx_lower:
+        score -= 5
+
+    return max(0, min(100, score))
 
 
 def _find_position(text: str, practice_name: str) -> int | None:

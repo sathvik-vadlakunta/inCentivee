@@ -2476,27 +2476,39 @@ def api_check_local_listings(customer_id):
 @app.route("/api/ai-mentions/<customer_id>", methods=["POST"])
 @login_required
 def api_run_ai_mentions(customer_id):
-    """Run AI mention check for a customer. Queries Claude + ChatGPT with practice-relevant prompts."""
+    """Run comprehensive AI mention check. Saves to ai_mention_runs/results tables."""
     db = get_db()
     try:
         customer = db.get_customer(customer_id)
         if not customer:
             return jsonify({"error": "Customer not found"}), 404
 
-        from scripts.check_ai_mentions import build_prompts, query_claude, query_openai, query_perplexity, query_gemini, query_grok, check_mention
+        from scripts.check_ai_mentions import (
+            build_comprehensive_prompts, query_claude, query_openai,
+            query_perplexity, query_gemini, query_grok, check_mention,
+        )
+        import uuid
 
-        prompts = build_prompts(
-            customer["name"], customer["city"], customer["state"],
+        competitors = json.loads(customer.get("competitors_json", "[]")) if customer.get("competitors_json") else []
+        prompt_defs = build_comprehensive_prompts(
+            customer["name"], customer.get("city", ""), customer.get("state", ""),
             customer.get("specialties", []),
             business_type=customer.get("business_type", "practice"),
+            competitors=competitors,
         )
 
         engines = [("Claude", query_claude), ("ChatGPT", query_openai), ("Perplexity", query_perplexity), ("Gemini", query_gemini), ("Grok", query_grok)]
         results = []
         mention_count = 0
-        engines_checked = {}  # track which engines had API keys
+        engines_checked = {}
 
-        for prompt in prompts:
+        run_id = str(uuid.uuid4())
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+        for pdef in prompt_defs:
+            prompt = pdef["prompt"]
+            category = pdef["category"]
             for ai_name, query_fn in engines:
                 response = query_fn(prompt)
                 if response is None:
@@ -2504,22 +2516,43 @@ def api_run_ai_mentions(customer_id):
                     continue
                 engines_checked[ai_name] = "active"
                 result = check_mention(response, customer["name"])
-                if result["mentioned"]:
+                is_mentioned = result["mentioned"]
+                if is_mentioned:
                     mention_count += 1
+
+                result_row = {
+                    "run_id": run_id,
+                    "customer_id": customer_id,
+                    "engine": ai_name,
+                    "prompt": prompt,
+                    "prompt_category": category,
+                    "mentioned": is_mentioned,
+                    "position": result["position"],
+                    "quality_score": result.get("quality_score", 0),
+                    "context": result["context"][:500] if result.get("context") else "",
+                    "full_response": response[:2000] if response else "",
+                    "is_disclaimer": result.get("disclaimer", False),
+                }
+                db.save_ai_mention_result(result_row)
+
                 results.append({
                     "prompt": prompt,
+                    "category": category,
                     "ai": ai_name,
-                    "mentioned": result["mentioned"],
+                    "mentioned": is_mentioned,
                     "position": result["position"],
-                    "context": result["context"][:150] if result["context"] else "",
+                    "quality_score": result.get("quality_score", 0),
+                    "context": result["context"][:150] if result.get("context") else "",
+                    "full_response": response[:1000] if response else "",
                 })
 
-        # Save KPI
-        from datetime import datetime, timezone
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        db.record_kpi(customer_id, "ai_mentions", mention_count, today)
+        # Compute stats
+        total_queries = len(results)
+        mention_rate = mention_count / total_queries if total_queries > 0 else 0.0
+        positions = [r["position"] for r in results if r["mentioned"] and r["position"]]
+        avg_position = sum(positions) / len(positions) if positions else None
 
-        # Compute per-engine summary
+        # Save run summary
         engine_summary = {}
         for ai_name, status in engines_checked.items():
             if status == "no_api_key":
@@ -2529,6 +2562,33 @@ def api_run_ai_mentions(customer_id):
                 ai_mentions = sum(1 for r in ai_results if r["mentioned"])
                 engine_summary[ai_name] = {"status": "active", "mentions": ai_mentions, "total": len(ai_results)}
 
+        db.save_ai_mention_run({
+            "id": run_id,
+            "customer_id": customer_id,
+            "run_date": today,
+            "total_mentions": mention_count,
+            "total_queries": total_queries,
+            "mention_rate": mention_rate,
+            "avg_position": avg_position,
+            "engines": engine_summary,
+        })
+
+        # Also save to KPI for backward compat
+        db.record_kpi(customer_id, "ai_mentions", mention_count, today)
+
+        # Per-category breakdown
+        category_summary = {}
+        for r in results:
+            cat = r["category"]
+            category_summary.setdefault(cat, {"mentions": 0, "total": 0, "avg_quality": 0, "qualities": []})
+            category_summary[cat]["total"] += 1
+            if r["mentioned"]:
+                category_summary[cat]["mentions"] += 1
+                category_summary[cat]["qualities"].append(r["quality_score"])
+        for cat, stats in category_summary.items():
+            stats["avg_quality"] = round(sum(stats["qualities"]) / len(stats["qualities"])) if stats["qualities"] else 0
+            del stats["qualities"]
+
         # Clear SEO cache so checklist updates
         domain = customer.get("domain", "")
         cache_key = f"{domain}:{customer_id}"
@@ -2536,10 +2596,14 @@ def api_run_ai_mentions(customer_id):
 
         return jsonify({
             "ok": True,
+            "run_id": run_id,
             "mention_count": mention_count,
-            "total_queries": len(results),
+            "total_queries": total_queries,
+            "mention_rate": round(mention_rate * 100, 1),
+            "avg_position": round(avg_position, 1) if avg_position else None,
             "results": results,
             "engines": engine_summary,
+            "categories": category_summary,
         })
     finally:
         db.close()
@@ -2548,25 +2612,70 @@ def api_run_ai_mentions(customer_id):
 @app.route("/api/ai-mentions/<customer_id>/history")
 @login_required
 def api_ai_mention_history(customer_id):
-    """Get AI mention KPI history for charting trends."""
+    """Get AI mention run history with full detail."""
     db = CustomerDB()
     try:
+        # Get runs from the new table
+        runs = db.get_ai_mention_runs(customer_id, limit=52)
+        if runs:
+            run_list = []
+            for run in runs:
+                engines = json.loads(run.get("engines_json", "{}")) if isinstance(run.get("engines_json"), str) else run.get("engines_json", {})
+                run_list.append({
+                    "id": run["id"],
+                    "date": run["run_date"],
+                    "mentions": run["total_mentions"],
+                    "total": run["total_queries"],
+                    "rate": run["mention_rate"],
+                    "avg_position": run.get("avg_position"),
+                    "engines": engines,
+                })
+
+            # Compute week-over-week change
+            for i, run in enumerate(run_list):
+                if i + 1 < len(run_list):
+                    prev = run_list[i + 1]
+                    run["delta"] = run["mentions"] - prev["mentions"]
+                    run["rate_delta"] = round(run["rate"] - prev["rate"], 1)
+                else:
+                    run["delta"] = None
+                    run["rate_delta"] = None
+
+            return jsonify({"ok": True, "runs": run_list})
+
+        # Fallback to old KPI data
         mentions = db.get_kpis(customer_id, metric="ai_mentions", limit=52)
-        positions = db.get_kpis(customer_id, metric="ai_avg_position", limit=52)
-
-        # Per-engine history
-        engine_history = {}
-        for engine in ["claude", "chatgpt", "perplexity", "gemini", "grok"]:
-            data = db.get_kpis(customer_id, metric=f"ai_mentions_{engine}", limit=52)
-            if data:
-                engine_history[engine] = [{"date": r["date"], "value": r["value"]} for r in data]
-
         return jsonify({
             "ok": True,
-            "mentions": [{"date": r["date"], "value": r["value"]} for r in mentions],
-            "avg_position": [{"date": r["date"], "value": r["value"]} for r in positions],
-            "engines": engine_history,
+            "runs": [{"date": r["date"], "mentions": int(r["value"]), "total": 0, "rate": 0, "delta": None} for r in mentions],
         })
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>/run/<run_id>")
+@login_required
+def api_ai_mention_run_detail(customer_id, run_id):
+    """Get full details for a specific AI mention run."""
+    db = CustomerDB()
+    try:
+        results = db.get_ai_mention_results(run_id)
+        # Group by category
+        by_category = {}
+        for r in results:
+            cat = r.get("prompt_category", "general")
+            by_category.setdefault(cat, [])
+            by_category[cat].append({
+                "engine": r["engine"],
+                "prompt": r["prompt"],
+                "mentioned": bool(r["mentioned"]),
+                "position": r.get("position"),
+                "quality_score": r.get("quality_score", 0),
+                "context": r.get("context", ""),
+                "full_response": r.get("full_response", ""),
+                "is_disclaimer": bool(r.get("is_disclaimer")),
+            })
+        return jsonify({"ok": True, "categories": by_category, "total": len(results)})
     finally:
         db.close()
 
