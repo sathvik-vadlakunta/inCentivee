@@ -1958,12 +1958,66 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
         mention_kpi = _db.get_latest_kpi(customer_id, "ai_mentions")
         if mention_kpi:
             detected["seo_ai_monitoring"] = True
+
+        # Check GBP from our Google Places data
+        places = _db.get_google_places(customer_id)
+        if places and places.get("place_id"):
+            detected["seo_gbp_optimized"] = True
+            # If we have review count, the listing is active
+            if places.get("review_count", 0) > 0:
+                detected["seo_gbp_optimized"] = True
+
         _db.close()
     except Exception:
         pass
 
+    # Check directory listings (Yelp, Facebook, Healthgrades, Bing)
+    # Use search to find if public profiles exist
+    _detect_directory_listings(domain, detected)
+
     _seo_cache[cache_key] = (time.time(), detected)
     return detected
+
+
+def _detect_directory_listings(domain: str, detected: dict):
+    """Check if the business has listings on major directories by searching their sites."""
+    if not domain:
+        return
+
+    checks = [
+        ("seo_yelp", f"https://www.yelp.com/search?find_desc={domain}", "biz/"),
+        ("seo_facebook", f"https://www.facebook.com/search/pages/?q={domain}", None),
+    ]
+
+    # Simple approach: check if the domain appears on these directories
+    # by looking for backlinks or direct profile URLs
+    directory_searches = {
+        "seo_yelp": f"site:yelp.com {domain}",
+        "seo_facebook": f"site:facebook.com {domain}",
+        "seo_healthgrades": f"site:healthgrades.com {domain}",
+    }
+
+    for key, query in directory_searches.items():
+        try:
+            # Use Google to find if a listing exists
+            resp = httpx.get(
+                "https://www.google.com/search",
+                params={"q": query, "num": 3},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=5.0,
+                follow_redirects=True,
+            )
+            if resp.status_code == 200:
+                # Check if any actual results came back (not just the search page)
+                text = resp.text.lower()
+                if key == "seo_yelp" and "yelp.com/biz/" in text:
+                    detected[key] = True
+                elif key == "seo_facebook" and ("facebook.com/" in text and domain.replace(".", "") in text):
+                    detected[key] = True
+                elif key == "seo_healthgrades" and "healthgrades.com/" in text:
+                    detected[key] = True
+        except Exception:
+            pass
 
 
 def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
@@ -2129,6 +2183,137 @@ def api_seo_recheck(customer_id):
         # Re-detect
         detected = _auto_detect_seo_status(domain, customer_id)
         return jsonify({"ok": True, "detected": {k: v for k, v in detected.items()}, "domain": domain})
+    finally:
+        db.close()
+
+
+@app.route("/api/local-listings/<customer_id>", methods=["POST"])
+@login_required
+def api_check_local_listings(customer_id):
+    """Deep scan for local directory listings using Google Places API + web search."""
+    import os
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        name = customer["name"]
+        city = customer.get("city", "")
+        state = customer.get("state", "")
+        domain = customer.get("domain", "")
+        phone = customer.get("phone", "")
+
+        results = {}
+
+        # 1. Google Business Profile — use Places API for full details
+        places = db.get_google_places(customer_id)
+        api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+
+        if places and places.get("place_id") and api_key:
+            place_id = places["place_id"]
+            # Get Place Details including photos
+            try:
+                resp = httpx.get(
+                    f"https://places.googleapis.com/v1/places/{place_id}",
+                    headers={
+                        "X-Goog-Api-Key": api_key,
+                        "X-Goog-FieldMask": "displayName,rating,userRatingCount,photos,currentOpeningHours,websiteUri,nationalPhoneNumber,formattedAddress,editorialSummary",
+                    },
+                    timeout=10.0,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    photo_count = len(data.get("photos", []))
+                    review_count = data.get("userRatingCount", 0)
+                    rating = data.get("rating", 0.0)
+                    has_hours = bool(data.get("currentOpeningHours"))
+                    has_website = bool(data.get("websiteUri"))
+                    has_phone = bool(data.get("nationalPhoneNumber"))
+                    has_description = bool(data.get("editorialSummary"))
+
+                    results["gbp"] = {
+                        "found": True,
+                        "name": data.get("displayName", {}).get("text", ""),
+                        "rating": rating,
+                        "review_count": review_count,
+                        "photo_count": photo_count,
+                        "has_hours": has_hours,
+                        "has_website": has_website,
+                        "has_phone": has_phone,
+                        "has_description": has_description,
+                        "url": f"https://www.google.com/maps/place/?q=place_id:{place_id}",
+                    }
+
+                    # Auto-check tasks based on GBP data
+                    checklist_updates = {}
+                    if rating > 0 and review_count > 0 and has_hours and has_website and has_phone:
+                        checklist_updates["seo_gbp_optimized"] = True
+                    if photo_count >= 10:
+                        checklist_updates["seo_gbp_photos"] = True
+
+                    if checklist_updates:
+                        for key, val in checklist_updates.items():
+                            db.set_checklist_item(customer_id, key, val)
+                        results["auto_checked"] = list(checklist_updates.keys())
+            except Exception as e:
+                results["gbp"] = {"found": False, "error": str(e)}
+        elif places and places.get("place_id"):
+            results["gbp"] = {
+                "found": True,
+                "rating": places.get("rating", 0),
+                "review_count": places.get("review_count", 0),
+                "note": "No API key — using cached data",
+            }
+        else:
+            results["gbp"] = {"found": False, "note": "No Google Places data. Run the GEO Agent to look up this business."}
+
+        # 2. Search for directory listings
+        search_name = f"{name} {city} {state}"
+        directories = [
+            ("yelp", "Yelp", f"site:yelp.com/biz \"{name}\" {city}", "seo_yelp"),
+            ("facebook", "Facebook", f"site:facebook.com \"{name}\"", "seo_facebook"),
+            ("healthgrades", "Healthgrades", f"site:healthgrades.com \"{name}\"", "seo_healthgrades"),
+            ("zocdoc", "Zocdoc", f"site:zocdoc.com \"{name}\" {city}", "seo_zocdoc"),
+        ]
+
+        for dir_key, dir_name, query, checklist_key in directories:
+            try:
+                resp = httpx.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                    headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+                    timeout=8.0,
+                    follow_redirects=True,
+                )
+                if resp.status_code == 200:
+                    text = resp.text.lower()
+                    name_lower = name.lower()
+                    # Check if name appears in search results
+                    found = name_lower in text and dir_key in text
+                    # Extract a likely URL
+                    import re
+                    url_pattern = f"https?://(?:www\\.)?{dir_key}[^\"' >]*"
+                    urls = re.findall(url_pattern, resp.text)
+                    profile_url = urls[0] if urls else ""
+
+                    results[dir_key] = {
+                        "found": found,
+                        "url": profile_url,
+                        "name": dir_name,
+                    }
+                    if found:
+                        db.set_checklist_item(customer_id, checklist_key, True)
+                else:
+                    results[dir_key] = {"found": False, "name": dir_name, "note": "Search failed"}
+            except Exception as e:
+                results[dir_key] = {"found": False, "name": dir_name, "error": str(e)}
+
+        # Clear SEO cache so checklist updates show
+        cache_key = f"{domain}:{customer_id}"
+        _seo_cache.pop(cache_key, None)
+
+        return jsonify({"ok": True, "results": results})
     finally:
         db.close()
 

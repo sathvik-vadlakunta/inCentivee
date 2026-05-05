@@ -542,7 +542,13 @@
             <div class="section-header" style="margin-bottom: 0.5rem;">
                 <h3 style="font-size: 0.9rem;">{{ cat }}</h3>
                 <span style="font-size: 0.75rem; color: {% if cat_pct == 100 %}var(--success){% elif cat_pct > 0 %}var(--warning){% else %}var(--muted){% endif %}; font-weight: 600;">{{ cat_done }}/{{ cat_tasks | length }}</span>
+                {% if cat == 'Local SEO' %}
+                <button class="btn btn-sm btn-outline" onclick="scanLocalListings('{{ customer.id }}')" id="scan-listings-btn" style="font-size:0.65rem;margin-left:auto;">Scan Listings</button>
+                {% endif %}
             </div>
+            {% if cat == 'Local SEO' %}
+            <div id="scan-listings-results" style="display:none;margin-bottom:0.75rem;font-size:0.8rem;"></div>
+            {% endif %}
             <div style="width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 0.6rem;">
                 <div style="width: {{ cat_pct }}%; height: 100%; background: {% if cat_pct == 100 %}var(--success){% elif cat_pct > 0 %}var(--warning){% else %}var(--border){% endif %}; border-radius: 2px;"></div>
             </div>
@@ -910,6 +916,62 @@ function recheckSeo(customerId) {
             alert('Re-check failed');
             btn.textContent = 'Re-check Live Site';
             btn.disabled = false;
+        });
+}
+
+function scanLocalListings(customerId) {
+    var btn = document.getElementById('scan-listings-btn');
+    var resultsDiv = document.getElementById('scan-listings-results');
+    btn.textContent = 'Scanning...';
+    btn.disabled = true;
+    if (resultsDiv) { resultsDiv.style.display = 'block'; resultsDiv.innerHTML = '<span style="color:var(--muted)">Checking Google Business Profile, Yelp, Facebook, Healthgrades, Zocdoc... (takes ~15s)</span>'; }
+
+    fetch('/api/local-listings/' + customerId, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.textContent = 'Scan Listings';
+            btn.disabled = false;
+            if (!data.ok || !data.results) {
+                if (resultsDiv) resultsDiv.innerHTML = '<span style="color:var(--danger)">' + (data.error || 'Scan failed') + '</span>';
+                return;
+            }
+            var r = data.results;
+            var html = '<table style="width:100%;border-collapse:collapse;font-size:0.8rem;">';
+            html += '<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px;">Directory</th><th>Status</th><th>Details</th></tr>';
+
+            // GBP
+            if (r.gbp) {
+                var gbpStatus = r.gbp.found ? '<span style="color:var(--success)">Found</span>' : '<span style="color:var(--danger)">Not found</span>';
+                var gbpDetails = '';
+                if (r.gbp.found && r.gbp.rating) {
+                    gbpDetails = r.gbp.rating + ' stars, ' + r.gbp.review_count + ' reviews, ' + (r.gbp.photo_count || '?') + ' photos';
+                    if (r.gbp.photo_count && r.gbp.photo_count >= 10) gbpDetails += ' ✅';
+                    else if (r.gbp.photo_count) gbpDetails += ' (need 10+)';
+                }
+                html += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px;"><b>Google Business Profile</b></td><td style="text-align:center;">' + gbpStatus + '</td><td style="padding:4px;">' + gbpDetails + '</td></tr>';
+            }
+
+            // Directories
+            ['yelp','facebook','healthgrades','zocdoc'].forEach(function(key) {
+                if (r[key]) {
+                    var status = r[key].found ? '<span style="color:var(--success)">Found</span>' : '<span style="color:var(--muted)">Not found</span>';
+                    var link = r[key].url ? ' <a href="' + r[key].url + '" target="_blank" style="font-size:0.7rem;">View →</a>' : '';
+                    html += '<tr style="border-bottom:1px solid var(--border)"><td style="padding:4px;"><b>' + (r[key].name || key) + '</b></td><td style="text-align:center;">' + status + '</td><td style="padding:4px;">' + link + '</td></tr>';
+                }
+            });
+
+            html += '</table>';
+
+            if (data.results.auto_checked && data.results.auto_checked.length > 0) {
+                html += '<p style="margin-top:8px;color:var(--success);font-size:0.75rem;">Auto-checked ' + data.results.auto_checked.length + ' task(s). Reload to update checklist.</p>';
+            }
+
+            if (resultsDiv) resultsDiv.innerHTML = html;
+        })
+        .catch(function() {
+            btn.textContent = 'Scan Listings';
+            btn.disabled = false;
+            if (resultsDiv) resultsDiv.innerHTML = '<span style="color:var(--danger)">Scan failed</span>';
         });
 }
 
