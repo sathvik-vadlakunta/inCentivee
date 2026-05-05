@@ -17,7 +17,7 @@ from geo_agent.config import Customer, Provider
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS customers (
     hours TEXT NOT NULL DEFAULT '',
     emergency_available INTEGER NOT NULL DEFAULT 0,
     competitors_json TEXT NOT NULL DEFAULT '[]',  -- JSON array of domain strings
+    verified_quotes TEXT NOT NULL DEFAULT '[]',  -- JSON array of {"quote": "...", "attribution": "Name, Title"}
     onboarding_step TEXT NOT NULL DEFAULT 'new'  -- new/contacted/access_pending/access_granted/audit_setup/review_approve/live
 );
 
@@ -170,6 +171,20 @@ CREATE TABLE IF NOT EXISTS content_recommendations (
 CREATE INDEX IF NOT EXISTS idx_content_recs_customer ON content_recommendations(customer_id);
 CREATE INDEX IF NOT EXISTS idx_content_recs_status ON content_recommendations(customer_id, status);
 
+CREATE TABLE IF NOT EXISTS content_translations (
+    id TEXT PRIMARY KEY,
+    recommendation_id TEXT NOT NULL REFERENCES content_recommendations(id),
+    locale TEXT NOT NULL,  -- es, fr, de, pt, sv, ja, ko, zh, ar
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    html_snippet TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE(recommendation_id, locale)
+);
+
+CREATE INDEX IF NOT EXISTS idx_content_translations_rec ON content_translations(recommendation_id);
+CREATE INDEX IF NOT EXISTS idx_content_translations_locale ON content_translations(recommendation_id, locale);
+
 CREATE TABLE IF NOT EXISTS alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id TEXT NOT NULL REFERENCES customers(id),
@@ -258,6 +273,28 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE customers ADD COLUMN hosting_info TEXT NOT NULL DEFAULT '{}'")
         if "business_type" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN business_type TEXT NOT NULL DEFAULT 'practice'")
+        if "verified_quotes" not in cols:
+            self.conn.execute("ALTER TABLE customers ADD COLUMN verified_quotes TEXT NOT NULL DEFAULT '[]'")
+
+        # Migration v1 → v2: platform-aware content publishing + squarespace credentials
+        rec_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(content_recommendations)").fetchall()]
+        if "platform_item_id" not in rec_cols:
+            self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN platform_item_id TEXT DEFAULT ''")
+            self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN platform_draft_url TEXT DEFAULT ''")
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS squarespace_credentials (
+                customer_id TEXT PRIMARY KEY REFERENCES customers(id),
+                email TEXT NOT NULL,
+                password_encrypted TEXT NOT NULL,
+                site_url TEXT NOT NULL,
+                totp_secret_encrypted TEXT DEFAULT '',
+                last_login TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            )
+        """)
+        self.conn.execute(
+            "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
+        )
         self.conn.commit()
 
     def close(self):
@@ -334,7 +371,7 @@ class CustomerDB:
         if not fields:
             return False
         # Handle JSON fields
-        for key in ("specialties", "insurance_accepted", "competitors"):
+        for key in ("specialties", "insurance_accepted", "competitors", "verified_quotes"):
             if key in fields and isinstance(fields[key], list):
                 json_key = "competitors_json" if key == "competitors" else key
                 fields[json_key] = json.dumps(fields.pop(key))
@@ -379,6 +416,7 @@ class CustomerDB:
         d["competitors"] = json.loads(d.pop("competitors_json", "[]"))
         d["emergency_available"] = bool(d.get("emergency_available", 0))
         d["hosting_info"] = json.loads(d.get("hosting_info", "{}"))
+        d["verified_quotes"] = json.loads(d.get("verified_quotes", "[]"))
         return d
 
     def to_config_customer(self, customer_id: str) -> Customer | None:
@@ -422,6 +460,7 @@ class CustomerDB:
             insurance_accepted=data.get("insurance_accepted", []),
             hours=data.get("hours", ""),
             emergency_available=data.get("emergency_available", False),
+            verified_quotes=data.get("verified_quotes", []),
         )
 
     # --- Providers ---
@@ -947,6 +986,96 @@ class CustomerDB:
             (error, rec_id),
         )
         self.conn.commit()
+
+    def set_recommendation_platform_ids(
+        self, rec_id: str, platform_item_id: str, platform_draft_url: str
+    ) -> None:
+        """Store platform-agnostic item ID and draft URL after push."""
+        self.conn.execute(
+            """UPDATE content_recommendations
+            SET platform_item_id = ?, platform_draft_url = ?, publish_error = NULL,
+                status = 'published', published_at = ?
+            WHERE id = ?""",
+            (platform_item_id, platform_draft_url,
+             datetime.now(timezone.utc).isoformat(), rec_id),
+        )
+        self.conn.commit()
+
+    # --- Content Translations ---
+
+    def add_content_translation(self, translation: dict) -> str:
+        """Insert or replace a content translation."""
+        self.conn.execute(
+            """INSERT OR REPLACE INTO content_translations
+            (id, recommendation_id, locale, title, description, html_snippet, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (
+                translation["id"],
+                translation["recommendation_id"],
+                translation["locale"],
+                translation["title"],
+                translation.get("description", ""),
+                translation.get("html_snippet", ""),
+                translation.get("created_at", datetime.now(timezone.utc).isoformat()),
+            ),
+        )
+        self.conn.commit()
+        return translation["id"]
+
+    def get_content_translation(self, recommendation_id: str, locale: str) -> dict | None:
+        """Get a translation for a specific recommendation and locale."""
+        cur = self.conn.execute(
+            "SELECT * FROM content_translations WHERE recommendation_id = ? AND locale = ?",
+            (recommendation_id, locale),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def get_translations_for_recommendation(self, recommendation_id: str) -> list[dict]:
+        """Get all translations for a recommendation."""
+        cur = self.conn.execute(
+            "SELECT * FROM content_translations WHERE recommendation_id = ? ORDER BY locale",
+            (recommendation_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_translated_content(self, customer_id: str, locale: str, status: str = "published") -> list[dict]:
+        """Get content recommendations with translations merged in for a specific locale."""
+        cur = self.conn.execute(
+            """SELECT cr.*, ct.title AS translated_title, ct.description AS translated_description,
+                      ct.html_snippet AS translated_html_snippet
+               FROM content_recommendations cr
+               LEFT JOIN content_translations ct ON cr.id = ct.recommendation_id AND ct.locale = ?
+               WHERE cr.customer_id = ? AND cr.status = ?
+               ORDER BY cr.priority ASC, cr.created_at DESC""",
+            (locale, customer_id, status),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Squarespace Credentials ---
+
+    def save_squarespace_credentials(
+        self, customer_id: str, email: str, password_encrypted: str,
+        site_url: str, totp_secret_encrypted: str = ""
+    ) -> None:
+        """Save encrypted Squarespace credentials."""
+        self.conn.execute(
+            """INSERT OR REPLACE INTO squarespace_credentials
+            (customer_id, email, password_encrypted, site_url, totp_secret_encrypted, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)""",
+            (customer_id, email, password_encrypted, site_url, totp_secret_encrypted,
+             datetime.now(timezone.utc).isoformat()),
+        )
+        self.conn.commit()
+
+    def get_squarespace_credentials(self, customer_id: str) -> dict | None:
+        """Get Squarespace credentials for a customer."""
+        cur = self.conn.execute(
+            "SELECT * FROM squarespace_credentials WHERE customer_id = ?",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
 
     # --- Webflow Collections Cache ---
 

@@ -189,7 +189,12 @@ def customer_detail(customer_id):
         todos = _get_va_todos(customer, access, contacts, places, runs, staged, approved, checklist)
         domain = customer.get("domain", "")
         auto_detected = _auto_detect_seo_status(domain, customer_id) if domain else {}
-        seo_tasks = _get_seo_tasks(checklist, customer.get("business_type", "practice"), auto_detected=auto_detected)
+        seo_tasks = _get_seo_tasks(checklist, customer.get("business_type", "practice"), auto_detected=auto_detected, platform=customer.get("platform", "webflow"), domain=domain, customer_id=customer_id, city=customer.get("city", ""))
+
+        # Content recommendations (load before email templates so they can reference recs)
+        content_pending = db.get_pending_recommendations_count(customer_id)
+        content_recs = db.get_content_recommendations(customer_id, limit=5)
+
         import markdown
         raw_templates = _get_email_templates()
         email_templates = []
@@ -197,6 +202,7 @@ def customer_detail(customer_id):
             raw = _render_email_template(
                 t["content"], customer, contacts,
                 kpis=kpis, runs=runs, places=places, diff_report=diff_report,
+                content_recs=content_recs,
             )
             lines = raw.splitlines()
             body_lines = [l for l in lines if not l.startswith("Subject:")]
@@ -210,13 +216,10 @@ def customer_detail(customer_id):
                 "subject": _render_email_template(
                     t["subject"], customer, contacts,
                     kpis=kpis, runs=runs, places=places,
+                    content_recs=content_recs,
                 ),
                 "body_html": body_html,
             })
-
-        # Content recommendations summary
-        content_pending = db.get_pending_recommendations_count(customer_id)
-        content_recs = db.get_content_recommendations(customer_id, limit=5)
 
         # Active alerts for this customer
         customer_alerts = db.get_alerts(customer_id, active_only=True, limit=10)
@@ -225,9 +228,22 @@ def customer_detail(customer_id):
         webflow_connected = db.get_webflow_oauth_token(customer_id) is not None
         webflow_app = db.get_webflow_oauth_app(customer_id)
 
+        # Squarespace connection status
+        squarespace_connected = db.get_squarespace_credentials(customer_id) is not None
+
         # Check if there are previously published files (for re-publish button)
         published_schema = Path(DATA_DIR) / "published" / customer_id / "schema.html"
         has_published_schema = published_schema.exists()
+
+        # Published GEO files info for the GEO Files panel
+        published_dir = Path(DATA_DIR) / "published" / customer_id
+        geo_files = []
+        for fname in ("llms.txt", "llms-full.txt", "robots.txt", "schema.html"):
+            fpath = published_dir / fname
+            if fpath.exists():
+                geo_files.append(fname)
+        published_schema_path = published_dir / "schema.html"
+        published_schema_content = published_schema_path.read_text() if published_schema_path.exists() else ""
 
         # Current date for template comparisons
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -249,7 +265,11 @@ def customer_detail(customer_id):
             report_exists=report_exists, now_iso=now_iso,
             webflow_connected=webflow_connected,
             webflow_app=webflow_app,
+            squarespace_connected=squarespace_connected,
             has_published_schema=has_published_schema,
+            geo_files=geo_files,
+            worker_api_url=WORKER_API_URL,
+            published_schema_content=published_schema_content,
         )
     finally:
         db.close()
@@ -618,8 +638,12 @@ def publish_staging(customer_id):
             flash("Changes must be approved before publishing.", "error")
             return redirect(url_for("customer_detail", customer_id=customer_id))
 
-        # Try auto-publish to Webflow
-        webflow_warnings = _publish_to_webflow(customer_id, db, staging)
+        # Try auto-publish to Webflow (only for Webflow customers)
+        customer = db.get_customer(customer_id)
+        platform = customer.get("platform", "webflow") if customer else "webflow"
+        webflow_warnings = []
+        if platform == "webflow":
+            webflow_warnings = _publish_to_webflow(customer_id, db, staging)
 
         # Push llms.txt/robots.txt to Worker for serving
         stage_path = Path(DATA_DIR) / "staging" / customer_id
@@ -700,6 +724,33 @@ def republish_webflow(customer_id):
             publisher.close()
     except Exception as e:
         flash(f"Re-publish failed: {e}", "error")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
+# --- Re-push GEO files to Worker ---
+
+@app.route("/customer/<customer_id>/repush-worker", methods=["POST"])
+@login_required
+def repush_worker(customer_id):
+    """Re-push published llms.txt/robots.txt files to the Cloudflare Worker."""
+    db = get_db()
+    try:
+        published_dir = Path(DATA_DIR) / "published" / customer_id
+        if not published_dir.exists():
+            flash("No published files found. Run the agent and publish first.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id))
+
+        warnings = _publish_llms_to_worker(customer_id, db, published_dir)
+        if warnings:
+            flash(f"Re-push warnings: {' '.join(warnings)}", "warning")
+        else:
+            customer = db.get_customer(customer_id)
+            domain = customer.get("domain", "") if customer else ""
+            flash(f"GEO files re-pushed to Worker. Verify at: {WORKER_API_URL}/geo/{domain}/llms.txt", "success")
+    except Exception as e:
+        flash(f"Re-push failed: {e}", "error")
     finally:
         db.close()
     return redirect(url_for("customer_detail", customer_id=customer_id))
@@ -950,12 +1001,46 @@ def _get_email_templates() -> list[dict]:
     return templates
 
 
+def _content_rec_summary(recs: list[dict]) -> str:
+    """Build a markdown summary of content recommendations grouped by type."""
+    if not recs:
+        return "No content recommendations generated yet."
+    by_type: dict[str, list[dict]] = {}
+    for r in recs:
+        rt = r.get("rec_type", "other").replace("_", " ").title()
+        by_type.setdefault(rt, []).append(r)
+    lines = []
+    for rtype, items in by_type.items():
+        lines.append(f"**{rtype}** ({len(items)}):")
+        for item in items:
+            lines.append(f"- {item.get('title', 'Untitled')}")
+    return "\n".join(lines)
+
+
 def _render_email_template(content: str, customer: dict, contacts: list[dict],
                            kpis: dict | None = None, runs: list[dict] | None = None,
-                           places: dict | None = None, diff_report: str = "") -> str:
+                           places: dict | None = None, diff_report: str = "",
+                           content_recs: list[dict] | None = None) -> str:
     """Replace template variables with real customer data from DB."""
     contact_name = contacts[0]["name"] if contacts else "there"
     contact_email = contacts[0].get("email", "") if contacts else ""
+
+    # If contact's role is 'owner' or 'doctor', check if they're a provider (Dr.)
+    if contact_name and contact_name != "there" and not contact_name.startswith("Dr."):
+        contact_role = contacts[0].get("role", "") if contacts else ""
+        # Check if this person is in the providers table (they're a doctor)
+        db = get_db()
+        try:
+            providers = db.get_providers(customer.get("id", ""))
+            for p in providers:
+                # Match by last name — "Paul Zhivago" matches provider "Paul Zhivago"
+                if contact_name.lower() in p.get("name", "").lower() or p.get("name", "").lower() in contact_name.lower():
+                    creds = p.get("credentials", "")
+                    if any(c in creds for c in ("DDS", "DMD", "MD", "DO")):
+                        contact_name = f"Dr. {contact_name}"
+                    break
+        finally:
+            db.close()
 
     # Platform-specific access steps
     platform = customer.get("platform", "unknown")
@@ -1073,6 +1158,8 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{next_month_plans}": next_month_plans,
         "{changes_summary}": changes_summary,
         "{diff_summary}": diff_summary,
+        "{content_rec_summary}": _content_rec_summary(content_recs or []),
+        "{content_rec_count}": str(len(content_recs or [])),
     }
     for k, v in replacements.items():
         content = content.replace(k, v)
@@ -1140,51 +1227,614 @@ def _get_va_todos(customer: dict, access: list[dict], contacts: list[dict],
 
 SEO_GEO_TASKS = [
     # Schema Markup
-    {"key": "seo_schema_localbusiness", "task": "LocalBusiness (Dentist) schema markup", "category": "Schema Markup", "practice_only": True},
-    {"key": "seo_schema_org", "task": "Organization / SoftwareApplication schema markup", "category": "Schema Markup", "practice_only": False, "non_practice_only": True},
+    {"key": "seo_schema_localbusiness", "task": "LocalBusiness (Dentist) schema markup", "category": "Schema Markup", "practice_only": True,
+     "guide": {
+         "webflow": (
+             "<b>How to add schema markup in Webflow:</b>"
+             "<ol>"
+             "<li>Go to <b>Site Settings → Custom Code</b></li>"
+             "<li>In the <b>Head Code</b> box, PracticeRank will auto-inject the JSON-LD schema via the GEO Agent — no manual action needed</li>"
+             "<li>To verify: visit <code>https://{domain}</code>, right-click → View Page Source, search for <code>LocalBusiness</code></li>"
+             "<li>Test at <a href='https://search.google.com/test/rich-results' target='_blank'>Google Rich Results Test</a> — paste the URL and confirm no errors</li>"
+             "</ol>"
+             "<b>If not auto-injected:</b> Ask Jon to run the GEO Agent for this customer."
+         ),
+         "squarespace": (
+             "<b>How to add schema markup in Squarespace:</b>"
+             "<ol>"
+             "<li>Log in to Squarespace → go to <b>Website → Developer Tools → Code Injection</b></li>"
+             "<li>In the <b>Header</b> box, paste the JSON-LD schema script (use the <b>Copy Schema</b> button in the GEO Files panel on the Overview tab)</li>"
+             "<li>Click <b>Save</b></li>"
+             "<li>To verify: visit <code>https://{domain}</code>, right-click → View Page Source, search for <code>LocalBusiness</code></li>"
+             "<li>Test at <a href='https://search.google.com/test/rich-results' target='_blank'>Google Rich Results Test</a></li>"
+             "</ol>"
+             "<div style='margin-top:0.5rem;padding:0.4rem;background:#fefce8;border-radius:4px;color:#854d0e;font-size:0.78rem'>"
+             "<b>⚠️ Code Injection requires Business plan or higher.</b> If it's not visible under Developer Tools, "
+             "the site needs a plan upgrade. Workaround: add a Code Block on each page (editor → + → Code → paste → uncheck \"Display Source\")."
+             "</div>"
+         ),
+     }},
+    {"key": "seo_schema_org", "task": "Organization / SoftwareApplication schema markup", "category": "Schema Markup", "practice_only": False, "non_practice_only": True,
+     "guide": {
+         "webflow": (
+             "<b>Same process as LocalBusiness schema</b> — the GEO Agent auto-injects Organization schema for non-practice customers."
+             " Verify by viewing page source and searching for <code>Organization</code>."
+         ),
+         "squarespace": (
+             "<b>Same process as LocalBusiness schema</b> — paste the Organization JSON-LD into"
+             " <b>Website → Developer Tools → Code Injection → Header</b>."
+         ),
+     }},
     {"key": "seo_schema_faq", "task": "FAQPage schema on all service pages", "category": "Schema Markup"},
     {"key": "seo_schema_medical", "task": "MedicalProcedure schema for each service", "category": "Schema Markup", "practice_only": True},
     {"key": "seo_schema_review", "task": "AggregateRating / Review schema", "category": "Schema Markup", "practice_only": True},
     {"key": "seo_schema_product", "task": "Product / SoftwareApplication schema for offerings", "category": "Schema Markup", "practice_only": False, "non_practice_only": True},
     # llms.txt & AI Readiness
-    {"key": "seo_llms_txt", "task": "Deploy llms.txt on domain", "category": "AI Readiness (GEO)"},
-    {"key": "seo_llms_full", "task": "Deploy llms-full.txt with detailed content", "category": "AI Readiness (GEO)"},
-    {"key": "seo_robots_txt", "task": "robots.txt allows AI crawlers (GPTBot, ClaudeBot, etc.)", "category": "AI Readiness (GEO)"},
-    {"key": "seo_cloudflare_worker", "task": "Worker serving llms.txt + robots.txt (via redirect)", "category": "AI Readiness (GEO)"},
-    {"key": "seo_robots_redirected", "task": "Webflow redirect /robots.txt → Worker", "category": "AI Readiness (GEO)"},
-    {"key": "seo_ai_monitoring", "task": "AI mention monitoring set up (ChatGPT/Claude/Perplexity)", "category": "AI Readiness (GEO)"},
+    {"key": "seo_llms_txt", "task": "Deploy llms.txt on domain", "category": "AI Readiness (GEO)",
+     "guide": {
+         "_default": (
+             "<b>What is llms.txt?</b> A file that tells AI search engines (ChatGPT, Claude, Perplexity) about the business."
+             " It lives at <code>https://{domain}/llms.txt</code>."
+             "<br><br>"
+             "<b>How it gets deployed:</b>"
+             "<ol>"
+             "<li>The GEO Agent generates the llms.txt content automatically ✅</li>"
+             "<li>The file is uploaded to our Cloudflare Worker ✅</li>"
+             "<li><b>⚠️ A redirect on the website must send <code>/llms.txt</code> to the Worker</b> — see the <b>\"Set up redirects\"</b> task below</li>"
+             "</ol>"
+             "<b>This task is NOT complete until the redirect is configured.</b>"
+             " The file is generated and on the Worker, but visitors to <code>https://{domain}/llms.txt</code> won't see it without the redirect."
+             "<br><br>"
+             "<b>To verify after redirect:</b> Open <code>https://{domain}/llms.txt</code> in your browser — you should see a text file with practice info."
+         ),
+     }},
+    {"key": "seo_llms_full", "task": "Deploy llms-full.txt with detailed content", "category": "AI Readiness (GEO)",
+     "guide": {
+         "_default": (
+             "<b>Same as llms.txt</b> but with more detail. Verify at <code>https://{domain}/llms-full.txt</code>."
+             " This is auto-generated by the GEO Agent."
+         ),
+     }},
+    {"key": "seo_robots_txt", "task": "robots.txt allows AI crawlers (GPTBot, ClaudeBot, etc.)", "category": "AI Readiness (GEO)",
+     "guide": {
+         "_default": (
+             "<b>What this does:</b> The robots.txt file tells search bots whether they're allowed to crawl the site."
+             " We need AI bots (GPTBot, ClaudeBot, PerplexityBot) to be <b>allowed</b>."
+             "<br><br>"
+             "<b>To verify:</b> Open <code>https://{domain}/robots.txt</code> — look for lines like:"
+             "<pre>User-agent: GPTBot\nAllow: /\n\nUser-agent: ClaudeBot\nAllow: /</pre>"
+             "If AI bots are blocked (Disallow: /), the redirect needs to be configured to point to our Worker."
+         ),
+     }},
+    {"key": "seo_cloudflare_worker", "task": "Cloudflare Worker serving llms.txt + robots.txt", "category": "AI Readiness (GEO)",
+     "guide": {
+         "_default": (
+             "<b>What this is:</b> A Cloudflare Worker is a small program that serves our generated files (llms.txt, llms-full.txt, robots.txt)."
+             " It's already deployed — Jon manages this."
+             "<br><br>"
+             "<b>To verify it's working:</b> Open this URL in your browser:"
+             "<br><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt</code>"
+             "<br>You should see the llms.txt content."
+             "<br><br>"
+             "<b>If it returns an error or empty:</b> Ask Jon to run the GEO Agent to upload files for this customer."
+         ),
+     }},
+    {"key": "seo_robots_redirected", "task": "Set up redirects: /llms.txt, /robots.txt, /llms-full.txt → Worker", "category": "AI Readiness (GEO)",
+     "guide": {
+         "webflow": (
+             "<b>Set up Webflow 301 redirects to point /robots.txt and /llms.txt to the Worker:</b>"
+             "<ol>"
+             "<li>Log in to <b>Webflow</b> → open the site</li>"
+             "<li>Go to <b>Site Settings</b> (gear icon) → <b>Publishing</b> tab → scroll to <b>301 Redirects</b></li>"
+             "<li>Add these three redirects:"
+             "<table style='margin:0.5rem 0;font-size:0.8rem;border-collapse:collapse;width:100%'>"
+             "<tr style='border-bottom:1px solid #ddd'><th style='text-align:left;padding:4px'>Old Path</th><th style='text-align:left;padding:4px'>Redirect To</th></tr>"
+             "<tr style='border-bottom:1px solid #ddd'><td style='padding:4px'><code>/robots.txt</code></td>"
+             "<td style='padding:4px'><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/robots.txt</code></td></tr>"
+             "<tr style='border-bottom:1px solid #ddd'><td style='padding:4px'><code>/llms.txt</code></td>"
+             "<td style='padding:4px'><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt</code></td></tr>"
+             "<tr><td style='padding:4px'><code>/llms-full.txt</code></td>"
+             "<td style='padding:4px'><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms-full.txt</code></td></tr>"
+             "</table></li>"
+             "<li>Click <b>Add redirect</b> for each one, then <b>Publish</b> the site</li>"
+             "</ol>"
+             "<b>To verify:</b> Open <code>https://{domain}/robots.txt</code> — it should show our custom robots.txt (not the Webflow default)."
+         ),
+         "squarespace": (
+             "<b>🔧 Set up Squarespace redirects so /llms.txt, /robots.txt, and /llms-full.txt point to our Worker:</b>"
+             "<br><br>"
+             "<b>Step 1:</b> Log in to Squarespace at <a href='https://www.squarespace.com/login' target='_blank'>squarespace.com/login</a>"
+             "<br><br>"
+             "<b>Step 2:</b> Select the <b>{domain}</b> site"
+             "<br><br>"
+             "<b>Step 3:</b> In the left sidebar, click <b>Website</b> → then <b>Developer Tools</b>"
+             "<br><br>"
+             "<b>Step 4:</b> Click <b>URL Mappings</b>"
+             "<br><span style='color:#6b7280;font-size:0.75rem'>(If you don't see Developer Tools, try: Settings → Advanced → URL Mappings on older Squarespace versions)</span>"
+             "<br><br>"
+             "<b>Step 5:</b> In the text box, paste these 3 lines <b>exactly</b> (copy the entire block):"
+             "<pre style='margin:0.5rem 0;padding:0.75rem;background:#1e1e1e;color:#d4d4d4;border-radius:6px;font-size:0.78rem;overflow-x:auto;cursor:pointer;user-select:all'>"
+             "/robots.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/robots.txt 301\n"
+             "/llms.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt 301\n"
+             "/llms-full.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms-full.txt 301"
+             "</pre>"
+             "<b>Step 6:</b> Click <b>Save</b> at the top of the page"
+             "<br><br>"
+             "<hr style='margin:0.75rem 0;border:0;border-top:1px solid #ddd'>"
+             "<b>✅ How to verify it worked:</b>"
+             "<ol style='margin-top:0.5rem'>"
+             "<li>Open <a href='https://{domain}/llms.txt' target='_blank'>https://{domain}/llms.txt</a> — you should see a text file starting with <code># Downtown Dental</code></li>"
+             "<li>Open <a href='https://{domain}/robots.txt' target='_blank'>https://{domain}/robots.txt</a> — you should see <code>User-agent: ChatGPT-User</code> and <code>Allow: /</code></li>"
+             "<li>Open <a href='https://{domain}/llms-full.txt' target='_blank'>https://{domain}/llms-full.txt</a> — longer version of the same file</li>"
+             "</ol>"
+             "<b>If any link shows a Squarespace 404 page</b>, double-check the URL Mappings for typos. The format must be exactly: <code>/path -> https://url 301</code> with spaces around the arrow."
+             "<br><br>"
+             "<b>⏱ Note:</b> Redirects take effect immediately after saving — no need to wait."
+         ),
+         "wordpress": (
+             "<b>For WordPress, add redirect rules in .htaccess or a redirect plugin:</b>"
+             "<ol>"
+             "<li>Install the <b>Redirection</b> plugin (or edit .htaccess directly)</li>"
+             "<li>Add redirects:"
+             "<br><code>/robots.txt</code> → <code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/robots.txt</code>"
+             "<br><code>/llms.txt</code> → <code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt</code>"
+             "<br><code>/llms-full.txt</code> → <code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms-full.txt</code>"
+             "</li>"
+             "<li>Set type to <b>301 (Permanent)</b></li>"
+             "</ol>"
+         ),
+     }},
+    {"key": "seo_ai_monitoring", "task": "AI mention monitoring set up (ChatGPT/Claude/Perplexity)", "category": "AI Readiness (GEO)",
+     "guide": {
+         "_default": (
+             "<b>Run an automated AI mention check</b> — queries ChatGPT and Claude with practice-relevant prompts "
+             "and checks if the practice appears in the responses."
+             "<br><br>"
+             "<button class='btn btn-primary btn-sm' onclick='runAiMentionCheck(\"{customer_id}\")' id='ai-check-btn'>"
+             "Run AI Mention Check</button>"
+             "<span id='ai-check-status' style='margin-left:8px;'></span>"
+             "<div id='ai-check-results' style='margin-top:12px;display:none;'></div>"
+             "<br>"
+             "<b>Manual check:</b>"
+             "<ol>"
+             "<li>Open <a href='https://chatgpt.com' target='_blank'>ChatGPT</a> and ask: <i>\"Who is the best dentist in {city}?\"</i></li>"
+             "<li>Open <a href='https://claude.ai' target='_blank'>Claude</a> and ask the same question</li>"
+             "<li>Open <a href='https://perplexity.ai' target='_blank'>Perplexity</a> and ask the same question</li>"
+             "</ol>"
+             "Once the check runs (automated or manual), this task will be marked complete automatically."
+         ),
+     }},
     # Content Optimization
-    {"key": "seo_expert_quotes", "task": "Expert quotes on all service pages (+37-40% AI citation lift)", "category": "Content Optimization"},
-    {"key": "seo_stats_embedded", "task": "Statistics embedded every 150-200 words (+22% lift)", "category": "Content Optimization"},
-    {"key": "seo_faq_sections", "task": "4-6 FAQ entries per service page", "category": "Content Optimization"},
+    {"key": "seo_expert_quotes", "task": "Expert quotes on all service pages (+37-40% AI citation lift)", "category": "Content Optimization",
+     "guide": {
+         "_default": (
+             "<b>What:</b> Each service page needs 2-3 expert quotes from the practice's dentists."
+             "<br><br>"
+             "<b>Steps:</b>"
+             "<ol>"
+             "<li>Go to the <b>Content</b> tab in this dashboard</li>"
+             "<li>Click <b>Generate Recommendations</b> — the AI will create expert quotes</li>"
+             "<li>Review and <b>Approve</b> the expert_quote recommendations</li>"
+             "<li>Download the DOCX or publish directly to the site</li>"
+             "</ol>"
+             "<b>Why:</b> Pages with expert quotes get 37-40% more citations from AI search engines."
+         ),
+     }},
+    {"key": "seo_stats_embedded", "task": "Statistics embedded every 150-200 words (+22% lift)", "category": "Content Optimization",
+     "guide": {
+         "_default": (
+             "<b>What:</b> Real statistics and data points should be sprinkled throughout service pages."
+             "<br><b>Example:</b> <i>\"Dental implants have a 98% success rate (American Dental Association, 2024)\"</i>"
+             "<br><br>"
+             "<b>Steps:</b>"
+             "<ol>"
+             "<li>The AI generates <b>stat_injection</b> recommendations in the Content tab</li>"
+             "<li>Approve the ones that look accurate</li>"
+             "<li>Download the DOCX to see exactly where each stat goes on the page</li>"
+             "</ol>"
+             "<b>Important:</b> Only use stats from real, verifiable sources. Never make up numbers."
+         ),
+     }},
+    {"key": "seo_faq_sections", "task": "4-6 FAQ entries per service page", "category": "Content Optimization",
+     "guide": {
+         "_default": (
+             "<b>What:</b> Each service page needs a FAQ section with 4-6 questions."
+             "<br><br>"
+             "<b>Steps:</b>"
+             "<ol>"
+             "<li>The AI generates <b>faq_update</b> recommendations in the Content tab</li>"
+             "<li>Review and approve</li>"
+             "<li>Publish to the site or download DOCX for manual insertion</li>"
+             "</ol>"
+             "<b>Bonus:</b> FAQs also get FAQPage schema markup, which can show as rich results in Google."
+         ),
+     }},
     {"key": "seo_content_depth", "task": "Service pages 2,000+ words with structured headings", "category": "Content Optimization"},
-    {"key": "seo_provider_bios", "task": "Provider bios with credentials, specialties, years", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_provider_bios", "task": "Provider bios with credentials, specialties, years", "category": "Content Optimization", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>What:</b> Each dentist/provider needs a detailed bio page with:"
+             "<ul>"
+             "<li>Full name and credentials (DDS, DMD, etc.)</li>"
+             "<li>Specialties (implants, cosmetic, pediatric, etc.)</li>"
+             "<li>Years of experience</li>"
+             "<li>Education and training</li>"
+             "<li>Professional headshot</li>"
+             "</ul>"
+             "<b>Why:</b> Google and AI search engines use provider info to establish E-E-A-T (expertise, experience, authority, trust)."
+             "<br><b>Get the info:</b> Check the Providers section at the top of this customer page."
+         ),
+     }},
     {"key": "seo_emergency_page", "task": "Emergency dentist page", "category": "Content Optimization", "practice_only": True},
     {"key": "seo_cost_page", "task": "Dental implant / procedure cost page", "category": "Content Optimization", "practice_only": True},
     {"key": "seo_insurance_page", "task": "Insurance / financing page", "category": "Content Optimization", "practice_only": True},
-    {"key": "seo_neighborhood_pages", "task": "Neighborhood landing pages", "category": "Content Optimization", "practice_only": True},
+    {"key": "seo_neighborhood_pages", "task": "Neighborhood landing pages", "category": "Content Optimization", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>What:</b> Create a landing page for each neighborhood/area the practice serves."
+             "<br><b>Example:</b> \"Dentist in North Austin\" or \"Family Dentist near Laramie Downtown\""
+             "<br><br>"
+             "<b>Steps:</b>"
+             "<ol>"
+             "<li>The AI generates <b>new_page</b> recommendations for neighborhood pages</li>"
+             "<li>Review, approve, and publish</li>"
+             "<li>Each page should mention the neighborhood name, nearby landmarks, and driving directions</li>"
+             "</ol>"
+         ),
+     }},
     {"key": "seo_use_cases", "task": "Use case / case study pages for each product", "category": "Content Optimization", "practice_only": False, "non_practice_only": True},
     {"key": "seo_comparison_pages", "task": "Competitor comparison / alternatives pages", "category": "Content Optimization", "practice_only": False, "non_practice_only": True},
     # Technical SEO
-    {"key": "seo_xml_sitemap", "task": "XML sitemap present and submitted", "category": "Technical SEO"},
-    {"key": "seo_structured_headings", "task": "Proper H1/H2/H3 heading hierarchy", "category": "Technical SEO"},
-    {"key": "seo_webflow_redirects", "task": "Webflow redirects configured (llms.txt, llms-full.txt, robots.txt)", "category": "Technical SEO"},
+    {"key": "seo_xml_sitemap", "task": "XML sitemap present and submitted", "category": "Technical SEO",
+     "guide": {
+         "webflow": (
+             "<b>Webflow generates a sitemap automatically.</b>"
+             "<ol>"
+             "<li>Verify it exists: open <code>https://{domain}/sitemap.xml</code></li>"
+             "<li>Submit to Google: go to <a href='https://search.google.com/search-console' target='_blank'>Google Search Console</a>"
+             " → <b>Sitemaps</b> (left menu) → paste <code>https://{domain}/sitemap.xml</code> → click <b>Submit</b></li>"
+             "</ol>"
+         ),
+         "squarespace": (
+             "<b>Squarespace generates a sitemap automatically.</b>"
+             "<ol>"
+             "<li>Verify it exists: open <code>https://{domain}/sitemap.xml</code></li>"
+             "<li>Submit to Google: go to <a href='https://search.google.com/search-console' target='_blank'>Google Search Console</a>"
+             " → <b>Sitemaps</b> → paste <code>https://{domain}/sitemap.xml</code> → <b>Submit</b></li>"
+             "</ol>"
+             "<b>Tip:</b> In Squarespace, go to <b>Settings → SEO</b> and make sure \"Hide from search engines\" is OFF."
+         ),
+     }},
+    {"key": "seo_structured_headings", "task": "Proper H1/H2/H3 heading hierarchy", "category": "Technical SEO",
+     "guide": {
+         "_default": (
+             "<b>What:</b> Every page should have exactly one H1 (main title), with H2s for sections and H3s for subsections."
+             "<br><br>"
+             "<b>How to check:</b>"
+             "<ol>"
+             "<li>Visit <code>https://{domain}</code></li>"
+             "<li>Right-click → View Page Source</li>"
+             "<li>Search for <code>&lt;h1</code> — there should be exactly one per page</li>"
+             "<li>Check that H2s and H3s follow in order (no jumping from H1 to H3)</li>"
+             "</ol>"
+             "<b>Quick check:</b> Use the free <a href='https://www.headsmap.com/' target='_blank'>HeadsMap browser extension</a> to visualize heading hierarchy."
+         ),
+     }},
+    {"key": "seo_webflow_redirects", "task": "Webflow redirects configured (llms.txt, llms-full.txt, robots.txt)", "category": "Technical SEO", "platform_only": "webflow",
+     "guide": {
+         "webflow": (
+             "<b>This is the same as the \"Redirect /robots.txt to Worker\" task above.</b>"
+             " Make sure all 3 redirects are set in <b>Site Settings → Publishing → 301 Redirects</b>:"
+             "<table style='margin:0.5rem 0;font-size:0.8rem;border-collapse:collapse;width:100%'>"
+             "<tr style='border-bottom:1px solid #ddd'><th style='text-align:left;padding:4px'>Old Path</th><th style='text-align:left;padding:4px'>Redirect To</th></tr>"
+             "<tr style='border-bottom:1px solid #ddd'><td style='padding:4px'><code>/robots.txt</code></td>"
+             "<td style='padding:4px'><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/robots.txt</code></td></tr>"
+             "<tr style='border-bottom:1px solid #ddd'><td style='padding:4px'><code>/llms.txt</code></td>"
+             "<td style='padding:4px'><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt</code></td></tr>"
+             "<tr><td style='padding:4px'><code>/llms-full.txt</code></td>"
+             "<td style='padding:4px'><code>https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms-full.txt</code></td></tr>"
+             "</table>"
+             "<b>After adding:</b> Click <b>Publish</b> to make the redirects live."
+         ),
+     }},
+    {"key": "seo_sqsp_code_injection", "task": "Squarespace Code Injection configured (schema, tracking)", "category": "Technical SEO", "platform_only": "squarespace",
+     "guide": {
+         "squarespace": (
+             "<b>How to access Code Injection:</b>"
+             "<ol>"
+             "<li>Log in to Squarespace</li>"
+             "<li>Go to <b>Website → Developer Tools → Code Injection</b>"
+             "<br><span style='color:#6b7280;font-size:0.75rem'>(Older versions: Settings → Advanced → Code Injection)</span></li>"
+             "<li><b>Header:</b> This is where schema markup (JSON-LD) and tracking codes (Google Analytics, GTM) go</li>"
+             "<li><b>Footer:</b> This is for scripts that can load after the page (chat widgets, etc.)</li>"
+             "<li>Paste the schema code from the PracticeRank dashboard → Schema tab</li>"
+             "<li>Click <b>Save</b></li>"
+             "</ol>"
+             "<b>To verify:</b> Visit the site → right-click → View Page Source → search for <code>application/ld+json</code>"
+         ),
+     }},
+    {"key": "seo_sqsp_seo_meta", "task": "SEO titles & descriptions set on all pages", "category": "Technical SEO", "platform_only": "squarespace",
+     "guide": {
+         "squarespace": (
+             "<b>How to set SEO titles and descriptions on each page:</b>"
+             "<ol>"
+             "<li>In Squarespace, go to <b>Pages</b> (left sidebar)</li>"
+             "<li>Hover over a page and click the <b>gear icon</b> (⚙️) to open Page Settings</li>"
+             "<li>Click the <b>SEO</b> tab</li>"
+             "<li><b>SEO Title:</b> Should be like \"Service Name | Practice Name | City, State\" (under 60 characters)</li>"
+             "<li><b>SEO Description:</b> 1-2 sentence summary with keywords (under 160 characters)</li>"
+             "<li>Click <b>Save</b></li>"
+             "<li><b>Repeat for every page on the site</b></li>"
+             "</ol>"
+             "<b>Tip:</b> The Content tab in PracticeRank generates meta descriptions — use those."
+         ),
+     }},
+    {"key": "seo_sqsp_blog_setup", "task": "Blog page created with categories", "category": "Technical SEO", "platform_only": "squarespace",
+     "guide": {
+         "squarespace": (
+             "<b>How to set up a blog in Squarespace:</b>"
+             "<ol>"
+             "<li>Go to <b>Pages</b> → click the <b>+</b> button</li>"
+             "<li>Select <b>Blog</b> from the page types</li>"
+             "<li>Name it \"Blog\" or \"News\"</li>"
+             "<li>Click into the blog → <b>Settings</b> (gear icon)</li>"
+             "<li>Under <b>Blog Settings</b>, add categories that match your services (e.g., Dental Implants, Cosmetic Dentistry, Oral Health Tips)</li>"
+             "<li>Make sure the blog page is added to the site navigation</li>"
+             "</ol>"
+             "<b>After setup:</b> Use the Content tab to generate and push blog posts as drafts."
+         ),
+     }},
+    {"key": "seo_sqsp_url_redirects", "task": "URL redirects configured for llms.txt/robots.txt", "category": "Technical SEO", "platform_only": "squarespace",
+     "guide": {
+         "squarespace": (
+             "<b>How to add URL redirects in Squarespace:</b>"
+             "<ol>"
+             "<li>Go to <b>Website → Developer Tools → URL Mappings</b>"
+             "<br><span style='color:#6b7280;font-size:0.75rem'>(Older versions: Settings → Advanced → URL Mappings)</span></li>"
+             "<li>Add these rules (copy-paste each line exactly):"
+             "<pre style='margin:0.5rem 0;padding:0.5rem;background:#1e1e1e;color:#d4d4d4;border-radius:4px;font-size:0.75rem;overflow-x:auto'>"
+             "/robots.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/robots.txt 301\n"
+             "/llms.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt 301\n"
+             "/llms-full.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms-full.txt 301"
+             "</pre></li>"
+             "<li>Click <b>Save</b></li>"
+             "</ol>"
+             "<b>To verify:</b> Open <code>https://{domain}/llms.txt</code> in your browser — you should see practice info (not a 404)."
+             "<br><br>"
+             "<b>Important:</b> The format is <code>/path -> https://destination 301</code> — make sure the spaces and arrow are exactly right."
+         ),
+     }},
     # Local SEO & Citations (practice only)
-    {"key": "seo_gbp_optimized", "task": "Google Business Profile fully optimized", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_gbp_photos", "task": "10+ photos on GBP (exterior, interior, team)", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_gbp_qa", "task": "GBP Q&A pre-populated (10-15 questions)", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_apple_business", "task": "Apple Business listing claimed & optimized", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_yelp", "task": "Yelp listing claimed & optimized", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_healthgrades", "task": "Healthgrades profile claimed", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_zocdoc", "task": "Zocdoc listing claimed", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_facebook", "task": "Facebook Business page set up", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_bing_places", "task": "Bing Places imported from GBP", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_nap_consistent", "task": "NAP consistent across all directories", "category": "Local SEO", "practice_only": True},
-    {"key": "seo_tier2_citations", "task": "Tier 2 citation directories submitted", "category": "Local SEO", "practice_only": True},
+    {"key": "seo_gbp_optimized", "task": "Google Business Profile fully optimized", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>How to optimize Google Business Profile:</b>"
+             "<ol>"
+             "<li>Go to <a href='https://business.google.com' target='_blank'>business.google.com</a> and sign in with the practice's Google account</li>"
+             "<li>Click on the practice listing</li>"
+             "<li>Fill in <b>every single field</b>:"
+             "<ul>"
+             "<li><b>Business name:</b> Exact legal practice name (no extra keywords)</li>"
+             "<li><b>Primary category:</b> \"Dentist\" (most important — must be exact)</li>"
+             "<li><b>Secondary categories:</b> Add up to 9 (Cosmetic Dentist, Pediatric Dentist, etc.)</li>"
+             "<li><b>Address:</b> Must match website and all other listings exactly</li>"
+             "<li><b>Phone:</b> Must match website exactly</li>"
+             "<li><b>Hours:</b> Must match website exactly</li>"
+             "<li><b>Website:</b> <code>https://{domain}</code></li>"
+             "<li><b>Description:</b> 750 characters, include city name and top services</li>"
+             "<li><b>Services:</b> Add every service with descriptions</li>"
+             "<li><b>Appointment URL:</b> Link to online booking if available</li>"
+             "</ul></li>"
+             "</ol>"
+             "<b>Critical:</b> Name, Address, Phone (NAP) must be identical everywhere — Google, website, Yelp, all directories."
+         ),
+     }},
+    {"key": "seo_gbp_photos", "task": "10+ photos on GBP (exterior, interior, team)", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Upload photos to Google Business Profile:</b>"
+             "<ol>"
+             "<li>Go to <a href='https://business.google.com' target='_blank'>business.google.com</a></li>"
+             "<li>Click <b>Photos</b> in the left menu</li>"
+             "<li>Upload at least 10 photos:"
+             "<ul>"
+             "<li>1-2 exterior shots (so patients can find the building)</li>"
+             "<li>3-4 interior shots (waiting room, treatment rooms)</li>"
+             "<li>2-3 team photos (doctors, staff)</li>"
+             "<li>1-2 equipment/technology photos</li>"
+             "</ul></li>"
+             "<li>Add a <b>Logo</b> and <b>Cover Photo</b> if not already set</li>"
+             "</ol>"
+             "<b>Tips:</b> Well-lit, horizontal photos work best. No stock photos — Google may flag them."
+         ),
+     }},
+    {"key": "seo_gbp_qa", "task": "GBP Q&A pre-populated (10-15 questions)", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Pre-populate the Q&A section on Google Business Profile:</b>"
+             "<ol>"
+             "<li>Search for the practice on Google Maps</li>"
+             "<li>Click <b>Ask a question</b> on the listing</li>"
+             "<li>Post common questions <b>from the practice's own Google account</b>, then answer them:</li>"
+             "</ol>"
+             "<b>Example questions to post and answer:</b>"
+             "<ul>"
+             "<li>Do you accept [insurance name]?</li>"
+             "<li>Do you offer emergency dental services?</li>"
+             "<li>What are your hours on Saturday?</li>"
+             "<li>Do you do dental implants?</li>"
+             "<li>Is parking available?</li>"
+             "<li>Do you see children?</li>"
+             "<li>Do you offer sedation dentistry?</li>"
+             "<li>How do I book an appointment?</li>"
+             "<li>Do you accept new patients?</li>"
+             "<li>What payment options do you offer?</li>"
+             "</ul>"
+             "<b>Important:</b> Post AND answer from the practice's Google account — this marks the answer as \"Owner\" verified."
+         ),
+     }},
+    {"key": "seo_apple_business", "task": "Apple Business listing claimed & optimized", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Claim and optimize Apple Business Connect listing:</b>"
+             "<ol>"
+             "<li>Go to <a href='https://businessconnect.apple.com' target='_blank'>businessconnect.apple.com</a></li>"
+             "<li>Sign in with the practice's Apple ID (or create one)</li>"
+             "<li>Search for the business and click <b>Claim</b></li>"
+             "<li>Verify ownership (phone call or document upload)</li>"
+             "<li>Once verified, fill in everything:"
+             "<ul>"
+             "<li>Primary category (e.g., Dentist)</li>"
+             "<li>Up to 9 secondary categories</li>"
+             "<li>Upload same photos as GBP</li>"
+             "<li>Add action buttons (Book Appointment, Call)</li>"
+             "<li>Create a Showcase (promotional banner)</li>"
+             "</ul></li>"
+             "<li>Make sure hours, address, phone match Google <b>exactly</b></li>"
+             "</ol>"
+         ),
+     }},
+    {"key": "seo_yelp", "task": "Yelp listing claimed & optimized", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Claim and optimize Yelp listing:</b>"
+             "<ol>"
+             "<li>Go to <a href='https://biz.yelp.com' target='_blank'>biz.yelp.com</a></li>"
+             "<li>Search for the practice → click <b>Claim this business</b></li>"
+             "<li>Verify via phone or email</li>"
+             "<li>Fill in all business details — NAP must match Google exactly</li>"
+             "<li>Upload photos (same set as GBP)</li>"
+             "<li>Add specialties and services</li>"
+             "</ol>"
+         ),
+     }},
+    {"key": "seo_healthgrades", "task": "Healthgrades profile claimed", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<ol>"
+             "<li>Go to <a href='https://update.healthgrades.com' target='_blank'>update.healthgrades.com</a></li>"
+             "<li>Search for each provider by name</li>"
+             "<li>Click <b>Claim Profile</b> and verify</li>"
+             "<li>Fill in specialties, education, insurance accepted</li>"
+             "</ol>"
+         ),
+     }},
+    {"key": "seo_zocdoc", "task": "Zocdoc listing claimed", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<ol>"
+             "<li>Go to <a href='https://www.zocdoc.com/join' target='_blank'>zocdoc.com/join</a></li>"
+             "<li>Create a provider profile</li>"
+             "<li>Fill in insurance accepted, services, availability</li>"
+             "<li>Link appointment booking</li>"
+             "</ol>"
+             "<b>Note:</b> Zocdoc charges a fee per booking — confirm with Jon before signing up."
+         ),
+     }},
+    {"key": "seo_facebook", "task": "Facebook Business page set up", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<ol>"
+             "<li>Go to <a href='https://www.facebook.com/pages/create' target='_blank'>facebook.com/pages/create</a></li>"
+             "<li>Choose <b>Local Business</b></li>"
+             "<li>Fill in practice name, address, phone, hours — must match Google exactly</li>"
+             "<li>Upload profile photo (logo) and cover photo</li>"
+             "<li>Add services and description</li>"
+             "<li>Link to website: <code>https://{domain}</code></li>"
+             "</ol>"
+         ),
+     }},
+    {"key": "seo_bing_places", "task": "Bing Places imported from GBP", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Import GBP listing to Bing Places (easiest method):</b>"
+             "<ol>"
+             "<li>Go to <a href='https://www.bingplaces.com' target='_blank'>bingplaces.com</a></li>"
+             "<li>Sign in with a Microsoft account</li>"
+             "<li>Click <b>Import from Google Business Profile</b></li>"
+             "<li>Sign in to Google and authorize</li>"
+             "<li>Select the practice listing → click <b>Import</b></li>"
+             "</ol>"
+             "This copies all your GBP data (name, address, phone, hours, photos) into Bing automatically."
+         ),
+     }},
+    {"key": "seo_nap_consistent", "task": "NAP consistent across all directories", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>NAP = Name, Address, Phone.</b> Must be identical character-for-character on every listing."
+             "<br><br>"
+             "<b>Common mistakes:</b>"
+             "<ul>"
+             "<li>\"St.\" vs \"Street\" vs \"St\"</li>"
+             "<li>\"Suite 100\" vs \"Ste 100\" vs \"#100\"</li>"
+             "<li>(555) 123-4567 vs 555-123-4567</li>"
+             "<li>\"Dr. Smith's Dental\" vs \"Dr Smith Dental\"</li>"
+             "</ul>"
+             "<b>How to audit:</b> Use <a href='https://www.brightlocal.com' target='_blank'>BrightLocal</a> citation audit — it scans all major directories and flags inconsistencies."
+             "<br><b>Pick one format and use it everywhere.</b>"
+         ),
+     }},
+    {"key": "seo_tier2_citations", "task": "Tier 2 citation directories submitted", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Submit to these directories (manually — takes ~2 hours):</b>"
+             "<ul>"
+             "<li><a href='https://www.yellowpages.com/claimlisting' target='_blank'>YellowPages.com</a></li>"
+             "<li><a href='https://www.bbb.org' target='_blank'>BBB.org</a></li>"
+             "<li><a href='https://www.vitals.com' target='_blank'>Vitals.com</a></li>"
+             "<li><a href='https://www.ratemds.com' target='_blank'>RateMDs.com</a></li>"
+             "<li><a href='https://www.nextdoor.com/pages/create' target='_blank'>Nextdoor.com</a> (Business Page)</li>"
+             "<li><a href='https://www.angi.com' target='_blank'>Angi.com</a></li>"
+             "</ul>"
+             "<b>For each:</b> Use the exact same NAP as Google Business Profile."
+         ),
+     }},
     # Reviews (practice only)
-    {"key": "seo_review_cards", "task": "QR review cards printed & at front desk", "category": "Reviews & Reputation", "practice_only": True},
-    {"key": "seo_gradeus_setup", "task": "Grade.us review funnel configured", "category": "Reviews & Reputation", "practice_only": True},
-    {"key": "seo_review_responses", "task": "Review response workflow active", "category": "Reviews & Reputation", "practice_only": True},
+    {"key": "seo_review_cards", "task": "QR review cards printed & at front desk", "category": "Reviews & Reputation", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Steps:</b>"
+             "<ol>"
+             "<li>The Grade.us review funnel must be set up first (see task below)</li>"
+             "<li>Generate a QR code that points to the Grade.us review page</li>"
+             "<li>Design a business-card-sized review card with:"
+             "<ul><li>Practice logo</li><li>QR code</li><li>\"We'd love your feedback!\" message</li><li>Short URL as backup</li></ul></li>"
+             "<li>Order cards from <a href='https://www.vistaprint.com' target='_blank'>Vistaprint</a> (~$20 for 250)</li>"
+             "<li>Place in acrylic holder at front desk and each checkout area</li>"
+             "<li>Train front desk: hand a card to every patient at checkout</li>"
+             "</ol>"
+         ),
+     }},
+    {"key": "seo_gradeus_setup", "task": "Grade.us review funnel configured", "category": "Reviews & Reputation", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Full setup in Grade.us:</b>"
+             "<ol>"
+             "<li>Log in to <a href='https://app.grade.us' target='_blank'>Grade.us</a></li>"
+             "<li>Create a new location profile</li>"
+             "<li>Configure review sites: Google (#1 priority), Healthgrades, Facebook, Yelp</li>"
+             "<li>Enable <b>negative feedback interception</b> (1-3 stars go to private form, 4-5 stars go to Google)</li>"
+             "<li>Set up 3-message email drip for patients who don't review immediately</li>"
+             "<li>Generate the review landing page URL</li>"
+             "</ol>"
+             "<b>See detailed guide:</b> <code>docs/grade-us-setup.md</code>"
+         ),
+     }},
+    {"key": "seo_review_responses", "task": "Review response workflow active", "category": "Reviews & Reputation", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Set up review monitoring and responses:</b>"
+             "<ol>"
+             "<li>In Grade.us, enable <b>review alerts</b> — CC the practice owner on all new reviews</li>"
+             "<li>Respond to every review within 24 hours:"
+             "<ul>"
+             "<li><b>Positive reviews:</b> Thank them by name, mention something specific</li>"
+             "<li><b>Negative reviews:</b> Apologize, take it offline (\"Please call us at...\")</li>"
+             "</ul></li>"
+             "<li>The AI can draft review responses — check the Content tab for suggestions</li>"
+             "</ol>"
+         ),
+     }},
 ]
 
 
@@ -1238,16 +1888,14 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
     except Exception:
         pass
 
-    # Check llms.txt — try domain first, then Worker
+    # Check llms.txt — domain URL must actually work for "deployed on domain" status
     for key, filename in [("seo_llms_txt", "llms.txt"), ("seo_llms_full", "llms-full.txt")]:
         try:
             resp = httpx.get(f"https://{domain}/{filename}", timeout=8.0, follow_redirects=True)
             if resp.status_code == 200 and len(resp.text) > 50:
                 detected[key] = True
-            elif WORKER_API_URL:
-                resp2 = httpx.get(f"{WORKER_API_URL}/geo/{domain}/{filename}", timeout=8.0)
-                if resp2.status_code == 200 and len(resp2.text) > 50:
-                    detected[key] = True
+            # If domain doesn't serve it, DON'T mark as deployed — the redirect isn't set up yet.
+            # The Worker check below handles seo_cloudflare_worker separately.
         except Exception:
             pass
 
@@ -1287,17 +1935,31 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
     except Exception:
         pass
 
+    # Check if AI mention monitoring has been run (any ai_mentions KPI recorded)
+    try:
+        _db = CustomerDB()
+        mention_kpi = _db.get_latest_kpi(customer_id, "ai_mentions")
+        if mention_kpi:
+            detected["seo_ai_monitoring"] = True
+        _db.close()
+    except Exception:
+        pass
+
     _seo_cache[cache_key] = (time.time(), detected)
     return detected
 
 
 def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
-                   auto_detected: dict[str, bool] | None = None) -> list[dict]:
+                   auto_detected: dict[str, bool] | None = None,
+                   platform: str = "webflow", domain: str = "",
+                   customer_id: str = "", city: str = "") -> list[dict]:
     """Return SEO/GEO tasks grouped by category with completion status.
 
     Filters tasks based on business_type — practice-only tasks (Local SEO,
     Reviews, dental-specific content) are excluded for non-practice customers.
+    Also filters by platform_only field.
     Auto-detected status overrides manual checklist for verifiable tasks.
+    Resolves guide text for the current platform and domain.
     """
     is_practice = business_type == "practice"
     ad = auto_detected or {}
@@ -1309,15 +1971,25 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
         # Skip non-practice-only tasks for practices
         if t.get("non_practice_only") and is_practice:
             continue
+        # Skip platform-specific tasks for other platforms
+        if t.get("platform_only") and t["platform_only"] != platform:
+            continue
         # Auto-detected takes priority over manual checklist
         done = ad.get(t["key"], checklist.get(t["key"], False))
         auto = t["key"] in ad
+        # Resolve guide for current platform
+        guide = ""
+        if t.get("guide"):
+            guide = t["guide"].get(platform, t["guide"].get("_default", ""))
+            if guide:
+                guide = guide.replace("{domain}", domain).replace("{customer_id}", customer_id).replace("{city}", city)
         tasks.append({
             "key": t["key"],
             "task": t["task"],
             "category": t["category"],
             "done": done,
             "auto": auto,
+            "guide": guide,
         })
     return tasks
 
@@ -1415,6 +2087,87 @@ def api_board_move():
     try:
         db.set_onboarding_step(customer_id, new_step)
         return jsonify({"ok": True, "step": new_step})
+    finally:
+        db.close()
+
+
+@app.route("/api/seo-recheck/<customer_id>", methods=["POST"])
+@login_required
+def api_seo_recheck(customer_id):
+    """Clear SEO auto-detect cache and re-check live site. Returns updated results."""
+    import time
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+        domain = customer.get("domain", "")
+        if not domain:
+            return jsonify({"error": "No domain configured"}), 400
+
+        # Clear cache for this customer
+        cache_key = f"{domain}:{customer_id}"
+        _seo_cache.pop(cache_key, None)
+
+        # Re-detect
+        detected = _auto_detect_seo_status(domain, customer_id)
+        return jsonify({"ok": True, "detected": {k: v for k, v in detected.items()}, "domain": domain})
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>", methods=["POST"])
+@login_required
+def api_run_ai_mentions(customer_id):
+    """Run AI mention check for a customer. Queries Claude + ChatGPT with practice-relevant prompts."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        from scripts.check_ai_mentions import build_prompts, query_claude, query_openai, check_mention
+
+        prompts = build_prompts(
+            customer["name"], customer["city"], customer["state"],
+            customer.get("specialties", []),
+        )
+
+        results = []
+        mention_count = 0
+
+        for prompt in prompts:
+            for ai_name, query_fn in [("Claude", query_claude), ("ChatGPT", query_openai)]:
+                response = query_fn(prompt)
+                if response is None:
+                    continue
+                result = check_mention(response, customer["name"])
+                if result["mentioned"]:
+                    mention_count += 1
+                results.append({
+                    "prompt": prompt,
+                    "ai": ai_name,
+                    "mentioned": result["mentioned"],
+                    "position": result["position"],
+                    "context": result["context"][:150] if result["context"] else "",
+                })
+
+        # Save KPI
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        db.record_kpi(customer_id, "ai_mentions", mention_count, today)
+
+        # Clear SEO cache so checklist updates
+        domain = customer.get("domain", "")
+        cache_key = f"{domain}:{customer_id}"
+        _seo_cache.pop(cache_key, None)
+
+        return jsonify({
+            "ok": True,
+            "mention_count": mention_count,
+            "total_queries": len(results),
+            "results": results,
+        })
     finally:
         db.close()
 
@@ -2111,6 +2864,194 @@ def api_content_publish():
         db.close()
 
 
+@app.route("/api/content/download-docx", methods=["POST"])
+@login_required
+def api_content_download_docx():
+    """Download DOCX for single or batch content recommendations."""
+    from io import BytesIO
+    from geo_agent.docx_generator import ContentDocxGenerator
+
+    data = request.get_json()
+    rec_ids = data.get("rec_ids", [])
+    if not rec_ids and data.get("rec_id"):
+        rec_ids = [data["rec_id"]]
+    if not rec_ids:
+        return jsonify({"error": "rec_id or rec_ids[] required"}), 400
+
+    db = get_db()
+    try:
+        recs = [db.get_content_recommendation(rid) for rid in rec_ids]
+        recs = [r for r in recs if r]
+        if not recs:
+            return jsonify({"error": "No recommendations found"}), 404
+
+        customer = db.get_customer(recs[0]["customer_id"])
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        gen = ContentDocxGenerator(customer)
+        if len(recs) == 1:
+            buf = gen.generate_single(recs[0])
+            filename = f"{recs[0]['title'][:50].replace(' ', '-')}.docx"
+        else:
+            buf = gen.generate_batch(recs)
+            filename = f"{customer['name']}-content-batch.docx"
+
+        return send_file(
+            buf,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            as_attachment=True,
+            download_name=filename,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/api/content/<customer_id>/download-all-approved")
+@login_required
+def api_content_download_all_approved(customer_id):
+    """Download all approved content recommendations as one DOCX."""
+    from geo_agent.docx_generator import ContentDocxGenerator
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        recs = db.get_content_recommendations(customer_id, status="approved")
+        if not recs:
+            return jsonify({"error": "No approved recommendations"}), 404
+
+        gen = ContentDocxGenerator(customer)
+        buf = gen.generate_batch(recs)
+        filename = f"{customer['name']}-approved-content.docx"
+
+        return send_file(
+            buf,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            as_attachment=True,
+            download_name=filename,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/api/content/<customer_id>/download-all")
+@login_required
+def api_content_download_all(customer_id):
+    """Download ALL content recommendations as one DOCX (any status)."""
+    from geo_agent.docx_generator import ContentDocxGenerator
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        recs = db.get_content_recommendations(customer_id)
+        if not recs:
+            return jsonify({"error": "No content recommendations"}), 404
+
+        gen = ContentDocxGenerator(customer)
+        buf = gen.generate_batch(recs)
+        filename = f"{customer['name']}-all-content.docx"
+
+        return send_file(
+            buf,
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            as_attachment=True,
+            download_name=filename,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/api/content/push-squarespace", methods=["POST"])
+@login_required
+def api_content_push_squarespace():
+    """Push approved content recommendations as drafts to Squarespace."""
+    data = request.get_json()
+    rec_ids = data.get("rec_ids", [])
+    if not rec_ids and data.get("rec_id"):
+        rec_ids = [data["rec_id"]]
+    if not rec_ids:
+        return jsonify({"error": "rec_id or rec_ids[] required"}), 400
+
+    db = get_db()
+    try:
+        rec = db.get_content_recommendation(rec_ids[0])
+        if not rec:
+            return jsonify({"error": "Recommendation not found"}), 404
+
+        customer_id = rec["customer_id"]
+        creds = db.get_squarespace_credentials(customer_id)
+        if not creds:
+            return jsonify({"error": "No Squarespace credentials configured."}), 400
+
+        from geo_agent.publishers.squarespace_content import SquarespaceContentPublisher
+        import asyncio
+
+        publisher = SquarespaceContentPublisher(
+            db=db,
+            customer_id=customer_id,
+            email=creds["email"],
+            password_encrypted=creds["password_encrypted"],
+            site_url=creds["site_url"],
+        )
+        try:
+            results = asyncio.run(publisher.publish_batch(rec_ids))
+            success_count = sum(1 for r in results if r["ok"])
+            return jsonify({
+                "ok": success_count > 0,
+                "published": success_count,
+                "total": len(rec_ids),
+                "results": results,
+            })
+        finally:
+            asyncio.run(publisher.close())
+    finally:
+        db.close()
+
+
+@app.route("/api/squarespace/credentials", methods=["POST"])
+@login_required
+def api_squarespace_credentials():
+    """Save encrypted Squarespace login credentials."""
+    data = request.get_json()
+    customer_id = data.get("customer_id", "")
+    email = data.get("email", "")
+    password = data.get("password", "")
+    site_url = data.get("site_url", "")
+
+    if not all([customer_id, email, password, site_url]):
+        return jsonify({"error": "customer_id, email, password, site_url required"}), 400
+
+    from cryptography.fernet import Fernet
+    encryption_key = os.environ.get("PRACTICERANK_ENCRYPTION_KEY", "")
+    if not encryption_key:
+        return jsonify({"error": "PRACTICERANK_ENCRYPTION_KEY not set"}), 500
+
+    f = Fernet(encryption_key.encode() if isinstance(encryption_key, str) else encryption_key)
+    password_encrypted = f.encrypt(password.encode()).decode()
+    totp_encrypted = ""
+    if data.get("totp_secret"):
+        totp_encrypted = f.encrypt(data["totp_secret"].encode()).decode()
+
+    db = get_db()
+    try:
+        db.save_squarespace_credentials(
+            customer_id=customer_id,
+            email=email,
+            password_encrypted=password_encrypted,
+            site_url=site_url,
+            totp_secret_encrypted=totp_encrypted,
+        )
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
 @app.route("/api/content/generate", methods=["POST"])
 @login_required
 def api_content_generate():
@@ -2156,6 +3097,88 @@ def api_content_generate():
         except Exception as e:
             logger.error(f"Content generation failed for {customer_id}: {e}")
             return jsonify({"error": f"Generation failed: {type(e).__name__}: {str(e)[:200]}"}), 500
+    finally:
+        db.close()
+
+
+# --- Public Content API (called by client-side blog template) ---
+
+@app.route("/api/content/<customer_id>/by-slug/<slug>")
+def api_content_by_slug(customer_id, slug):
+    """Serve published blog content by slug. Supports ?locale=xx for translations.
+    Falls back to English if translation not available."""
+    from geo_agent.publishers.webflow_content import slugify
+
+    locale = request.args.get("locale", "en").strip().lower()
+    db = get_db()
+    try:
+        recs = db.get_content_recommendations(customer_id)
+        for rec in recs:
+            if rec["status"] == "published" and slugify(rec["title"]) == slug:
+                title = rec["title"]
+                description = rec.get("description", "")
+                html_snippet = rec["html_snippet"]
+
+                # If non-English locale requested, try to get translation
+                if locale != "en":
+                    translation = db.get_content_translation(rec["id"], locale)
+                    if translation:
+                        title = translation["title"]
+                        description = translation.get("description", description)
+                        html_snippet = translation.get("html_snippet", html_snippet)
+
+                resp = jsonify({
+                    "title": title,
+                    "slug": slug,
+                    "html_snippet": html_snippet,
+                    "category": rec.get("category", ""),
+                    "description": description,
+                    "author": "PracticeRank",
+                    "published_on": rec.get("published_at") or rec.get("created_at", ""),
+                    "locale": locale if locale != "en" and db.get_content_translation(rec["id"], locale) else "en",
+                })
+                resp.headers["Access-Control-Allow-Origin"] = "*"
+                return resp
+        resp = jsonify({"error": "Not found"})
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        return resp, 404
+    finally:
+        db.close()
+
+
+@app.route("/api/content/<customer_id>/blog-posts")
+def api_blog_list(customer_id):
+    """List published blog posts. Supports ?locale=xx for translations.
+    Falls back to English if translation not available."""
+    from geo_agent.publishers.webflow_content import slugify
+
+    locale = request.args.get("locale", "en").strip().lower()
+    db = get_db()
+    try:
+        recs = db.get_content_recommendations(customer_id)
+        posts = []
+        for rec in recs:
+            if rec["status"] == "published" and rec["rec_type"] in ("blog_post", "new_page"):
+                title = rec["title"]
+                description = rec.get("description", "")
+
+                # If non-English locale requested, try to get translation
+                if locale != "en":
+                    translation = db.get_content_translation(rec["id"], locale)
+                    if translation:
+                        title = translation["title"]
+                        description = translation.get("description", description)
+
+                posts.append({
+                    "title": title,
+                    "slug": slugify(rec["title"]),  # slug always based on English title
+                    "category": rec.get("category", ""),
+                    "description": description,
+                    "published_on": rec.get("published_at") or rec.get("created_at", ""),
+                })
+        resp = jsonify(posts)
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        return resp
     finally:
         db.close()
 

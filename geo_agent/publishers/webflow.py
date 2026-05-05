@@ -189,6 +189,25 @@ class WebflowPublisher:
             logger.error(f"Failed to create collection {display_name}: {e}")
             return None
 
+    def create_collection_field(self, collection_id: str, field_def: dict) -> dict | None:
+        """Create a field on a CMS collection.
+
+        field_def should have: displayName, slug, type, and optionally isRequired, helpText.
+        Webflow field types: PlainText, RichText, Number, DateTime, Switch, Link, etc.
+        """
+        try:
+            resp = self.client.post(
+                f"/collections/{collection_id}/fields",
+                json=field_def,
+            )
+            resp.raise_for_status()
+            field = resp.json()
+            logger.info(f"Created field: {field_def['displayName']} on collection {collection_id}")
+            return field
+        except Exception as e:
+            logger.error(f"Failed to create field {field_def.get('displayName', '?')}: {e}")
+            return None
+
     def list_collection_items(self, collection_id: str) -> list[dict]:
         """List all items in a collection."""
         items = []
@@ -298,6 +317,60 @@ class WebflowPublisher:
         except Exception as e:
             logger.error(f"Failed to update page SEO {page_id}: {e}")
             return False
+
+    def find_cms_template_page(self, collection_id: str) -> dict | None:
+        """Find the CMS template page for a given collection."""
+        for page in self.list_pages():
+            if page.get("collectionId") == collection_id:
+                return page
+        return None
+
+    def apply_custom_code_to_page(self, page_id: str, script_id: str, version: str, location: str = "header") -> bool:
+        """Apply a registered script to a specific page."""
+        try:
+            resp = self.client.put(
+                f"/pages/{page_id}/custom_code",
+                json={
+                    "scripts": [{
+                        "id": script_id,
+                        "location": location,
+                        "version": version,
+                    }]
+                },
+            )
+            resp.raise_for_status()
+            logger.info(f"Applied script {script_id} v{version} to page {page_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to apply custom code to page {page_id}: {e}")
+            return False
+
+    def register_inline_script(self, display_name: str, source_code: str, version: str) -> str | None:
+        """Register an inline script on the site. Returns the registered script ID."""
+        try:
+            resp = self.client.post(
+                f"/sites/{self.site_id}/registered_scripts/inline",
+                json={
+                    "sourceCode": source_code,
+                    "displayName": display_name,
+                    "version": version,
+                    "canCopy": False,
+                },
+            )
+            resp.raise_for_status()
+            # Webflow generates the script ID from the display name
+            # Re-fetch to get the actual registered ID
+            scripts_resp = self.client.get(f"/sites/{self.site_id}/registered_scripts")
+            scripts_resp.raise_for_status()
+            for s in scripts_resp.json().get("registeredScripts", []):
+                if s["version"] == version and s["displayName"] == display_name:
+                    logger.info(f"Registered script '{display_name}' v{version} as {s['id']}")
+                    return s["id"]
+            logger.warning(f"Script registered but ID not found in list")
+            return None
+        except Exception as e:
+            logger.error(f"Failed to register script '{display_name}': {e}")
+            return None
 
     def close(self):
         self.client.close()

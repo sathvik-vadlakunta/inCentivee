@@ -80,19 +80,27 @@ more visible in AI assistant responses (ChatGPT, Claude, Perplexity, Google AI O
 
 Key GEO principles that MUST guide your output:
 1. TLDR-first: Lead every section with a direct answer in the first 40-60 words
-2. Statistics: Include a real, cited statistic every 150-200 words (+22% AI citation lift)
-3. Expert quotes: Attribute statements to the provider by name and credentials (+37-40% citation lift)
+2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
+3. Authoritative voice: Write in the practice's voice ("Our team...", "At [Practice Name]...") WITHOUT fabricating quotes
 4. FAQ format: The most-cited content structure by AI systems
 5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
 6. Structured data: Schema-ready content with clear headings and semantic HTML
+
+CRITICAL — NEVER FABRICATE:
+- Do NOT generate fake quotes attributed to real people (providers, staff, anyone)
+- Do NOT invent statistics, percentages, patient counts, success rates, or satisfaction scores
+- Do NOT attribute statements to providers unless the exact quote is provided in "Verified Quotes" below
+- ONLY use statistics from the provided research list with their exact citations
+- If no verified quotes are provided, do NOT use <blockquote> with personal attribution at all
+- You MAY write content in the practice's authoritative voice WITHOUT quoting specific individuals
 
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
 - Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
-- Every blog post must have at least 3 expert quotes and 4 statistics
+- Every blog post must have at least 4 statistics from the provided research list
 - Every FAQ must have a direct answer as the first sentence
-- Always mention the practice name, city, and at least one provider by name
+- Always mention the practice name and city
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
 """,
@@ -106,11 +114,19 @@ This is B2B content targeting dental labs, clinics, DSOs, and industry professio
 
 Key GEO principles that MUST guide your output:
 1. TLDR-first: Lead every section with a direct answer in the first 40-60 words
-2. Statistics: Include real, cited industry statistics every 150-200 words (+22% AI citation lift)
-3. Expert quotes: Attribute statements to company leadership by name and title (+37-40% citation lift)
+2. Statistics: ONLY use statistics from the "Available Industry Statistics" list provided — do NOT invent numbers
+3. Thought leadership: Write in the company's authoritative voice WITHOUT fabricating quotes from individuals
 4. FAQ format: The most-cited content structure by AI systems
 5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
-6. Thought leadership: Position the company as an industry authority without revealing proprietary technology details
+6. Industry authority: Position the company as an expert without revealing proprietary technology details
+
+CRITICAL — NEVER FABRICATE:
+- Do NOT generate fake quotes attributed to real people (CEO, CTO, any team member)
+- Do NOT invent statistics, percentages, performance metrics, or satisfaction scores
+- Do NOT attribute statements to leadership unless the exact quote is provided in "Verified Quotes" below
+- ONLY use statistics from the provided industry statistics list with their exact citations
+- If no verified quotes are provided, do NOT use <blockquote> with personal attribution at all
+- You MAY write content in the company's authoritative voice WITHOUT quoting specific individuals
 
 CRITICAL rules for tech companies:
 - NEVER describe internal AI architecture, training data, model details, or pipeline specifics
@@ -118,13 +134,12 @@ CRITICAL rules for tech companies:
 - Focus on PROBLEMS the industry faces and the OUTCOMES the product delivers, not HOW it works internally
 - Use industry pain points (bad scans, designer shortage, remake costs, incomplete prescriptions) as hooks
 - Reference market growth and digital adoption trends
-- All statistics MUST be real and verifiable -- do NOT fabricate metrics
 
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
 - Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
-- Always mention the company name and key team members by name and title
+- Always mention the company name
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
 """,
@@ -289,6 +304,16 @@ def _build_user_prompt(
     providers_str = ', '.join(f'{p.name} ({p.credentials})' for p in customer.providers) if customer.providers else "N/A"
     specialties_str = ', '.join(customer.specialties) if customer.specialties else "N/A"
 
+    # Get verified quotes if available
+    verified_quotes = getattr(customer, "verified_quotes", None) or []
+    verified_quotes_str = ""
+    if verified_quotes:
+        verified_quotes_str = "\n## Verified Quotes (ONLY use these exact quotes — do NOT invent others)\n"
+        for q in verified_quotes:
+            verified_quotes_str += f'- "{q["quote"]}" — {q["attribution"]}\n'
+    else:
+        verified_quotes_str = "\n## Verified Quotes\nNONE PROVIDED. Do NOT generate any quotes attributed to specific people.\n"
+
     if business_type == "technology":
         return f"""\
 Analyze this dental technology company's website and generate specific content recommendations
@@ -305,15 +330,16 @@ dental labs, clinics, and industry professionals, NOT patients.
 ## Current Pages ({len(page_summaries)} total)
 {chr(10).join(page_summaries[:20])}
 
-## Available Industry Statistics (use these for citations — do NOT fabricate stats)
+## Available Industry Statistics (ONLY use these — do NOT fabricate any numbers or metrics)
 {json.dumps(relevant_stats, indent=2)}
+{verified_quotes_str}
 {existing_summary}
 
 ## What I Need
 
 Return a JSON array of content recommendations. Each item must have:
 
-1. **rec_type**: One of: "blog_post", "faq_update", "expert_quote", "stat_injection", "freshness_update", "new_page"
+1. **rec_type**: One of: "blog_post", "faq_update", "stat_injection", "freshness_update", "new_page"
 2. **target_page**: The URL of the page to update, or "new" for new pages
 3. **title**: Human-readable title
 4. **description**: What to change and why (1-2 sentences)
@@ -325,16 +351,18 @@ Return a JSON array of content recommendations. Each item must have:
 CRITICAL: Do NOT reveal proprietary technology details, AI model architecture, training data, \
 or internal system design. Focus on industry problems and product outcomes.
 
-Generate exactly 8-12 recommendations covering:
+CRITICAL: Do NOT fabricate quotes, statistics, performance metrics, or satisfaction rates. \
+Only use statistics from the "Available Industry Statistics" section above. \
+Only use quotes from the "Verified Quotes" section above. If none are provided, do NOT quote anyone.
+
+Generate exactly 8-10 recommendations covering:
 - 2-3 blog posts (full HTML articles, 800-1200 words each, thought leadership with industry stats)
 - 2-3 FAQ updates (product/company FAQs targeting what labs and clinics ask)
-- 2-3 expert quote injections (blockquotes from leadership about industry trends)
-- 1-2 statistic injections (data-backed market/industry claims with real citations)
+- 2-3 statistic injections (data-backed market/industry claims using ONLY the provided statistics)
 - 1-2 freshness updates (update existing content with current year references)
 
 For blog posts, generate the COMPLETE article HTML, not just an outline.
 For FAQ updates, generate complete FAQ HTML with schema.org markup.
-For expert quotes, generate ready-to-paste <blockquote> HTML.
 For stat injections, generate a <p> or <div> with the statistic and citation.
 For freshness updates, generate the updated paragraph/section with current date.
 
@@ -357,15 +385,16 @@ that will boost their visibility in AI search results.
 ## Current Pages ({len(page_summaries)} total)
 {chr(10).join(page_summaries[:20])}
 
-## Available Research Statistics (use these for citations)
+## Available Research Statistics (ONLY use these — do NOT fabricate any numbers or metrics)
 {json.dumps(relevant_stats, indent=2)}
+{verified_quotes_str}
 {existing_summary}
 
 ## What I Need
 
 Return a JSON array of content recommendations. Each item must have:
 
-1. **rec_type**: One of: "blog_post", "faq_update", "expert_quote", "stat_injection", "freshness_update", "new_page"
+1. **rec_type**: One of: "blog_post", "faq_update", "stat_injection", "freshness_update", "new_page"
 2. **target_page**: The URL of the page to update, or "new" for new pages
 3. **title**: Human-readable title
 4. **description**: What to change and why (1-2 sentences)
@@ -374,16 +403,19 @@ Return a JSON array of content recommendations. Each item must have:
 7. **category**: Topic area (e.g., "implants", "cosmetic", "general", "emergency")
 8. **ai_impact_reason**: Why this specific change will improve AI search visibility
 
-Generate exactly 8-12 recommendations covering:
-- 2-3 blog post ideas (full HTML articles, 800-1200 words each, with expert quotes and stats)
+CRITICAL: Do NOT fabricate quotes, statistics, patient counts, success rates, or satisfaction scores. \
+Only use statistics from the "Available Research Statistics" section above. \
+Only use quotes from the "Verified Quotes" section above. If none are provided, do NOT quote anyone. \
+Write in the practice's authoritative voice instead.
+
+Generate exactly 8-10 recommendations covering:
+- 2-3 blog posts (full HTML articles, 800-1200 words each, using provided stats)
 - 2-3 FAQ updates for existing service pages (new Q&A pairs with schema markup)
-- 2-3 expert quote injections (blockquotes with provider attribution for existing pages)
-- 1-2 statistic injections (data-backed claims with citations for existing pages)
-- 1-2 freshness updates (update existing content with current year references, new data)
+- 2-3 statistic injections (data-backed claims using ONLY the provided statistics with their citations)
+- 1-2 freshness updates (update existing content with current year references)
 
 For blog posts, generate the COMPLETE article HTML, not just an outline.
 For FAQ updates, generate complete FAQ HTML with schema.org markup.
-For expert quotes, generate ready-to-paste <blockquote> HTML.
 For stat injections, generate a <p> or <div> with the statistic and citation.
 For freshness updates, generate the updated paragraph/section with current date.
 
@@ -430,26 +462,42 @@ def _grade_recommendations(
 
     Checks for:
     - Competitor names in content (remove them)
-    - Practice name and city mentioned
+    - Fabricated quotes (blockquotes attributing to people without verified quotes)
     - HTML validity (has actual tags)
     - Minimum content length for blog posts
     """
+    import re
+
     competitor_names = {c.lower() for c in customer.competitors}
+    verified_quotes = getattr(customer, "verified_quotes", None) or []
+    verified_texts = {q["quote"].lower().strip()[:50] for q in verified_quotes}
     graded = []
 
     for rec in recs:
         html = rec.html_snippet.lower()
 
         # Check for competitor mentions
-        has_competitor = False
         for comp in competitor_names:
             if comp in html:
-                has_competitor = True
-                # Scrub the competitor name
-                import re
                 rec.html_snippet = re.sub(
                     re.escape(comp), customer.name, rec.html_snippet, flags=re.IGNORECASE
                 )
+
+        # Strip fabricated quotes if no verified quotes are provided
+        if not verified_quotes and "<blockquote" in html:
+            # Remove blockquotes that attribute to specific people
+            rec.html_snippet = re.sub(
+                r'<blockquote[^>]*>.*?</blockquote>',
+                '',
+                rec.html_snippet,
+                flags=re.IGNORECASE | re.DOTALL,
+            )
+            logger.warning(f"Stripped unverified blockquotes from rec '{rec.title}'")
+
+        # Skip expert_quote rec type entirely if no verified quotes
+        if rec.rec_type == "expert_quote" and not verified_quotes:
+            logger.warning(f"Skipping expert_quote rec '{rec.title}' — no verified quotes available")
+            continue
 
         # Blog posts should be substantial
         if rec.rec_type == "blog_post" and len(rec.html_snippet) < 500:

@@ -7,6 +7,7 @@ Supports:
 
 from __future__ import annotations
 
+import html as html_lib
 import logging
 import re
 from dataclasses import dataclass
@@ -37,12 +38,74 @@ def _clean_html(html: str) -> str:
     return text
 
 
+# Pages that should never appear in llms.txt
+EXCLUDED_SLUGS = {
+    "/cart", "/checkout", "/search", "/404", "/password",
+    "/login", "/register", "/signup", "/account", "/thank-you",
+    "/confirmation", "/unsubscribe", "/privacy-policy", "/terms",
+    "/terms-of-service", "/cookie-policy",
+}
+
+
+def is_excluded_page(slug: str) -> bool:
+    """Check if a page slug should be excluded from llms.txt output."""
+    normalized = "/" + slug.strip("/").lower() if slug.strip("/") else "/"
+    return normalized in EXCLUDED_SLUGS
+
+
+def clean_page_content(raw_text: str) -> str:
+    """Strip nav/header/footer boilerplate from page text content.
+
+    The raw text from _clean_html still contains navigation menus, footer links,
+    copyright notices, etc. This function strips common boilerplate patterns.
+    """
+    text = raw_text
+
+    # Remove common nav patterns (e.g. "Home Services About Contact Blog")
+    # These appear as space-separated menu items at the start
+    text = re.sub(
+        r"^(Home\s+)?(Services?\s+)?(About\s+)?(Contact\s+)?(Blog\s+)?(FAQ\s+)?(Reviews?\s+)?"
+        r"(Patient\s+)?(Insurance\s+)?(Locations?\s+)?(Schedule\s+)?(New Patients?\s+)?",
+        "", text, count=1, flags=re.IGNORECASE
+    ).strip()
+
+    # Remove footer boilerplate patterns
+    footer_patterns = [
+        r"©\s*\d{4}.*$",  # © 2024 Practice Name...
+        r"Copyright\s+\d{4}.*$",
+        r"All\s+[Rr]ights\s+[Rr]eserved.*$",
+        r"Privacy\s+Policy\s+Terms.*$",
+        r"Powered\s+by\s+\w+.*$",
+        r"Website\s+by\s+\w+.*$",
+        r"Follow\s+[Uu]s\s+(on\s+)?(Facebook|Instagram|Twitter|LinkedIn|YouTube).*$",
+    ]
+    for pattern in footer_patterns:
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE).strip()
+
+    # Decode HTML entities
+    text = html_lib.unescape(text)
+
+    return text
+
+
+def normalize_url(url: str) -> str:
+    """Normalize a URL for deduplication (strip trailing slash, fragments, query)."""
+    parsed = urlparse(url)
+    path = parsed.path.rstrip("/") or "/"
+    return f"{parsed.scheme}://{parsed.hostname}{path}"
+
+
 def _guess_category(slug: str, title: str) -> str:
     """Guess page category from slug and title for organizing llms.txt."""
     slug_lower = slug.lower()
     title_lower = title.lower()
     combined = f"{slug_lower} {title_lower}"
 
+    # Check about BEFORE services — pages like "About Our Cosmetic Dentistry Team"
+    # should be categorized as about, not service
+    if any(kw in combined for kw in ["about", "team", "doctor", "dr-", "provider", "staff",
+                                      "career"]):
+        return "about"
     if any(kw in combined for kw in ["service", "implant", "cosmetic", "whitening",
                                       "crown", "veneer", "invisalign", "orthodont",
                                       "cleaning", "filling", "root canal", "extraction",
@@ -51,9 +114,6 @@ def _guess_category(slug: str, title: str) -> str:
                                       "integration", "api", "pricing", "demo",
                                       "case-study", "partner"]):
         return "service"
-    if any(kw in combined for kw in ["about", "team", "doctor", "dr-", "provider", "staff",
-                                      "career"]):
-        return "about"
     if any(kw in combined for kw in ["contact", "location", "direction", "appointment", "schedule"]):
         return "contact"
     if any(kw in combined for kw in ["review", "testimonial"]):
@@ -105,15 +165,25 @@ class WebflowCrawler:
             for page in data.get("pages", []):
                 page_id = page["id"]
                 slug = page.get("slug", "")
-                title = page.get("title", slug)
+                title = html_lib.unescape(page.get("title", slug))
+
+                # Skip excluded pages
+                if is_excluded_page(slug):
+                    logger.debug(f"Skipping excluded page: {slug}")
+                    continue
 
                 # Fetch full page content
                 detail = self._get_page_detail(page_id)
                 html = detail.get("body", "") or ""
-                content = _clean_html(html)
+                raw_content = _clean_html(html)
 
-                if not content or len(content) < 50:
+                if not raw_content or len(raw_content) < 50:
                     logger.debug(f"Skipping thin page: {slug}")
+                    continue
+
+                content = clean_page_content(raw_content)
+                if not content or len(content) < 50:
+                    logger.debug(f"Skipping thin page after cleaning: {slug}")
                     continue
 
                 url = f"https://{self.domain}/{slug}" if slug else f"https://{self.domain}/"
@@ -248,6 +318,10 @@ class GenericCrawler:
 
     def _fetch_page(self, url: str, slug: str) -> PageData | None:
         """Fetch and parse a single page."""
+        # Skip excluded pages
+        if is_excluded_page(slug):
+            return None
+
         try:
             resp = self.client.get(url)
             if resp.status_code != 200:
@@ -261,13 +335,19 @@ class GenericCrawler:
         except Exception:
             return None
 
-        content = _clean_html(html)
+        raw_content = _clean_html(html)
+        if not raw_content or len(raw_content) < 50:
+            return None
+
+        # Clean boilerplate from content
+        content = clean_page_content(raw_content)
         if not content or len(content) < 50:
             return None
 
-        # Extract title from HTML
+        # Extract title from HTML and decode entities
         title_match = re.search(r"<title[^>]*>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
         title = _clean_html(title_match.group(1)).strip() if title_match else slug.strip("/").replace("-", " ").title()
+        title = html_lib.unescape(title)
 
         # Normalize slug
         slug = slug.rstrip("/") or "/"

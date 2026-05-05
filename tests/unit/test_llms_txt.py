@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from geo_agent.generators.llms_txt import generate_llms_txt, generate_llms_full_txt
+from geo_agent.config import Customer, Provider
+from geo_agent.crawler import PageData
+from geo_agent.generators.llms_txt import (
+    generate_llms_txt, generate_llms_full_txt,
+    _extract_description, _dedup_pages, _get_specialties, _extract_faqs_from_pages,
+)
 
 
 class TestGenerateLlmsTxt:
@@ -117,3 +122,122 @@ class TestGenerateLlmsFullTxt:
     def test_blockquote_header(self, sample_customer, sample_pages):
         result = generate_llms_full_txt(sample_customer, sample_pages)
         assert "> Complete content from Hilltop Family Dental" in result
+
+
+class TestExtractDescription:
+    def test_extracts_first_sentence(self):
+        content = "Dental implants are the gold standard for replacing missing teeth. They provide a permanent solution."
+        desc = _extract_description(content)
+        assert "gold standard" in desc
+
+    def test_skips_short_fragments(self):
+        content = "Home. Dental implants are the gold standard for replacing teeth."
+        desc = _extract_description(content)
+        assert "gold standard" in desc
+
+    def test_truncates_long_sentence(self):
+        content = "This is a very long sentence about dental implants that goes on and on " * 5
+        desc = _extract_description(content, max_len=120)
+        assert len(desc) <= 140  # with word boundary slack
+        assert desc.endswith("...")
+
+    def test_empty_content(self):
+        assert _extract_description("") == ""
+
+    def test_decodes_html_entities(self):
+        content = "Smith &amp; Associates provide dental implants and cosmetic procedures."
+        desc = _extract_description(content)
+        assert "&amp;" not in desc
+        assert "Smith & Associates" in desc
+
+
+class TestDeduplication:
+    def test_dedup_trailing_slash(self):
+        pages = [
+            PageData(id="1", url="https://example.com/about", title="About", content="content", category="about", slug="about", html=""),
+            PageData(id="2", url="https://example.com/about/", title="About", content="content", category="about", slug="about", html=""),
+        ]
+        result = _dedup_pages(pages)
+        assert len(result) == 1
+
+    def test_keeps_unique_pages(self):
+        pages = [
+            PageData(id="1", url="https://example.com/about", title="About", content="c1", category="about", slug="about", html=""),
+            PageData(id="2", url="https://example.com/contact", title="Contact", content="c2", category="contact", slug="contact", html=""),
+        ]
+        result = _dedup_pages(pages)
+        assert len(result) == 2
+
+
+class TestSpecialtiesFallback:
+    def test_uses_customer_specialties(self, sample_customer):
+        result = _get_specialties(sample_customer)
+        assert "General Dentistry" in result
+
+    def test_falls_back_to_provider_specialties(self):
+        customer = Customer(
+            id="test", name="Test", domain="test.com", city="Austin", state="TX",
+            specialties=[],
+            providers=[
+                Provider(name="Dr. A", credentials="DDS", specialties=["Implants", "Cosmetic"]),
+                Provider(name="Dr. B", credentials="DMD", specialties=["Cosmetic", "Ortho"]),
+            ],
+        )
+        result = _get_specialties(customer)
+        assert "Implants" in result
+        assert "Cosmetic" in result
+        assert "Ortho" in result
+        # No duplicates
+        assert result.count("Cosmetic") == 1
+
+    def test_empty_when_no_specialties_anywhere(self):
+        customer = Customer(
+            id="test", name="Test", domain="test.com", city="Austin", state="TX",
+            specialties=[], providers=[],
+        )
+        assert _get_specialties(customer) == ""
+
+
+class TestFaqEmbedding:
+    def test_extracts_faqs_from_html(self):
+        pages = [
+            PageData(
+                id="faq-1", url="https://example.com/faq", title="FAQ",
+                content="FAQ content here",
+                category="faq", slug="faq",
+                html='<h3>How much do implants cost?</h3><p>Single implants start at $3,500 with financing available.</p>'
+                     '<h3>Does it hurt?</h3><p>Most patients report minimal discomfort during the procedure.</p>',
+            ),
+        ]
+        faqs = _extract_faqs_from_pages(pages)
+        assert len(faqs) == 2
+        assert "cost" in faqs[0][0].lower()
+
+    def test_faq_section_in_llms_txt(self, sample_customer):
+        pages = [
+            PageData(
+                id="faq-1", url="https://hilltopdental.com/faq", title="FAQ",
+                content="Frequently asked questions about dental care.",
+                category="faq", slug="faq",
+                html='<h3>How often should I visit the dentist?</h3><p>We recommend visiting the dentist every six months for regular checkups and cleaning.</p>',
+            ),
+        ]
+        result = generate_llms_txt(sample_customer, pages)
+        assert "## Frequently Asked Questions" in result
+        assert "How often should I visit" in result
+
+    def test_no_faq_section_when_none(self, sample_customer, sample_pages):
+        result = generate_llms_txt(sample_customer, sample_pages)
+        # No FAQ pages in sample_pages, so no FAQ section
+        assert "## Frequently Asked Questions" not in result
+
+
+class TestPageExclusion:
+    def test_excluded_pages_not_in_output(self, sample_customer):
+        from geo_agent.crawler import is_excluded_page
+        assert is_excluded_page("/cart") is True
+        assert is_excluded_page("/checkout") is True
+        assert is_excluded_page("/search") is True
+        assert is_excluded_page("/404") is True
+        assert is_excluded_page("/services") is False
+        assert is_excluded_page("/about") is False

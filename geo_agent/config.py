@@ -41,7 +41,7 @@ class Customer:
     insurance_accepted: list[str] = field(default_factory=list)
     hours: str = ""
     emergency_available: bool = False
-    business_type: str = "practice"  # practice/technology/product/service
+    verified_quotes: list[dict] = field(default_factory=list)  # [{"quote": "...", "attribution": "Name, Title"}]
 
     @classmethod
     def from_dict(cls, data: dict) -> Customer:

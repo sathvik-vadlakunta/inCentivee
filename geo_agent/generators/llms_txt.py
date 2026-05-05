@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import html as html_lib
+import re
+from urllib.parse import urlparse
+
 from geo_agent.config import Customer
-from geo_agent.crawler import PageData
+from geo_agent.crawler import PageData, clean_page_content, normalize_url
 from geo_agent.google_places import CONFIDENCE_FOR_REVIEWS, VerifiedBusinessData, is_trusted
 
 
@@ -23,7 +27,7 @@ def _h1_for_type(customer: Customer) -> str:
 def _blockquote_for_type(customer: Customer) -> str:
     """Return the blockquote line based on business_type."""
     bt = getattr(customer, "business_type", "practice")
-    specialties_str = ", ".join(customer.specialties) if customer.specialties else ""
+    specialties_str = _get_specialties(customer)
 
     if bt == "practice":
         emergency_note = " Same-day emergency appointments are available." if customer.emergency_available else ""
@@ -67,6 +71,109 @@ def _service_section_label(customer: Customer) -> str:
     return "Services"
 
 
+def _get_specialties(customer: Customer) -> str:
+    """Get specialties string, falling back to provider specialties if empty."""
+    if customer.specialties:
+        return ", ".join(customer.specialties)
+
+    # Derive from providers if customer-level specialties are empty
+    all_specs = []
+    for p in customer.providers:
+        for s in (p.specialties or []):
+            if s.lower() not in [x.lower() for x in all_specs]:
+                all_specs.append(s)
+
+    return ", ".join(all_specs) if all_specs else ""
+
+
+def _extract_description(content: str, max_len: int = 120) -> str:
+    """Extract the first meaningful sentence from page content for link descriptions.
+
+    Skips nav cruft and finds the first real sentence.
+    """
+    if not content:
+        return ""
+
+    # Clean the content first
+    text = clean_page_content(content)
+    text = html_lib.unescape(text)
+
+    if not text:
+        return ""
+
+    # Split into sentences and find the first one with substance
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    for sentence in sentences:
+        sentence = sentence.strip()
+        # Skip very short fragments (likely nav remnants)
+        if len(sentence) < 20:
+            continue
+        # Skip sentences that look like nav items (all-caps, no periods)
+        if sentence.isupper() and len(sentence) < 50:
+            continue
+
+        # Truncate to max_len on word boundary
+        if len(sentence) > max_len:
+            sentence = sentence[:max_len].rsplit(" ", 1)[0] + "..."
+        return sentence
+
+    # Fallback: just truncate the cleaned text
+    if len(text) > max_len:
+        return text[:max_len].rsplit(" ", 1)[0] + "..."
+    return text
+
+
+def _dedup_pages(pages: list[PageData]) -> list[PageData]:
+    """Remove duplicate pages based on normalized URL."""
+    seen_urls: set[str] = set()
+    deduped: list[PageData] = []
+    for page in pages:
+        norm = normalize_url(page.url)
+        if norm in seen_urls:
+            continue
+        seen_urls.add(norm)
+        deduped.append(page)
+    return deduped
+
+
+def _extract_faqs_from_pages(pages: list[PageData]) -> list[tuple[str, str]]:
+    """Extract Q&A pairs from FAQ pages for embedding in llms.txt.
+
+    Looks for common FAQ patterns in page content/HTML.
+    Returns list of (question, answer) tuples.
+    """
+    faqs = []
+    faq_pages = [p for p in pages if p.category == "faq"]
+
+    for page in faq_pages:
+        html = page.html or ""
+        # Pattern 1: <h3>Question?</h3> followed by <p>Answer</p>
+        for match in re.finditer(
+            r'<h[2-4][^>]*>(.*?)</h[2-4]>\s*<p>(.*?)</p>',
+            html, re.DOTALL | re.IGNORECASE
+        ):
+            q = re.sub(r'<[^>]+>', '', match.group(1)).strip()
+            a = re.sub(r'<[^>]+>', '', match.group(2)).strip()
+            if q and a and len(a) > 20:
+                faqs.append((html_lib.unescape(q), html_lib.unescape(a)))
+
+        # Pattern 2: FAQ schema (JSON-LD)
+        for match in re.finditer(r'"name"\s*:\s*"([^"]+)"[^}]*"text"\s*:\s*"([^"]+)"', html):
+            q, a = match.group(1).strip(), match.group(2).strip()
+            if q and a:
+                faqs.append((html_lib.unescape(q), html_lib.unescape(a)))
+
+    # Deduplicate by question text
+    seen = set()
+    unique = []
+    for q, a in faqs:
+        if q.lower() not in seen:
+            seen.add(q.lower())
+            unique.append((q, a))
+
+    return unique[:10]  # Cap at 10 FAQs
+
+
 def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: VerifiedBusinessData | None = None) -> str:
     """Generate the concise llms.txt file.
 
@@ -79,6 +186,9 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     """
     bt = getattr(customer, "business_type", "practice")
     is_practice = bt == "practice"
+
+    # Deduplicate pages
+    pages = _dedup_pages(pages)
 
     # Group pages by category
     by_category: dict[str, list[PageData]] = {}
@@ -129,10 +239,11 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     if service_pages:
         lines.append(f"## {_service_section_label(customer)}")
         for page in service_pages:
-            desc = page.content[:120].strip()
-            if len(page.content) > 120:
-                desc = desc.rsplit(" ", 1)[0] + "..."
-            lines.append(f"- [{page.title}]({page.url}): {desc}")
+            desc = _extract_description(page.content)
+            if desc:
+                lines.append(f"- [{page.title}]({page.url}): {desc}")
+            else:
+                lines.append(f"- [{page.title}]({page.url})")
         lines.append("")
 
     # About / Providers section
@@ -169,10 +280,27 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
                 lines.append(f"- [{page.title}]({page.url})")
             lines.append("")
 
-    # Optional section — blog, FAQ, misc
+    # FAQ section — embed top Q&A pairs inline
+    faq_pages = by_category.get("faq", [])
+    faqs = _extract_faqs_from_pages(pages)
+    if faq_pages or faqs:
+        lines.append("## Frequently Asked Questions")
+        for page in faq_pages:
+            lines.append(f"- [{page.title}]({page.url})")
+        if faqs:
+            lines.append("")
+            for q, a in faqs[:5]:  # Top 5 in llms.txt, keep it concise
+                lines.append(f"**Q: {q}**")
+                # Truncate long answers for the concise version
+                if len(a) > 200:
+                    a = a[:200].rsplit(" ", 1)[0] + "..."
+                lines.append(f"A: {a}")
+                lines.append("")
+        lines.append("")
+
+    # Optional section — blog, misc (FAQ now has its own section)
     optional_pages = (
         by_category.get("blog", [])
-        + by_category.get("faq", [])
         + by_category.get("page", [])
     )
     if optional_pages:
@@ -192,6 +320,10 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
     """
     bt = getattr(customer, "business_type", "practice")
     is_practice = bt == "practice"
+    specialties_str = _get_specialties(customer)
+
+    # Deduplicate pages
+    pages = _dedup_pages(pages)
 
     lines = []
 
@@ -199,7 +331,8 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
     lines.append("")
 
     if is_practice:
-        specialties_str = ", ".join(customer.specialties) if customer.specialties else "general and cosmetic dentistry"
+        if not specialties_str:
+            specialties_str = "general and cosmetic dentistry"
         blockquote_parts = [f"> Complete content from {customer.name} in {customer.city}, {customer.state}."]
         blockquote_parts.append(f"Offering {specialties_str}.")
         if customer.address:
@@ -208,7 +341,6 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
             blockquote_parts.append(f"Phone: {customer.phone}.")
         lines.append(" ".join(blockquote_parts))
     else:
-        specialties_str = ", ".join(customer.specialties) if customer.specialties else ""
         desc = specialties_str or "dental industry solutions"
         blockquote_parts = [f"> Complete content from {customer.name}."]
         blockquote_parts.append(f"Providing {desc}.")
@@ -256,7 +388,10 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
         for page in cat_pages:
             lines.append(f"### [{page.title}]({page.url})")
             lines.append("")
-            lines.append(page.content)
+            # Clean the content before including it
+            cleaned = clean_page_content(page.content)
+            cleaned = html_lib.unescape(cleaned)
+            lines.append(cleaned)
             lines.append("")
             lines.append("---")
             lines.append("")

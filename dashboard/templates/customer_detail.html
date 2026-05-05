@@ -317,7 +317,7 @@
                     <div style="padding: 0.3rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
                         <span>{% if fname.endswith('.html') %}🧩{% elif fname.endswith('.txt') %}📄{% else %}📋{% endif %} {{ fname }}</span>
                         {% if fname == 'schema.html' and approved %}
-                        <button class="btn btn-sm btn-outline" onclick="copySchemaCode(this)" style="font-size:0.7rem;">Copy for Webflow</button>
+                        <button class="btn btn-sm btn-outline" onclick="copySchemaCode(this)" style="font-size:0.7rem;">Copy Schema</button>
                         {% endif %}
                     </div>
                     {% endfor %}
@@ -327,23 +327,111 @@
                 <div style="margin-top: 0.75rem; padding: 0.75rem; background: #ecfdf5; border-radius: 6px; font-size: 0.8rem; color: #065f46;">
                     <strong>Webflow connected</strong> — Click "Publish to Webflow" to auto-push schema markup and publish the site.
                 </div>
+                {% elif customer.platform == 'squarespace' %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
+                    <strong>Manual steps (Squarespace):</strong>
+                    <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
+                        <li>Click "Copy Schema" above → In Squarespace go to <strong>Website → Developer Tools → Code Injection → Header</strong> → paste</li>
+                        <li>llms.txt and robots.txt will deploy automatically via Cloudflare Worker</li>
+                        <li>Click <strong>Publish</strong> to mark complete</li>
+                    </ol>
+                </div>
                 {% else %}
                 <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
                     <strong>Manual steps:</strong>
                     <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
-                        <li>Click "Copy for Webflow" above → paste into <strong>Site Settings → Custom Code → Head Code</strong></li>
+                        <li>Click "Copy Schema" above → paste into your site's <strong>Head Code / Custom Code</strong> section</li>
                         <li>llms.txt and robots.txt will deploy automatically via Cloudflare</li>
                         <li>Click <strong>Publish</strong> to mark complete</li>
                     </ol>
+                    {% if customer.platform == 'webflow' %}
                     <div style="margin-top: 0.5rem;">
                         Or <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}">connect Webflow</a> to auto-publish.
                     </div>
+                    {% endif %}
                 </div>
                 {% endif %}
                 {% endif %}
                 {% endif %}
                 {% if schema_content and approved %}
                 <textarea id="schema-code" style="display:none;">{{ schema_content }}</textarea>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- GEO Files Panel — always visible when published files exist -->
+            {% if geo_files %}
+            <div class="card" style="border-color: #6366f1;">
+                <div class="section-header">
+                    <h2 style="color: #6366f1;">GEO Files</h2>
+                    <form method="POST" action="{{ url_for('repush_worker', customer_id=customer.id) }}"
+                          onsubmit="return confirm('Re-push all GEO files to the Cloudflare Worker?')">
+                        <button type="submit" class="btn btn-sm" style="background:#6366f1;color:white;">Re-push to Worker</button>
+                    </form>
+                </div>
+
+                {% if worker_api_url %}
+                <div style="margin-top: 0.5rem;">
+                    {% for fname in geo_files %}
+                    <div style="padding: 0.35rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+                        <span>{% if fname.endswith('.html') %}🧩{% else %}📄{% endif %} {{ fname }}</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {% if fname == 'schema.html' %}
+                            <button class="btn btn-sm btn-outline" onclick="copyGeoSchema(this)" style="font-size:0.7rem;">Copy Schema</button>
+                            {% else %}
+                            <a href="{{ worker_api_url }}/geo/{{ customer.domain }}/{{ fname }}" target="_blank"
+                               style="font-size: 0.75rem; color: #6366f1;">Worker URL</a>
+                            <a href="https://{{ customer.domain }}/{{ fname }}" target="_blank"
+                               style="font-size: 0.75rem; color: var(--muted);">Live URL</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if customer.platform == 'squarespace' and 'schema.html' in geo_files %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f0fdf4; border-radius: 6px; font-size: 0.8rem; color: #166534;">
+                    <strong>Schema markup setup:</strong>
+                    <div style="margin-top: 0.3rem;">
+                        Click <b>"Copy Schema"</b> above → Go to Squarespace →
+                        <b>Website → Developer Tools → Code Injection → Header</b> → paste → <b>Save</b>
+                    </div>
+                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fefce8; border-radius: 4px; color: #854d0e; font-size: 0.75rem;">
+                        <strong>⚠️ Requires Business plan or higher.</strong> If you don't see "Code Injection" under Developer Tools,
+                        the site is on a Personal plan. Options:
+                        <br>• <b>Recommended:</b> Ask the client to upgrade to Business plan ($33/mo) — unlocks Code Injection site-wide
+                        <br>• <b>Workaround:</b> Add a Code Block on each page (page editor → + → Code → paste schema → uncheck "Display Source")
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if customer.platform == 'squarespace' %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eef2ff; border-radius: 6px; font-size: 0.8rem; color: #3730a3;">
+                    <strong>Squarespace redirect setup:</strong>
+                    <div style="margin-top: 0.5rem;">
+                        Go to <a href="https://www.squarespace.com/login" target="_blank">Squarespace</a> →
+                        <strong>Website → Developer Tools → URL Mappings</strong> and paste:
+                        <br><span style="color:#6b7280;font-size:0.72rem">(Older versions: Settings → Advanced → URL Mappings)</span>
+                    </div>
+                    <pre style="margin:0.5rem 0;padding:0.6rem;background:#1e1e1e;color:#d4d4d4;border-radius:6px;font-size:0.73rem;overflow-x:auto;cursor:pointer;user-select:all">/robots.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/robots.txt 301
+/llms.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/llms.txt 301
+/llms-full.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/llms-full.txt 301</pre>
+                    <div style="margin-top: 0.4rem;">
+                        <strong>Verify:</strong>
+                        <a href="https://{{ customer.domain }}/llms.txt" target="_blank">{{ customer.domain }}/llms.txt</a> •
+                        <a href="https://{{ customer.domain }}/robots.txt" target="_blank">robots.txt</a> •
+                        <a href="https://{{ customer.domain }}/llms-full.txt" target="_blank">llms-full.txt</a>
+                    </div>
+                </div>
+                {% elif customer.platform == 'webflow' and not webflow_connected %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eef2ff; border-radius: 6px; font-size: 0.8rem; color: #3730a3;">
+                    <strong>Webflow redirect setup:</strong> Go to <strong>Site Settings → Publishing → 301 Redirects</strong> and add redirects for
+                    <code>/llms.txt</code>, <code>/robots.txt</code>, and <code>/llms-full.txt</code> pointing to the Worker URLs above.
+                </div>
+                {% endif %}
+                {% if published_schema_content %}
+                <textarea id="geo-schema-code" style="display:none;">{{ published_schema_content }}</textarea>
                 {% endif %}
             </div>
             {% endif %}
@@ -429,6 +517,7 @@
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.35rem;">
                     <span style="font-weight: 600;">Overall Progress</span>
                     <span style="color: var(--muted);">{{ seo_done }}/{{ seo_tasks | length }} tasks ({{ seo_pct }}%)</span>
+                    <button class="btn btn-sm btn-outline" onclick="recheckSeo('{{ customer.id }}')" id="recheck-btn" style="font-size:0.7rem;margin-left:0.5rem;">Re-check Live Site</button>
                 </div>
                 <div style="width: 100%; height: 10px; background: var(--border); border-radius: 5px;">
                     <div style="width: {{ seo_pct }}%; height: 100%; background: {% if seo_pct >= 80 %}var(--success){% elif seo_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %}; border-radius: 5px; transition: width 0.3s;"></div>
@@ -459,19 +548,29 @@
             </div>
             {% for t in seo_tasks %}
                 {% if t.category == cat %}
-                <div class="todo-item {{ 'done' if t.done }}"
-                    {% if not t.auto is defined and t.auto %}
-                    hx-post="/api/checklist"
-                    hx-vals='{"customer_id":"{{ customer.id }}","task_key":"{{ t.key }}","completed":{{ 'false' if t.done else 'true' }}}'
-                    hx-target="closest .todo-item"
-                    hx-swap="outerHTML"
-                    hx-headers='{"Content-Type":"application/json"}'
-                    style="cursor:pointer;"
-                    {% else %}
-                    style="cursor:default;"
-                    {% endif %}>
-                    <div class="todo-check {{ 'checked' if t.done }}" title="{{ 'Auto-detected' if t.auto is defined and t.auto else 'Click to toggle' }}"></div>
-                    <span>{{ t.task }}{% if t.auto is defined and t.auto and t.done %} <span style="font-size:0.65rem; color:var(--success); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">auto</span>{% endif %}</span>
+                <div class="seo-task-wrapper">
+                    <div class="todo-item {{ 'done' if t.done }}"
+                        {% if not t.auto is defined and t.auto %}
+                        hx-post="/api/checklist"
+                        hx-vals='{"customer_id":"{{ customer.id }}","task_key":"{{ t.key }}","completed":{{ 'false' if t.done else 'true' }}}'
+                        hx-target="closest .todo-item"
+                        hx-swap="outerHTML"
+                        hx-headers='{"Content-Type":"application/json"}'
+                        style="cursor:pointer;"
+                        {% else %}
+                        style="cursor:default;"
+                        {% endif %}>
+                        <div class="todo-check {{ 'checked' if t.done }}" title="{{ 'Auto-detected' if t.auto is defined and t.auto else 'Click to toggle' }}"></div>
+                        <span>{{ t.task }}{% if t.auto is defined and t.auto and t.done %} <span style="font-size:0.65rem; color:var(--success); font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">auto</span>{% endif %}</span>
+                        {% if t.guide %}
+                        <span class="guide-toggle" onclick="event.stopPropagation(); this.closest('.seo-task-wrapper').querySelector('.guide-panel').toggleAttribute('hidden')" title="Step-by-step instructions">ℹ️</span>
+                        {% endif %}
+                    </div>
+                    {% if t.guide %}
+                    <div class="guide-panel" hidden>
+                        <div class="guide-content">{{ t.guide | safe }}</div>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endif %}
             {% endfor %}
@@ -492,6 +591,14 @@
             <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">
                 Generate Recommendations
             </button>
+            {% if content_recs %}
+            {% if customer.platform == 'webflow' and webflow_connected %}
+            <button class="btn btn-outline btn-sm" onclick="publishAllToWebflow('{{ customer.id }}')">Publish All to Webflow</button>
+            {% elif customer.platform == 'squarespace' and squarespace_connected %}
+            <button class="btn btn-outline btn-sm" onclick="pushAllToSquarespace('{{ customer.id }}')">Push All Drafts</button>
+            {% endif %}
+            <button class="btn btn-outline btn-sm" onclick="downloadAllContent('{{ customer.id }}')">Download All (DOCX)</button>
+            {% endif %}
             <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-outline btn-sm">View All</a>
         </div>
     </div>
@@ -511,7 +618,15 @@
                     <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="updateRecStatus('{{ rec.id }}', 'rejected', this)">Reject</button>
                     {% elif rec.status == 'approved' %}
                     <span class="badge badge-approved">Approved</span>
-                    <button class="btn btn-primary btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
+                    {% if rec.rec_type in ('blog_post', 'faq_update', 'new_page') %}
+                        {% if customer.platform == 'webflow' and webflow_connected %}
+                        <button class="btn btn-primary btn-sm" onclick="publishToWebflow('{{ rec.id }}', this)">Publish to Webflow</button>
+                        {% elif customer.platform == 'squarespace' and squarespace_connected %}
+                        <button class="btn btn-primary btn-sm" onclick="pushToSquarespace('{{ rec.id }}', this)">Push Draft to Squarespace</button>
+                        {% endif %}
+                    {% endif %}
+                    <button class="btn btn-outline btn-sm" onclick="downloadDocx('{{ rec.id }}')">Download DOCX</button>
+                    <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
                     {% elif rec.status == 'published' %}
                     <span class="badge badge-active">Published</span>
                     {% else %}
@@ -520,19 +635,35 @@
                     {% endif %}
                 </div>
             </div>
-            <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">{{ rec.title }}</h3>
+            <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">
+                {{ rec.title }}
+                {% if rec.webflow_item_id %}
+                <span style="display: inline-block; background: var(--primary); color: #fff; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;">Webflow</span>
+                {% elif rec.platform_draft_url %}
+                <span style="display: inline-block; background: #f97316; color: #fff; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;">Squarespace Draft</span>
+                {% endif %}
+            </h3>
             <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.35rem;">{{ rec.description }}</p>
+            {% if rec.publish_error %}
+            <p style="font-size: 0.8rem; color: var(--danger); margin-bottom: 0.35rem;">Publish Error: {{ rec.publish_error }}</p>
+            {% endif %}
             {% if rec.ai_impact_reason %}
             <p style="font-size: 0.8rem; color: var(--primary); margin-bottom: 0.5rem;">AI Impact: {{ rec.ai_impact_reason }}</p>
             {% endif %}
             {% if rec.target_page and rec.target_page != 'new' %}
             <span style="font-size: 0.75rem; color: var(--muted);">Target: {{ rec.target_page }}</span>
             {% endif %}
+
+            {% if rec.html_snippet %}
+            <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 1rem;">
+                <a href="{{ url_for('content_preview', customer_id=customer.id, rec_id=rec.id) }}" target="_blank" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 500;">Open Preview &rarr;</a>
+            </div>
             <details style="margin-top: 0.5rem;">
-                <summary style="font-size: 0.8rem; color: var(--primary); cursor: pointer;">View HTML Snippet</summary>
+                <summary style="font-size: 0.8rem; color: var(--muted); cursor: pointer;">View Raw HTML</summary>
                 <div style="margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ rec.html_snippet | e }}</div>
                 <button class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="copySnippet(this)">Copy HTML</button>
             </details>
+            {% endif %}
         </div>
         {% endfor %}
     </div>
@@ -643,6 +774,50 @@
     .email-body h1, .email-body h2, .email-body h3 { font-size: 14px; font-weight: 600; margin: 16px 0 8px 0; }
     .email-body hr { border: none; border-top: 1px solid #ddd; margin: 16px 0; }
     .email-body a { color: #2563eb; }
+    /* SEO task guide panels */
+    .seo-task-wrapper { position: relative; }
+    .guide-toggle {
+        display: inline-block;
+        margin-left: 0.4rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+        opacity: 0.6;
+        vertical-align: middle;
+    }
+    .guide-toggle:hover { opacity: 1; }
+    .guide-panel {
+        margin: 0.25rem 0 0.5rem 1.6rem;
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--primary);
+        border-radius: 6px;
+        font-size: 0.8rem;
+        line-height: 1.6;
+    }
+    .guide-panel[hidden] { display: none; }
+    .guide-content ol, .guide-content ul { margin: 0.3rem 0; padding-left: 1.4rem; }
+    .guide-content li { margin-bottom: 0.25rem; }
+    .guide-content code {
+        background: #e2e8f0;
+        padding: 1px 4px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        word-break: break-all;
+    }
+    .guide-content pre {
+        margin: 0.5rem 0;
+        padding: 0.5rem;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        overflow-x: auto;
+        white-space: pre-wrap;
+    }
+    .guide-content table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
+    .guide-content th, .guide-content td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.78rem; }
+    .guide-content a { color: var(--primary); }
 </style>
 
 <script>
@@ -715,6 +890,81 @@ function copySchemaCode(btn) {
     }
 }
 
+function recheckSeo(customerId) {
+    const btn = document.getElementById('recheck-btn');
+    btn.textContent = 'Checking...';
+    btn.disabled = true;
+    fetch('/api/seo-recheck/' + customerId, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                // Reload the page to show updated auto-detected status
+                window.location.reload();
+            } else {
+                alert(data.error || 'Re-check failed');
+                btn.textContent = 'Re-check Live Site';
+                btn.disabled = false;
+            }
+        })
+        .catch(() => {
+            alert('Re-check failed');
+            btn.textContent = 'Re-check Live Site';
+            btn.disabled = false;
+        });
+}
+
+function runAiMentionCheck(customerId) {
+    const btn = document.getElementById('ai-check-btn');
+    const status = document.getElementById('ai-check-status');
+    const resultsDiv = document.getElementById('ai-check-results');
+    btn.textContent = 'Checking...';
+    btn.disabled = true;
+    if (status) status.textContent = 'Querying AI search engines (this takes ~30s)...';
+    fetch('/api/ai-mentions/' + customerId, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            btn.textContent = 'Run AI Mention Check';
+            btn.disabled = false;
+            if (data.ok) {
+                if (status) status.innerHTML = '<b>' + data.mention_count + '/' + data.total_queries + ' mentions found</b>';
+                if (resultsDiv && data.results) {
+                    resultsDiv.style.display = 'block';
+                    let html = '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
+                    html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:4px;">Prompt</th><th>AI</th><th>Found?</th><th>Position</th></tr>';
+                    data.results.forEach(r => {
+                        const found = r.mentioned ? '<span style="color:green;">Yes</span>' : '<span style="color:#999;">No</span>';
+                        const pos = r.position ? '#' + r.position : '-';
+                        html += '<tr style="border-bottom:1px solid #eee;"><td style="padding:4px;">' + r.prompt + '</td><td style="text-align:center;">' + r.ai + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td></tr>';
+                    });
+                    html += '</table>';
+                    if (data.mention_count > 0) {
+                        html += '<p style="margin-top:8px;color:green;">Task marked complete. Reload the page to update the checklist.</p>';
+                    }
+                    resultsDiv.innerHTML = html;
+                }
+            } else {
+                if (status) status.textContent = data.error || 'Check failed';
+            }
+        })
+        .catch(() => {
+            btn.textContent = 'Run AI Mention Check';
+            btn.disabled = false;
+            if (status) status.textContent = 'Check failed — see console for details';
+        });
+}
+
+function copyGeoSchema(btn) {
+    const el = document.getElementById('geo-schema-code');
+    if (el) {
+        navigator.clipboard.writeText(el.value).then(() => {
+            const orig = btn.textContent;
+            btn.textContent = 'Copied!';
+            btn.style.color = 'var(--success)';
+            setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+        });
+    }
+}
+
 function updateRecStatus(recId, status, btn) {
     fetch('/api/content/status', {
         method: 'POST',
@@ -733,6 +983,125 @@ function copySnippet(btn) {
         const orig = btn.textContent;
         btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = orig, 2000);
+    });
+}
+
+function publishToWebflow(recId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Publishing...';
+    fetch('/api/content/publish', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_id: recId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Published!';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            btn.textContent = 'Failed';
+            alert(data.error || data.results?.[0]?.error || 'Publish failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Publish to Webflow'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Publish to Webflow'; }, 3000);
+    });
+}
+
+function pushToSquarespace(recId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Pushing...';
+    fetch('/api/content/push-squarespace', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_id: recId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Draft Created!';
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            btn.textContent = 'Failed';
+            alert(data.error || data.results?.[0]?.error || 'Push failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Push Draft to Squarespace'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Push Draft to Squarespace'; }, 3000);
+    });
+}
+
+function downloadDocx(recId) {
+    fetch('/api/content/download-docx', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_id: recId})
+    })
+    .then(r => {
+        if (!r.ok) return r.json().then(d => { throw new Error(d.error); });
+        return r.blob();
+    })
+    .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'content.docx';
+        a.click();
+        URL.revokeObjectURL(url);
+    })
+    .catch(e => alert(e.message || 'Download failed'));
+}
+
+function downloadAllApproved(customerId) {
+    window.location.href = '/api/content/' + customerId + '/download-all-approved';
+}
+
+function downloadAllContent(customerId) {
+    window.location.href = '/api/content/' + customerId + '/download-all';
+}
+
+function publishAllToWebflow(customerId) {
+    if (!confirm('Publish all approved content to Webflow?')) return;
+    const approvedIds = [...document.querySelectorAll('.content-rec')]
+        .filter(el => el.querySelector('.badge-approved'))
+        .map(el => el.id.replace('rec-', ''));
+    if (!approvedIds.length) { alert('No approved recommendations'); return; }
+    fetch('/api/content/publish', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_ids: approvedIds})
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(`Published ${data.published}/${data.total} items`);
+        location.reload();
+    });
+}
+
+function pushAllToSquarespace(customerId) {
+    if (!confirm('Push all approved content as drafts to Squarespace?')) return;
+    const approvedIds = [...document.querySelectorAll('.content-rec')]
+        .filter(el => el.querySelector('.badge-approved'))
+        .map(el => el.id.replace('rec-', ''));
+    if (!approvedIds.length) { alert('No approved recommendations'); return; }
+    fetch('/api/content/push-squarespace', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({rec_ids: approvedIds})
+    })
+    .then(r => r.json())
+    .then(data => {
+        alert(`Pushed ${data.published}/${data.total} drafts`);
+        location.reload();
     });
 }
 

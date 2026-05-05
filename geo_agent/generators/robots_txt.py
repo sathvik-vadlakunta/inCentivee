@@ -35,6 +35,9 @@ Disallow: /
 User-agent: Applebot-Extended
 Disallow: /
 
+User-agent: Bytespider
+Disallow: /
+
 # ALLOW retrieval/search bots (they fetch content for real-time AI answers)
 User-agent: ChatGPT-User
 Allow: /
