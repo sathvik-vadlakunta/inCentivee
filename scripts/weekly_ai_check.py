@@ -54,6 +54,18 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
     run_id = str(uuid.uuid4())
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    # Create run record first (FK constraint)
+    db.save_ai_mention_run({
+        "id": run_id,
+        "customer_id": customer_id,
+        "run_date": today,
+        "total_mentions": 0,
+        "total_queries": 0,
+        "mention_rate": 0.0,
+        "avg_position": None,
+        "engines": {},
+    })
+
     for pdef in prompt_defs:
         prompt = pdef["prompt"]
         category = pdef["category"]

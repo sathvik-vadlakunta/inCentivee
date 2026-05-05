@@ -73,6 +73,7 @@
             <span class="tab-badge" style="background:#fef3c7; color:#92400e;">{{ content_pending }} pending</span>
         {% endif %}
     </button>
+    <button class="tab" onclick="switchTab('ai-mentions', this)">AI Mentions</button>
     <button class="tab" onclick="switchTab('emails', this)">Emails</button>
 </div>
 
@@ -688,6 +689,29 @@
     {% endif %}
 </div>
 
+<!-- ==================== AI MENTIONS TAB ==================== -->
+<div id="tab-ai-mentions" class="tab-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+            <h3 style="margin:0;">AI Search Visibility</h3>
+            <p style="color:var(--muted);font-size:0.85em;margin:4px 0 0;">Track how AI engines (ChatGPT, Claude, Grok, Perplexity, Gemini) recommend this practice across different search types.</p>
+        </div>
+        <button class="btn btn-primary" onclick="runFullAiCheck('{{ customer.id }}')" id="ai-full-check-btn">
+            Run AI Mention Check
+        </button>
+    </div>
+    <div id="ai-full-check-status" style="margin-bottom:12px;"></div>
+
+    <!-- Current run results -->
+    <div id="ai-full-results" style="display:none;"></div>
+
+    <!-- Historical runs -->
+    <div id="ai-runs-history" style="margin-top:24px;">
+        <h4>Run History</h4>
+        <div id="ai-runs-table">Loading...</div>
+    </div>
+</div>
+
 <!-- ==================== EMAILS TAB ==================== -->
 <div id="tab-emails" class="tab-content">
     {% if email_templates %}
@@ -832,6 +856,7 @@ function switchTab(tabName, btn) {
     document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
     btn.classList.add('active');
+    if (tabName === 'ai-mentions') loadAiRunsHistory('{{ customer.id }}');
 }
 
 function copyFormatted(id, btn) {
@@ -1152,6 +1177,189 @@ function loadAiMentionHistory(customerId) {
             div.innerHTML = html;
         })
         .catch(() => {});
+}
+
+// ==================== AI MENTIONS TAB ====================
+
+function runFullAiCheck(customerId) {
+    const btn = document.getElementById('ai-full-check-btn');
+    const status = document.getElementById('ai-full-check-status');
+    const resultsDiv = document.getElementById('ai-full-results');
+    btn.textContent = 'Checking...';
+    btn.disabled = true;
+    status.innerHTML = '<span style="color:var(--muted);">Querying AI engines with ~25 prompts across 4 engines. This takes 2-3 minutes...</span>';
+    fetch('/api/ai-mentions/' + customerId, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            btn.textContent = 'Run AI Mention Check';
+            btn.disabled = false;
+            if (!data.ok) { status.textContent = data.error || 'Check failed'; return; }
+
+            const rate = data.mention_rate || 0;
+            const avgPos = data.avg_position ? ' · Avg position #' + data.avg_position : '';
+            status.innerHTML = '<b style="font-size:1.1em;">' + data.mention_count + '/' + data.total_queries + ' mentions (' + rate + '%)' + avgPos + '</b>';
+
+            resultsDiv.style.display = 'block';
+            let html = '';
+
+            // Engine cards
+            if (data.engines) {
+                html += '<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">';
+                for (const [name, info] of Object.entries(data.engines)) {
+                    const color = info.status === 'no_api_key' ? '#f59e0b' : (info.mentions > 0 ? '#22c55e' : '#ef4444');
+                    const icon = info.status === 'no_api_key' ? '⚠️' : (info.mentions > 0 ? '✅' : '❌');
+                    const label = info.status === 'no_api_key' ? 'No API key' : info.mentions + '/' + info.total + ' mentions';
+                    html += '<div style="padding:8px 12px;border-radius:8px;border:1px solid ' + color + ';background:' + color + '10;">'
+                        + '<b>' + icon + ' ' + name + '</b><br><span style="font-size:0.85em;">' + label + '</span></div>';
+                }
+                html += '</div>';
+            }
+
+            // Category breakdown
+            if (data.categories) {
+                const catLabels = {brand:'Brand Awareness',general:'General Discovery',service:'Service-Specific',location:'Location/Area',comparison:'Competitor Comparison',reputation:'Reputation',recommendation:'Recommendations'};
+                html += '<div style="margin:12px 0;"><b>Performance by Search Category:</b></div>';
+                html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">';
+                for (const [cat, stats] of Object.entries(data.categories)) {
+                    const pct = stats.total > 0 ? Math.round(stats.mentions / stats.total * 100) : 0;
+                    const color = pct > 50 ? '#22c55e' : pct > 20 ? '#f59e0b' : '#ef4444';
+                    const label = catLabels[cat] || cat;
+                    html += '<div style="padding:8px 12px;border-radius:8px;border:1px solid #e5e7eb;background:white;min-width:120px;">';
+                    html += '<div style="font-size:0.8em;color:#6b7280;">' + label + '</div>';
+                    html += '<div style="font-size:1.2em;font-weight:bold;color:' + color + ';">' + pct + '%</div>';
+                    html += '<div style="font-size:0.75em;color:#9ca3af;">' + stats.mentions + '/' + stats.total + (stats.avg_quality > 0 ? ' · Q:' + stats.avg_quality : '') + '</div>';
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            // Results table grouped by category
+            if (data.results && data.results.length > 0) {
+                html += '<details open><summary style="cursor:pointer;font-weight:bold;margin-bottom:8px;">All Results (' + data.results.length + ')</summary>';
+                html += '<table style="width:100%;font-size:0.82em;border-collapse:collapse;">';
+                html += '<tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:4px;">Prompt</th><th>Category</th><th>Engine</th><th>Found</th><th>Pos</th><th>Quality</th><th style="text-align:left;">Context</th></tr>';
+                data.results.forEach((r, i) => {
+                    const found = r.mentioned ? '<span style="color:#22c55e;">✓</span>' : '<span style="color:#d1d5db;">✗</span>';
+                    const pos = r.position ? '#' + r.position : '-';
+                    const qScore = r.quality_score || 0;
+                    const qColor = qScore >= 50 ? '#22c55e' : qScore >= 25 ? '#f59e0b' : '#9ca3af';
+                    const shortCtx = r.context ? r.context.substring(0, 50) + '...' : '';
+                    const fullCtx = (r.full_response || r.context || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const ctxCell = (r.context || r.full_response)
+                        ? '<span style="cursor:pointer;text-decoration:underline dotted;color:#4b5563;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">' + (shortCtx || '▶ View') + '</span>'
+                          + '<div style="display:none;margin-top:4px;padding:8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;max-height:200px;overflow-y:auto;white-space:pre-wrap;font-size:0.9em;line-height:1.4;">' + fullCtx + '</div>'
+                        : '';
+                    html += '<tr style="border-bottom:1px solid #f3f4f6;"><td style="padding:3px 4px;">' + r.prompt + '</td><td style="text-align:center;font-size:0.85em;color:#6b7280;">' + (r.category || '') + '</td><td style="text-align:center;">' + r.ai + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td><td style="text-align:center;color:' + qColor + ';">' + (r.mentioned ? qScore : '-') + '</td><td style="padding:3px 4px;color:#6b7280;">' + ctxCell + '</td></tr>';
+                });
+                html += '</table></details>';
+            }
+
+            resultsDiv.innerHTML = html;
+            // Reload history
+            loadAiRunsHistory(customerId);
+        })
+        .catch(e => {
+            btn.textContent = 'Run AI Mention Check';
+            btn.disabled = false;
+            status.textContent = 'Check failed: ' + e.message;
+        });
+}
+
+function loadAiRunsHistory(customerId) {
+    fetch('/api/ai-mentions/' + customerId + '/history')
+        .then(r => r.json())
+        .then(data => {
+            const div = document.getElementById('ai-runs-table');
+            if (!div) return;
+            if (!data.ok || !data.runs || data.runs.length === 0) {
+                div.innerHTML = '<p style="color:var(--muted);">No runs yet. Click "Run AI Mention Check" to get started.</p>';
+                return;
+            }
+
+            let html = '';
+
+            // Trend chart
+            if (data.runs.length > 1) {
+                const maxMentions = Math.max(...data.runs.map(r => r.mentions), 1);
+                html += '<div style="display:flex;align-items:flex-end;gap:3px;height:80px;margin-bottom:16px;padding:0 4px;">';
+                [...data.runs].reverse().forEach(r => {
+                    const pct = Math.max((r.mentions / maxMentions) * 100, 6);
+                    const color = r.mentions > 0 ? '#2563eb' : '#e5e7eb';
+                    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;">';
+                    html += '<div style="font-size:0.65em;color:#6b7280;margin-bottom:2px;">' + r.mentions + '</div>';
+                    html += '<div style="width:100%;background:' + color + ';height:' + pct + '%;border-radius:3px 3px 0 0;min-height:4px;" title="' + r.date + ': ' + r.mentions + '/' + r.total + ' mentions"></div>';
+                    html += '<div style="font-size:0.6em;color:#9ca3af;margin-top:2px;">' + r.date.slice(5) + '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // History table
+            html += '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
+            html += '<tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:6px;">Date</th><th>Mentions</th><th>Rate</th><th>Avg Pos</th><th>Change</th><th>Engines</th><th></th></tr>';
+            data.runs.forEach(run => {
+                const delta = run.delta !== null && run.delta !== undefined
+                    ? '<span style="color:' + (run.delta > 0 ? '#22c55e' : run.delta < 0 ? '#ef4444' : '#6b7280') + ';">' + (run.delta > 0 ? '+' : '') + run.delta + '</span>'
+                    : '<span style="color:#9ca3af;">baseline</span>';
+                const rate = run.rate ? Math.round(run.rate * 100) + '%' : '-';
+                const pos = run.avg_position ? '#' + run.avg_position.toFixed(1) : '-';
+                // Engine mini-badges
+                let engHtml = '';
+                if (run.engines) {
+                    for (const [eng, stats] of Object.entries(run.engines)) {
+                        if (stats.status === 'active' || stats.status !== 'no_key') {
+                            const c = stats.mentions > 0 ? '#22c55e' : '#ef4444';
+                            engHtml += '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.75em;background:' + c + '15;color:' + c + ';margin:1px;">' + eng.substring(0,3) + ':' + (stats.mentions||0) + '</span>';
+                        }
+                    }
+                }
+                const detailBtn = run.id ? '<a href="#" onclick="loadRunDetail(\'' + run.id + '\',\'' + customerId + '\');return false;" style="font-size:0.8em;">Details</a>' : '';
+                html += '<tr style="border-bottom:1px solid #f3f4f6;"><td style="padding:6px;">' + run.date + '</td><td style="text-align:center;font-weight:bold;">' + run.mentions + '/' + (run.total || '?') + '</td><td style="text-align:center;">' + rate + '</td><td style="text-align:center;">' + pos + '</td><td style="text-align:center;">' + delta + '</td><td>' + engHtml + '</td><td style="text-align:center;">' + detailBtn + '</td></tr>';
+            });
+            html += '</table>';
+
+            div.innerHTML = html;
+        })
+        .catch(() => {
+            const div = document.getElementById('ai-runs-table');
+            if (div) div.innerHTML = '<p style="color:#ef4444;">Failed to load history</p>';
+        });
+}
+
+function loadRunDetail(runId, customerId) {
+    const div = document.getElementById('ai-full-results');
+    div.style.display = 'block';
+    div.innerHTML = '<p style="color:var(--muted);">Loading run details...</p>';
+    div.scrollIntoView({ behavior: 'smooth' });
+    fetch('/api/ai-mentions/' + customerId + '/run/' + runId)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) { div.innerHTML = '<p style="color:#ef4444;">Failed to load</p>'; return; }
+            const catLabels = {brand:'Brand Awareness',general:'General Discovery',service:'Service-Specific',location:'Location/Area',comparison:'Competitor Comparison',reputation:'Reputation',recommendation:'Recommendations'};
+            let html = '<h4>Run Details (' + data.total + ' queries)</h4>';
+            for (const [cat, results] of Object.entries(data.categories)) {
+                const mentioned = results.filter(r => r.mentioned).length;
+                const pct = Math.round(mentioned / results.length * 100);
+                const color = pct > 50 ? '#22c55e' : pct > 20 ? '#f59e0b' : '#ef4444';
+                html += '<details style="margin-bottom:12px;"><summary style="cursor:pointer;padding:6px;background:#f9fafb;border-radius:6px;"><b>' + (catLabels[cat]||cat) + '</b> — <span style="color:' + color + ';">' + mentioned + '/' + results.length + ' (' + pct + '%)</span></summary>';
+                html += '<table style="width:100%;font-size:0.82em;border-collapse:collapse;margin-top:4px;">';
+                html += '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left;padding:3px;">Prompt</th><th>Engine</th><th>Found</th><th>Pos</th><th>Quality</th><th style="text-align:left;">Context</th></tr>';
+                results.forEach(r => {
+                    const found = r.mentioned ? '<span style="color:#22c55e;">✓</span>' : '<span style="color:#d1d5db;">✗</span>';
+                    const pos = r.position ? '#' + r.position : '-';
+                    const qColor = r.quality_score >= 50 ? '#22c55e' : r.quality_score >= 25 ? '#f59e0b' : '#9ca3af';
+                    const fullResp = (r.full_response || r.context || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    const ctxShort = r.context ? r.context.substring(0, 50) + '...' : '';
+                    const ctxCell = fullResp
+                        ? '<span style="cursor:pointer;text-decoration:underline dotted;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">' + (ctxShort || '▶ View') + '</span>'
+                          + '<div style="display:none;margin-top:4px;padding:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;max-height:180px;overflow-y:auto;white-space:pre-wrap;font-size:0.9em;">' + fullResp + '</div>'
+                        : '';
+                    html += '<tr style="border-bottom:1px solid #f3f4f6;"><td style="padding:3px;">' + r.prompt + '</td><td style="text-align:center;">' + r.engine + '</td><td style="text-align:center;">' + found + '</td><td style="text-align:center;">' + pos + '</td><td style="text-align:center;color:' + qColor + ';">' + (r.mentioned ? r.quality_score : '-') + '</td><td style="padding:3px;color:#6b7280;">' + ctxCell + '</td></tr>';
+                });
+                html += '</table></details>';
+            }
+            div.innerHTML = html;
+        });
 }
 
 function copyGeoSchema(btn) {

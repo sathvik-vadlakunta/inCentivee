@@ -2506,6 +2506,18 @@ def api_run_ai_mentions(customer_id):
         from datetime import datetime, timezone
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+        # Create run record first (FK constraint requires it before results)
+        db.save_ai_mention_run({
+            "id": run_id,
+            "customer_id": customer_id,
+            "run_date": today,
+            "total_mentions": 0,
+            "total_queries": 0,
+            "mention_rate": 0.0,
+            "avg_position": None,
+            "engines": {},
+        })
+
         for pdef in prompt_defs:
             prompt = pdef["prompt"]
             category = pdef["category"]
