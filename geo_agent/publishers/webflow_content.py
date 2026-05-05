@@ -57,21 +57,88 @@ BLOG_TEMPLATE_SCRIPT = """\
   var CUSTOMER_ID = '{customer_id}';
   var API_BASE = 'https://admin.practicerank.ai';
 
+  var LOCALE_LABELS = {{
+    en:'English',es:'Espa\\u00f1ol',fr:'Fran\\u00e7ais',de:'Deutsch',
+    pt:'Portugu\\u00eas',sv:'Svenska',ja:'\\u65e5\\u672c\\u8a9e',
+    ko:'\\ud55c\\uad6d\\uc5b4',zh:'\\u4e2d\\u6587',ar:'\\u0627\\u0644\\u0639\\u0631\\u0628\\u064a\\u0629'
+  }};
+
   var css = document.createElement('style');
-  css.textContent = '.pr-blog-article{{max-width:780px;margin:80px auto 100px;padding:0 32px;font-family:Host Grotesk,Geist,-apple-system,sans-serif}}.pr-blog-header{{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.1)}}.pr-blog-title{{font-family:Geist,sans-serif;font-size:clamp(2rem,5vw,3rem);font-weight:600;line-height:1.15;margin-bottom:20px;color:inherit}}.pr-blog-meta{{display:flex;gap:16px;font-size:.9rem;opacity:.6;flex-wrap:wrap}}.pr-blog-meta span{{white-space:nowrap}}.pr-blog-category{{display:inline-block;padding:4px 14px;border-radius:100px;background:rgba(109,40,217,.15);color:#B38BFF;font-size:.8rem;font-weight:500;text-transform:uppercase;letter-spacing:.5px}}.pr-blog-body{{font-size:1.1rem;line-height:1.8}}.pr-blog-body h2{{font-family:Geist,sans-serif;font-size:1.6rem;font-weight:600;margin:2.5rem 0 1rem}}.pr-blog-body h3{{font-family:Geist,sans-serif;font-size:1.25rem;font-weight:600;margin:2rem 0 .75rem}}.pr-blog-body p{{margin:1rem 0}}.pr-blog-body ul,.pr-blog-body ol{{margin:1rem 0;padding-left:1.75rem}}.pr-blog-body li{{margin:.4rem 0}}.pr-blog-body blockquote{{border-left:3px solid #6D28D9;margin:2rem 0;padding:1.25rem 1.5rem;background:rgba(109,40,217,.06);border-radius:0 8px 8px 0;font-style:italic}}.pr-blog-body blockquote cite{{display:block;margin-top:.75rem;font-style:normal;font-weight:600;font-size:.9rem;opacity:.7}}.pr-blog-body a{{color:#B38BFF}}.pr-blog-body strong{{font-weight:600}}.pr-blog-body img{{max-width:100%;border-radius:12px;margin:1.5rem 0}}.pr-blog-loading{{text-align:center;padding:100px 32px;font-size:1.1rem;opacity:.5}}@media(max-width:767px){{.pr-blog-article{{margin:40px auto 60px;padding:0 20px}}.pr-blog-body{{font-size:1rem}}}}';
+  css.textContent = '.pr-blog-article{{max-width:780px;margin:80px auto 100px;padding:0 32px;font-family:Host Grotesk,Geist,-apple-system,sans-serif}}.pr-blog-header{{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,.1)}}.pr-blog-title{{font-family:Geist,sans-serif;font-size:clamp(2rem,5vw,3rem);font-weight:600;line-height:1.15;margin-bottom:20px;color:inherit}}.pr-blog-meta{{display:flex;gap:16px;font-size:.9rem;opacity:.6;flex-wrap:wrap;align-items:center}}.pr-blog-meta span{{white-space:nowrap}}.pr-blog-category{{display:inline-block;padding:4px 14px;border-radius:100px;background:rgba(109,40,217,.15);color:#B38BFF;font-size:.8rem;font-weight:500;text-transform:uppercase;letter-spacing:.5px}}.pr-blog-body{{font-size:1.1rem;line-height:1.8}}.pr-blog-body h2{{font-family:Geist,sans-serif;font-size:1.6rem;font-weight:600;margin:2.5rem 0 1rem}}.pr-blog-body h3{{font-family:Geist,sans-serif;font-size:1.25rem;font-weight:600;margin:2rem 0 .75rem}}.pr-blog-body p{{margin:1rem 0}}.pr-blog-body ul,.pr-blog-body ol{{margin:1rem 0;padding-left:1.75rem}}.pr-blog-body li{{margin:.4rem 0}}.pr-blog-body blockquote{{border-left:3px solid #6D28D9;margin:2rem 0;padding:1.25rem 1.5rem;background:rgba(109,40,217,.06);border-radius:0 8px 8px 0;font-style:italic}}.pr-blog-body blockquote cite{{display:block;margin-top:.75rem;font-style:normal;font-weight:600;font-size:.9rem;opacity:.7}}.pr-blog-body a{{color:#B38BFF}}.pr-blog-body strong{{font-weight:600}}.pr-blog-body img{{max-width:100%;border-radius:12px;margin:1.5rem 0}}.pr-blog-loading{{text-align:center;padding:100px 32px;font-size:1.1rem;opacity:.5}}.pr-lang-switcher{{position:relative;display:inline-block}}.pr-lang-btn{{background:rgba(109,40,217,.12);color:#B38BFF;border:1px solid rgba(109,40,217,.25);border-radius:8px;padding:4px 12px;font-size:.8rem;cursor:pointer;font-family:inherit;white-space:nowrap}}.pr-lang-btn:hover{{background:rgba(109,40,217,.2)}}.pr-lang-menu{{display:none;position:absolute;top:100%;left:0;margin-top:4px;background:#1a1a2e;border:1px solid rgba(255,255,255,.1);border-radius:8px;min-width:140px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.3);overflow:hidden}}.pr-lang-menu.open{{display:block}}.pr-lang-option{{display:block;width:100%;padding:8px 14px;font-size:.85rem;color:#ccc;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit}}.pr-lang-option:hover{{background:rgba(109,40,217,.15);color:#fff}}.pr-lang-option.active{{color:#B38BFF;font-weight:600}}@media(max-width:767px){{.pr-blog-article{{margin:40px auto 60px;padding:0 20px}}.pr-blog-body{{font-size:1rem}}}}';
   document.head.appendChild(css);
 
   var pathParts = window.location.pathname.split('/');
   var itemSlug = pathParts[pathParts.length - 1];
   if (!itemSlug) return;
 
+  // Get saved locale or detect from browser
+  var currentLocale = localStorage.getItem('pr-locale') || 'en';
+
+  function fetchArticle(locale) {{
+    var localeParam = locale && locale !== 'en' ? '?locale=' + locale : '';
+    return fetch(API_BASE + '/api/content/' + CUSTOMER_ID + '/by-slug/' + itemSlug + localeParam)
+      .then(function(r) {{ return r.json(); }});
+  }}
+
+  function buildLangSwitcher(locales, active) {{
+    if (!locales || locales.length <= 1) return '';
+    var label = LOCALE_LABELS[active] || active;
+    var html = '<div class="pr-lang-switcher">' +
+      '<button class="pr-lang-btn" onclick="this.nextElementSibling.classList.toggle(\'open\')">' +
+      '\\ud83c\\udf10 ' + label + '</button>' +
+      '<div class="pr-lang-menu">';
+    locales.forEach(function(loc) {{
+      var cls = loc === active ? ' active' : '';
+      var name = LOCALE_LABELS[loc] || loc;
+      html += '<button class="pr-lang-option' + cls + '" data-locale="' + loc + '">' + name + '</button>';
+    }});
+    html += '</div></div>';
+    return html;
+  }}
+
+  function wireUpLangSwitcher() {{
+    document.querySelectorAll('.pr-lang-option').forEach(function(btn) {{
+      btn.addEventListener('click', function() {{
+        var loc = btn.getAttribute('data-locale');
+        currentLocale = loc;
+        localStorage.setItem('pr-locale', loc);
+        // Re-fetch article in new locale and update content in-place
+        fetchArticle(loc).then(function(data) {{
+          if (data && !data.error) {{
+            var titleEl = document.querySelector('.pr-blog-title');
+            var bodyEl = document.querySelector('.pr-blog-body');
+            if (titleEl) titleEl.innerHTML = data.title || '';
+            if (bodyEl) bodyEl.innerHTML = data.html_snippet || '';
+            document.title = (data.title || 'Blog') + ' \\u2014 SmileShape';
+            // Update switcher active state
+            document.querySelectorAll('.pr-lang-option').forEach(function(o) {{
+              o.classList.toggle('active', o.getAttribute('data-locale') === loc);
+            }});
+            var langBtn = document.querySelector('.pr-lang-btn');
+            if (langBtn) langBtn.innerHTML = '\\ud83c\\udf10 ' + (LOCALE_LABELS[loc] || loc);
+          }}
+          // Close menu
+          document.querySelectorAll('.pr-lang-menu').forEach(function(m) {{ m.classList.remove('open'); }});
+        }});
+      }});
+    }});
+    // Close menu on outside click
+    document.addEventListener('click', function(e) {{
+      if (!e.target.closest('.pr-lang-switcher')) {{
+        document.querySelectorAll('.pr-lang-menu').forEach(function(m) {{ m.classList.remove('open'); }});
+      }}
+    }});
+  }}
+
   function render() {{
     document.body.innerHTML = '<div class="pr-blog-loading">Loading...</div>';
+
+    var localeParam = currentLocale && currentLocale !== 'en' ? '?locale=' + currentLocale : '';
 
     // Fetch the About Us page (simpler than homepage — has nav + footer, no hero animations)
     Promise.all([
       fetch('/about-us').then(function(r) {{ return r.text(); }}),
-      fetch(API_BASE + '/api/content/' + CUSTOMER_ID + '/by-slug/' + itemSlug).then(function(r) {{ return r.json(); }})
+      fetch(API_BASE + '/api/content/' + CUSTOMER_ID + '/by-slug/' + itemSlug + localeParam).then(function(r) {{ return r.json(); }})
     ]).then(function(results) {{
       var siteHtml = results[0];
       var data = results[1];
@@ -91,27 +158,17 @@ BLOG_TEMPLATE_SCRIPT = """\
       // Get everything from the site page body
       var siteBody = doc.body;
 
-      // Find the main content area (everything between nav and footer)
-      // Replace it with our blog article
-      var allSections = siteBody.querySelectorAll('body > section, body > div, body > footer');
-      var footerEl = siteBody.querySelector('.footer');
-      var firstSection = siteBody.querySelector('section');
-
       // Strategy: keep first section (has nav), remove middle sections, keep footer
-      // Insert blog content between nav section and footer
       var keepElements = [];
       var foundFirst = false;
       var children = Array.from(siteBody.children);
 
       for (var i = 0; i < children.length; i++) {{
         var el = children[i];
-        // Keep the first section (nav)
         if (!foundFirst && el.tagName === 'SECTION') {{
-          // Remove everything inside except the nav container
           var containers = el.querySelectorAll('.w-container');
-          var navContainer = containers[0]; // First container has the nav
+          var navContainer = containers[0];
           if (navContainer) {{
-            // Clear section and keep only nav
             el.innerHTML = '';
             el.appendChild(navContainer);
             el.style.paddingBottom = '0';
@@ -121,17 +178,14 @@ BLOG_TEMPLATE_SCRIPT = """\
           foundFirst = true;
           continue;
         }}
-        // Keep footer and anything after it (back-to-top, modals etc)
         if (el.classList && (el.classList.contains('footer') || el.classList.contains('backtotop'))) {{
           keepElements.push(el.outerHTML);
           continue;
         }}
-        // Keep modals
         if (el.classList && el.classList.contains('fs_modal-2_wrapper')) {{
           keepElements.push(el.outerHTML);
           continue;
         }}
-        // After footer, keep remaining elements
         if (keepElements.length > 1) {{
           keepElements.push(el.outerHTML);
         }}
@@ -142,12 +196,17 @@ BLOG_TEMPLATE_SCRIPT = """\
       if (!data || data.error) {{
         articleHtml = '<div class="pr-blog-loading">Article not found.</div>';
       }} else {{
+        var activeLocale = data.locale || currentLocale || 'en';
+        var langSwitcherHtml = buildLangSwitcher(data.available_locales, activeLocale);
+
         var metaParts = [];
         if (data.author) metaParts.push('<span>' + data.author + '</span>');
         if (data.published_on) {{
           var d = new Date(data.published_on);
           metaParts.push('<span>' + d.toLocaleDateString('en-US', {{year:'numeric',month:'long',day:'numeric'}}) + '</span>');
         }}
+        if (langSwitcherHtml) metaParts.push(langSwitcherHtml);
+
         articleHtml =
           '<article class="pr-blog-article">' +
             '<div class="pr-blog-header">' +
@@ -164,6 +223,9 @@ BLOG_TEMPLATE_SCRIPT = """\
       var navHtml = keepElements.length > 0 ? keepElements[0] : '';
       var footerHtml = keepElements.slice(1).join('');
       document.body.innerHTML = navHtml + articleHtml + footerHtml;
+
+      // Wire up language switcher
+      wireUpLangSwitcher();
 
       // Re-wire mobile nav toggle
       var menuBtn = document.querySelector('.menu-lines.open');

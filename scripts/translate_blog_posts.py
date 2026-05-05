@@ -40,8 +40,9 @@ LOCALE_NAMES = {
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"))
 
 
-def get_db(customer_id: str) -> CustomerDB:
-    db_path = os.path.join(DATA_DIR, customer_id, "customer.db")
+def get_db() -> CustomerDB:
+    """Connect to the main practicerank DB."""
+    db_path = os.path.join(DATA_DIR, "practicerank.db")
     if not os.path.exists(db_path):
         print(f"ERROR: Database not found at {db_path}")
         sys.exit(1)
@@ -53,7 +54,7 @@ def translate_post(client: anthropic.Anthropic, title: str, description: str, ht
     lang_name = LOCALE_NAMES[locale]
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=8000,
         messages=[{
             "role": "user",
@@ -103,7 +104,7 @@ def main():
         sys.exit(1)
 
     client = anthropic.Anthropic(api_key=api_key)
-    db = get_db(args.customer)
+    db = get_db()
 
     locales = [args.locale] if args.locale else SUPPORTED_LOCALES
 

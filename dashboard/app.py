@@ -1319,7 +1319,7 @@ SEO_GEO_TASKS = [
              "<b>If it returns an error or empty:</b> Ask Jon to run the GEO Agent to upload files for this customer."
          ),
      }},
-    {"key": "seo_robots_redirected", "task": "Set up redirects: /llms.txt, /robots.txt, /llms-full.txt → Worker", "category": "AI Readiness (GEO)",
+    {"key": "seo_robots_redirected", "task": "Set up redirects: /llms.txt, /llms-full.txt → Worker", "category": "AI Readiness (GEO)",
      "guide": {
          "webflow": (
              "<b>Set up Webflow 301 redirects to point /robots.txt and /llms.txt to the Worker:</b>"
@@ -1352,19 +1352,18 @@ SEO_GEO_TASKS = [
              "<b>Step 4:</b> Click <b>URL Mappings</b>"
              "<br><span style='color:#6b7280;font-size:0.75rem'>(If you don't see Developer Tools, try: Settings → Advanced → URL Mappings on older Squarespace versions)</span>"
              "<br><br>"
-             "<b>Step 5:</b> In the text box, paste these 3 lines <b>exactly</b> (copy the entire block):"
+             "<b>Step 5:</b> In the text box, paste these 2 lines <b>exactly</b> (copy the entire block):"
              "<pre style='margin:0.5rem 0;padding:0.75rem;background:#1e1e1e;color:#d4d4d4;border-radius:6px;font-size:0.78rem;overflow-x:auto;cursor:pointer;user-select:all'>"
-             "/robots.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/robots.txt 301\n"
              "/llms.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms.txt 301\n"
              "/llms-full.txt -> https://practicerank-api.practice-rank-ai-seo.workers.dev/geo/{domain}/llms-full.txt 301"
              "</pre>"
+             "<span style='color:#6b7280;font-size:0.75rem'>Note: Squarespace serves its own /robots.txt — it can't be redirected via URL Mappings.</span>"
              "<b>Step 6:</b> Click <b>Save</b> at the top of the page"
              "<br><br>"
              "<hr style='margin:0.75rem 0;border:0;border-top:1px solid #ddd'>"
              "<b>✅ How to verify it worked:</b>"
              "<ol style='margin-top:0.5rem'>"
-             "<li>Open <a href='https://{domain}/llms.txt' target='_blank'>https://{domain}/llms.txt</a> — you should see a text file starting with <code># Downtown Dental</code></li>"
-             "<li>Open <a href='https://{domain}/robots.txt' target='_blank'>https://{domain}/robots.txt</a> — you should see <code>User-agent: ChatGPT-User</code> and <code>Allow: /</code></li>"
+             "<li>Open <a href='https://{domain}/llms.txt' target='_blank'>https://{domain}/llms.txt</a> — you should see a text file starting with the practice name</li>"
              "<li>Open <a href='https://{domain}/llms-full.txt' target='_blank'>https://{domain}/llms-full.txt</a> — longer version of the same file</li>"
              "</ol>"
              "<b>If any link shows a Squarespace 404 page</b>, double-check the URL Mappings for typos. The format must be exactly: <code>/path -> https://url 301</code> with spaces around the arrow."
@@ -1922,9 +1921,27 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
         except Exception:
             pass
 
-    # Check all 3 redirects configured
-    redirects_ok = all(detected.get(k) for k in ("seo_llms_txt", "seo_llms_full", "seo_robots_redirected"))
+    # Check redirects configured — Squarespace can't redirect /robots.txt (platform serves its own)
+    # so only require llms.txt + llms-full.txt for non-Webflow platforms
+    llms_redirected = detected.get("seo_llms_txt") and detected.get("seo_llms_full")
+    try:
+        _db2 = CustomerDB()
+        _cust = _db2.get_customer(customer_id)
+        _platform = _cust.get("platform", "webflow") if _cust else "webflow"
+        _db2.close()
+    except Exception:
+        _platform = "webflow"
+
+    if _platform == "webflow":
+        redirects_ok = llms_redirected and detected.get("seo_robots_redirected")
+    else:
+        # Squarespace/other: robots.txt can't be redirected, mark based on llms files only
+        redirects_ok = llms_redirected
+        if redirects_ok:
+            detected["seo_robots_txt"] = detected.get("seo_robots_txt", True)  # Squarespace has its own
+
     if redirects_ok:
+        detected["seo_robots_redirected"] = True
         detected["seo_webflow_redirects"] = True
 
     # Check XML sitemap
@@ -3127,6 +3144,10 @@ def api_content_by_slug(customer_id, slug):
                         description = translation.get("description", description)
                         html_snippet = translation.get("html_snippet", html_snippet)
 
+                # Get available locales for this post
+                translations = db.get_translations_for_recommendation(rec["id"])
+                available_locales = ["en"] + [t["locale"] for t in translations]
+
                 resp = jsonify({
                     "title": title,
                     "slug": slug,
@@ -3136,6 +3157,7 @@ def api_content_by_slug(customer_id, slug):
                     "author": "PracticeRank",
                     "published_on": rec.get("published_at") or rec.get("created_at", ""),
                     "locale": locale if locale != "en" and db.get_content_translation(rec["id"], locale) else "en",
+                    "available_locales": available_locales,
                 })
                 resp.headers["Access-Control-Allow-Origin"] = "*"
                 return resp
