@@ -2614,11 +2614,14 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
     db = get_db()
     try:
         competitors = json.loads(customer.get("competitors_json", "[]")) if customer.get("competitors_json") else []
+        services_list = db.get_services(customer_id)
+        service_names = [s["name"] for s in services_list]
         prompt_defs = build_comprehensive_prompts(
             customer["name"], customer.get("city", ""), customer.get("state", ""),
             customer.get("specialties", []),
             business_type=customer.get("business_type", "practice"),
             competitors=competitors,
+            services=service_names,
         )
 
         engines = [("Claude", query_claude), ("ChatGPT", query_openai), ("Perplexity", query_perplexity), ("Gemini", query_gemini), ("Grok", query_grok)]

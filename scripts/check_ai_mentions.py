@@ -41,6 +41,7 @@ def build_comprehensive_prompts(
     practice_name: str, city: str, state: str, specialties: list[str],
     business_type: str = "practice", competitors: list[str] | None = None,
     neighborhoods: list[str] | None = None,
+    services: list[str] | None = None,
 ) -> list[dict]:
     """Build comprehensive categorized prompts for AI mention tracking.
 
@@ -67,16 +68,34 @@ def build_comprehensive_prompts(
         add(f"recommend a dentist in {city} {state}", "recommendation")
 
         # --- Service-specific (high intent) ---
-        # ONLY use the customer's actual services/specialties
-        # Generic fallbacks only if no specialties are set
+        # Use granular services first, then broad specialties
+        # Deduplicate: don't repeat if a service name matches a specialty
+        service_queries = set()
+        if services:
+            for svc in services[:15]:
+                svc_lower = svc.lower()
+                if svc_lower not in service_queries:
+                    service_queries.add(svc_lower)
+                    add(f"best {svc_lower} in {city} {state}", "service")
+                    add(f"who is an expert in {svc_lower} near {city}", "service")
         if specialties:
-            for service in specialties[:10]:
-                add(f"best {service.lower()} in {city} {state}", "service")
-                add(f"{service.lower()} near {city}", "service")
-        else:
+            for spec in specialties[:10]:
+                spec_lower = spec.lower()
+                if spec_lower not in service_queries:
+                    service_queries.add(spec_lower)
+                    add(f"best {spec_lower} in {city} {state}", "service")
+                    add(f"who is an expert in {spec_lower} near {city}", "service")
+        if not service_queries:
             # Minimal fallback for practices with no specialties configured
             for s in ["dentist", "dental care"]:
                 add(f"best {s} in {city} {state}", "service")
+
+        # --- Expert/recommendation queries (natural language) ---
+        if service_queries:
+            top_services = list(service_queries)[:5]
+            for svc in top_services:
+                add(f"who do you recommend for {svc} in {city}", "recommendation")
+            add(f"dentist who specializes in {top_services[0]} {city} {state}", "recommendation")
 
         # --- Location-specific (neighborhood level) ---
         if neighborhoods:
