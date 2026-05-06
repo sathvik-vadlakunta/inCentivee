@@ -723,23 +723,10 @@
         <div id="ai-runs-table">Loading...</div>
     </div>
 
-    <!-- Per-query trends over time -->
+    <!-- AI Visibility Dashboard -->
     <div id="ai-trends-section" style="margin-top:24px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-            <h4 style="margin:0;">Query Trends Over Time</h4>
-            <select id="ai-trends-filter" onchange="filterTrends()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:0.85em;">
-                <option value="all">All Categories</option>
-                <option value="brand">Brand Awareness</option>
-                <option value="general">General Discovery</option>
-                <option value="service">Service-Specific</option>
-                <option value="location">Location/Area</option>
-                <option value="comparison">Competitor Comparison</option>
-                <option value="reputation">Reputation</option>
-                <option value="recommendation">Recommendations</option>
-            </select>
-        </div>
-        <p style="color:var(--muted);font-size:0.8em;margin:4px 0 12px;">Track how each search query performs across AI engines over multiple runs. Green = mentioned, red = not found.</p>
-        <div id="ai-trends-content">Loading trends...</div>
+        <h4 style="margin:0 0 12px;">AI Visibility Dashboard</h4>
+        <div id="ai-trends-content">Loading...</div>
     </div>
 </div>
 
@@ -1286,141 +1273,196 @@ function exportAiMentionsCsv(customerId) {
     URL.revokeObjectURL(url);
 }
 
-// Store trend data globally for filtering
-window._aiTrendData = null;
-window._aiTrendCustomerId = null;
-
 function loadAiTrends(customerId) {
-    window._aiTrendCustomerId = customerId;
     fetch('/api/ai-mentions/' + customerId + '/trends')
         .then(r => r.json())
         .then(data => {
             if (!data.ok) return;
-            window._aiTrendData = data;
-            renderTrends(data);
+            renderAiDashboard(data);
         })
         .catch(() => {
             const div = document.getElementById('ai-trends-content');
-            if (div) div.innerHTML = '<p style="color:#ef4444;">Failed to load trends</p>';
+            if (div) div.innerHTML = '<p style="color:#ef4444;">Failed to load data</p>';
         });
 }
 
-function filterTrends() {
-    if (window._aiTrendData) renderTrends(window._aiTrendData);
-}
-
-function renderTrends(data) {
+function renderAiDashboard(data) {
     const div = document.getElementById('ai-trends-content');
     if (!div) return;
-    const filter = document.getElementById('ai-trends-filter')?.value || 'all';
     const dates = data.dates || [];
-    let trends = data.trends || [];
+    const trends = data.trends || [];
+    const latestDate = dates.length ? dates[dates.length - 1] : null;
 
-    if (dates.length === 0 || trends.length === 0) {
-        div.innerHTML = '<p style="color:var(--muted);font-size:0.85em;">No trend data yet. Run an AI mention check to get started.</p>';
+    if (!latestDate || trends.length === 0) {
+        div.innerHTML = '<p style="color:var(--muted);font-size:0.85em;">No data yet. Run an AI mention check to get started.</p>';
         return;
     }
 
-    if (filter !== 'all') {
-        trends = trends.filter(t => t.category === filter);
-    }
+    // Aggregate latest run data
+    const engines = {};
+    const categories = {};
+    let totalMentions = 0, totalChecks = 0;
+    const blindSpots = []; // queries where NO engine mentions
+    const topHits = []; // queries mentioned by most engines
 
-    if (trends.length === 0) {
-        div.innerHTML = '<p style="color:var(--muted);">No data for this category.</p>';
-        return;
-    }
+    trends.forEach(t => {
+        let qMentions = 0, qChecks = 0;
+        const qEngines = [];
+        for (const [eng, engData] of Object.entries(t.engines)) {
+            const latest = engData[latestDate];
+            if (!latest) continue;
+            if (!engines[eng]) engines[eng] = {mentions: 0, total: 0};
+            engines[eng].total++;
+            totalChecks++;
+            if (latest.mentioned) {
+                engines[eng].mentions++;
+                totalMentions++;
+                qMentions++;
+                qEngines.push(eng);
+            }
+            qChecks++;
+        }
+        // Category stats
+        const cat = t.category;
+        if (!categories[cat]) categories[cat] = {mentions: 0, total: 0, queries: 0, found: 0};
+        categories[cat].queries++;
+        categories[cat].total += qChecks;
+        categories[cat].mentions += qMentions;
+        if (qMentions > 0) categories[cat].found++;
 
-    const catLabels = {brand:'Brand',general:'General',service:'Service',location:'Location',comparison:'Comparison',reputation:'Reputation',recommendation:'Recommend'};
-    const engines = [...new Set(trends.flatMap(t => Object.keys(t.engines)))];
-    const dateLabels = dates.map(d => d.slice(5)); // MM-DD
+        if (qMentions === 0 && qChecks > 0) blindSpots.push(t.prompt);
+        if (qMentions > 0) topHits.push({prompt: t.prompt, count: qMentions, total: qChecks, engines: qEngines});
+    });
+
+    topHits.sort((a, b) => b.count - a.count);
+    const overallRate = totalChecks > 0 ? Math.round(totalMentions / totalChecks * 100) : 0;
+    const bestEngine = Object.entries(engines).sort((a, b) => (b[1].mentions/b[1].total) - (a[1].mentions/a[1].total))[0];
+    const worstEngine = Object.entries(engines).sort((a, b) => (a[1].mentions/a[1].total) - (b[1].mentions/b[1].total))[0];
+    const queriesFound = trends.filter(t => {
+        return Object.values(t.engines).some(e => e[latestDate]?.mentioned);
+    }).length;
 
     let html = '';
 
-    // Group by category
-    const byCategory = {};
-    trends.forEach(t => {
-        if (!byCategory[t.category]) byCategory[t.category] = [];
-        byCategory[t.category].push(t);
+    // === SCORECARDS ===
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;">';
+    const scoreColor = overallRate > 40 ? '#059669' : overallRate > 20 ? '#d97706' : '#dc2626';
+    html += _scoreCard('Mention Rate', overallRate + '%', totalMentions + '/' + totalChecks + ' checks', scoreColor);
+    html += _scoreCard('Query Coverage', queriesFound + '/' + trends.length, Math.round(queriesFound/trends.length*100) + '% of queries found', '#2563eb');
+    html += _scoreCard('Blind Spots', blindSpots.length + '', 'queries with zero mentions', blindSpots.length > 5 ? '#dc2626' : '#d97706');
+    if (bestEngine) {
+        const bePct = Math.round(bestEngine[1].mentions / bestEngine[1].total * 100);
+        html += _scoreCard('Best Engine', bestEngine[0], bePct + '% mention rate', '#059669');
+    }
+    html += '</div>';
+
+    // === ENGINE PERFORMANCE ===
+    html += '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html += '<h5 style="margin:0 0 12px;font-size:0.9em;color:#374151;">Engine Performance</h5>';
+    const engSorted = Object.entries(engines).sort((a, b) => (b[1].mentions/b[1].total) - (a[1].mentions/a[1].total));
+    engSorted.forEach(([eng, stats]) => {
+        const pct = Math.round(stats.mentions / stats.total * 100);
+        const barColor = pct > 40 ? '#22c55e' : pct > 15 ? '#f59e0b' : '#ef4444';
+        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
+        html += '<span style="font-size:0.8em;font-weight:600;color:#374151;min-width:80px;">' + eng + '</span>';
+        html += '<div style="flex:1;height:20px;background:#f3f4f6;border-radius:4px;overflow:hidden;position:relative;">';
+        html += '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;transition:width 0.5s;"></div>';
+        html += '</div>';
+        html += '<span style="font-size:0.8em;font-weight:600;color:#374151;min-width:65px;text-align:right;">' + stats.mentions + '/' + stats.total + ' (' + pct + '%)</span>';
+        html += '</div>';
     });
+    html += '</div>';
 
-    for (const [cat, catTrends] of Object.entries(byCategory)) {
-        html += '<details open style="margin-bottom:16px;">';
-        html += '<summary style="cursor:pointer;padding:8px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;font-weight:600;">' + (catLabels[cat] || cat) + ' (' + catTrends.length + ' queries)</summary>';
-        html += '<div style="overflow-x:auto;margin-top:8px;">';
+    // === CATEGORY BREAKDOWN ===
+    const catLabels = {brand:'Brand Awareness',general:'General Discovery',service:'Service-Specific',location:'Location/Area',comparison:'Competitor Comparison',reputation:'Reputation',recommendation:'Recommendations'};
+    html += '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
+    html += '<h5 style="margin:0 0 12px;font-size:0.9em;color:#374151;">Category Coverage</h5>';
+    html += '<table style="width:100%;font-size:0.82em;border-collapse:collapse;">';
+    html += '<tr style="border-bottom:2px solid #e5e7eb;"><th style="text-align:left;padding:6px;">Category</th><th style="text-align:center;padding:6px;">Queries</th><th style="text-align:center;padding:6px;">Found In</th><th style="text-align:center;padding:6px;">Mention Rate</th><th style="padding:6px;min-width:120px;"></th></tr>';
+    for (const [cat, stats] of Object.entries(categories).sort((a,b) => b[1].mentions/b[1].total - a[1].mentions/a[1].total)) {
+        const pct = stats.total > 0 ? Math.round(stats.mentions / stats.total * 100) : 0;
+        const barColor = pct > 40 ? '#22c55e' : pct > 15 ? '#f59e0b' : '#ef4444';
+        const foundPct = stats.queries > 0 ? Math.round(stats.found / stats.queries * 100) : 0;
+        html += '<tr style="border-bottom:1px solid #f3f4f6;">';
+        html += '<td style="padding:6px;font-weight:500;">' + (catLabels[cat] || cat) + '</td>';
+        html += '<td style="text-align:center;padding:6px;">' + stats.queries + '</td>';
+        html += '<td style="text-align:center;padding:6px;">' + stats.found + '/' + stats.queries + ' (' + foundPct + '%)</td>';
+        html += '<td style="text-align:center;padding:6px;font-weight:600;color:' + barColor + ';">' + pct + '%</td>';
+        html += '<td style="padding:6px;"><div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;"></div></div></td>';
+        html += '</tr>';
+    }
+    html += '</table>';
+    html += '</div>';
 
-        catTrends.forEach(trend => {
-            html += '<div style="margin-bottom:14px;padding:8px 10px;background:white;border:1px solid #e5e7eb;border-radius:6px;">';
-            html += '<div style="font-size:0.85em;font-weight:600;color:#374151;margin-bottom:6px;">' + trend.prompt + '</div>';
-
-            // One sparkline row per engine
-            engines.forEach(eng => {
-                const engData = trend.engines[eng];
-                if (!engData) return;
-
-                // Count mentions across dates
-                const mentionCount = dates.filter(d => engData[d]?.mentioned).length;
-                const total = dates.filter(d => engData[d]).length;
-                if (total === 0) return;
-
-                html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
-                html += '<span style="font-size:0.72em;color:#6b7280;min-width:60px;text-align:right;">' + eng + '</span>';
-
-                // Sparkline cells
-                html += '<div style="display:flex;gap:2px;align-items:center;">';
-                dates.forEach(d => {
-                    const point = engData[d];
-                    if (!point) {
-                        html += '<div style="width:20px;height:16px;background:#f3f4f6;border-radius:2px;" title="' + d + ': no data"></div>';
-                    } else if (point.mentioned) {
-                        const q = point.quality || 0;
-                        const bg = q >= 50 ? '#22c55e' : q >= 25 ? '#86efac' : '#bbf7d0';
-                        const pos = point.position ? '#' + point.position : '✓';
-                        html += '<div style="width:20px;height:16px;background:' + bg + ';border-radius:2px;text-align:center;font-size:0.6em;line-height:16px;color:#166534;font-weight:600;" title="' + d + ': Mentioned ' + pos + ' (Q:' + q + ')">' + (point.position || '✓') + '</div>';
-                    } else {
-                        html += '<div style="width:20px;height:16px;background:#fecaca;border-radius:2px;" title="' + d + ': Not found"></div>';
-                    }
-                });
-                html += '</div>';
-
-                // Summary
-                const pct = Math.round(mentionCount / total * 100);
-                const trendColor = pct > 50 ? '#22c55e' : pct > 0 ? '#f59e0b' : '#ef4444';
-                html += '<span style="font-size:0.7em;color:' + trendColor + ';min-width:30px;">' + pct + '%</span>';
-
-                // Direction arrow (compare last two dates)
-                const recentDates = dates.filter(d => engData[d]);
-                if (recentDates.length >= 2) {
-                    const prev = engData[recentDates[recentDates.length - 2]];
-                    const curr = engData[recentDates[recentDates.length - 1]];
-                    if (curr.mentioned && !prev.mentioned) {
-                        html += '<span style="color:#22c55e;font-size:0.75em;">▲</span>';
-                    } else if (!curr.mentioned && prev.mentioned) {
-                        html += '<span style="color:#ef4444;font-size:0.75em;">▼</span>';
-                    }
-                }
-
-                html += '</div>';
-            });
-            html += '</div>';
+    // === BLIND SPOTS (zero mentions) ===
+    if (blindSpots.length > 0) {
+        html += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:16px;">';
+        html += '<h5 style="margin:0 0 4px;font-size:0.9em;color:#991b1b;">Blind Spots — Not Found by Any Engine (' + blindSpots.length + ')</h5>';
+        html += '<p style="font-size:0.75em;color:#b91c1c;margin:0 0 10px;">These queries return zero mentions across all AI engines. Focus content optimization here.</p>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+        blindSpots.forEach(q => {
+            html += '<span style="display:inline-block;padding:3px 10px;background:white;border:1px solid #fca5a5;border-radius:4px;font-size:0.78em;color:#991b1b;">' + q + '</span>';
         });
-
-        html += '</div></details>';
+        html += '</div></div>';
     }
 
-    // Date legend
-    html += '<div style="display:flex;gap:2px;align-items:center;margin-top:8px;padding-left:66px;">';
-    dateLabels.forEach(d => {
-        html += '<div style="width:20px;text-align:center;font-size:0.6em;color:#9ca3af;">' + d + '</div>';
+    // === TOP MENTIONS (best performing) ===
+    if (topHits.length > 0) {
+        html += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:16px;">';
+        html += '<h5 style="margin:0 0 8px;font-size:0.9em;color:#166534;">Top Mentions (' + Math.min(topHits.length, 10) + ')</h5>';
+        html += '<table style="width:100%;font-size:0.82em;border-collapse:collapse;">';
+        html += '<tr style="border-bottom:2px solid #bbf7d0;"><th style="text-align:left;padding:4px;">Query</th><th style="text-align:center;padding:4px;">Engines</th><th style="padding:4px;">Found In</th></tr>';
+        topHits.slice(0, 10).forEach(h => {
+            html += '<tr style="border-bottom:1px solid #dcfce7;">';
+            html += '<td style="padding:4px;font-weight:500;">' + h.prompt + '</td>';
+            html += '<td style="text-align:center;padding:4px;font-weight:600;color:#166534;">' + h.count + '/' + h.total + '</td>';
+            html += '<td style="padding:4px;">';
+            h.engines.forEach(e => {
+                html += '<span style="display:inline-block;padding:1px 6px;background:#dcfce7;border-radius:3px;font-size:0.85em;color:#166534;margin:1px;">' + e + '</span>';
+            });
+            html += '</td></tr>';
+        });
+        html += '</table></div>';
+    }
+
+    // === DETAILED QUERY RESULTS (collapsed) ===
+    html += '<details style="margin-top:8px;">';
+    html += '<summary style="cursor:pointer;padding:8px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;font-weight:600;font-size:0.85em;">All Query Results (' + trends.length + ' queries)</summary>';
+    html += '<div style="margin-top:8px;">';
+    html += '<table style="width:100%;font-size:0.8em;border-collapse:collapse;">';
+    html += '<tr style="border-bottom:2px solid #e5e7eb;"><th style="text-align:left;padding:5px;">Query</th><th style="text-align:left;padding:5px;">Category</th>';
+    const engNames = Object.keys(engines);
+    engNames.forEach(e => { html += '<th style="text-align:center;padding:5px;">' + e + '</th>'; });
+    html += '</tr>';
+    trends.forEach(t => {
+        html += '<tr style="border-bottom:1px solid #f3f4f6;">';
+        html += '<td style="padding:5px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.prompt + '">' + t.prompt + '</td>';
+        html += '<td style="padding:5px;color:#6b7280;font-size:0.9em;">' + (catLabels[t.category] || t.category) + '</td>';
+        engNames.forEach(eng => {
+            const engData = t.engines[eng];
+            const latest = engData ? engData[latestDate] : null;
+            if (!latest) {
+                html += '<td style="text-align:center;padding:5px;color:#d1d5db;">-</td>';
+            } else if (latest.mentioned) {
+                const pos = latest.position ? '#' + latest.position : '';
+                html += '<td style="text-align:center;padding:5px;"><span style="color:#22c55e;font-weight:700;">Y</span><span style="font-size:0.8em;color:#6b7280;margin-left:2px;">' + pos + '</span></td>';
+            } else {
+                html += '<td style="text-align:center;padding:5px;color:#ef4444;">N</td>';
+            }
+        });
+        html += '</tr>';
     });
-    html += '</div>';
-    html += '<div style="display:flex;gap:12px;margin-top:8px;font-size:0.72em;color:#6b7280;">';
-    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#22c55e;border-radius:2px;"></span> Mentioned (high quality)</span>';
-    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#bbf7d0;border-radius:2px;"></span> Mentioned</span>';
-    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#fecaca;border-radius:2px;"></span> Not found</span>';
-    html += '<span><span style="display:inline-block;width:12px;height:10px;background:#f3f4f6;border-radius:2px;"></span> No data</span>';
-    html += '</div>';
+    html += '</table></div></details>';
 
     div.innerHTML = html;
+}
+
+function _scoreCard(label, value, subtitle, color) {
+    return '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px;text-align:center;">'
+        + '<div style="font-size:1.5em;font-weight:700;color:' + color + ';">' + value + '</div>'
+        + '<div style="font-size:0.8em;font-weight:600;color:#374151;margin-top:2px;">' + label + '</div>'
+        + '<div style="font-size:0.7em;color:#6b7280;margin-top:2px;">' + subtitle + '</div>'
+        + '</div>';
 }
 
 function loadAiRunsHistory(customerId) {
