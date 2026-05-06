@@ -95,6 +95,8 @@ def generate_ai_mention_report(
     _add_executive_summary(doc, customer, run_data, results)
     _add_engine_breakdown(doc, run_data)
     _add_category_analysis(doc, results)
+    _add_blind_spots(doc, results)
+    _add_top_mentions(doc, results)
     _add_results_detail(doc, results)
 
     if history and len(history) >= 2:
@@ -349,6 +351,102 @@ def _add_category_analysis(doc: Document, results: list[dict]):
             p = doc.add_paragraph()
             _add_run(p, f"{CAT_LABELS.get(cat, cat)}: ", bold=True, size=9, color=DARK)
             _add_run(p, desc, size=9, color=GRAY)
+
+    doc.add_paragraph()
+
+
+def _add_blind_spots(doc: Document, results: list[dict]):
+    """Queries where NO engine mentions the practice — highest priority gaps."""
+    # Group results by prompt
+    by_prompt = {}
+    for r in results:
+        prompt = r.get("prompt", "")
+        by_prompt.setdefault(prompt, {"mentioned": False, "category": r.get("category") or r.get("prompt_category", "")})
+        if r.get("mentioned"):
+            by_prompt[prompt]["mentioned"] = True
+
+    blind_spots = [(p, d["category"]) for p, d in by_prompt.items() if not d["mentioned"]]
+    if not blind_spots:
+        return
+
+    doc.add_heading("Blind Spots — Zero Mentions", level=1)
+
+    p = doc.add_paragraph()
+    _add_run(p, f"These {len(blind_spots)} queries returned ", size=10, color=GRAY)
+    _add_run(p, "zero mentions", bold=True, size=10, color=RED)
+    _add_run(p, " across all AI engines. These are your highest-priority content gaps — "
+             "the searches where potential patients are asking AI for help and your practice is invisible.", size=10, color=GRAY)
+    doc.add_paragraph()
+
+    table = doc.add_table(rows=1 + len(blind_spots), cols=2)
+    table.style = "Light Grid Accent 1"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    for i, header in enumerate(["Search Query", "Category"]):
+        cell = table.cell(0, i)
+        cell.text = header
+        for run in cell.paragraphs[0].runs:
+            run.bold = True
+            run.font.size = Pt(9)
+
+    for ri, (prompt, cat) in enumerate(blind_spots, start=1):
+        table.cell(ri, 0).text = prompt
+        table.cell(ri, 1).text = CAT_LABELS.get(cat, cat.title())
+        _set_cell_shading(table.cell(ri, 0), "FEF2F2")
+        for cell in [table.cell(ri, 0), table.cell(ri, 1)]:
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(9)
+
+    doc.add_paragraph()
+
+
+def _add_top_mentions(doc: Document, results: list[dict]):
+    """Queries with the strongest AI visibility — what's working."""
+    # Group results by prompt, count engines that mention
+    by_prompt = {}
+    for r in results:
+        prompt = r.get("prompt", "")
+        engine = r.get("ai") or r.get("engine", "")
+        by_prompt.setdefault(prompt, {"engines": [], "total": 0})
+        by_prompt[prompt]["total"] += 1
+        if r.get("mentioned"):
+            by_prompt[prompt]["engines"].append(engine)
+
+    top_hits = [(p, d["engines"], d["total"]) for p, d in by_prompt.items() if d["engines"]]
+    top_hits.sort(key=lambda x: len(x[1]), reverse=True)
+    top_hits = top_hits[:10]
+
+    if not top_hits:
+        return
+
+    doc.add_heading("Top Mentions — Where You're Winning", level=1)
+
+    p = doc.add_paragraph()
+    _add_run(p, "These queries generate the most AI mentions for your practice. "
+             "This is what's working — the content and signals that AI engines are picking up on.", size=10, color=GRAY)
+    doc.add_paragraph()
+
+    table = doc.add_table(rows=1 + len(top_hits), cols=3)
+    table.style = "Light Grid Accent 1"
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    for i, header in enumerate(["Search Query", "Engines", "Found In"]):
+        cell = table.cell(0, i)
+        cell.text = header
+        for run in cell.paragraphs[0].runs:
+            run.bold = True
+            run.font.size = Pt(9)
+
+    for ri, (prompt, engines, total) in enumerate(top_hits, start=1):
+        table.cell(ri, 0).text = prompt
+        table.cell(ri, 1).text = f"{len(engines)}/{total}"
+        table.cell(ri, 2).text = ", ".join(engines)
+        _set_cell_shading(table.cell(ri, 0), "F0FDF4")
+        for cell in [table.cell(ri, 0), table.cell(ri, 1), table.cell(ri, 2)]:
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.size = Pt(9)
 
     doc.add_paragraph()
 
