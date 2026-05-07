@@ -7,15 +7,15 @@
 <div class="grid grid-2">
     <div>
         <div class="card">
-            <h2>Practice Info</h2>
+            <h2>Business Info</h2>
             <form method="POST" action="{{ url_for('add_customer') }}" id="onboard-form">
                 <div class="form-group">
-                    <label for="name">Practice Name *</label>
-                    <input type="text" id="name" name="name" required placeholder="e.g. Downtown Dental">
+                    <label for="name">Business Name *</label>
+                    <input type="text" id="name" name="name" required placeholder="e.g. Downtown Dental, Axis Biotech">
                 </div>
                 <div class="form-group">
                     <label for="url">Website URL *</label>
-                    <input type="text" id="url" name="url" required placeholder="e.g. downtowndentalsmile.com">
+                    <input type="text" id="url" name="url" required placeholder="e.g. example.com">
                 </div>
                 <div class="form-group">
                     <label for="contact_name">Contact Name</label>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="form-group">
                     <label for="contact_email">Contact Email</label>
-                    <input type="email" id="contact_email" name="contact_email" placeholder="e.g. doctor@practice.com">
+                    <input type="email" id="contact_email" name="contact_email" placeholder="e.g. owner@example.com">
                 </div>
                 <div class="form-group">
                     <label for="contact_phone">Contact Phone</label>
@@ -33,6 +33,7 @@
                     <label for="platform">Website Platform</label>
                     <select id="platform" name="platform">
                         <option value="auto">Auto-detect</option>
+                        <option value="shopify">Shopify</option>
                         <option value="squarespace">Squarespace</option>
                         <option value="webflow">Webflow</option>
                         <option value="wordpress">WordPress</option>
@@ -42,10 +43,12 @@
                 <div class="form-group">
                     <label for="business_type">Business Type</label>
                     <select id="business_type" name="business_type">
-                        <option value="practice" selected>Dental Practice</option>
-                        <option value="technology">Dental Technology / SaaS</option>
-                        <option value="product">Dental Product Company</option>
-                        <option value="service">Dental Service (Lab, Supplier)</option>
+                        <option value="practice">Dental / Medical Practice</option>
+                        <option value="ecommerce">E-Commerce / Retail</option>
+                        <option value="technology">Technology / SaaS</option>
+                        <option value="product">Product Company</option>
+                        <option value="service">Service Business</option>
+                        <option value="other">Other</option>
                     </select>
                 </div>
 

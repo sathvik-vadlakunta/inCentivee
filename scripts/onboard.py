@@ -51,6 +51,8 @@ def detect_platform(domain: str) -> str:
         return "webflow"
     if "wp-content" in html or "wordpress" in html:
         return "wordpress"
+    if "shopify" in html or "cdn.shopify" in html or "myshopify" in html:
+        return "shopify"
     return "unknown"
 
 

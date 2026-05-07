@@ -344,18 +344,25 @@ def add_customer():
                     cms = hosting_info["cms"].lower()
                     if "wordpress" in cms:
                         db.update_customer(customer_id, platform="wordpress")
+                        platform = "wordpress"
                     elif "webflow" in cms:
                         db.update_customer(customer_id, platform="webflow")
+                        platform = "webflow"
                     elif "squarespace" in cms:
                         db.update_customer(customer_id, platform="squarespace")
+                        platform = "squarespace"
+                    elif "shopify" in cms:
+                        db.update_customer(customer_id, platform="shopify")
+                        platform = "shopify"
                     elif "wix" in cms:
                         db.update_customer(customer_id, platform="wix")
+                        platform = "wix"
             except Exception as e:
                 logger.warning(f"Hosting detection failed for {domain}: {e}")
 
             # Set up platform access tracking
             access_platforms = ["gsc", "ga", "gbp", "cloudflare"]
-            if platform in ("webflow", "squarespace", "wordpress"):
+            if platform in ("webflow", "squarespace", "wordpress", "shopify"):
                 access_platforms.append(platform)
             for p in access_platforms:
                 db.add_platform_access(customer_id, p)
@@ -1288,6 +1295,16 @@ SEO_GEO_TASKS = [
              "<b>Same process as LocalBusiness schema</b> — paste the Organization JSON-LD into"
              " <b>Website → Developer Tools → Code Injection → Header</b>."
          ),
+         "shopify": (
+             "<b>How to add schema in Shopify:</b>"
+             "<ol>"
+             "<li>Go to <b>Online Store → Themes → Edit Code</b></li>"
+             "<li>Open <code>theme.liquid</code></li>"
+             "<li>Paste the JSON-LD script just before <code>&lt;/head&gt;</code></li>"
+             "<li>Or use the <b>Admin API</b> with the token to inject via ScriptTag API</li>"
+             "</ol>"
+             "<b>To verify:</b> View page source and search for <code>Organization</code>."
+         ),
      }},
     {"key": "seo_schema_faq", "task": "FAQPage schema on all service pages", "category": "Schema Markup"},
     {"key": "seo_schema_medical", "task": "MedicalProcedure schema for each service", "category": "Schema Markup", "practice_only": True},
@@ -1296,6 +1313,20 @@ SEO_GEO_TASKS = [
     # llms.txt & AI Readiness
     {"key": "seo_llms_txt", "task": "Deploy llms.txt on domain", "category": "AI Readiness (GEO)",
      "guide": {
+         "shopify": (
+             "<b>What is llms.txt?</b> A file that tells AI search engines (ChatGPT, Claude, Perplexity) about the business."
+             " It lives at <code>https://{domain}/llms.txt</code>."
+             "<br><br>"
+             "<b>For Shopify sites:</b> The file can be served directly through Shopify — no Cloudflare needed."
+             "<ol>"
+             "<li>In Shopify Admin, go to <b>Online Store → Pages</b></li>"
+             "<li>Create a new page with the llms.txt content (or upload via the Admin API using the token)</li>"
+             "<li>Set the URL handle to <code>llms.txt</code></li>"
+             "</ol>"
+             "<b>Alternatively:</b> Upload via Shopify Admin API (Content → Files) if the client provided an API token."
+             "<br><br>"
+             "<b>To verify:</b> Open <code>https://{domain}/llms.txt</code> in your browser."
+         ),
          "_default": (
              "<b>What is llms.txt?</b> A file that tells AI search engines (ChatGPT, Claude, Perplexity) about the business."
              " It lives at <code>https://{domain}/llms.txt</code>."
@@ -1330,7 +1361,7 @@ SEO_GEO_TASKS = [
              "If AI bots are blocked (Disallow: /), the redirect needs to be configured to point to our Worker."
          ),
      }},
-    {"key": "seo_cloudflare_worker", "task": "Cloudflare Worker serving llms.txt + robots.txt", "category": "AI Readiness (GEO)",
+    {"key": "seo_cloudflare_worker", "task": "Cloudflare Worker serving llms.txt + robots.txt", "category": "AI Readiness (GEO)", "skip_platforms": ["shopify"],
      "guide": {
          "_default": (
              "<b>What this is:</b> A Cloudflare Worker is a small program that serves our generated files (llms.txt, llms-full.txt, robots.txt)."
@@ -1343,7 +1374,7 @@ SEO_GEO_TASKS = [
              "<b>If it returns an error or empty:</b> Ask Jon to run the GEO Agent to upload files for this customer."
          ),
      }},
-    {"key": "seo_robots_redirected", "task": "Set up redirects: /llms.txt, /llms-full.txt → Worker", "category": "AI Readiness (GEO)",
+    {"key": "seo_robots_redirected", "task": "Set up redirects: /llms.txt, /llms-full.txt → Worker", "category": "AI Readiness (GEO)", "skip_platforms": ["shopify"],
      "guide": {
          "webflow": (
              "<b>Set up Webflow 301 redirects to point /robots.txt and /llms.txt to the Worker:</b>"
@@ -2099,6 +2130,9 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
             continue
         # Skip platform-specific tasks for other platforms
         if t.get("platform_only") and t["platform_only"] != platform:
+            continue
+        # Skip tasks excluded for this platform
+        if platform in t.get("skip_platforms", []):
             continue
         # Auto-detected takes priority over manual checklist
         done = ad.get(t["key"], checklist.get(t["key"], False))
