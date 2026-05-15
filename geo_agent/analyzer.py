@@ -283,11 +283,12 @@ def _merge_results(results: list[dict]) -> dict:
         merged["faq_entries"].update(r.get("faq_entries", {}))
 
         # Merge content gaps (dedup by slug)
-        seen_slugs = {g.get("slug") for g in merged["content_gaps"]}
-        for gap in r.get("content_gaps", []):
-            if gap.get("slug") not in seen_slugs:
+        seen_slugs = {g.get("slug") if isinstance(g, dict) else g for g in merged["content_gaps"]}
+        for gap in r.get("content_gaps", []) if isinstance(r.get("content_gaps"), list) else []:
+            key = gap.get("slug") if isinstance(gap, dict) else str(gap)
+            if key not in seen_slugs:
                 merged["content_gaps"].append(gap)
-                seen_slugs.add(gap.get("slug"))
+                seen_slugs.add(key)
 
         # Merge service descriptions (keyed by page URL/title)
         merged["service_descriptions"].update(r.get("service_descriptions", {}))
