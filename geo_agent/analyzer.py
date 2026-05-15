@@ -156,44 +156,13 @@ def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
 
-def analyze_and_recommend(
-    customer: Customer,
-    pages: list[PageData],
-    current_llms_txt: str | None = None,
-    verified_data: VerifiedBusinessData | None = None,
-    competitors: list[CompetitorData] | None = None,
-) -> dict:
-    """Analyze current site content and generate SEO/GEO recommendations.
-
-    Returns a dict with:
-    - faq_entries: Generated FAQ Q&A pairs per service page
-    - content_gaps: Missing pages/content that should exist
-    - service_descriptions: Improved descriptions for llms.txt
-    - meta_improvements: Title/description suggestions
-    - priority_actions: Ranked list of what to do first
-    """
-    client = get_client()
-
-    # Build the analysis prompt with all page content
-    pages_summary = []
-    for page in pages:
-        truncated = page.content[:2000]
-        pages_summary.append(
-            f"**Page: {page.title}** (URL: {page.url}, Category: {page.category})\n"
-            f"Content preview:\n{truncated}\n"
-        )
-
-    pages_text = "\n---\n".join(pages_summary)
-
-    providers_info = "\n".join(
-        f"- {p.name}, {p.credentials}, specialties: {', '.join(p.specialties)}"
-        for p in customer.providers
-    ) or "No provider info available"
-
-    # Build verified data section — only include data that meets confidence thresholds
-    verified_section = ""
+def _build_verified_section(
+    verified_data: VerifiedBusinessData | None,
+    competitors: list[CompetitorData] | None,
+) -> str:
+    """Build the verified data section for the prompt."""
     if is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS):
-        verified_section = f"""
+        section = f"""
 ## Google-Verified Business Data
 CRITICAL: Use these EXACT numbers — do not estimate or guess.
 - **Google Rating**: {verified_data.rating} stars ({verified_data.review_count} reviews)
@@ -206,21 +175,31 @@ CRITICAL: Use these EXACT numbers — do not estimate or guess.
             comp_lines = []
             for c in competitors[:10]:
                 comp_lines.append(f"  - {c.name}: {c.rating} stars ({c.review_count} reviews) — {c.address}")
-            verified_section += "\n### Nearby Competitors (from Google Maps)\n" + "\n".join(comp_lines) + "\n"
-    else:
-        verified_section = """
+            section += "\n### Nearby Competitors (from Google Maps)\n" + "\n".join(comp_lines) + "\n"
+        return section
+
+    return """
 ## Google Places Data
-WARNING: Google Places data was not available for this practice.
+WARNING: Google Places data was not available for this business.
 Be conservative with any review count or rating estimates. Do NOT fabricate specific numbers.
 """
 
-    profile = get_profile(customer)
-    customer_term = profile.customer_term
-    singular_term = customer_term[:-1] if customer_term.endswith("s") else customer_term
 
-    user_prompt = f"""\
-Analyze this {profile.industry_label.lower()}'s website and generate specific, actionable improvements.
+def _build_business_context(
+    customer: Customer,
+    profile: BusinessProfile,
+    verified_data: VerifiedBusinessData | None = None,
+    competitors: list[CompetitorData] | None = None,
+) -> str:
+    """Build the business context section shared across all analysis chunks."""
+    providers_info = "\n".join(
+        f"- {p.name}, {p.credentials}, specialties: {', '.join(p.specialties)}"
+        for p in customer.providers
+    ) or "No provider info available"
 
+    verified_section = _build_verified_section(verified_data, competitors)
+
+    return f"""\
 ## Business Info
 - **Name**: {customer.name}
 - **Business Type**: {profile.industry_label}
@@ -232,18 +211,149 @@ Analyze this {profile.industry_label.lower()}'s website and generate specific, a
 {providers_info}
 - **Brand Voice**: {customer.brand_voice}
 - **Emergency Available**: {customer.emergency_available}
+{verified_section}"""
 
-## Current Website Pages ({len(pages)} total)
+
+def _chunk_pages(pages: list[PageData], max_chars: int = 20000) -> list[list[PageData]]:
+    """Split pages into chunks that fit within a prompt budget.
+
+    Each chunk stays under max_chars of page content (at 2000 chars/page truncation).
+    This ensures the Claude response has room for FAQs without getting truncated.
+    """
+    chunks: list[list[PageData]] = []
+    current_chunk: list[PageData] = []
+    current_size = 0
+
+    for page in pages:
+        page_size = min(len(page.content), 2000) + 200  # +200 for title/url/formatting
+        if current_size + page_size > max_chars and current_chunk:
+            chunks.append(current_chunk)
+            current_chunk = []
+            current_size = 0
+        current_chunk.append(page)
+        current_size += page_size
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks
+
+
+def _parse_json_response(response_text: str) -> dict | None:
+    """Parse a JSON response, handling code fences and common issues."""
+    text = response_text.strip()
+
+    # Strip code fences
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1]
+        text = text.rsplit("```", 1)[0]
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Try to repair truncated JSON by closing open structures
+    # Common case: response cut off mid-string or mid-object
+    repaired = text.rstrip()
+    # Close any open strings
+    if repaired.count('"') % 2 != 0:
+        repaired += '"'
+    # Try progressively closing structures
+    for suffix in ['"}]}', '"}]', '"}', '}]', '}', ']']:
+        try:
+            return json.loads(repaired + suffix)
+        except json.JSONDecodeError:
+            continue
+
+    return None
+
+
+def _merge_results(results: list[dict]) -> dict:
+    """Merge multiple chunk analysis results into one combined result."""
+    merged: dict = {
+        "faq_entries": {},
+        "content_gaps": [],
+        "service_descriptions": {},
+        "priority_actions": [],
+    }
+
+    for r in results:
+        # Merge FAQ entries (keyed by URL, no conflicts possible across chunks)
+        merged["faq_entries"].update(r.get("faq_entries", {}))
+
+        # Merge content gaps (dedup by slug)
+        seen_slugs = {g.get("slug") for g in merged["content_gaps"]}
+        for gap in r.get("content_gaps", []):
+            if gap.get("slug") not in seen_slugs:
+                merged["content_gaps"].append(gap)
+                seen_slugs.add(gap.get("slug"))
+
+        # Merge service descriptions (keyed by page URL/title)
+        merged["service_descriptions"].update(r.get("service_descriptions", {}))
+
+        # Collect all priority actions
+        merged["priority_actions"].extend(r.get("priority_actions", []))
+
+    # Deduplicate priority actions and keep top 5
+    seen_actions: set[str] = set()
+    unique_actions = []
+    for action in merged["priority_actions"]:
+        action_key = action.lower().strip()[:60]
+        if action_key not in seen_actions:
+            seen_actions.add(action_key)
+            unique_actions.append(action)
+    merged["priority_actions"] = unique_actions[:5]
+
+    return merged
+
+
+def _analyze_chunk(
+    client: anthropic.Anthropic,
+    customer: Customer,
+    chunk: list[PageData],
+    chunk_idx: int,
+    total_chunks: int,
+    business_context: str,
+    profile: BusinessProfile,
+    all_page_titles: list[str],
+) -> dict:
+    """Analyze a single chunk of pages and return partial results."""
+    customer_term = profile.customer_term
+    singular_term = customer_term[:-1] if customer_term.endswith("s") else customer_term
+
+    pages_summary = []
+    for page in chunk:
+        truncated = page.content[:2000]
+        pages_summary.append(
+            f"**Page: {page.title}** (URL: {page.url}, Category: {page.category})\n"
+            f"Content preview:\n{truncated}\n"
+        )
+    pages_text = "\n---\n".join(pages_summary)
+
+    chunk_note = ""
+    if total_chunks > 1:
+        chunk_note = (
+            f"\nNOTE: This is batch {chunk_idx + 1} of {total_chunks}. "
+            f"You are analyzing {len(chunk)} pages in this batch. "
+            f"The full site has these pages: {', '.join(all_page_titles)}. "
+            f"Only generate FAQs and descriptions for the pages shown below. "
+            f"For content_gaps and priority_actions, consider the full site.\n"
+        )
+
+    user_prompt = f"""\
+Analyze this {profile.industry_label.lower()}'s website and generate specific, actionable improvements.
+
+{business_context}
+
+## Website Pages to Analyze ({len(chunk)} pages){chunk_note}
 {pages_text}
 
-## Current llms.txt
-{current_llms_txt or "None exists yet — this will be the first generation."}
-{verified_section}
 ## What I Need From You
 
 Return a JSON object with these keys:
 
-1. **faq_entries**: For each service page, generate 4-6 FAQ Q&A pairs that a potential
+1. **faq_entries**: For each service page below, generate 4-6 FAQ Q&A pairs that a potential
    {singular_term} would actually search for. Format: {{"page_url": [{{"question": "...", "answer": "..."}}]}}
    Make answers direct (start with the answer, not fluff), include the city name,
    and mention the provider/team by name where relevant.
@@ -252,7 +362,7 @@ Return a JSON object with these keys:
    the suggested title, URL slug, and a 2-sentence description of what it should cover.
    Focus on high-search-volume {profile.industry} queries for {customer.city}.
 
-3. **service_descriptions**: For each service page, write an improved 1-2 sentence
+3. **service_descriptions**: For each service page below, write an improved 1-2 sentence
    description optimized for llms.txt (concise, factual, includes location and provider).
 
 4. **priority_actions**: Top 5 ranked actions this business should take to get more
@@ -264,8 +374,6 @@ Do NOT use generic dental or medical terminology unless this IS a dental/medical
 Return ONLY valid JSON, no markdown code fences.
 """
 
-    logger.info(f"Analyzing {customer.name} ({len(pages)} pages)")
-
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=8192,
@@ -273,23 +381,78 @@ Return ONLY valid JSON, no markdown code fences.
         messages=[{"role": "user", "content": user_prompt}],
     )
 
-    # Parse the JSON response
     response_text = response.content[0].text.strip()
-    # Handle if Claude wraps in code fences
-    if response_text.startswith("```"):
-        response_text = response_text.split("\n", 1)[1]
-        response_text = response_text.rsplit("```", 1)[0]
+    result = _parse_json_response(response_text)
 
-    try:
-        result = json.loads(response_text)
-    except json.JSONDecodeError:
-        logger.error(f"Failed to parse Claude response as JSON: {response_text[:200]}")
-        result = {
+    if result is None:
+        logger.error(f"Failed to parse Claude response (chunk {chunk_idx + 1}): {response_text[:200]}")
+        return {
             "faq_entries": {},
             "content_gaps": [],
             "service_descriptions": {},
-            "priority_actions": ["Error: Could not parse analysis results. Run again."],
+            "priority_actions": [],
         }
+
+    return result
+
+
+def analyze_and_recommend(
+    customer: Customer,
+    pages: list[PageData],
+    current_llms_txt: str | None = None,
+    verified_data: VerifiedBusinessData | None = None,
+    competitors: list[CompetitorData] | None = None,
+) -> dict:
+    """Analyze current site content and generate SEO/GEO recommendations.
+
+    For sites with many pages, splits into chunks and merges results to avoid
+    response truncation. Each chunk gets its own Claude call with the full
+    business context but only a subset of pages.
+
+    Returns a dict with:
+    - faq_entries: Generated FAQ Q&A pairs per service page
+    - content_gaps: Missing pages/content that should exist
+    - service_descriptions: Improved descriptions for llms.txt
+    - priority_actions: Ranked list of what to do first
+    """
+    client = get_client()
+    profile = get_profile(customer)
+
+    logger.info(f"Analyzing {customer.name} ({len(pages)} pages)")
+
+    business_context = _build_business_context(customer, profile, verified_data, competitors)
+    all_page_titles = [p.title for p in pages]
+
+    # Chunk pages to keep each prompt+response within token limits
+    chunks = _chunk_pages(pages)
+    if len(chunks) > 1:
+        logger.info(f"  Splitting {len(pages)} pages into {len(chunks)} analysis chunks")
+
+    # Analyze each chunk
+    chunk_results = []
+    for i, chunk in enumerate(chunks):
+        if len(chunks) > 1:
+            logger.info(f"  Analyzing chunk {i + 1}/{len(chunks)} ({len(chunk)} pages)")
+        result = _analyze_chunk(
+            client, customer, chunk, i, len(chunks),
+            business_context, profile, all_page_titles,
+        )
+        chunk_results.append(result)
+
+    # Merge results from all chunks
+    if len(chunk_results) == 1:
+        result = chunk_results[0]
+    else:
+        result = _merge_results(chunk_results)
+        logger.info(
+            f"  Merged {len(chunk_results)} chunks: "
+            f"{len(result.get('faq_entries', {}))} FAQ sets, "
+            f"{len(result.get('content_gaps', []))} gaps"
+        )
+
+    # If all chunks failed, add an error action so callers know
+    if not result.get("faq_entries") and not result.get("content_gaps") and not result.get("priority_actions"):
+        result["priority_actions"] = ["Error: Could not parse analysis results. Run again."]
 
     # Grade the response before returning
     issues = grade_analysis(result, customer, verified_data)
