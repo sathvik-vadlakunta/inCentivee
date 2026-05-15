@@ -77,22 +77,30 @@ def clean_page_content(raw_text: str) -> str:
         "", text, count=1, flags=re.IGNORECASE
     ).strip()
 
-    # Strip repeated page title at start (Webflow dumps "<title> <nav> <content>")
-    # Heuristic: if the first ~100 chars contains a phone number, strip everything up to it
-    phone_match = re.search(r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", text[:200])
-    if phone_match:
-        # Find the end of the nav block — look for the first sentence-like content after phone
-        after_phone = text[phone_match.end():]
-        # Strip email if right after phone
-        after_phone = re.sub(r"^\s*\S+@\S+\.\S+\s*", "", after_phone).strip()
-        # Strip remaining nav words
-        after_phone = re.sub(
-            r"^(Home\s+)?(What We \w+\s+)?(Services?\s+)?(Products?\s+)?(About\s+)?"
-            r"(Contact\s+)?(Blog\s+)?(FAQ\s+)?(Testimonials?\s+)?(Reviews?\s+)?",
-            "", after_phone, count=1, flags=re.IGNORECASE
+    # Strip Webflow-style nav blocks. Webflow renders nav as plain text:
+    # "<Title> <phone> <email> <nav links> <nav links again (mobile)> <actual content>"
+    # Detect by finding repeated nav marker words like "FAQ Blog" or "Contact More"
+    nav_end_markers = [
+        r"(?:FAQ|Blog|Testimonials?|Reviews?)\s+(?:FAQ|Blog|Testimonials?|Reviews?|Home)",
+        r"More\s+Virtual\s+",
+        r"(?:Contact|Blog|FAQ)\s+More\s+",
+    ]
+    best_pos = 0
+    for marker in nav_end_markers:
+        # Find the LAST occurrence (the second/mobile nav ends here)
+        for m in re.finditer(marker, text[:1000], re.IGNORECASE):
+            pos = m.end()
+            if pos > best_pos:
+                best_pos = pos
+    if best_pos > 50:
+        remainder = text[best_pos:].strip()
+        # Strip any trailing nav word remnants at the start
+        remainder = re.sub(
+            r"^(Home|Blog|FAQ|Testimonials?|Reviews?|Contact|Virtual|More)\s+",
+            "", remainder, count=1, flags=re.IGNORECASE
         ).strip()
-        if len(after_phone) > 50:
-            text = after_phone
+        if len(remainder) > 100:
+            text = remainder
 
     # Remove footer boilerplate patterns
     footer_patterns = [
