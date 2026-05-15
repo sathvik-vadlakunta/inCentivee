@@ -4,6 +4,22 @@ Hi {contact_name},
 
 Welcome to PracticeRank! We're excited to start optimizing {practice_name}'s online presence for both traditional search and AI-powered search engines.
 
+**What we already know about {practice_name}:**
+
+{google_snapshot}
+- **Website**: {domain} (hosted on {cms_platform})
+- **DNS**: Registered with {dns_registrar}
+
+**Your AI Search Visibility:**
+
+{ai_baseline_summary}
+
+**Your Local Competition:**
+
+{competitor_summary}
+
+---
+
 To get started, we need access to a few key platforms. Here's what we need and how to grant it:
 
 **Required for All Clients:**
@@ -17,13 +33,13 @@ To get started, we need access to a few key platforms. Here's what we need and h
 3. **Google Business Profile** — Add kdoherty@practicerank.ai as a Manager
    - Go to your Business Profile > People and access > Add
 
-**Website Platform Access:**
+**Website Platform Access ({cms_platform}):**
 
 {platform_access_steps}
 
 **DNS Access ({dns_registrar}):**
-- We'll need access to your DNS registrar ({dns_registrar}) to set up Cloudflare for faster loading, better security, and AI search discoverability (free, no impact on your existing setup)
-- Option A: Add kdoherty@practicerank.ai as a delegate in your registrar account
+- We'll need access to {dns_registrar} to set up Cloudflare for faster loading, better security, and AI search discoverability (free, no impact on your existing setup)
+- Option A: Add kdoherty@practicerank.ai as a delegate in your {dns_registrar} account
 - Option B: Share DNS login credentials so we can point DNS to Cloudflare
 
 ---

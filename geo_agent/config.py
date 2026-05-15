@@ -41,6 +41,8 @@ class Customer:
     insurance_accepted: list[str] = field(default_factory=list)
     hours: str = ""
     emergency_available: bool = False
+    image: str = ""  # logo/photo URL for schema markup
+    services: list[str] = field(default_factory=list)  # from services table
     verified_quotes: list[dict] = field(default_factory=list)  # [{"quote": "...", "attribution": "Name, Title"}]
 
     @classmethod

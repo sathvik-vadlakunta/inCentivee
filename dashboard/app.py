@@ -206,13 +206,15 @@ def customer_detail(customer_id):
 
         import markdown
         raw_templates = _get_email_templates()
+        ai_run_summary = db.get_latest_ai_run_summary(customer_id)
         email_templates = []
+        email_kwargs = dict(
+            kpis=kpis, runs=runs, places=places, diff_report=diff_report,
+            content_recs=content_recs, competitors=competitors,
+            ai_run_summary=ai_run_summary,
+        )
         for t in raw_templates:
-            raw = _render_email_template(
-                t["content"], customer, contacts,
-                kpis=kpis, runs=runs, places=places, diff_report=diff_report,
-                content_recs=content_recs,
-            )
+            raw = _render_email_template(t["content"], customer, contacts, **email_kwargs)
             lines = raw.splitlines()
             body_lines = [l for l in lines if not l.startswith("Subject:")]
             body_md = "\n".join(body_lines).strip()
@@ -222,11 +224,7 @@ def customer_detail(customer_id):
             body_html = body_html.replace("<script", "&lt;script").replace("</script>", "&lt;/script&gt;")
             email_templates.append({
                 "slug": t["slug"],
-                "subject": _render_email_template(
-                    t["subject"], customer, contacts,
-                    kpis=kpis, runs=runs, places=places,
-                    content_recs=content_recs,
-                ),
+                "subject": _render_email_template(t["subject"], customer, contacts, **email_kwargs),
                 "body_html": body_html,
             })
 
@@ -366,6 +364,31 @@ def add_customer():
                 access_platforms.append(platform)
             for p in access_platforms:
                 db.add_platform_access(customer_id, p)
+
+            # Google Places lookup — populate address, phone, rating
+            api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+            if api_key:
+                try:
+                    from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors
+                    verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key)
+                    if verified:
+                        db.update_customer(customer_id,
+                            address=verified.address, city=verified.city,
+                            state=verified.state, zip=verified.zip_code,
+                            phone=verified.phone)
+                        db.upsert_google_places(
+                            customer_id, verified.place_id,
+                            verified.rating, verified.review_count,
+                            verified.match_confidence,
+                            verified.lat, verified.lng)
+                        if verified.lat and verified.lng:
+                            comps = fetch_nearby_competitors(verified.lat, verified.lng, name, api_key)
+                            for c in comps[:5]:
+                                db.add_competitor(customer_id, c.name, c.rating,
+                                    c.review_count, c.address, c.place_id)
+                        logger.info(f"Google Places enriched {customer_id}: {verified.address}, {verified.city} {verified.state}")
+                except Exception as e:
+                    logger.warning(f"Google Places lookup failed for {customer_id}: {e}")
 
             # Auto-run first AI mention check in background
             try:
@@ -1051,7 +1074,9 @@ def _content_rec_summary(recs: list[dict]) -> str:
 def _render_email_template(content: str, customer: dict, contacts: list[dict],
                            kpis: dict | None = None, runs: list[dict] | None = None,
                            places: dict | None = None, diff_report: str = "",
-                           content_recs: list[dict] | None = None) -> str:
+                           content_recs: list[dict] | None = None,
+                           competitors: list[dict] | None = None,
+                           ai_run_summary: dict | None = None) -> str:
     """Replace template variables with real customer data from DB."""
     contact_name = contacts[0]["name"] if contacts else "there"
     contact_email = contacts[0].get("email", "") if contacts else ""
@@ -1152,6 +1177,50 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
     from datetime import datetime
     report_month = datetime.now().strftime("%B %Y")
 
+    # Business type for dynamic language
+    business_type = customer.get("business_type", "practice")
+    btype_label = {
+        "practice": "practice", "technology": "company",
+        "product": "brand", "service": "business",
+    }.get(business_type, "business")
+
+    # Google snapshot section (what we already know)
+    google_snapshot = ""
+    if places and places.get("rating"):
+        google_snapshot = f"- **Google Rating**: {places['rating']} ({places.get('review_count', 0)} reviews)"
+    if customer.get("address") and customer.get("city"):
+        addr_line = f"- **Address**: {customer['address']}, {customer['city']}, {customer.get('state', '')}"
+        google_snapshot = f"{google_snapshot}\n{addr_line}" if google_snapshot else addr_line
+    if customer.get("phone"):
+        phone_line = f"- **Phone**: {customer['phone']}"
+        google_snapshot = f"{google_snapshot}\n{phone_line}" if google_snapshot else phone_line
+
+    # Competitor summary
+    competitor_summary = ""
+    comps = competitors or []
+    if comps:
+        top = comps[:3]
+        comp_lines = []
+        for c in top:
+            rating = c.get("rating", "—")
+            reviews = c.get("review_count", 0)
+            comp_lines.append(f"- {c.get('name', 'Unknown')}: {rating} rating ({reviews} reviews)")
+        competitor_summary = "\n".join(comp_lines)
+
+    # AI visibility baseline
+    ai_baseline_summary = ""
+    ai_run = ai_run_summary
+    if ai_run and ai_run.get("total_queries"):
+        mentions = ai_run.get("total_mentions", 0)
+        total = ai_run["total_queries"]
+        rate = ai_run.get("mention_rate", 0)
+        pct = f"{rate * 100:.0f}%" if isinstance(rate, (int, float)) else "0%"
+        ai_baseline_summary = f"Your {btype_label} was mentioned in **{mentions} out of {total}** AI search queries we tested ({pct} visibility rate)."
+        if mentions == 0:
+            ai_baseline_summary += " This means AI assistants like ChatGPT, Claude, and Google AI currently do not recommend your {btype_label} when patients search for your services.".replace("{btype_label}", btype_label)
+        elif rate and rate < 0.3:
+            ai_baseline_summary += f" There's significant room to improve — top competitors typically achieve 40-60% visibility."
+
     replacements = {
         "{practice_name}": customer.get("name", ""),
         "{contact_name}": contact_name,
@@ -1191,6 +1260,11 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{diff_summary}": diff_summary,
         "{content_rec_summary}": _content_rec_summary(content_recs or []),
         "{content_rec_count}": str(len(content_recs or [])),
+        # Auto-discovered data
+        "{business_type}": btype_label,
+        "{google_snapshot}": google_snapshot or "- No Google Business Profile data found yet",
+        "{competitor_summary}": competitor_summary or "- Competitor data not yet available",
+        "{ai_baseline_summary}": ai_baseline_summary or "We'll run an AI visibility baseline scan once onboarding is complete.",
     }
     for k, v in replacements.items():
         content = content.replace(k, v)
@@ -2033,7 +2107,7 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
     # Check XML sitemap
     try:
         resp = httpx.get(f"https://{domain}/sitemap.xml", timeout=8.0, follow_redirects=True)
-        if resp.status_code == 200 and "<urlset" in resp.text:
+        if resp.status_code == 200 and ("<urlset" in resp.text or "<sitemapindex" in resp.text):
             detected["seo_xml_sitemap"] = True
     except Exception:
         pass
@@ -2165,14 +2239,22 @@ def customer_emails(customer_id):
             return redirect(url_for("index"))
 
         contacts = db.get_contacts(customer_id)
+        places = db.get_google_places(customer_id)
+        competitors = db.get_competitors(customer_id)
+        ai_run_summary = db.get_latest_ai_run_summary(customer_id)
         templates = _get_email_templates()
 
         import markdown
 
+        email_kwargs = dict(
+            places=places, competitors=competitors,
+            ai_run_summary=ai_run_summary,
+        )
+
         # Render each template with customer data, convert markdown to HTML
         rendered = []
         for t in templates:
-            raw = _render_email_template(t["content"], customer, contacts)
+            raw = _render_email_template(t["content"], customer, contacts, **email_kwargs)
             # Strip the "Subject: ..." line from body
             lines = raw.splitlines()
             body_lines = [l for l in lines if not l.startswith("Subject:")]
@@ -2181,7 +2263,7 @@ def customer_emails(customer_id):
 
             rendered.append({
                 "slug": t["slug"],
-                "subject": _render_email_template(t["subject"], customer, contacts),
+                "subject": _render_email_template(t["subject"], customer, contacts, **email_kwargs),
                 "body_html": body_html,
             })
 

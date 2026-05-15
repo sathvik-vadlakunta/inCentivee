@@ -203,13 +203,14 @@ def fetch_place_data(
     domain: str = "",
     phone: str = "",
     api_key: str = "",
+    business_type: str = "practice",
 ) -> VerifiedBusinessData | None:
-    """Look up a dental practice via Google Places text search.
+    """Look up a business via Google Places text search.
 
     Tries multiple query variations and picks the best match:
-    1. "{name} dentist {city} {state}"
+    1. "{name} {type_hint} {city} {state}"
     2. "{name} {city} {state}"
-    3. "{domain} dentist"
+    3. "{domain} {type_hint}"
 
     Cross-checks city to prevent using another business's data.
     Returns the best-matching result or None on failure.
@@ -218,12 +219,14 @@ def fetch_place_data(
         logger.warning("No Google Places API key — skipping verification")
         return None
 
+    # Add a type hint for dental practices to improve search accuracy
+    type_hint = "dentist" if business_type == "practice" else ""
     queries = [
-        f"{name} dentist {city} {state}",
+        f"{name} {type_hint} {city} {state}".strip(),
         f"{name} {city} {state}",
     ]
     if domain:
-        queries.append(f"{domain} dentist")
+        queries.append(f"{domain} {type_hint}".strip())
 
     best_score = -1
     best_place: VerifiedBusinessData | None = None
@@ -282,11 +285,12 @@ def fetch_nearby_competitors(
     api_key: str = "",
     radius_meters: float = 8000.0,
     max_results: int = 10,
+    place_types: list[str] | None = None,
 ) -> list[CompetitorData]:
-    """Find nearby dental practices (competitors) via Google Places.
+    """Find nearby competitors via Google Places.
 
-    Searches within radius_meters of the given lat/lng for dentists,
-    filters out the practice itself, and returns up to max_results
+    Searches within radius_meters of the given lat/lng,
+    filters out the business itself, and returns up to max_results
     sorted by review count (descending).
     """
     if not api_key:
@@ -299,7 +303,7 @@ def fetch_nearby_competitors(
     }
 
     body = {
-        "includedTypes": ["dentist"],
+        "includedTypes": place_types or ["dentist"],
         "locationRestriction": {
             "circle": {
                 "center": {"latitude": lat, "longitude": lng},
@@ -370,6 +374,8 @@ def verify_customer(
         logger.info("No GOOGLE_PLACES_API_KEY — skipping business verification")
         return None, []
 
+    business_type = getattr(customer, "business_type", "practice")
+
     verified = fetch_place_data(
         name=customer.name,
         city=customer.city,
@@ -377,15 +383,19 @@ def verify_customer(
         domain=customer.domain,
         phone=customer.phone,
         api_key=api_key,
+        business_type=business_type,
     )
 
     competitors: list[CompetitorData] = []
     if verified and verified.lat and verified.lng:
+        # Use appropriate place types for competitor search
+        place_types = ["dentist"] if business_type == "practice" else None
         competitors = fetch_nearby_competitors(
             lat=verified.lat,
             lng=verified.lng,
             practice_name=customer.name,
             api_key=api_key,
+            place_types=place_types,
         )
 
     return verified, competitors

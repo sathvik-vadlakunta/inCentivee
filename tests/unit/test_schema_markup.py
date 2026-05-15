@@ -34,17 +34,23 @@ class TestDentistSchema:
 
     def test_specialties(self, sample_customer):
         s = generate_dentist_schema(sample_customer)
-        assert "Dental Implants" in s["medicalSpecialty"]
+        # medicalSpecialty must be a valid schema.org enum value
+        assert s["medicalSpecialty"] == "Dentistry"
+        # Specific specialties go in knowsAbout
+        assert "Dental Implants" in s["knowsAbout"]
 
     def test_emergency_service(self, sample_customer):
         s = generate_dentist_schema(sample_customer)
-        assert s["availableService"]["@type"] == "MedicalProcedure"
-        assert "Emergency" in s["availableService"]["name"]
+        catalog = s["hasOfferCatalog"]
+        assert catalog["@type"] == "OfferCatalog"
+        offered = catalog["itemListElement"][0]["itemOffered"]
+        assert offered["@type"] == "Service"
+        assert "Emergency" in offered["name"]
 
     def test_no_emergency_when_disabled(self, sample_customer):
         sample_customer.emergency_available = False
         s = generate_dentist_schema(sample_customer)
-        assert "availableService" not in s
+        assert "hasOfferCatalog" not in s
 
     def test_opening_hours(self, sample_customer):
         s = generate_dentist_schema(sample_customer)

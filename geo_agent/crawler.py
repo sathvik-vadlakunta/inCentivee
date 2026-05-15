@@ -95,24 +95,31 @@ def normalize_url(url: str) -> str:
     return f"{parsed.scheme}://{parsed.hostname}{path}"
 
 
-def _guess_category(slug: str, title: str) -> str:
-    """Guess page category from slug and title for organizing llms.txt."""
+def _guess_category(slug: str, title: str, service_keywords: list[str] | None = None) -> str:
+    """Guess page category from slug and title for organizing llms.txt.
+
+    Args:
+        slug: URL slug (e.g. "/dental-implants")
+        title: Page title
+        service_keywords: Optional list of keywords that indicate service pages.
+            If not provided, uses a broad default set.
+    """
     slug_lower = slug.lower()
     title_lower = title.lower()
     combined = f"{slug_lower} {title_lower}"
 
-    # Check about BEFORE services — pages like "About Our Cosmetic Dentistry Team"
+    # Check about BEFORE services — pages like "About Our Team"
     # should be categorized as about, not service
     if any(kw in combined for kw in ["about", "team", "doctor", "dr-", "provider", "staff",
                                       "career"]):
         return "about"
-    if any(kw in combined for kw in ["service", "implant", "cosmetic", "whitening",
-                                      "crown", "veneer", "invisalign", "orthodont",
-                                      "cleaning", "filling", "root canal", "extraction",
-                                      "denture", "bridge", "sedation", "emergency",
-                                      "product", "solution", "platform", "feature",
-                                      "integration", "api", "pricing", "demo",
-                                      "case-study", "partner"]):
+
+    # Use provided service keywords or a broad default
+    svc_kw = service_keywords or [
+        "service", "product", "solution", "platform", "feature",
+        "integration", "api", "pricing", "demo", "case-study", "partner",
+    ]
+    if any(kw in combined for kw in svc_kw):
         return "service"
     if any(kw in combined for kw in ["contact", "location", "direction", "appointment", "schedule"]):
         return "contact"
@@ -267,11 +274,12 @@ class GenericCrawler:
     """Crawl any website via HTTP to extract page content.
 
     Works with Squarespace, WordPress, static sites, etc.
-    Scrapes common dental site paths and follows internal links.
+    Scrapes common paths and follows internal links.
     """
 
     def __init__(self, domain: str, extra_slugs: list[str] | None = None,
-                 business_type: str = "practice"):
+                 business_type: str = "practice",
+                 service_keywords: list[str] | None = None):
         self.domain = domain.removeprefix("www.")
         self.base_url = f"https://{domain}"
         self.client = httpx.Client(
@@ -281,6 +289,7 @@ class GenericCrawler:
         )
         self.extra_slugs = extra_slugs or []
         self.business_type = business_type
+        self.service_keywords = service_keywords
         self._visited: set[str] = set()
 
     def get_pages(self) -> list[PageData]:
@@ -351,7 +360,7 @@ class GenericCrawler:
 
         # Normalize slug
         slug = slug.rstrip("/") or "/"
-        category = _guess_category(slug, title)
+        category = _guess_category(slug, title, service_keywords=self.service_keywords)
 
         # Generate a stable page ID from the URL
         page_id = f"generic-{slug.strip('/').replace('/', '-') or 'home'}"
@@ -415,7 +424,8 @@ def get_crawler(platform: str, domain: str, **kwargs):
     Args:
         platform: "webflow", "squarespace", "wordpress", or "generic"
         domain: Site domain
-        **kwargs: Additional args (api_key, site_id for Webflow)
+        **kwargs: Additional args (api_key, site_id for Webflow;
+                  business_type, service_keywords for GenericCrawler)
 
     Returns:
         A crawler instance with get_pages() and close() methods.
@@ -426,4 +436,8 @@ def get_crawler(platform: str, domain: str, **kwargs):
             site_id=kwargs["site_id"],
             domain=domain,
         )
-    return GenericCrawler(domain=domain, business_type=kwargs.get("business_type", "practice"))
+    return GenericCrawler(
+        domain=domain,
+        business_type=kwargs.get("business_type", "practice"),
+        service_keywords=kwargs.get("service_keywords"),
+    )

@@ -6,7 +6,11 @@ import httpx
 import pytest
 import respx
 
+from geo_agent.business_profiles import PROFILES
 from geo_agent.crawler import PageData, WebflowCrawler, _clean_html, _guess_category
+
+# Dental service keywords for tests that expect dental page categorization
+DENTAL_SVC_KW = PROFILES["practice"].service_keywords
 
 
 class TestCleanHtml:
@@ -39,12 +43,7 @@ class TestCleanHtml:
 
 class TestGuessCategory:
     @pytest.mark.parametrize("slug,title,expected", [
-        ("services/dental-implants", "Dental Implants", "service"),
-        ("services/cosmetic-dentistry", "Cosmetic Dentistry", "service"),
-        ("invisalign", "Invisalign Treatment", "service"),
-        ("teeth-whitening", "Whitening", "service"),
-        ("root-canal", "Root Canal Therapy", "service"),
-        ("emergency", "Emergency Dental", "service"),
+        # Generic keywords (work without dental service_keywords)
         ("about", "About Us", "about"),
         ("our-team", "Meet the Team", "about"),
         ("dr-smith", "Dr. Smith", "about"),
@@ -65,6 +64,18 @@ class TestGuessCategory:
     ])
     def test_category_detection(self, slug, title, expected):
         assert _guess_category(slug, title) == expected
+
+    @pytest.mark.parametrize("slug,title,expected", [
+        ("services/dental-implants", "Dental Implants", "service"),
+        ("services/cosmetic-dentistry", "Cosmetic Dentistry", "service"),
+        ("invisalign", "Invisalign Treatment", "service"),
+        ("teeth-whitening", "Whitening", "service"),
+        ("root-canal", "Root Canal Therapy", "service"),
+        ("emergency", "Emergency Dental", "service"),
+    ])
+    def test_dental_category_detection(self, slug, title, expected):
+        """Dental-specific keywords require passing dental service_keywords."""
+        assert _guess_category(slug, title, service_keywords=DENTAL_SVC_KW) == expected
 
 
 class TestWebflowCrawler:

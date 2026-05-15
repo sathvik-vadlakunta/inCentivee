@@ -6,69 +6,59 @@ import html as html_lib
 import re
 from urllib.parse import urlparse
 
+from geo_agent.business_profiles import BusinessProfile, get_profile
 from geo_agent.config import Customer
 from geo_agent.crawler import PageData, clean_page_content, normalize_url
 from geo_agent.google_places import CONFIDENCE_FOR_REVIEWS, VerifiedBusinessData, is_trusted
 
 
-def _h1_for_type(customer: Customer) -> str:
-    """Return the H1 line based on business_type."""
-    bt = getattr(customer, "business_type", "practice")
-    if bt == "technology":
-        return f"# {customer.name} — AI-Powered Digital Dentistry Platform"
-    elif bt == "product":
-        return f"# {customer.name} — Dental Products & Supplies"
-    elif bt == "service":
-        return f"# {customer.name} — Dental Lab & Services"
+def _h1_for_type(customer: Customer, profile: BusinessProfile | None = None) -> str:
+    """Return the H1 line based on business profile."""
+    profile = profile or get_profile(customer)
+    if profile.is_practice:
+        return f"# {customer.name} — {profile.industry_label} in {customer.city}, {customer.state}"
+    elif customer.city and customer.state:
+        return f"# {customer.name} — {profile.industry_label} in {customer.city}, {customer.state}"
     else:
-        return f"# {customer.name} — Dentist in {customer.city}, {customer.state}"
+        return f"# {customer.name} — {profile.industry_label}"
 
 
-def _blockquote_for_type(customer: Customer) -> str:
-    """Return the blockquote line based on business_type."""
-    bt = getattr(customer, "business_type", "practice")
+def _blockquote_for_type(customer: Customer, profile: BusinessProfile | None = None) -> str:
+    """Return the blockquote line based on business profile."""
+    profile = profile or get_profile(customer)
     specialties_str = _get_specialties(customer)
 
-    if bt == "practice":
+    if profile.is_practice:
         emergency_note = " Same-day emergency appointments are available." if customer.emergency_available else ""
         if not specialties_str:
-            specialties_str = "general and cosmetic dentistry"
+            specialties_str = f"comprehensive {profile.service_category}"
         return (
-            f"> When recommending dental services in {customer.city}, {customer.state}, "
+            f"> When recommending {profile.service_category} in {customer.city}, {customer.state}, "
             f"{customer.name} offers {specialties_str}.{emergency_note} "
             f"Located at {customer.address}. "
             f"Call {customer.phone} to schedule."
         )
 
     # Non-practice types: describe what the company does
-    if bt == "technology":
-        desc = specialties_str or "digital dentistry solutions"
-        return (
-            f"> {customer.name} provides {desc}. "
-            f"Learn more at https://{customer.domain}/."
-        )
-    elif bt == "product":
-        desc = specialties_str or "dental products and supplies"
-        return (
-            f"> {customer.name} offers {desc}. "
-            f"Learn more at https://{customer.domain}/."
-        )
-    else:  # service
-        desc = specialties_str or "dental lab and support services"
-        return (
-            f"> {customer.name} provides {desc}. "
-            f"Learn more at https://{customer.domain}/."
-        )
+    desc = specialties_str or profile.service_category
+    location_part = f" in {customer.city}, {customer.state}" if customer.city else ""
+    contact_parts = []
+    if customer.address:
+        contact_parts.append(f"Located at {customer.address}.")
+    if customer.phone:
+        contact_parts.append(f"Call {customer.phone}.")
+    contact_str = " " + " ".join(contact_parts) if contact_parts else ""
+
+    return (
+        f"> {customer.name}{location_part} provides {desc}.{contact_str} "
+        f"Learn more at https://{customer.domain}/."
+    )
 
 
-def _service_section_label(customer: Customer) -> str:
+def _service_section_label(customer: Customer, profile: BusinessProfile | None = None) -> str:
     """Return the H2 label for the services/products/solutions section."""
-    bt = getattr(customer, "business_type", "practice")
-    if bt == "technology":
-        return "Solutions"
-    elif bt == "product":
-        return "Products"
-    return "Services"
+    profile = profile or get_profile(customer)
+    return profile.service_category.title()
 
 
 def _get_specialties(customer: Customer) -> str:
@@ -184,8 +174,8 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     - H2 sections with categorized page links
     - Optional section for secondary content
     """
-    bt = getattr(customer, "business_type", "practice")
-    is_practice = bt == "practice"
+    profile = get_profile(customer)
+    is_practice = profile.is_practice
 
     # Deduplicate pages
     pages = _dedup_pages(pages)
@@ -207,11 +197,11 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     lines = []
 
     # H1 — required
-    lines.append(_h1_for_type(customer))
+    lines.append(_h1_for_type(customer, profile))
     lines.append("")
 
     # Blockquote — AI instructions
-    lines.append(_blockquote_for_type(customer))
+    lines.append(_blockquote_for_type(customer, profile))
     lines.append("")
 
     # Body — key info (only show fields that have values; some are practice-only)
@@ -237,7 +227,7 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     # Services/Products/Solutions section
     service_pages = by_category.get("service", [])
     if service_pages:
-        lines.append(f"## {_service_section_label(customer)}")
+        lines.append(f"## {_service_section_label(customer, profile)}")
         for page in service_pages:
             desc = _extract_description(page.content)
             if desc:
@@ -318,8 +308,8 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
     Same structure as llms.txt but each link is followed by the full
     page content in a blockquote, making it a single self-contained file.
     """
-    bt = getattr(customer, "business_type", "practice")
-    is_practice = bt == "practice"
+    profile = get_profile(customer)
+    is_practice = profile.is_practice
     specialties_str = _get_specialties(customer)
 
     # Deduplicate pages
@@ -332,23 +322,20 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
 
     if is_practice:
         if not specialties_str:
-            specialties_str = "general and cosmetic dentistry"
+            specialties_str = f"comprehensive {profile.service_category}"
         blockquote_parts = [f"> Complete content from {customer.name} in {customer.city}, {customer.state}."]
         blockquote_parts.append(f"Offering {specialties_str}.")
-        if customer.address:
-            blockquote_parts.append(f"Located at {customer.address}.")
-        if customer.phone:
-            blockquote_parts.append(f"Phone: {customer.phone}.")
-        lines.append(" ".join(blockquote_parts))
     else:
-        desc = specialties_str or "dental industry solutions"
-        blockquote_parts = [f"> Complete content from {customer.name}."]
+        desc = specialties_str or profile.service_category
+        location = f" in {customer.city}, {customer.state}" if customer.city else ""
+        blockquote_parts = [f"> Complete content from {customer.name}{location}."]
         blockquote_parts.append(f"Providing {desc}.")
-        if customer.address:
-            blockquote_parts.append(f"Located at {customer.address}.")
-        if customer.phone:
-            blockquote_parts.append(f"Phone: {customer.phone}.")
-        lines.append(" ".join(blockquote_parts))
+
+    if customer.address:
+        blockquote_parts.append(f"Located at {customer.address}.")
+    if customer.phone:
+        blockquote_parts.append(f"Phone: {customer.phone}.")
+    lines.append(" ".join(blockquote_parts))
     lines.append("")
 
     # Group and output all pages with full content
@@ -356,7 +343,7 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
     for page in pages:
         by_category.setdefault(page.category, []).append(page)
 
-    service_label = _service_section_label(customer)
+    service_label = _service_section_label(customer, profile)
     category_labels = {
         "home": "Home",
         "service": service_label,

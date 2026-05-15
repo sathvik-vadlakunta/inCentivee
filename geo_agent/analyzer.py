@@ -1,4 +1,4 @@
-"""Claude 4.6 analysis engine for dental practice SEO.
+"""Claude 4.6 analysis engine for business SEO and AEO.
 
 This is the brain — it reads the customer's current website content from RAG,
 analyzes gaps, and generates recommendations + content improvements.
@@ -12,6 +12,7 @@ import os
 
 import anthropic
 
+from geo_agent.business_profiles import BusinessProfile, get_profile
 from geo_agent.config import Customer
 from geo_agent.crawler import PageData
 from geo_agent.google_places import (
@@ -24,10 +25,17 @@ from geo_agent.google_places import (
 
 logger = logging.getLogger(__name__)
 
-ANALYSIS_SYSTEM_PROMPT = """\
-You are a dental practice SEO and GEO (Generative Engine Optimization) expert.
-Your job is to analyze a dental practice's website content and generate recommendations
-that will help new patients find this practice through:
+
+def _build_system_prompt(profile: BusinessProfile) -> str:
+    """Build the analysis system prompt adapted to the business type."""
+    customer_term = profile.customer_term
+    schema_type = profile.schema_type
+    service_category = profile.service_category
+
+    return f"""\
+You are an expert SEO and GEO (Generative Engine Optimization) analyst for {profile.industry_label.lower()} businesses.
+Your job is to analyze a business's website content and generate recommendations
+that will help new {customer_term} find this business through:
 1. Google Search and Google Maps
 2. AI assistants (ChatGPT, Claude, Perplexity, Gemini, Grok)
 3. Apple Maps
@@ -38,11 +46,11 @@ Key principles:
 - Expert quotes with provider name and credentials increase AI citation by 37-40%
 - FAQ format is the most-cited content structure by AI systems
 - Content freshness matters: 50% of AI-cited content is less than 13 weeks old
-- Schema markup (Dentist, FAQPage, Service) gives a 22% citation lift
+- Schema markup ({schema_type}, FAQPage, Service) gives a 22% citation lift
 - Every service page needs at least 4-5 FAQ entries
 
-Focus on driving new patient acquisition. Every recommendation should connect to
-"how does this help a potential patient find and choose this practice?"
+Focus on driving new {customer_term} acquisition. Every recommendation should connect to
+"how does this help a potential {customer_term[:-1] if customer_term.endswith('s') else customer_term} find and choose this business?"
 """
 
 
@@ -206,16 +214,21 @@ WARNING: Google Places data was not available for this practice.
 Be conservative with any review count or rating estimates. Do NOT fabricate specific numbers.
 """
 
-    user_prompt = f"""\
-Analyze this dental practice's website and generate specific, actionable improvements.
+    profile = get_profile(customer)
+    customer_term = profile.customer_term
+    singular_term = customer_term[:-1] if customer_term.endswith("s") else customer_term
 
-## Practice Info
+    user_prompt = f"""\
+Analyze this {profile.industry_label.lower()}'s website and generate specific, actionable improvements.
+
+## Business Info
 - **Name**: {customer.name}
+- **Business Type**: {profile.industry_label}
 - **Location**: {customer.address}, {customer.city}, {customer.state} {customer.zip_code}
 - **Phone**: {customer.phone}
 - **Specialties**: {', '.join(customer.specialties)}
 - **Insurance**: {', '.join(customer.insurance_accepted)}
-- **Providers**:
+- **Providers/Team**:
 {providers_info}
 - **Brand Voice**: {customer.brand_voice}
 - **Emergency Available**: {customer.emergency_available}
@@ -231,21 +244,22 @@ Analyze this dental practice's website and generate specific, actionable improve
 Return a JSON object with these keys:
 
 1. **faq_entries**: For each service page, generate 4-6 FAQ Q&A pairs that a potential
-   patient would actually search for. Format: {{"page_url": [{{"question": "...", "answer": "..."}}]}}
+   {singular_term} would actually search for. Format: {{"page_url": [{{"question": "...", "answer": "..."}}]}}
    Make answers direct (start with the answer, not fluff), include the city name,
-   and mention the provider by name where relevant.
+   and mention the provider/team by name where relevant.
 
 2. **content_gaps**: List of pages that should exist but don't. For each, include
    the suggested title, URL slug, and a 2-sentence description of what it should cover.
-   Focus on high-search-volume dental queries for {customer.city}.
+   Focus on high-search-volume {profile.industry} queries for {customer.city}.
 
 3. **service_descriptions**: For each service page, write an improved 1-2 sentence
    description optimized for llms.txt (concise, factual, includes location and provider).
 
-4. **priority_actions**: Top 5 ranked actions this practice should take to get more
-   new patients finding them online. Be specific — not "improve SEO" but "create a
-   dedicated dental implants page targeting 'dental implants {customer.city}' with
-   cost ranges, procedure timeline, and Dr. X's credentials."
+4. **priority_actions**: Top 5 ranked actions this business should take to get more
+   new {customer_term} finding them online. Be specific and tailored to this {profile.industry} business.
+
+IMPORTANT: All content must be specific to this {profile.industry_label} business.
+Do NOT use generic dental or medical terminology unless this IS a dental/medical practice.
 
 Return ONLY valid JSON, no markdown code fences.
 """
@@ -255,7 +269,7 @@ Return ONLY valid JSON, no markdown code fences.
     response = client.messages.create(
         model="claude-opus-4-6",
         max_tokens=8192,
-        system=ANALYSIS_SYSTEM_PROMPT,
+        system=_build_system_prompt(profile),
         messages=[{"role": "user", "content": user_prompt}],
     )
 

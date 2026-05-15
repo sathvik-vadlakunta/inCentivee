@@ -57,12 +57,23 @@ def _mock_webflow_pages(site_id: str, domain: str):
 
 
 def _mock_webflow_publish(site_id: str):
-    """Set up respx mocks for Webflow publishing."""
-    respx.get(f"https://api.webflow.com/v2/sites/{site_id}/custom_code").mock(
-        return_value=httpx.Response(200, json={"headCode": ""})
+    """Set up respx mocks for Webflow publishing (v2 Custom Code API flow)."""
+    # inject_schema_to_site flow
+    respx.get(f"https://api.webflow.com/v2/sites/{site_id}/registered_scripts").mock(
+        return_value=httpx.Response(200, json={"registeredScripts": []})
+    )
+    respx.delete(f"https://api.webflow.com/v2/sites/{site_id}/custom_code").mock(
+        return_value=httpx.Response(200, json={})
+    )
+    respx.post(f"https://api.webflow.com/v2/sites/{site_id}/registered_scripts/inline").mock(
+        return_value=httpx.Response(200, json={"id": "practicerank_schema"})
     )
     respx.put(f"https://api.webflow.com/v2/sites/{site_id}/custom_code").mock(
         return_value=httpx.Response(200, json={})
+    )
+    # publish_site flow
+    respx.get(f"https://api.webflow.com/v2/sites/{site_id}").mock(
+        return_value=httpx.Response(200, json={"customDomains": [{"id": "dom_1"}]})
     )
     respx.post(f"https://api.webflow.com/v2/sites/{site_id}/publish").mock(
         return_value=httpx.Response(200, json={"queued": True})
@@ -187,7 +198,7 @@ class TestProcessCustomerErrorHandling:
         )
 
         assert len(result["errors"]) > 0
-        assert any("Crawl failed" in e for e in result["errors"])
+        assert any("Crawl failed" in e or "No pages found" in e for e in result["errors"])
 
     @respx.mock
     @patch("geo_agent.main.embed_texts", side_effect=Exception("Voyage API down"))

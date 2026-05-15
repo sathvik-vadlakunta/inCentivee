@@ -2,7 +2,7 @@ Subject: AI Search Content Suggestions — {practice_name}
 
 Hi {contact_name},
 
-As part of our AI search optimization work for {practice_name}, we've put together content recommendations designed to improve how your practice appears in **AI-powered search results** — ChatGPT, Google AI Overviews, Claude, Perplexity, and similar platforms.
+As part of our AI search optimization work for {practice_name}, we've put together content recommendations designed to improve how your {business_type} appears in **AI-powered search results** — ChatGPT, Google AI Overviews, Claude, Perplexity, and similar platforms.
 
 These are different from traditional SEO. AI search engines prioritize content that is **well-structured, factually detailed, and includes expert credentials and statistics**. Our analysis identified specific opportunities to strengthen your visibility in these AI-generated answers.
 
@@ -18,7 +18,7 @@ These are different from traditional SEO. AI search engines prioritize content t
 
 **Why these matter:**
 
-- AI search is rapidly becoming how patients find and choose dental providers
+- AI search is rapidly becoming how people find and choose providers online
 - Pages with expert quotes get **37-40% more AI citations**
 - FAQ-structured content is the **#1 most-cited format** by AI search engines
 - Statistics with sources increase AI citation likelihood by **22%**

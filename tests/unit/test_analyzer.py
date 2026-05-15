@@ -66,7 +66,7 @@ class TestAnalyzeAndRecommend:
 
         call_kwargs = mock_client.messages.create.call_args.kwargs
         assert call_kwargs["model"] == "claude-opus-4-6"
-        assert call_kwargs["max_tokens"] == 4096
+        assert call_kwargs["max_tokens"] == 8192
 
     @patch("geo_agent.analyzer.get_client")
     def test_truncates_page_content(self, mock_get_client, sample_customer, fake_analysis_response):

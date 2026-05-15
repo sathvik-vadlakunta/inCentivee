@@ -182,6 +182,8 @@ These can start as soon as DNS credentials and Webflow access are received.
 | 24 | Run GEO Agent first run (publish mode) — goes live | VA | [ ] |
 | 25 | Verify /llms.txt, /llms-full.txt, /robots.txt are accessible on customer domain | VA | [ ] |
 | 26 | Verify JSON-LD schema appears in page source (view-source:domain.com) | VA | [ ] |
+| 26a | Validate schema with https://search.google.com/test/rich-results — 0 errors | VA | [ ] |
+| 26b | Validate schema with https://validator.schema.org/ — 0 errors, 0 warnings | VA | [ ] |
 
 ### Week 1, Day 3-5: Google Business Profile Setup (VA)
 
@@ -307,6 +309,10 @@ These are the "future ideas" that are easy to add to onboarding — they're just
 | # | Task | Who | Status |
 |---|------|-----|--------|
 | 92 | Full QA: verify all schema markup renders correctly | VA | [ ] |
+| 92a | Schema QA: run internal validator (`python -m geo_agent.schema_validator --customer <id>`) — must pass with 0 errors | VA | [ ] |
+| 92b | Schema QA: test with **Google Rich Results Test** — go to https://search.google.com/test/rich-results → enter customer domain → verify 0 errors on all detected items (Dentist, FAQPage, etc.) | VA | [ ] |
+| 92c | Schema QA: test with **Schema.org Validator** — go to https://validator.schema.org/ → enter customer domain → verify 0 errors, 0 warnings across all detected types | VA | [ ] |
+| 92d | Schema QA: if either external validator shows errors, fix in Code Injection / generator, re-test until clean | VA | [ ] |
 | 93 | Full QA: test /llms.txt, /llms-full.txt, /robots.txt from external network | VA | [ ] |
 | 94 | Full QA: verify all directory listings are live and NAP-consistent | VA | [ ] |
 | 95 | Full QA: verify GBP appears correctly in Google Maps search | VA | [ ] |
@@ -366,6 +372,7 @@ Run on the 1st of each month per customer.
 |---|------|-----|------|
 | 1 | GEO Agent runs automatically (crawl → analyze → generate → publish) | AUTO | 0 |
 | 2 | Spot-check GEO Agent output (llms.txt, schema) | SALES | 10 min |
+| 2a | Run schema validation: https://search.google.com/test/rich-results + https://validator.schema.org/ — must be 0 errors | VA | 5 min |
 | 3 | Review + approve GBP post batch (4 posts for the month) | SALES | 5 min |
 | 4 | Review content gap recommendations | SALES | 10 min |
 | 5 | Publish GBP posts (weekly) | VA | 10 min/wk |

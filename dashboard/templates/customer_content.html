@@ -116,7 +116,7 @@
                 data-category="{{ rec.category | title | e }}"
                 data-date="{{ rec.created_at[:10] }}"
                 style="width:100%; border:1px solid var(--border); border-radius:6px; background:#fff; margin-bottom:0.5rem; min-height:120px;"></iframe>
-        <script type="text/html" id="html-{{ rec.id }}">{{ rec.html_snippet }}</script>
+        <script type="text/html" id="html-{{ rec.id }}">{{ rec.html_snippet | safe }}</script>
 
         <!-- Raw HTML toggle -->
         <details>

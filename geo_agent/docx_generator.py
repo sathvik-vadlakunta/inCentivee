@@ -307,15 +307,20 @@ class ContentDocxGenerator:
             self._html_to_docx(doc, html)
 
     def _add_inline_runs(self, paragraph, html: str):
-        """Add runs with bold/italic formatting from inline HTML."""
-        # Simple pattern: split on <strong>, <em>, <a> tags
-        parts = re.split(r'(<(?:strong|em|b|i|a)[^>]*>.*?</(?:strong|em|b|i|a)>)', html, flags=re.DOTALL)
+        """Add runs with bold/italic formatting from inline HTML.
+
+        Preserves whitespace around inline elements so "The <a>link</a> text"
+        renders as "The link text" not "Thelinktext".
+        """
+        # Simple pattern: split on <strong>, <em>, <a>, <cite> tags
+        parts = re.split(r'(<(?:strong|em|b|i|a|cite)[^>]*>.*?</(?:strong|em|b|i|a|cite)>)', html, flags=re.DOTALL)
         for part in parts:
             if not part:
                 continue
             strong_match = re.match(r'<(?:strong|b)[^>]*>(.*?)</(?:strong|b)>', part, re.DOTALL)
             em_match = re.match(r'<(?:em|i)[^>]*>(.*?)</(?:em|i)>', part, re.DOTALL)
             a_match = re.match(r'<a[^>]*>(.*?)</a>', part, re.DOTALL)
+            cite_match = re.match(r'<cite[^>]*>(.*?)</cite>', part, re.DOTALL)
             if strong_match:
                 run = paragraph.add_run(self._strip_tags(strong_match.group(1)))
                 run.bold = True
@@ -326,15 +331,21 @@ class ContentDocxGenerator:
                 run = paragraph.add_run(self._strip_tags(a_match.group(1)))
                 run.underline = True
                 run.font.color.rgb = RGBColor(0x25, 0x63, 0xEB)
+            elif cite_match:
+                run = paragraph.add_run(self._strip_tags(cite_match.group(1)))
+                run.italic = True
+                run.font.size = Pt(9)
             else:
-                text = self._strip_tags(part)
+                # Preserve whitespace — don't strip so spaces around
+                # inline elements are kept (e.g. "The <a>link</a> text")
+                text = self._strip_tags(part, strip_whitespace=False)
                 if text:
                     paragraph.add_run(text)
 
     @staticmethod
-    def _strip_tags(html: str) -> str:
+    def _strip_tags(html: str, strip_whitespace: bool = True) -> str:
         """Remove all HTML tags, decode common entities."""
         text = re.sub(r'<[^>]+>', '', html)
         text = text.replace('&amp;', '&').replace('&lt;', '<').replace('&gt;', '>')
         text = text.replace('&nbsp;', ' ').replace('&#39;', "'").replace('&quot;', '"')
-        return text.strip()
+        return text.strip() if strip_whitespace else text

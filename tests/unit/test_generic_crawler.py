@@ -27,9 +27,11 @@ class TestCleanHtml:
 
 class TestGuessCategory:
     def test_service_pages(self):
-        assert _guess_category("dental-implants", "Dental Implants") == "service"
-        assert _guess_category("services/whitening", "Teeth Whitening") == "service"
-        assert _guess_category("invisalign", "Invisalign Clear Aligners") == "service"
+        from geo_agent.business_profiles import PROFILES
+        dental_kw = PROFILES["practice"].service_keywords
+        assert _guess_category("dental-implants", "Dental Implants", service_keywords=dental_kw) == "service"
+        assert _guess_category("services/whitening", "Teeth Whitening", service_keywords=dental_kw) == "service"
+        assert _guess_category("invisalign", "Invisalign Clear Aligners", service_keywords=dental_kw) == "service"
 
     def test_about_pages(self):
         assert _guess_category("about", "About Us") == "about"

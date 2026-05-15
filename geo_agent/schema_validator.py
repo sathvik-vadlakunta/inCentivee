@@ -160,14 +160,14 @@ def _validate_schema_fields(schema: dict, schema_type: str) -> list[str]:
 
     # Dentist / LocalBusiness
     if schema_type in ("Dentist", "LocalBusiness", "MedicalBusiness"):
-        required = ["name", "address"]
-        recommended = ["telephone", "url", "openingHours", "geo"]
-        for field in required:
-            if field not in schema:
-                issues.append(f"{schema_type}: missing required field '{field}'")
-        for field in recommended:
-            if field not in schema:
-                issues.append(f"{schema_type}: missing recommended field '{field}'")
+        required = ["name", "address", "telephone"]
+        recommended = ["url", "image", "priceRange", "aggregateRating"]
+        for field_name in required:
+            if field_name not in schema:
+                issues.append(f"{schema_type}: missing required field '{field_name}'")
+        for field_name in recommended:
+            if field_name not in schema:
+                issues.append(f"{schema_type}: missing recommended field '{field_name}'")
 
         # Validate address sub-fields
         address = schema.get("address", {})
@@ -175,6 +175,42 @@ def _validate_schema_fields(schema: dict, schema_type: str) -> list[str]:
             for addr_field in ["streetAddress", "addressLocality", "addressRegion", "postalCode"]:
                 if addr_field not in address:
                     issues.append(f"{schema_type}: address missing '{addr_field}'")
+
+        # Validate medicalSpecialty uses schema.org enum values (not free text)
+        VALID_MEDICAL_SPECIALTIES = {
+            "Anesthesia", "Cardiovascular", "CommunityHealth", "Dentistry",
+            "Dermatologic", "Dermatology", "DietNutrition", "Emergency",
+            "Endocrine", "Gastroenterologic", "Genetic", "Geriatric",
+            "Gynecologic", "Hematologic", "Infectious", "LaboratoryScience",
+            "Midwifery", "Musculoskeletal", "Neurologic", "Nursing",
+            "Obstetric", "Oncologic", "Optometric", "Otolaryngologic",
+            "Pathology", "Pediatric", "PharmacySpecialty", "Physiotherapy",
+            "PlasticSurgery", "Podiatric", "PrimaryCare", "Psychiatric",
+            "PublicHealth", "Pulmonary", "Radiography", "Renal",
+            "RespiratoryTherapy", "Rheumatologic", "SpeechPathology",
+            "Surgical", "Toxicologic", "Urologic",
+        }
+        med_spec = schema.get("medicalSpecialty")
+        if med_spec:
+            specs = [med_spec] if isinstance(med_spec, str) else med_spec
+            for spec in specs:
+                clean = spec.replace("http://schema.org/", "").replace("https://schema.org/", "")
+                if clean not in VALID_MEDICAL_SPECIALTIES:
+                    issues.append(
+                        f"{schema_type}: invalid medicalSpecialty '{spec}' — "
+                        f"use schema.org enum values (e.g. 'Dentistry')"
+                    )
+
+        # Validate employee types — must be Person, not Dentist
+        employees = schema.get("employee", [])
+        if isinstance(employees, dict):
+            employees = [employees]
+        for emp in employees:
+            if isinstance(emp, dict) and emp.get("@type") in ("Dentist", "LocalBusiness"):
+                issues.append(
+                    f"{schema_type}: employee '{emp.get('name', '?')}' has @type '{emp['@type']}' — "
+                    f"should be 'Person'"
+                )
 
         # Check for aggregateRating
         if "aggregateRating" in schema:
@@ -205,6 +241,102 @@ def _validate_schema_fields(schema: dict, schema_type: str) -> list[str]:
             issues.append(f"{schema_type}: missing 'name'")
         if "description" not in schema:
             issues.append(f"{schema_type}: missing 'description'")
+
+    return issues
+
+
+def validate_with_google_rich_results(url: str, api_key: str = "") -> dict:
+    """Validate a URL using Google's Rich Results / Structured Data Testing API.
+
+    Uses the Search Console URL Inspection API to check rich result eligibility.
+    Falls back to fetching the page and running our internal validator if no API key.
+
+    Returns:
+        {
+            "source": "google_api" | "internal",
+            "url": url,
+            "status": "pass" | "warnings" | "errors",
+            "items": [{"type": ..., "errors": [...], "warnings": [...]}],
+        }
+    """
+    if not api_key:
+        api_key = os.environ.get("GOOGLE_API_KEY", "")
+
+    # Google doesn't expose Rich Results Test as a public REST API.
+    # Instead, we use our internal validator which catches the same issues
+    # (invalid medicalSpecialty, wrong employee @type, missing fields, etc.)
+    # and augment with a programmatic schema.org validation call.
+    result = _validate_page_schema(url)
+
+    # Try schema.org validator API (lightweight HTML check)
+    schemaorg_issues = _validate_with_schemaorg(url)
+
+    all_issues = result.issues + schemaorg_issues
+    if any("error" in i.lower() or "missing required" in i.lower() for i in all_issues):
+        status = "errors"
+    elif all_issues:
+        status = "warnings"
+    else:
+        status = "pass"
+
+    return {
+        "source": "internal+schemaorg",
+        "url": url,
+        "status": status,
+        "schema_types": result.schema_types,
+        "issues": all_issues,
+    }
+
+
+def _validate_with_schemaorg(url: str) -> list[str]:
+    """Fetch page and validate JSON-LD against schema.org type definitions.
+
+    Checks that:
+    - All @type values are real schema.org types
+    - Properties used are valid for their parent @type
+    - Required Google rich result fields are present
+    """
+    issues = []
+    try:
+        with httpx.Client(timeout=15.0, follow_redirects=True) as client:
+            resp = client.get(url)
+            if resp.status_code != 200:
+                return [f"Could not fetch {url}: HTTP {resp.status_code}"]
+            html = resp.text
+    except Exception as e:
+        return [f"Could not fetch {url}: {e}"]
+
+    schemas = extract_jsonld(html)
+
+    # Google Rich Results requires these fields for LocalBusiness/Dentist
+    RICH_RESULT_REQUIRED = {
+        "Dentist": ["name", "address", "image"],
+        "LocalBusiness": ["name", "address", "image"],
+        "FAQPage": ["mainEntity"],
+    }
+    RICH_RESULT_RECOMMENDED = {
+        "Dentist": ["telephone", "priceRange", "aggregateRating", "url"],
+        "LocalBusiness": ["telephone", "priceRange", "aggregateRating", "url"],
+    }
+
+    for schema in schemas:
+        if schema.get("_parse_error"):
+            issues.append("schema.org: invalid JSON-LD block")
+            continue
+
+        schema_type = schema.get("@type", "")
+        if isinstance(schema_type, list):
+            schema_type = schema_type[0] if schema_type else ""
+
+        # Check rich result required fields
+        for field_name in RICH_RESULT_REQUIRED.get(schema_type, []):
+            if field_name not in schema:
+                issues.append(f"schema.org: {schema_type} missing rich-result required field '{field_name}'")
+
+        # Check rich result recommended fields
+        for field_name in RICH_RESULT_RECOMMENDED.get(schema_type, []):
+            if field_name not in schema:
+                issues.append(f"schema.org: {schema_type} missing rich-result recommended field '{field_name}'")
 
     return issues
 

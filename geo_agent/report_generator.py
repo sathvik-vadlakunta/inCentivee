@@ -1,4 +1,4 @@
-"""Generate AI Search Optimization reports for dental practices.
+"""Generate AI Search Optimization reports for businesses.
 
 Takes customer data from the DB, crawls the site for current state,
 and produces a full report (markdown + docx) with deploy-ready files.
@@ -123,7 +123,7 @@ def _calculate_scores(site_data: dict) -> dict:
         aeo += 20
     if 'Person' in site_data.get('schema_types', []):
         aeo += 15
-    if 'MedicalProcedure' in site_data.get('schema_types', []):
+    if any(t in site_data.get('schema_types', []) for t in ['MedicalProcedure', 'Service', 'OfferCatalog']):
         aeo += 15
     scores['aeo'] = min(aeo, 100)
 
@@ -175,6 +175,9 @@ def _calculate_scores(site_data: dict) -> dict:
 
 def _generate_llms_txt(customer: dict, providers: list, services: list) -> str:
     """Generate llms.txt content from customer data."""
+    from geo_agent.business_profiles import get_profile
+    profile = get_profile(customer.get('business_type', 'practice'))
+
     name = customer['name']
     city = customer.get('city', '')
     state = customer.get('state', '')
@@ -192,17 +195,19 @@ def _generate_llms_txt(customer: dict, providers: list, services: list) -> str:
     lines = [f"# {name}", ""]
 
     # Summary line
-    spec_text = ", ".join(specialties[:5]) if specialties else "general, cosmetic, and restorative dentistry"
-    lines.append(f"> Dental practice in {city}, {state} offering {spec_text}. "
-                 f"{f'{len(providers)} providers. ' if providers else ''}"
-                 f"Serving {city} and surrounding communities.")
+    spec_text = ", ".join(specialties[:5]) if specialties else profile.service_category
+    location_str = f" in {city}, {state}" if city else ""
+    lines.append(f"> {profile.industry_label}{location_str} offering {spec_text}. "
+                 f"{f'{len(providers)} {profile.provider_term}. ' if providers else ''}"
+                 f"{'Serving ' + city + ' and surrounding communities.' if city else ''}")
     lines.append("")
 
     # About
     lines.append("## About")
     lines.append("")
-    lines.append(f"{name} is a dental practice located at {address}, {city}, {state} {zipcode}. "
-                 f"The practice offers comprehensive dental care with a focus on patient comfort and modern technology.")
+    location_detail = f" located at {address}, {city}, {state} {zipcode}" if address else f" in {city}, {state}" if city else ""
+    lines.append(f"{name} is a {profile.industry_label.lower()}{location_detail}. "
+                 f"The business offers {spec_text}.")
     lines.append("")
 
     # Providers
@@ -316,7 +321,10 @@ def _generate_robots_txt(domain: str) -> str:
 
 
 def _generate_schema_homepage(customer: dict, providers: list, services: list) -> str:
-    """Generate Dentist + Organization JSON-LD."""
+    """Generate primary business schema JSON-LD."""
+    from geo_agent.business_profiles import get_profile
+    profile = get_profile(customer.get('business_type', 'practice'))
+
     name = customer['name']
     domain = customer.get('domain', '')
     address = customer.get('address', '')
@@ -325,23 +333,25 @@ def _generate_schema_homepage(customer: dict, providers: list, services: list) -
     zipcode = customer.get('zip', '')
     phone = customer.get('phone', '')
 
+    # Use Service for non-medical businesses, MedicalProcedure for dental
+    svc_type = "MedicalProcedure" if profile.is_practice else "Service"
     available_services = []
     for s in services[:10]:
         available_services.append({
-            "@type": "MedicalProcedure",
+            "@type": svc_type,
             "name": s['name'],
-            "description": s.get('description', f"{s['name']} services at {name}")
+            "description": s.get('description', f"{s['name']} at {name}")
         })
 
+    location_desc = f" in {city}, {state}" if city else ""
     schema = {
         "@context": "https://schema.org",
-        "@type": "Dentist",
-        "@id": f"https://{domain}/#dentist",
+        "@type": profile.schema_type,
+        "@id": f"https://{domain}/#{profile.schema_id_suffix}",
         "name": name,
         "url": f"https://{domain}",
-        "description": f"Dental practice in {city}, {state} offering comprehensive dental care.",
+        "description": f"{profile.industry_label}{location_desc}.",
         "telephone": phone,
-        "priceRange": "$$",
         "address": {
             "@type": "PostalAddress",
             "streetAddress": address,
@@ -351,6 +361,12 @@ def _generate_schema_homepage(customer: dict, providers: list, services: list) -
             "addressCountry": "US"
         },
     }
+
+    if profile.is_practice:
+        schema["priceRange"] = "$$"
+
+    if profile.schema_specialty:
+        schema["medicalSpecialty"] = profile.schema_specialty
 
     if available_services:
         schema["availableService"] = available_services
@@ -369,26 +385,44 @@ def _generate_schema_homepage(customer: dict, providers: list, services: list) -
 
 
 def _generate_schema_faq(customer: dict) -> str:
-    """Generate FAQPage schema with common dental questions."""
+    """Generate FAQPage schema with common business questions."""
+    from geo_agent.business_profiles import get_profile
+    profile = get_profile(customer.get('business_type', 'practice'))
+
     name = customer['name']
     city = customer.get('city', '')
     state = customer.get('state', '')
     phone = customer.get('phone', '')
+    location_str = f" in {city}, {state}" if city else ""
 
-    faqs = [
-        (f"What services does {name} offer?",
-         f"{name} offers comprehensive dental care including general dentistry, cosmetic dentistry, restorative dentistry, preventive care, and emergency dental services in {city}, {state}. Call {phone} for appointments."),
-        (f"Does {name} accept insurance?",
-         f"{name} accepts most major dental insurance plans. Contact the office at {phone} to verify your specific plan."),
-        (f"Where is {name} located?",
-         f"{name} is located at {customer.get('address', '')}, {city}, {state} {customer.get('zip', '')}. Call {phone} for directions."),
-        (f"Does {name} offer emergency dental care?",
-         f"Yes, {name} provides emergency dental care for situations like severe toothaches, broken teeth, and dental infections. Call {phone} for emergency appointments."),
-        (f"How do I schedule an appointment at {name}?",
-         f"You can schedule an appointment at {name} by calling {phone} or visiting the website at {customer.get('domain', '')}."),
-        (f"What makes {name} different?",
-         f"{name} combines experienced dental professionals with modern technology to deliver personalized, comfortable dental care in {city}, {state}."),
-    ]
+    if profile.is_practice:
+        faqs = [
+            (f"What services does {name} offer?",
+             f"{name} offers comprehensive dental care including general dentistry, cosmetic dentistry, restorative dentistry, preventive care, and emergency dental services{location_str}. Call {phone} for appointments."),
+            (f"Does {name} accept insurance?",
+             f"{name} accepts most major dental insurance plans. Contact the office at {phone} to verify your specific plan."),
+            (f"Where is {name} located?",
+             f"{name} is located at {customer.get('address', '')}, {city}, {state} {customer.get('zip', '')}. Call {phone} for directions."),
+            (f"Does {name} offer emergency dental care?",
+             f"Yes, {name} provides emergency dental care for situations like severe toothaches, broken teeth, and dental infections. Call {phone} for emergency appointments."),
+            (f"How do I schedule an appointment at {name}?",
+             f"You can schedule an appointment at {name} by calling {phone} or visiting the website at {customer.get('domain', '')}."),
+            (f"What makes {name} different?",
+             f"{name} combines experienced dental professionals with modern technology to deliver personalized, comfortable dental care{location_str}."),
+        ]
+    else:
+        faqs = [
+            (f"What {profile.service_category} does {name} offer?",
+             f"{name} provides {profile.service_category}{location_str}. Contact us at {phone} for more information."),
+            (f"Where is {name} located?",
+             f"{name} is located at {customer.get('address', '')}, {city}, {state} {customer.get('zip', '')}. Call {phone} for directions."),
+            (f"How do I contact {name}?",
+             f"You can reach {name} by calling {phone} or visiting the website at {customer.get('domain', '')}."),
+            (f"What areas does {name} serve?",
+             f"{name} serves {profile.customer_term}{location_str} and surrounding areas." if city else f"{name} serves {profile.customer_term} nationwide."),
+            (f"What makes {name} different?",
+             f"{name} provides professional {profile.service_category} with a focus on quality and {profile.customer_term} satisfaction."),
+        ]
 
     schema = {
         "@context": "https://schema.org",
@@ -410,26 +444,33 @@ def _generate_schema_faq(customer: dict) -> str:
 
 
 def _generate_schema_doctors(customer: dict, providers: list) -> str:
-    """Generate Person schema for each provider."""
+    """Generate Person schema for each provider/team member."""
+    from geo_agent.business_profiles import get_profile
+    profile = get_profile(customer.get('business_type', 'practice'))
+
     domain = customer.get('domain', '')
     name = customer['name']
 
     persons = []
     for p in providers:
+        job_title = p.get('credentials', '') or profile.provider_term.rstrip('s').title()
         person = {
             "@context": "https://schema.org",
-            "@type": "Dentist",
+            "@type": "Person",
             "name": p['name'],
-            "jobTitle": "Dentist",
-            "description": p.get('bio', f"Dentist at {name}"),
+            "jobTitle": job_title,
+            "description": p.get('bio', f"{job_title} at {name}"),
             "worksFor": {
-                "@type": "Dentist",
-                "@id": f"https://{domain}/#dentist",
+                "@type": profile.schema_type,
+                "@id": f"https://{domain}/#{profile.schema_id_suffix}",
                 "name": name
             }
         }
         if p.get('specialties'):
-            person["medicalSpecialty"] = p['specialties']
+            if profile.schema_specialty:
+                person["medicalSpecialty"] = p['specialties']
+            else:
+                person["knowsAbout"] = p['specialties']
         persons.append(person)
 
     if not persons:
@@ -503,9 +544,12 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
 
     # ---- Executive Summary ----
     doc.add_heading('Executive Summary', level=1)
+    from geo_agent.business_profiles import get_profile
+    profile = get_profile(customer.get('business_type', 'practice'))
+    location_str = f" in {city}, {state}" if city else ""
     doc.add_paragraph(
-        f'{name} is a dental practice in {city}, {state} with a website at {domain}. '
-        f'This report analyzes the practice\'s current search visibility across both traditional search engines '
+        f'{name} is a {profile.industry_label.lower()}{location_str} with a website at {domain}. '
+        f'This report analyzes the business\'s current search visibility across both traditional search engines '
         f'and AI-powered search (ChatGPT, Claude, Perplexity, Google AI Overviews) and provides actionable '
         f'recommendations with deploy-ready files.'
     )
@@ -529,12 +573,12 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         findings.append('No AI bot permissions in robots.txt')
     if not schema_types:
         findings.append('No schema markup found')
-    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types:
-        findings.append(f'Schema incomplete — found {", ".join(schema_types)} but no Dentist/LocalBusiness')
+    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types:
+        findings.append(f'Schema incomplete — found {", ".join(schema_types)} but no {profile.schema_type}')
     if 'FAQPage' not in schema_types:
         findings.append('No FAQPage schema for AI answer extraction')
     if 'Person' not in schema_types:
-        findings.append('No Person schema — doctors invisible to AI')
+        findings.append(f'No Person schema — {profile.provider_term} invisible to AI')
     if not site_data.get('has_analytics'):
         findings.append('No analytics tracking detected')
     if not findings:
@@ -644,13 +688,13 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         doc.add_heading('No Schema Markup', level=3)
         doc.add_paragraph(
             'The site has zero JSON-LD structured data. Search engines and AI models rely on schema '
-            'to understand entities, services, and relationships. Missing: Dentist, FAQPage, Person, '
-            'MedicalProcedure, BreadcrumbList, AggregateRating.')
-    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types:
+            f'to understand entities, services, and relationships. Missing: {profile.schema_type}, FAQPage, Person, '
+            'BreadcrumbList, AggregateRating.')
+    elif profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types:
         doc.add_heading('Incomplete Schema Markup', level=3)
         doc.add_paragraph(
-            f'Found: {", ".join(schema_types)}. Missing critical types: Dentist/LocalBusiness, '
-            'FAQPage, Person, MedicalProcedure, BreadcrumbList.')
+            f'Found: {", ".join(schema_types)}. Missing critical types: {profile.schema_type}, '
+            'FAQPage, Person, BreadcrumbList.')
     if not site_data.get('has_analytics'):
         doc.add_heading('No Analytics Tracking', level=3)
         doc.add_paragraph(
@@ -659,7 +703,7 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     if site_data.get('pages_indexed', 0) < 15:
         doc.add_heading('Low Page Count', level=3)
         doc.add_paragraph(
-            f'Only {site_data["pages_indexed"]} pages indexed. Practices with 30+ pages of quality '
+            f'Only {site_data["pages_indexed"]} pages indexed. Businesses with 30+ pages of quality '
             'content rank significantly better in both traditional and AI search.')
 
     doc.add_page_break()
@@ -668,11 +712,11 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     doc.add_heading(f'2. AI Search Readiness — AEO ({scores["aeo"]}/100 — {_grade(scores["aeo"])})', level=1)
 
     aeo_checks = [
-        ('llms.txt', site_data.get('has_llms_txt'), 'Found', 'NOT FOUND — AI assistants cannot discover this practice'),
+        ('llms.txt', site_data.get('has_llms_txt'), 'Found', 'NOT FOUND — AI assistants cannot discover this business'),
         ('AI bot permissions', site_data.get('has_ai_robots'), 'Configured', 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'),
         ('FAQPage schema', 'FAQPage' in schema_types, 'Present', 'Missing — cannot appear in AI FAQ answers'),
-        ('Person schema', 'Person' in schema_types, 'Present', 'Missing — doctors invisible to AI'),
-        ('Dentist schema', any(t in schema_types for t in ['Dentist', 'LocalBusiness']), 'Present', 'Missing — practice not typed for AI'),
+        ('Person schema', 'Person' in schema_types, 'Present', f'Missing — {profile.provider_term} invisible to AI'),
+        (f'{profile.schema_type} schema', any(t in schema_types for t in [profile.schema_type, 'LocalBusiness', 'Organization']), 'Present', 'Missing — business not typed for AI'),
     ]
     aeo_table = doc.add_table(rows=len(aeo_checks) + 1, cols=2)
     aeo_table.style = 'Light Shading Accent 1'
@@ -693,8 +737,8 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         doc.add_heading('No llms.txt File', level=3)
         doc.add_paragraph(
             'The llms.txt standard is the emerging way to make your business discoverable by AI assistants. '
-            'Without it, when someone asks ChatGPT "best dentist in ' + (city or 'your area') + '," '
-            'your practice is invisible to the AI\'s knowledge base.')
+            'Without it, when someone asks ChatGPT about your ' + profile.service_category + ' in ' + (city or 'your area') + ', '
+            'your business is invisible to the AI\'s knowledge base.')
     if not site_data.get('has_ai_robots'):
         doc.add_heading('No AI Bot Permissions', level=3)
         doc.add_paragraph(
@@ -711,17 +755,17 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         fix_data.append(('CRITICAL', 'No llms.txt', 'Invisible to AI assistants', 'Deploy llms.txt to site root'))
     if not site_data.get('has_ai_robots'):
         fix_data.append(('CRITICAL', 'No AI crawler permissions', 'AI bots may not prioritize crawling', 'Update robots.txt'))
-    if not schema_types or ('Dentist' not in schema_types and 'LocalBusiness' not in schema_types):
-        fix_data.append(('CRITICAL', 'Missing Dentist schema', 'Practice not typed for search engines', 'Add Dentist JSON-LD'))
+    if not schema_types or (profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types):
+        fix_data.append(('CRITICAL', f'Missing {profile.schema_type} schema', 'Business not typed for search engines', f'Add {profile.schema_type} JSON-LD'))
     if 'FAQPage' not in schema_types:
         fix_data.append(('HIGH', 'No FAQPage schema', '37-40% fewer AI citations', 'Add FAQ schema'))
     if 'Person' not in schema_types:
-        fix_data.append(('HIGH', 'No Person schema', 'Doctors not in AI results', 'Add Person JSON-LD per provider'))
+        fix_data.append(('HIGH', 'No Person schema', f'{profile.provider_term.title()} not in AI results', f'Add Person JSON-LD per {profile.provider_term[:-1] if profile.provider_term.endswith("s") else profile.provider_term}'))
     if not site_data.get('has_analytics'):
         fix_data.append(('HIGH', 'No analytics', 'No traffic/conversion data', 'Install Google Analytics 4'))
     if not site_data.get('has_sitemap'):
         fix_data.append(('HIGH', 'No sitemap.xml', 'Pages may not be indexed', 'Generate and submit sitemap'))
-    fix_data.append(('HIGH', 'Service pages lack expert quotes', 'Reduces AI trust signals', 'Add Dr. quotes to top pages'))
+    fix_data.append(('HIGH', 'Service pages lack expert quotes', 'Reduces AI trust signals', 'Add expert quotes to top pages'))
     fix_data.append(('MEDIUM', 'No neighborhood pages', 'Missing local search queries', 'Create area-specific pages'))
     fix_data.append(('MEDIUM', 'No blog/content cadence', 'No freshness signals', 'Start 2-4 posts/month'))
 
@@ -745,9 +789,9 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     files_info = [
         ('llms.txt', 'AI assistant discoverability file', 'Site root: /llms.txt'),
         ('robots.txt', 'Updated with AI bot permissions', 'Site root: /robots.txt'),
-        ('schema-homepage.html', 'Dentist + Organization + Breadcrumb JSON-LD', 'Homepage <head>'),
+        ('schema-homepage.html', f'{profile.schema_type} + Organization JSON-LD', 'Homepage <head>'),
         ('schema-faq.html', 'FAQPage JSON-LD (10-15 questions)', 'Homepage or FAQ page <head>'),
-        ('schema-doctors.html', 'Person JSON-LD for each provider', 'Doctors/team page <head>'),
+        ('schema-doctors.html', f'Person JSON-LD for each {profile.provider_term[:-1] if profile.provider_term.endswith("s") else profile.provider_term}', 'Team page <head>'),
     ]
     files_table = doc.add_table(rows=len(files_info) + 1, cols=3)
     files_table.style = 'Light Shading Accent 1'
@@ -769,15 +813,15 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         ('Phase 1: Week 1-2 — Technical Foundation', [
             'Deploy llms.txt to site root',
             'Update robots.txt with AI crawler permissions',
-            'Add Dentist + Organization schema to homepage',
-            'Add FAQPage schema with top patient questions',
-            'Add Person schema for each provider',
+            f'Add {profile.schema_type} + Organization schema to homepage',
+            f'Add FAQPage schema with top {profile.customer_term} questions',
+            f'Add Person schema for each {profile.provider_term[:-1] if profile.provider_term.endswith("s") else profile.provider_term}',
         ] + (['Set up Google Analytics 4'] if not site_data.get('has_analytics') else [])),
         ('Phase 2: Week 3-4 — Content Enhancement', [
             'Add expert quotes and statistics to service pages',
             'Rewrite page intros to TLDR-first format for AI extraction',
             'Create/optimize Google Business Profile',
-            'Verify all directory listings (Yelp, Healthgrades, Zocdoc)',
+            'Verify all directory listings',
         ]),
         ('Phase 3: Month 2-3 — Local Expansion', [
             'Create neighborhood landing pages for surrounding cities',
@@ -801,9 +845,9 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     doc.add_page_break()
     doc.add_heading('About PracticeRank', level=1)
     doc.add_paragraph(
-        'PracticeRank specializes in AI Search Optimization (AEO) for dental and medical practices. '
-        'We help practices appear in AI-powered search results from ChatGPT, Claude, Perplexity, '
-        'and Google AI Overviews — the fastest-growing channel for how patients find healthcare providers.'
+        'PracticeRank specializes in AI Search Optimization (AEO) for businesses of all types. '
+        'We help businesses appear in AI-powered search results from ChatGPT, Claude, Perplexity, '
+        'and Google AI Overviews — the fastest-growing channel for how customers find service providers.'
     )
     doc.add_paragraph()
     p = doc.add_paragraph()
@@ -836,6 +880,9 @@ def generate_report(customer: dict, providers: list, services: list,
     Returns:
         dict with keys: output_dir, zip_path, files (list of generated file paths)
     """
+    from geo_agent.business_profiles import get_profile
+    profile = get_profile(customer.get('business_type', 'practice'))
+
     name = customer.get('name', '')
     if not name:
         raise ValueError("Customer must have a name")
@@ -963,12 +1010,15 @@ def generate_report(customer: dict, providers: list, services: list,
     issues_high = []
     issues_medium = []
 
+    from geo_agent.business_profiles import get_profile as _gp
+    profile = _gp(customer.get('business_type', 'practice'))
+
     if not site_data.get('has_llms_txt'):
         issues_critical.append(('No llms.txt file',
             'The llms.txt standard is the emerging way to make your business discoverable by AI assistants '
             '(ChatGPT, Claude, Perplexity, Google AI Overviews). Without it, AI models have no structured '
-            'summary of what your practice offers. When someone asks ChatGPT "best dentist in '
-            f'{city}," your practice is invisible.'))
+            f'summary of what your business offers. When someone asks AI about {profile.service_category} in '
+            f'{city}, your business is invisible.'))
     if not site_data.get('has_ai_robots'):
         issues_critical.append(('No AI bot permissions in robots.txt',
             'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
@@ -977,12 +1027,11 @@ def generate_report(customer: dict, providers: list, services: list,
     if 'FAQPage' not in site_data.get('schema_types', []):
         issues_high.append(('No FAQPage schema markup',
             'FAQ schema enables rich results in Google and provides structured answers that AI assistants '
-            'can cite directly. Practices with FAQ schema see 37-40% more AI search citations.'))
+            'can cite directly. Businesses with FAQ schema see 37-40% more AI search citations.'))
     if 'Person' not in site_data.get('schema_types', []):
-        issues_high.append(('No Person schema for providers',
-            'Without Person schema, AI assistants cannot reliably identify your doctors, their credentials, '
-            'or specialties. This data is critical for queries like "Dr. [Name] dentist" or '
-            f'"best cosmetic dentist in {city}."'))
+        issues_high.append((f'No Person schema for {profile.provider_term}',
+            f'Without Person schema, AI assistants cannot reliably identify your {profile.provider_term}, their credentials, '
+            f'or specialties. This data is critical for queries about your {profile.provider_term}.'))
     if not site_data.get('has_analytics'):
         issues_high.append(('No analytics tracking detected',
             'No Google Analytics 4, Google Tag Manager, or other analytics platform was detected. '
@@ -992,13 +1041,13 @@ def generate_report(customer: dict, providers: list, services: list,
         issues_high.append(('No schema markup found',
             'The site has zero JSON-LD structured data. Search engines and AI models rely on schema '
             'to understand entities, services, and relationships.'))
-    elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types:
-        issues_medium.append(('Missing Dentist/LocalBusiness schema',
-            f'Found schema types: {", ".join(schema_types)}. But no Dentist or LocalBusiness schema, '
-            'which is critical for local search visibility and Google Maps integration.'))
+    elif profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types:
+        issues_medium.append((f'Missing {profile.schema_type}/LocalBusiness schema',
+            f'Found schema types: {", ".join(schema_types)}. But no {profile.schema_type} or LocalBusiness schema, '
+            'which is critical for search visibility and Google Maps integration.'))
     if site_data.get('pages_indexed', 0) < 15:
         issues_medium.append(('Low page count',
-            f'Only {site_data["pages_indexed"]} pages indexed. Practices with 30+ pages of quality '
+            f'Only {site_data["pages_indexed"]} pages indexed. Businesses with 30+ pages of quality '
             'content rank significantly better in both traditional and AI search.'))
     if not site_data.get('has_sitemap'):
         issues_high.append(('No sitemap.xml found',
@@ -1025,7 +1074,7 @@ def generate_report(customer: dict, providers: list, services: list,
 
 ## Executive Summary
 
-{customer['name']} is a dental practice in {city}, {state} with a website at {domain}. This report analyzes the practice's current search visibility across both traditional search engines and AI-powered search (ChatGPT, Claude, Perplexity, Google AI Overviews) and provides actionable recommendations with deploy-ready files.
+{customer['name']} is a {profile.industry_label.lower()}{' in ' + city + ', ' + state if city else ''} with a website at {domain}. This report analyzes the business's current search visibility across both traditional search engines and AI-powered search (ChatGPT, Claude, Perplexity, Google AI Overviews) and provides actionable recommendations with deploy-ready files.
 
 The site scores **{scores['overall']}/100 overall** with {'critical gaps' if scores['overall'] < 50 else 'notable opportunities'} in AI search readiness ({scores['aeo']}/100){' and technical SEO (' + str(scores['technical_seo']) + '/100)' if scores['technical_seo'] < 60 else ''}.
 
@@ -1088,12 +1137,12 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 
 | Check | Status |
 |-------|--------|
-| llms.txt | {'Found' if site_data['has_llms_txt'] else 'NOT FOUND — AI assistants cannot discover practice'} |
+| llms.txt | {'Found' if site_data['has_llms_txt'] else 'NOT FOUND — AI assistants cannot discover this business'} |
 | AI bot permissions (robots.txt) | {'Configured' if site_data['has_ai_robots'] else 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'} |
 | FAQPage schema | {'Present' if 'FAQPage' in schema_types else 'Missing — cannot appear in AI FAQ answers'} |
-| Person schema (providers) | {'Present' if 'Person' in schema_types else 'Missing — doctors invisible to AI'} |
-| Dentist/LocalBusiness schema | {'Present' if any(t in schema_types for t in ['Dentist', 'LocalBusiness']) else 'Missing — practice not typed for AI'} |
-| MedicalProcedure schema | {'Present' if 'MedicalProcedure' in schema_types else 'Missing — services not structured for AI'} |
+| Person schema ({profile.provider_term}) | {'Present' if 'Person' in schema_types else 'Missing — ' + profile.provider_term + ' invisible to AI'} |
+| {profile.schema_type}/LocalBusiness schema | {'Present' if any(t in schema_types for t in [profile.schema_type, 'LocalBusiness', 'Organization']) else 'Missing — business not typed for AI'} |
+| Service schema | {'Present' if any(t in schema_types for t in ['Service', 'MedicalProcedure']) else 'Missing — services not structured for AI'} |
 
 ---
 
@@ -1112,11 +1161,11 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 
 ### Immediate (Week 1-2)
 
-1. **Deploy llms.txt** — Make practice discoverable by AI assistants
+1. **Deploy llms.txt** — Make business discoverable by AI assistants
 2. **Update robots.txt** — Add explicit AI bot permissions (ChatGPT-User, GPTBot, ClaudeBot, PerplexityBot)
-3. **Add Dentist + Organization schema** — Complete JSON-LD with address, phone, providers, services
-4. **Add FAQPage schema** — Top 10-15 patient questions with answers
-5. **Add Person schema for providers** — Each doctor with credentials and specialties
+3. **Add {profile.schema_type} + Organization schema** — Complete JSON-LD with address, phone, {profile.provider_term}, services
+4. **Add FAQPage schema** — Top 10-15 {profile.customer_term} questions with answers
+5. **Add Person schema for {profile.provider_term}** — Each {profile.provider_term[:-1] if profile.provider_term.endswith('s') else profile.provider_term} with credentials and specialties
 {'6. **Set up Google Analytics 4** — Start tracking traffic and conversions' if not site_data.get('has_analytics') else ''}
 
 ### Short-Term (Week 3-4)
@@ -1129,7 +1178,7 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 
 - Create neighborhood landing pages for surrounding cities
 - Start monthly blog cadence (2-4 posts/month)
-- Build local citation listings (Yelp, Healthgrades, Zocdoc)
+- Build local citation listings
 - Set up review generation system
 
 ### Ongoing
@@ -1147,9 +1196,9 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 |------|---------|----------------|
 | llms.txt | AI assistant discoverability file | Site root: /llms.txt |
 | robots.txt | AI crawler permissions | Site root: /robots.txt |
-| schema-homepage.html | Dentist + Organization + BreadcrumbList JSON-LD | Homepage `<head>` |
+| schema-homepage.html | {profile.schema_type} + Organization JSON-LD | Homepage `<head>` |
 | schema-faq.html | FAQPage JSON-LD | Homepage or FAQ page `<head>` |
-| schema-doctors.html | Person JSON-LD for providers | Doctors/team page `<head>` |
+| schema-doctors.html | Person JSON-LD for {profile.provider_term} | Team page `<head>` |
 
 ---
 

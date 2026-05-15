@@ -1,4 +1,4 @@
-"""GEO Agent — Monthly dental practice SEO optimizer.
+"""GEO Agent — Monthly SEO & AEO optimizer for any business type.
 
 Crawls customer websites, analyzes content with Claude 4.6,
 generates llms.txt + schema markup, and publishes updates.
@@ -36,8 +36,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from geo_agent.business_profiles import get_profile
 from geo_agent.config import Customer, load_customers
 from geo_agent.crawler import get_crawler
+from geo_agent.validators.business_type_check import validate_output, validate_schema_type
 from geo_agent.embeddings import embed_texts
 from geo_agent.google_places import verify_customer, VerifiedBusinessData, CompetitorData
 from geo_agent.rag_store import CustomerRAG
@@ -130,9 +132,15 @@ def process_customer(
     audit = AuditLogger(log_dir=str(Path(data_dir) / ".." / "audit_logs"))
     staging = StagingManager(data_dir=data_dir)
 
+    # Resolve business profile early — used throughout the pipeline
+    profile = get_profile(customer)
+
     mode_label = "[DRY RUN] " if dry_run else "[STAGE] " if stage_only else ""
-    logger.info(f"{mode_label}Processing: {customer.name} ({customer.domain})")
-    audit.log(customer.id, "pipeline_start", {"dry_run": dry_run, "stage_only": stage_only, "domain": customer.domain})
+    logger.info(f"{mode_label}Processing: {customer.name} ({customer.domain}) [{profile.industry_label}]")
+    audit.log(customer.id, "pipeline_start", {
+        "dry_run": dry_run, "stage_only": stage_only,
+        "domain": customer.domain, "business_type": profile.industry,
+    })
 
     # Create a run record in DB if available
     if run_id is None and db:
@@ -192,6 +200,8 @@ def process_customer(
                 domain=customer.domain,
                 api_key=customer.webflow_api_key,
                 site_id=customer.webflow_site_id,
+                business_type=profile.industry,
+                service_keywords=profile.service_keywords,
             )
             pages = crawler.get_pages()
             summary["pages_crawled"] = len(pages)
@@ -505,6 +515,25 @@ def process_customer(
             summary["changes"].append(f"Generated llms-full.txt ({len(llms_full_txt)} bytes)")
             summary["changes"].append(f"Generated schema markup ({schema_html.count('application/ld+json')} blocks)")
             summary["changes"].append(f"Generated robots.txt ({len(robots_txt)} bytes)")
+
+            # --- Post-generation validation: check for business-type contamination ---
+            generated_files = {
+                "llms.txt": llms_txt,
+                "llms-full.txt": llms_full_txt,
+                "schema.html": schema_html,
+                "robots.txt": robots_txt,
+            }
+            bt_warnings = validate_output(profile, generated_files, business_type=getattr(customer, "business_type", ""))
+            bt_warnings += validate_schema_type(profile, schema_html)
+            if bt_warnings:
+                logger.warning(f"  Business-type validation: {len(bt_warnings)} warning(s)")
+                for w in bt_warnings:
+                    logger.warning(f"    {w}")
+                summary["business_type_warnings"] = bt_warnings
+                audit.log(customer.id, "business_type_validation", {
+                    "warnings": len(bt_warnings),
+                    "details": bt_warnings[:10],
+                })
 
             # Save generated files locally
             output_dir = Path(output_base or (data_dir + "/output")) / customer.id

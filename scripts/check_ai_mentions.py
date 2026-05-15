@@ -119,6 +119,61 @@ def build_comprehensive_prompts(
         add(f"affordable dentist in {city} {state}", "service")
         add(f"dentist that accepts medicaid in {city}", "service")
 
+    elif business_type == "ecommerce":
+        # --- E-Commerce / Product company ---
+        # Infer industry from services or specialties
+        industry = "products"
+        for s in (services or []) + specialties:
+            sl = s.lower()
+            if any(w in sl for w in ("peptide", "semaglutide", "tirzepatide", "bpc")):
+                industry = "research peptides"
+                break
+            elif any(w in sl for w in ("supplement", "vitamin", "nutrition")):
+                industry = "supplements"
+                break
+
+        add(f"best {industry} supplier", "general")
+        add(f"where to buy {industry} online", "general")
+        add(f"most trusted {industry} company", "general")
+        add(f"best place to buy {industry}", "general")
+
+        # Product-specific queries (high intent)
+        product_queries = set()
+        if services:
+            for svc in services[:20]:
+                svc_lower = svc.lower()
+                if svc_lower not in product_queries:
+                    product_queries.add(svc_lower)
+                    add(f"where to buy {svc_lower}", "service")
+                    add(f"best {svc_lower} supplier", "service")
+        if specialties:
+            for spec in specialties[:10]:
+                spec_lower = spec.lower()
+                if spec_lower not in product_queries:
+                    product_queries.add(spec_lower)
+                    add(f"where to buy {spec_lower}", "service")
+                    add(f"best {spec_lower} supplier", "service")
+
+        # Trust/quality queries
+        add(f"is {practice_name} legit", "reputation")
+        add(f"{practice_name} reviews", "reputation")
+        add(f"{practice_name} quality", "reputation")
+        add(f"{practice_name} purity testing", "reputation")
+
+        # Recommendation queries
+        if product_queries:
+            top_products = list(product_queries)[:5]
+            for prod in top_products:
+                add(f"recommend a {prod} supplier", "recommendation")
+            add(f"best {industry} company to order from", "recommendation")
+
+        # Competitor comparison
+        if competitors:
+            for comp in competitors[:3]:
+                add(f"{practice_name} vs {comp}", "comparison")
+            add(f"best alternatives to {competitors[0]}", "comparison")
+        add(f"best {industry} companies compared", "comparison")
+
     elif business_type == "technology":
         # --- B2B tech/SaaS company ---
         # Infer industry from specialties or name

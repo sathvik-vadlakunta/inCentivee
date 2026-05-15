@@ -13,7 +13,7 @@ from geo_agent.generators.llms_txt import (
 class TestGenerateLlmsTxt:
     def test_h1_with_location(self, sample_customer, sample_pages):
         result = generate_llms_txt(sample_customer, sample_pages)
-        assert result.startswith("# Hilltop Family Dental — Dentist in Austin, TX")
+        assert result.startswith("# Hilltop Family Dental — Dental Practice in Austin, TX")
 
     def test_blockquote_ai_instructions(self, sample_customer, sample_pages):
         result = generate_llms_txt(sample_customer, sample_pages)
@@ -33,7 +33,7 @@ class TestGenerateLlmsTxt:
 
     def test_services_section(self, sample_customer, sample_pages):
         result = generate_llms_txt(sample_customer, sample_pages)
-        assert "## Services" in result
+        assert "## Dental Services" in result
         assert "[Dental Implants]" in result
         assert "[Cosmetic Dentistry]" in result
 
@@ -107,7 +107,7 @@ class TestGenerateLlmsFullTxt:
     def test_category_sections(self, sample_customer, sample_pages):
         result = generate_llms_full_txt(sample_customer, sample_pages)
         assert "## Home" in result
-        assert "## Services" in result
+        assert "## Dental Services" in result
         assert "## About" in result
         assert "## Contact" in result
 

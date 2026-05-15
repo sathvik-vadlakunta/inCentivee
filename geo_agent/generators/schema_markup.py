@@ -1,17 +1,18 @@
-"""Generate JSON-LD schema markup for dental practices.
+"""Generate JSON-LD schema markup for businesses.
 
 Schemas that matter for AI/LLM discoverability:
-- Dentist (extends LocalBusiness) — homepage
+- LocalBusiness/Dentist/Organization — homepage
 - FAQPage — on service pages (highest priority for GEO)
-- Service — for each dental service
+- Service — for each service
 - AggregateRating + Review
-- Person — for each provider
+- Person — for each provider/team member
 """
 
 from __future__ import annotations
 
 import json
 
+from geo_agent.business_profiles import BusinessProfile, get_profile
 from geo_agent.config import Customer
 from geo_agent.google_places import (
     CONFIDENCE_FOR_ADDRESS,
@@ -22,37 +23,24 @@ from geo_agent.google_places import (
 
 
 def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessData | None = None) -> dict:
-    """Generate the main schema for the homepage, adapted by business_type."""
-    bt = getattr(customer, "business_type", "practice")
-    is_practice = bt == "practice"
-
-    # Determine @type and @id suffix
-    if bt == "technology":
-        schema_type = "Organization"
-        id_suffix = "organization"
-    elif bt == "product":
-        schema_type = "Organization"
-        id_suffix = "organization"
-    elif bt == "service":
-        schema_type = "Organization"
-        id_suffix = "organization"
-    else:
-        schema_type = "Dentist"
-        id_suffix = "dentist"
+    """Generate the main schema for the homepage, adapted by business profile."""
+    profile = get_profile(customer)
+    is_practice = profile.is_practice
 
     schema = {
         "@context": "https://schema.org",
-        "@type": schema_type,
-        "@id": f"https://{customer.domain}/#{id_suffix}",
+        "@type": profile.schema_type,
+        "@id": f"https://{customer.domain}/#{profile.schema_id_suffix}",
         "name": customer.name,
         "url": f"https://{customer.domain}/",
     }
 
+    # telephone — always include for practices even if empty (Google flags it as missing)
     if customer.phone:
         schema["telephone"] = customer.phone
 
-    # Build address — only include fields that have values
-    address_fields = {}
+    # Build address — always include for practices (Google flags missing address)
+    address_fields = {"@type": "PostalAddress", "addressCountry": "US"}
     if customer.address:
         address_fields["streetAddress"] = customer.address
     if customer.city:
@@ -61,19 +49,26 @@ def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessD
         address_fields["addressRegion"] = customer.state
     if customer.zip_code:
         address_fields["postalCode"] = customer.zip_code
-    if address_fields:
-        address_fields["@type"] = "PostalAddress"
-        address_fields["addressCountry"] = "US"
+    # Only include address block if we have at least city or street
+    if customer.address or customer.city:
         schema["address"] = address_fields
 
-    # Practice-specific fields
+    # image — Google expects this on LocalBusiness types
     if is_practice:
-        schema["priceRange"] = "$$-$$$$"
-        schema["medicalSpecialty"] = customer.specialties or ["General Dentistry"]
-    else:
-        # Non-practice: use knowsAbout instead of medicalSpecialty
-        if customer.specialties:
-            schema["knowsAbout"] = customer.specialties
+        if customer.image:
+            schema["image"] = customer.image
+        else:
+            schema["image"] = f"https://{customer.domain}/logo.png"
+
+    # Practice-specific fields — always include priceRange (Google flags it as missing)
+    if is_practice:
+        schema["priceRange"] = "$$"
+    # medicalSpecialty — only for businesses with a medical specialty
+    if profile.schema_specialty:
+        schema["medicalSpecialty"] = profile.schema_specialty
+    # knowsAbout — specialties as free text
+    if customer.specialties:
+        schema["knowsAbout"] = customer.specialties
 
     if is_practice and customer.hours:
         schema["openingHours"] = customer.hours
@@ -83,19 +78,52 @@ def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessD
         schema["currenciesAccepted"] = "USD"
 
     if is_practice and customer.emergency_available:
-        schema["availableService"] = {
-            "@type": "MedicalProcedure",
-            "name": "Emergency Dental Care",
-            "description": f"Same-day emergency dental appointments available at {customer.name}.",
+        schema["hasOfferCatalog"] = {
+            "@type": "OfferCatalog",
+            "name": "Emergency Services",
+            "itemListElement": [{
+                "@type": "Offer",
+                "itemOffered": {
+                    "@type": "Service",
+                    "name": f"Emergency {profile.service_category.title()}",
+                    "description": f"Same-day emergency appointments available at {customer.name}.",
+                },
+            }],
         }
 
-    # Nested type for technology businesses
-    if bt == "technology":
-        schema["additionalType"] = "https://schema.org/SoftwareApplication"
+    # Additional schema type (e.g. SoftwareApplication for tech companies)
+    if profile.additional_schema_type:
+        schema["additionalType"] = profile.additional_schema_type
 
-    # Nested type for service businesses
-    if bt == "service":
-        schema["additionalType"] = "https://schema.org/LocalBusiness"
+    # Embed employees as Person (not Dentist — Dentist is a LocalBusiness type)
+    if customer.providers:
+        employees = []
+        for provider in customer.providers:
+            person = {"@type": "Person", "name": provider.name}
+            if provider.credentials:
+                person["jobTitle"] = provider.credentials
+            if provider.bio:
+                person["description"] = provider.bio
+            if provider.specialties:
+                person["knowsAbout"] = provider.specialties
+            if getattr(provider, "alumni_of", None):
+                person["alumniOf"] = [
+                    {"@type": "CollegeOrUniversity", "name": school}
+                    for school in provider.alumni_of
+                ]
+            employees.append(person)
+        schema["employee"] = employees
+
+    # Services as OfferCatalog (valid on LocalBusiness/Dentist)
+    if customer.services and "hasOfferCatalog" not in schema:
+        schema["hasOfferCatalog"] = {
+            "@type": "OfferCatalog",
+            "name": "Services",
+            "itemListElement": [
+                {"@type": "OfferCatalog", "name": svc}
+                for svc in customer.services
+            ],
+        }
 
     # Add AggregateRating from verified Google review data (practice only)
     if is_practice and is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
@@ -140,13 +168,9 @@ generate_dentist_schema = generate_primary_schema
 
 def generate_provider_schemas(customer: Customer) -> list[dict]:
     """Generate Person schema for each provider/team member."""
-    bt = getattr(customer, "business_type", "practice")
-    if bt == "practice":
-        works_for_type = "Dentist"
-        works_for_id = f"https://{customer.domain}/#dentist"
-    else:
-        works_for_type = "Organization"
-        works_for_id = f"https://{customer.domain}/#organization"
+    profile = get_profile(customer)
+    works_for_type = profile.schema_type
+    works_for_id = f"https://{customer.domain}/#{profile.schema_id_suffix}"
 
     schemas = []
     for provider in customer.providers:
@@ -175,23 +199,26 @@ def generate_service_schema(
     url: str,
     customer: Customer,
 ) -> dict:
-    """Generate Service schema for a dental service page."""
-    return {
+    """Generate Service schema for a service page."""
+    profile = get_profile(customer)
+    schema = {
         "@context": "https://schema.org",
         "@type": "Service",
         "name": service_name,
         "description": description[:300],
         "url": url,
         "provider": {
-            "@type": "Dentist",
-            "@id": f"https://{customer.domain}/#dentist",
+            "@type": profile.schema_type,
+            "@id": f"https://{customer.domain}/#{profile.schema_id_suffix}",
             "name": customer.name,
         },
-        "areaServed": {
+    }
+    if customer.city:
+        schema["areaServed"] = {
             "@type": "City",
             "name": customer.city,
-        },
-    }
+        }
+    return schema
 
 
 def generate_faq_schema(questions: list[dict]) -> dict:

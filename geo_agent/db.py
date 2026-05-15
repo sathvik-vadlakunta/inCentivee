@@ -498,6 +498,7 @@ class CustomerDB:
             insurance_accepted=data.get("insurance_accepted", []),
             hours=data.get("hours", ""),
             emergency_available=data.get("emergency_available", False),
+            services=[s["name"] for s in self.get_services(customer_id)],
             verified_quotes=data.get("verified_quotes", []),
         )
 
