@@ -57,17 +57,42 @@ def clean_page_content(raw_text: str) -> str:
     """Strip nav/header/footer boilerplate from page text content.
 
     The raw text from _clean_html still contains navigation menus, footer links,
-    copyright notices, etc. This function strips common boilerplate patterns.
+    copyright notices, phone/email in headers, etc. This strips common boilerplate
+    so that _extract_description gets clean body text.
     """
     text = raw_text
+
+    # Remove phone numbers at the start of text (common in Webflow header bars)
+    text = re.sub(r"^\s*\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\s*", "", text).strip()
+
+    # Remove email addresses at the start
+    text = re.sub(r"^\s*\S+@\S+\.\S+\s*", "", text).strip()
 
     # Remove common nav patterns (e.g. "Home Services About Contact Blog")
     # These appear as space-separated menu items at the start
     text = re.sub(
-        r"^(Home\s+)?(Services?\s+)?(About\s+)?(Contact\s+)?(Blog\s+)?(FAQ\s+)?(Reviews?\s+)?"
+        r"^(Home\s+)?(What We \w+\s+)?(Services?\s+)?(Products?\s+)?(About\s+)?"
+        r"(Contact\s+)?(Blog\s+)?(FAQ\s+)?(Reviews?\s+)?"
         r"(Patient\s+)?(Insurance\s+)?(Locations?\s+)?(Schedule\s+)?(New Patients?\s+)?",
         "", text, count=1, flags=re.IGNORECASE
     ).strip()
+
+    # Strip repeated page title at start (Webflow dumps "<title> <nav> <content>")
+    # Heuristic: if the first ~100 chars contains a phone number, strip everything up to it
+    phone_match = re.search(r"\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}", text[:200])
+    if phone_match:
+        # Find the end of the nav block — look for the first sentence-like content after phone
+        after_phone = text[phone_match.end():]
+        # Strip email if right after phone
+        after_phone = re.sub(r"^\s*\S+@\S+\.\S+\s*", "", after_phone).strip()
+        # Strip remaining nav words
+        after_phone = re.sub(
+            r"^(Home\s+)?(What We \w+\s+)?(Services?\s+)?(Products?\s+)?(About\s+)?"
+            r"(Contact\s+)?(Blog\s+)?(FAQ\s+)?(Testimonials?\s+)?(Reviews?\s+)?",
+            "", after_phone, count=1, flags=re.IGNORECASE
+        ).strip()
+        if len(after_phone) > 50:
+            text = after_phone
 
     # Remove footer boilerplate patterns
     footer_patterns = [
@@ -89,10 +114,11 @@ def clean_page_content(raw_text: str) -> str:
 
 
 def normalize_url(url: str) -> str:
-    """Normalize a URL for deduplication (strip trailing slash, fragments, query)."""
+    """Normalize a URL for deduplication (strip trailing slash, fragments, query, www)."""
     parsed = urlparse(url)
+    host = (parsed.hostname or "").removeprefix("www.")
     path = parsed.path.rstrip("/") or "/"
-    return f"{parsed.scheme}://{parsed.hostname}{path}"
+    return f"{parsed.scheme}://{host}{path}"
 
 
 def _guess_category(slug: str, title: str, service_keywords: list[str] | None = None) -> str:
@@ -108,31 +134,33 @@ def _guess_category(slug: str, title: str, service_keywords: list[str] | None = 
     title_lower = title.lower()
     combined = f"{slug_lower} {title_lower}"
 
-    # Check about BEFORE services — pages like "About Our Team"
-    # should be categorized as about, not service
+    # Check specific page types BEFORE service keywords — service keywords can be
+    # broad for some industries (e.g. "gold" for precious metals) and would
+    # incorrectly capture FAQ, blog, testimonials, etc.
     if any(kw in combined for kw in ["about", "team", "doctor", "dr-", "provider", "staff",
                                       "career"]):
         return "about"
+    if any(kw in combined for kw in ["faq", "question", "frequently asked"]):
+        return "faq"
+    if any(kw in combined for kw in ["blog", "article", "post", "news", "insight", "guide"]):
+        return "blog"
+    if any(kw in combined for kw in ["contact", "location", "direction", "appointment", "schedule"]):
+        return "contact"
+    if any(kw in combined for kw in ["review", "testimonial"]):
+        return "reviews"
+    if any(kw in combined for kw in ["insurance", "payment", "financing", "fee"]):
+        return "insurance"
+    if any(kw in combined for kw in ["patient", "new-patient", "first-visit", "form"]):
+        return "patient_resources"
 
-    # Use provided service keywords or a broad default
+    # Now check service keywords — these come last because some industries have
+    # broad keywords that overlap with page titles
     svc_kw = service_keywords or [
         "service", "product", "solution", "platform", "feature",
         "integration", "api", "pricing", "demo", "case-study", "partner",
     ]
     if any(kw in combined for kw in svc_kw):
         return "service"
-    if any(kw in combined for kw in ["contact", "location", "direction", "appointment", "schedule"]):
-        return "contact"
-    if any(kw in combined for kw in ["review", "testimonial"]):
-        return "reviews"
-    if any(kw in combined for kw in ["blog", "article", "post", "news"]):
-        return "blog"
-    if any(kw in combined for kw in ["faq", "question"]):
-        return "faq"
-    if any(kw in combined for kw in ["insurance", "payment", "financing", "fee"]):
-        return "insurance"
-    if any(kw in combined for kw in ["patient", "new-patient", "first-visit", "form"]):
-        return "patient_resources"
     if slug_lower in ("", "/", "index", "home"):
         return "home"
     return "page"

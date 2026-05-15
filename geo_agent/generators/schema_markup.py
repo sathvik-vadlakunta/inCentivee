@@ -70,7 +70,7 @@ def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessD
     if customer.specialties:
         schema["knowsAbout"] = customer.specialties
 
-    if is_practice and customer.hours:
+    if customer.hours:
         schema["openingHours"] = customer.hours
 
     if is_practice and customer.insurance_accepted:
@@ -125,8 +125,8 @@ def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessD
             ],
         }
 
-    # Add AggregateRating from verified Google review data (practice only)
-    if is_practice and is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
+    # Add AggregateRating from verified Google review data
+    if is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
         schema["aggregateRating"] = {
             "@type": "AggregateRating",
             "ratingValue": str(verified_data.rating),

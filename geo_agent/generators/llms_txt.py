@@ -41,6 +41,10 @@ def _blockquote_for_type(customer: Customer, profile: BusinessProfile | None = N
 
     # Non-practice types: describe what the company does
     desc = specialties_str or profile.service_category
+    # Enrich generic service_category with industry context
+    if not specialties_str and profile.service_keywords:
+        top_kw = ", ".join(profile.service_keywords[:4])
+        desc = f"{profile.service_category} including {top_kw}"
     location_part = f" in {customer.city}, {customer.state}" if customer.city else ""
     contact_parts = []
     if customer.address:
@@ -216,7 +220,7 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     if is_practice:
         insurance_str = ", ".join(customer.insurance_accepted) if customer.insurance_accepted else "Contact for details"
         lines.append(f"- **Insurance**: {insurance_str}")
-    if is_practice and is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
+    if is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
         lines.append(f"- **Google Reviews**: {verified_data.rating} stars ({verified_data.review_count} reviews)")
     lines.append("")
 
@@ -261,14 +265,13 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
                 lines.append(f"- [{page.title}]({page.url})")
             lines.append("")
 
-    # Reviews (practice only)
-    if is_practice:
-        review_pages = by_category.get("reviews", [])
-        if review_pages:
-            lines.append("## Reviews")
-            for page in review_pages:
-                lines.append(f"- [{page.title}]({page.url})")
-            lines.append("")
+    # Reviews / Testimonials
+    review_pages = by_category.get("reviews", [])
+    if review_pages:
+        lines.append("## Reviews")
+        for page in review_pages:
+            lines.append(f"- [{page.title}]({page.url})")
+        lines.append("")
 
     # FAQ section — embed top Q&A pairs inline
     faq_pages = by_category.get("faq", [])
