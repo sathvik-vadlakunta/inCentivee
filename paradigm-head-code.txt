@@ -1,0 +1,83 @@
+<style>
+  .w-webflow-badge {
+    display: none !important;
+  }
+
+  .over {
+    overflow: hidden !important;
+  }
+  .w-icon-arrow-down:before,
+  .w-icon-dropdown-toggle .mobile-arrow:before {
+    content: '';
+    font-size: 22px !important;
+  }
+  .message {
+    resize: none; /* Disable resizing */
+  }
+
+  @media screen and (max-width: 1279.98px) {
+    .w-icon-arrow-down:before,
+    .w-icon-dropdown-toggle:before {
+      content: '';
+      font-size: 26px;
+    }
+  }
+
+  @media screen and (max-width: 990.98px) {
+    .w-icon-arrow-down:before,
+    .w-icon-dropdown-toggle:before {
+      content: '';
+      font-size: 22px;
+    }
+
+    .drop-icon {
+      color: #000;
+      width: 100%;
+      height: 100%;
+      margin-top: -5px;
+      margin-bottom: 0;
+      margin-right: 0;
+      transition: all 0.3s linear;
+      position: relative;
+    }
+  }
+
+  @media screen and (max-width: 766.98px) {
+    .w-icon-arrow-down:before,
+    .w-icon-dropdown-toggle:before {
+      content: '';
+      font-size: 18px;
+    }
+
+    .drop-icon {
+      color: #000;
+      width: 100%;
+      height: 100%;
+      margin-top: -4px;
+      margin-bottom: 0;
+      margin-right: 0;
+      transition: all 0.3s linear;
+      position: relative;
+    }
+  }
+  .dropdown-toggle-2 .nav-link + .drop-icon {
+    transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(0deg) skew(0deg, 0deg) !important;
+    transform-style: preserve-3d !important;
+    flex: 0;
+  }
+  .dropdown-toggle-2:hover .nav-link + .drop-icon {
+    transform: translate3d(0px, 0px, 0px) scale3d(1, 1, 1) rotateX(0deg) rotateY(0deg) rotateZ(180deg) skew(0deg, 0deg) !important;
+    transform-style: preserve-3d !important;
+  }
+</style>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TS0Q95BDRJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag('js', new Date());
+
+  gtag('config', 'G-TS0Q95BDRJ');
+</script>

@@ -249,15 +249,47 @@ def schema_to_script_tag(schema: dict) -> str:
     return f'<script type="application/ld+json">\n{json.dumps(schema, indent=2)}\n</script>'
 
 
-def generate_all_schemas(customer: Customer, verified_data: VerifiedBusinessData | None = None) -> str:
-    """Generate all schema markup as injectable HTML script tags."""
+def schema_to_js_injection(schema: dict) -> str:
+    """Wrap a schema dict in a JS snippet that injects JSON-LD at runtime.
+
+    Webflow's code editor word-wraps long lines, inserting real newlines into
+    JSON strings which breaks JSON-LD. This generates a <script> that creates
+    the JSON-LD element via JS, avoiding the line-break issue entirely.
+    """
+    # Minified JSON on a single line — wrapped in a JS string
+    json_str = json.dumps(schema, separators=(",", ":"))
+    # Escape for JS string (single quotes around it, escape internal single quotes)
+    js_safe = json_str.replace("\\", "\\\\").replace("'", "\\'")
+    return (
+        "<script>"
+        'var s=document.createElement("script");'
+        's.type="application/ld+json";'
+        f"s.textContent='{js_safe}';"
+        "document.head.appendChild(s);"
+        "</script>"
+    )
+
+
+def generate_all_schemas(
+    customer: Customer,
+    verified_data: VerifiedBusinessData | None = None,
+    webflow_safe: bool = False,
+) -> str:
+    """Generate all schema markup as injectable HTML script tags.
+
+    Args:
+        webflow_safe: If True, output JS injection wrappers instead of raw
+            JSON-LD <script> tags. This prevents Webflow's code editor from
+            breaking JSON by inserting line breaks.
+    """
+    wrap = schema_to_js_injection if webflow_safe else schema_to_script_tag
     tags = []
 
     # Main business schema (Dentist for practices, Organization for others)
-    tags.append(schema_to_script_tag(generate_primary_schema(customer, verified_data=verified_data)))
+    tags.append(wrap(generate_primary_schema(customer, verified_data=verified_data)))
 
     # Provider schemas
     for provider_schema in generate_provider_schemas(customer):
-        tags.append(schema_to_script_tag(provider_schema))
+        tags.append(wrap(provider_schema))
 
     return "\n".join(tags)

@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 
+from geo_agent.schema_validator import _validate_schema_fields
 from geo_agent.generators.schema_markup import (
     generate_all_schemas,
     generate_dentist_schema,
     generate_faq_schema,
     generate_provider_schemas,
     generate_service_schema,
+    schema_to_js_injection,
     schema_to_script_tag,
 )
 
@@ -190,6 +192,40 @@ class TestAggregateRating:
         assert "aggregateRating" in s
 
 
+class TestSchemaToJsInjection:
+    def test_wraps_in_js_script(self):
+        schema = {"@type": "Test", "name": "Foo"}
+        tag = schema_to_js_injection(schema)
+        assert tag.startswith("<script>")
+        assert tag.endswith("</script>")
+        assert "application/ld+json" in tag
+        assert "document.head.appendChild" in tag
+
+    def test_contains_valid_json(self):
+        schema = {"@type": "LocalBusiness", "name": "O'Malley's Dental"}
+        tag = schema_to_js_injection(schema)
+        # Extract the JSON from s.textContent='...';
+        import re
+        match = re.search(r"s\.textContent='(.+?)';", tag)
+        assert match
+        json_str = match.group(1).replace("\\'", "'").replace("\\\\", "\\")
+        import json
+        parsed = json.loads(json_str)
+        assert parsed["@type"] == "LocalBusiness"
+        assert parsed["name"] == "O'Malley's Dental"
+
+    def test_no_newlines_in_output(self):
+        """Webflow would break JSON with newlines — JS injection must be single-line."""
+        schema = {
+            "@type": "LocalBusiness",
+            "name": "Test Business",
+            "description": "A very long description that would normally wrap in Webflow editor " * 5,
+            "address": {"@type": "PostalAddress", "streetAddress": "123 Main St"},
+        }
+        tag = schema_to_js_injection(schema)
+        assert "\n" not in tag
+
+
 class TestGenerateAllSchemas:
     def test_contains_dentist_and_providers(self, sample_customer):
         html = generate_all_schemas(sample_customer)
@@ -205,3 +241,85 @@ class TestGenerateAllSchemas:
     def test_passes_verified_data_to_dentist_schema(self, sample_customer, sample_verified_data):
         html = generate_all_schemas(sample_customer, verified_data=sample_verified_data)
         assert '"AggregateRating"' in html
+
+    def test_webflow_safe_uses_js_injection(self, sample_customer):
+        html = generate_all_schemas(sample_customer, webflow_safe=True)
+        assert "document.head.appendChild" in html
+        assert "\n" not in html.split("\n")[0]  # First tag is single-line
+        # Should NOT contain raw JSON-LD script tags
+        assert 'type="application/ld+json"' not in html
+
+    def test_webflow_safe_contains_valid_json(self, sample_customer):
+        import re
+        html = generate_all_schemas(sample_customer, webflow_safe=True)
+        matches = re.findall(r"s\.textContent='(.+?)';", html)
+        assert len(matches) >= 1
+        for m in matches:
+            json_str = m.replace("\\'", "'").replace("\\\\", "\\")
+            parsed = json.loads(json_str)
+            assert "@type" in parsed
+
+
+class TestProductValidation:
+    """Google Rich Results requires offers/review/aggregateRating on Product types."""
+
+    def test_product_without_offers_flagged(self):
+        schema = {"@type": "Product", "name": "Gold Jewelry", "description": "We buy gold."}
+        issues = _validate_schema_fields(schema, "Product")
+        assert any("offers" in i for i in issues)
+
+    def test_product_with_offers_passes(self):
+        schema = {
+            "@type": "Product", "name": "Gold Jewelry",
+            "offers": {"@type": "Offer", "price": "100"},
+        }
+        issues = _validate_schema_fields(schema, "Product")
+        assert not any("offers" in i and "review" in i for i in issues)
+
+    def test_product_with_aggregate_rating_passes(self):
+        schema = {
+            "@type": "Product", "name": "Gold Jewelry",
+            "aggregateRating": {"@type": "AggregateRating", "ratingValue": "5"},
+        }
+        issues = _validate_schema_fields(schema, "Product")
+        assert not any("offers" in i and "review" in i for i in issues)
+
+    def test_nested_product_in_offer_catalog_flagged(self):
+        schema = {
+            "@type": "LocalBusiness",
+            "name": "Test",
+            "address": {"@type": "PostalAddress", "streetAddress": "x",
+                        "addressLocality": "y", "addressRegion": "z", "postalCode": "0"},
+            "telephone": "555",
+            "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "itemListElement": [
+                    {"@type": "Offer", "itemOffered": {
+                        "@type": "Product", "name": "Watches",
+                        "description": "Luxury watches",
+                    }},
+                ],
+            },
+        }
+        issues = _validate_schema_fields(schema, "LocalBusiness")
+        assert any("Nested Product" in i and "Watches" in i for i in issues)
+
+    def test_nested_service_in_offer_catalog_clean(self):
+        schema = {
+            "@type": "LocalBusiness",
+            "name": "Test",
+            "address": {"@type": "PostalAddress", "streetAddress": "x",
+                        "addressLocality": "y", "addressRegion": "z", "postalCode": "0"},
+            "telephone": "555",
+            "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "itemListElement": [
+                    {"@type": "Offer", "itemOffered": {
+                        "@type": "Service", "name": "Gold Buying",
+                        "description": "We buy gold.",
+                    }},
+                ],
+            },
+        }
+        issues = _validate_schema_fields(schema, "LocalBusiness")
+        assert not any("Nested Product" in i for i in issues)

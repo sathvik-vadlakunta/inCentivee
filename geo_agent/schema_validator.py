@@ -235,12 +235,35 @@ def _validate_schema_fields(schema: dict, schema_type: str) -> list[str]:
                 if not accepted or "text" not in accepted:
                     issues.append(f"FAQPage: question {j} missing answer text")
 
+    # Product — Google requires offers, review, or aggregateRating
+    elif schema_type == "Product":
+        if "name" not in schema:
+            issues.append(f"Product: missing 'name'")
+        has_required = any(k in schema for k in ("offers", "review", "aggregateRating"))
+        if not has_required:
+            issues.append(
+                f"Product '{schema.get('name', '?')}': Google requires 'offers', 'review', "
+                f"or 'aggregateRating' — consider using @type 'Service' instead"
+            )
+
     # MedicalProcedure / Service
     elif schema_type in ("MedicalProcedure", "Service", "MedicalTherapy"):
         if "name" not in schema:
             issues.append(f"{schema_type}: missing 'name'")
         if "description" not in schema:
             issues.append(f"{schema_type}: missing 'description'")
+
+    # Check nested OfferCatalog items for Product types missing required fields
+    catalog = schema.get("hasOfferCatalog", {})
+    for item in catalog.get("itemListElement", []):
+        offered = item.get("itemOffered", {})
+        if isinstance(offered, dict) and offered.get("@type") == "Product":
+            has_req = any(k in offered for k in ("offers", "review", "aggregateRating"))
+            if not has_req:
+                issues.append(
+                    f"Nested Product '{offered.get('name', '?')}': Google requires 'offers', "
+                    f"'review', or 'aggregateRating' — use @type 'Service' instead"
+                )
 
     return issues
 

@@ -45,7 +45,12 @@ from geo_agent.google_places import verify_customer, VerifiedBusinessData, Compe
 from geo_agent.rag_store import CustomerRAG
 from geo_agent.analyzer import analyze_and_recommend
 from geo_agent.generators.llms_txt import generate_llms_txt, generate_llms_full_txt
-from geo_agent.generators.schema_markup import generate_all_schemas, generate_faq_schema, schema_to_script_tag
+from geo_agent.generators.schema_markup import (
+    generate_all_schemas,
+    generate_faq_schema,
+    schema_to_js_injection,
+    schema_to_script_tag,
+)
 from geo_agent.generators.robots_txt import generate_robots_txt
 from geo_agent.publishers.webflow import WebflowPublisher
 from geo_agent.privacy import minimize_for_embedding
@@ -501,15 +506,19 @@ def process_customer(
         try:
             llms_txt = generate_llms_txt(customer, pages, verified_data=verified_data)
             llms_full_txt = generate_llms_full_txt(customer, pages)
-            schema_html = generate_all_schemas(customer, verified_data=verified_data)
+            is_webflow = customer.platform == "webflow"
+            schema_html = generate_all_schemas(
+                customer, verified_data=verified_data, webflow_safe=is_webflow,
+            )
             robots_txt = generate_robots_txt(customer)
 
             # Add FAQ schemas from analysis
             faq_entries = analysis.get("faq_entries", {})
+            faq_wrap = schema_to_js_injection if is_webflow else schema_to_script_tag
             for page_url, faqs in faq_entries.items():
                 if faqs:
                     faq_schema = generate_faq_schema(faqs)
-                    schema_html += "\n" + schema_to_script_tag(faq_schema)
+                    schema_html += "\n" + faq_wrap(faq_schema)
 
             summary["changes"].append(f"Generated llms.txt ({len(llms_txt)} bytes)")
             summary["changes"].append(f"Generated llms-full.txt ({len(llms_full_txt)} bytes)")
