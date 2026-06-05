@@ -3,7 +3,8 @@
 Verifies customer business data against Google's database:
 - Confirms name, address, phone, website
 - Gets real Google review count and rating
-- Finds nearby competitor dental practices
+- Finds nearby competitors (vertical-aware: dental, legal, medical)
+- Validates competitors are same-industry via name keywords + website content
 
 Uses the Places API (New) endpoints:
 - places:searchText for business lookup
@@ -45,7 +46,90 @@ COMPETITOR_FIELDS = [
     "places.rating",
     "places.userRatingCount",
     "places.formattedAddress",
+    "places.websiteUri",
+    "places.primaryType",
 ]
+
+# Vertical-aware place types for Google Places searches
+# See: https://developers.google.com/maps/documentation/places/web-service/place-types
+VERTICAL_PLACE_TYPES: dict[str, list[str]] = {
+    "practice": ["dentist"],
+    "legal": ["lawyer"],
+    "medical": ["doctor", "hospital"],
+    "retail": ["store"],
+    "restaurant": ["restaurant", "cafe"],
+    "service": [],       # too broad — use text search fallback
+    "technology": [],    # no good Places type — use text search fallback
+    "ecommerce": [],     # no good Places type — use text search fallback
+    "finance": ["accounting"],
+    "real_estate": ["real_estate_agency"],
+    "fitness": ["gym"],
+    "salon": ["beauty_salon", "hair_care"],
+    "auto": ["car_dealer", "car_repair"],
+    "jewelry": ["jewelry_store"],
+    "product": [],       # no good Places type — use text search fallback
+}
+
+# Filler words to ignore in name similarity comparison
+_NAME_FILLER = {
+    "the", "and", "of", "at", "in", "for", "a", "an",
+    "law", "firm", "group", "office", "offices", "associates",
+    "dental", "medical", "clinic", "practice", "center", "centre",
+    "llc", "inc", "pllc", "llp", "pc", "pa",
+    "dds", "dmd", "esq", "md", "do",
+}
+
+# Per-vertical: name keywords that indicate a wrong-industry competitor
+EXCLUDE_KEYWORDS: dict[str, list[str]] = {
+    "practice": [
+        "veterinar", "vet clinic", "animal hospital",
+        "medical center", "hospital",
+        "lawyer", "attorney", "law firm", "law office",
+    ],
+    "legal": [
+        "tax relief", "accounting", "cpa", "financial advisor",
+        "real estate agent", "realtor", "insurance agent",
+        "bail bond", "notary",
+        "dental", "dentist", "orthodont",
+    ],
+    "medical": [
+        "veterinar", "vet clinic", "animal hospital",
+        "dental", "dentist", "orthodont",
+        "lawyer", "attorney", "law firm", "law office",
+        "spa", "massage", "acupuncture",
+    ],
+    "retail": ["dental", "dentist", "doctor", "lawyer", "attorney", "law firm", "law office"],
+    "restaurant": ["dental", "dentist", "doctor", "lawyer"],
+    "service": ["dental", "dentist", "doctor", "lawyer", "restaurant"],
+    "technology": ["dental", "dentist", "doctor", "lawyer", "restaurant"],
+    "ecommerce": ["dental", "dentist", "doctor", "lawyer"],
+    "finance": ["dental", "dentist", "lawyer", "restaurant"],
+    "real_estate": ["dental", "dentist", "doctor", "lawyer"],
+    "fitness": ["dental", "dentist", "doctor", "lawyer"],
+    "salon": ["dental", "dentist", "doctor", "lawyer"],
+    "auto": ["dental", "dentist", "doctor", "lawyer"],
+    "jewelry": ["dental", "dentist", "doctor", "lawyer", "restaurant"],
+    "product": ["dental", "dentist", "doctor", "lawyer", "restaurant"],
+}
+
+# Per-vertical: keywords expected on a same-industry website
+INDUSTRY_KEYWORDS: dict[str, list[str]] = {
+    "practice": ["dental", "dentist", "orthodont", "teeth", "oral"],
+    "legal": ["law", "attorney", "lawyer", "legal", "litigation", "practice area"],
+    "medical": ["medical", "doctor", "physician", "patient", "health", "clinic"],
+    "retail": ["shop", "store", "buy", "product", "price", "sale"],
+    "restaurant": ["menu", "dining", "reservation", "food", "chef"],
+    "service": ["service", "solution", "client", "consultation"],
+    "technology": ["software", "platform", "technology", "solution", "saas", "api"],
+    "ecommerce": ["shop", "cart", "buy", "product", "shipping", "order"],
+    "finance": ["financial", "accounting", "tax", "bookkeeping", "advisory"],
+    "real_estate": ["real estate", "property", "listing", "agent", "broker", "home"],
+    "fitness": ["fitness", "gym", "workout", "training", "membership", "class"],
+    "salon": ["salon", "beauty", "hair", "spa", "stylist", "nail"],
+    "auto": ["auto", "car", "vehicle", "dealer", "repair", "service"],
+    "jewelry": ["jewelry", "gold", "silver", "diamond", "gem", "ring", "watch", "buy", "sell"],
+    "product": ["product", "buy", "shop", "order", "price"],
+}
 
 
 @dataclass
@@ -72,13 +156,15 @@ class VerifiedBusinessData:
 
 @dataclass
 class CompetitorData:
-    """Nearby competitor dental practice from Google Places."""
+    """Nearby competitor from Google Places."""
 
     name: str
     place_id: str
     rating: float = 0.0
     review_count: int = 0
     address: str = ""
+    website: str = ""
+    primary_type: str = ""
 
 
 def _normalize_domain(url_or_domain: str) -> str:
@@ -95,6 +181,23 @@ def _normalize_domain(url_or_domain: str) -> str:
 def _normalize_phone(phone: str) -> str:
     """Strip a phone string to digits only for comparison."""
     return re.sub(r"\D", "", phone or "")
+
+
+def _name_similarity(a: str, b: str) -> float:
+    """Word-level name similarity (0.0 to 1.0), ignoring filler words."""
+    if not a or not b:
+        return 0.0
+    words_a = {w for w in re.sub(r"[^a-z0-9\s]", "", a.lower()).split() if w not in _NAME_FILLER}
+    words_b = {w for w in re.sub(r"[^a-z0-9\s]", "", b.lower()).split() if w not in _NAME_FILLER}
+    if not words_a or not words_b:
+        return 0.0
+    overlap = len(words_a & words_b)
+    return overlap / max(len(words_a), len(words_b))
+
+
+def get_place_types(business_type: str) -> list[str]:
+    """Get the Google Places includedTypes for a business type."""
+    return VERTICAL_PLACE_TYPES.get(business_type, [])
 
 
 def _extract_address_component(components: list[dict], component_type: str) -> str:
@@ -153,13 +256,16 @@ def _score_match(
         place.domain_match = True
         score += 100
 
-    # Name match (case-insensitive substring)
-    if name and place.name and name.lower() in place.name.lower():
+    # Name match — word-level similarity instead of substring
+    sim = _name_similarity(name, place.name) if name and place.name else 0.0
+    if sim >= 0.8:
         place.name_match = True
         score += 50
-    elif name and place.name and place.name.lower() in name.lower():
+    elif sim >= 0.5:
         place.name_match = True
         score += 40
+    elif sim >= 0.3:
+        score += 20
 
     # Phone match
     target_phone = _normalize_phone(phone)
@@ -219,8 +325,13 @@ def fetch_place_data(
         logger.warning("No Google Places API key — skipping verification")
         return None
 
-    # Add a type hint for dental practices to improve search accuracy
-    type_hint = "dentist" if business_type == "practice" else ""
+    # Add a type hint based on business vertical for search accuracy
+    type_hints = {
+        "practice": "dentist",
+        "legal": "law firm",
+        "medical": "doctor",
+    }
+    type_hint = type_hints.get(business_type, "")
     queries = [
         f"{name} {type_hint} {city} {state}".strip(),
         f"{name} {city} {state}",
@@ -286,12 +397,18 @@ def fetch_nearby_competitors(
     radius_meters: float = 8000.0,
     max_results: int = 10,
     place_types: list[str] | None = None,
+    text_query: str = "",
 ) -> list[CompetitorData]:
     """Find nearby competitors via Google Places.
 
-    Searches within radius_meters of the given lat/lng,
-    filters out the business itself, and returns up to max_results
-    sorted by review count (descending).
+    Uses searchNearby with place type filtering when types are available.
+    Falls back to searchText with a free-form query when no good place types
+    exist (e.g., for "gold buyer", "SaaS company", etc.).
+
+    Args:
+        text_query: Free-form search like "gold buyer Springfield VA".
+            Used when place_types is empty. If both are empty, defaults to
+            ["dentist"] for backward compat.
     """
     if not api_key:
         return []
@@ -302,37 +419,52 @@ def fetch_nearby_competitors(
         "Content-Type": "application/json",
     }
 
-    body = {
-        "includedTypes": place_types or ["dentist"],
-        "locationRestriction": {
-            "circle": {
-                "center": {"latitude": lat, "longitude": lng},
-                "radius": radius_meters,
-            }
-        },
-        "maxResultCount": 20,
-    }
+    # Decide search strategy: type-based (nearby) vs text-based
+    use_text_search = bool(text_query and not place_types)
+
+    if use_text_search:
+        # Text search — better for niche industries without a Google place type
+        body = {
+            "textQuery": text_query,
+            "locationBias": {
+                "circle": {
+                    "center": {"latitude": lat, "longitude": lng},
+                    "radius": radius_meters,
+                }
+            },
+            "maxResultCount": 20,
+        }
+        search_url = PLACES_TEXT_SEARCH_URL
+        logger.info(f"Competitor text search: '{text_query}' near ({lat},{lng})")
+    else:
+        # Nearby search with place types
+        body = {
+            "includedTypes": place_types or ["dentist"],
+            "locationRestriction": {
+                "circle": {
+                    "center": {"latitude": lat, "longitude": lng},
+                    "radius": radius_meters,
+                }
+            },
+            "maxResultCount": 20,
+        }
+        search_url = PLACES_NEARBY_SEARCH_URL
 
     try:
         with httpx.Client(timeout=10.0) as client:
-            resp = client.post(
-                PLACES_NEARBY_SEARCH_URL,
-                headers=headers,
-                json=body,
-            )
+            resp = client.post(search_url, headers=headers, json=body)
             resp.raise_for_status()
             data = resp.json()
     except Exception as e:
-        logger.warning(f"Nearby competitor search failed: {e}")
+        logger.warning(f"Competitor search failed: {e}")
         return []
 
     competitors = []
-    practice_name_lower = practice_name.lower()
 
     for raw_place in data.get("places", []):
         name = raw_place.get("displayName", {}).get("text", "")
-        # Filter out self
-        if name.lower() in practice_name_lower or practice_name_lower in name.lower():
+        # Filter out self using word-level similarity (threshold 0.5)
+        if _name_similarity(name, practice_name) >= 0.5:
             continue
 
         competitors.append(CompetitorData(
@@ -341,11 +473,67 @@ def fetch_nearby_competitors(
             rating=raw_place.get("rating", 0.0),
             review_count=raw_place.get("userRatingCount", 0),
             address=raw_place.get("formattedAddress", ""),
+            website=raw_place.get("websiteUri", ""),
+            primary_type=raw_place.get("primaryType", ""),
         ))
 
     # Sort by review count descending
     competitors.sort(key=lambda c: c.review_count, reverse=True)
     return competitors[:max_results]
+
+
+def validate_competitors(
+    competitors: list[CompetitorData],
+    business_type: str = "practice",
+) -> list[CompetitorData]:
+    """Filter out wrong-industry competitors by name keywords and website content.
+
+    Uses name-based keyword exclusion first (fast), then optionally checks
+    the competitor's website for industry-relevant content.
+    """
+    exclude_keywords = EXCLUDE_KEYWORDS.get(business_type, [])
+    industry_keywords = INDUSTRY_KEYWORDS.get(business_type, [])
+
+    validated = []
+    with httpx.Client(timeout=5.0, follow_redirects=True, max_redirects=3) as client:
+        for comp in competitors:
+            name_lower = comp.name.lower()
+
+            # Name-based exclusion (fast, no network)
+            excluded = False
+            for kw in exclude_keywords:
+                if kw in name_lower:
+                    logger.debug(f"Excluding competitor '{comp.name}' — name matches exclude keyword '{kw}'")
+                    excluded = True
+                    break
+            if excluded:
+                continue
+
+            # Website content check — only fetch public http/https URLs to prevent SSRF
+            if comp.website and industry_keywords and comp.website.startswith(("http://", "https://")):
+                try:
+                    resp = client.get(comp.website)
+                    page_text = resp.text[:5000].lower()
+                    matches = sum(1 for kw in industry_keywords if kw in page_text)
+                    if matches < 2:
+                        logger.debug(
+                            f"Excluding competitor '{comp.name}' — website has only "
+                            f"{matches} industry keyword matches"
+                        )
+                        continue
+                except Exception:
+                    # If we can't reach the site, keep the competitor (benefit of the doubt)
+                    pass
+
+            validated.append(comp)
+
+    if len(validated) < len(competitors):
+        logger.info(
+            f"Competitor validation: kept {len(validated)}/{len(competitors)} "
+            f"for {business_type} vertical"
+        )
+
+    return validated
 
 
 def verify_customer(
@@ -388,14 +576,30 @@ def verify_customer(
 
     competitors: list[CompetitorData] = []
     if verified and verified.lat and verified.lng:
-        # Use appropriate place types for competitor search
-        place_types = ["dentist"] if business_type == "practice" else None
+        # Use vertical-aware place types for competitor search
+        place_types = get_place_types(business_type)
+
+        # Build text query for industries without a Google place type
+        text_query = ""
+        if not place_types:
+            specialties = getattr(customer, "specialties", [])
+            city = getattr(customer, "city", "")
+            state = getattr(customer, "state", "")
+            if specialties:
+                # Use first specialty as the search term (most specific)
+                text_query = f"{specialties[0]} near {city} {state}".strip()
+            elif business_type not in ("practice", ""):
+                text_query = f"{business_type} near {city} {state}".strip()
+
         competitors = fetch_nearby_competitors(
             lat=verified.lat,
             lng=verified.lng,
             practice_name=customer.name,
             api_key=api_key,
-            place_types=place_types,
+            place_types=place_types or None,
+            text_query=text_query,
         )
+        # Validate competitors — filter wrong-industry results
+        competitors = validate_competitors(competitors, business_type)
 
     return verified, competitors

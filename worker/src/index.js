@@ -187,7 +187,9 @@ export default {
 
     try {
       const body = await request.json();
-      const { practiceUrl, email, name, phone } = body;
+      const { practiceUrl, email, name, phone, vertical } = body;
+      // vertical: "dental" (default), "legal", "medical"
+      const vert = ["dental", "legal", "medical"].includes(vertical) ? vertical : "dental";
 
       if (!practiceUrl || !email) {
         return new Response(
@@ -214,12 +216,31 @@ export default {
       // ── Step 1: Scrape the actual website to get real practice info ──
       const siteData = await scrapePracticeSite(practiceUrl);
 
-      // ── Step 1b: Reject non-dental websites ──
-      if (siteData.scraped && !siteData.isDentalSite) {
+      // ── Step 1b: Reject off-vertical websites ──
+      if (siteData.scraped && vert === "dental" && !siteData.isDentalSite) {
         return new Response(
           JSON.stringify({ error: "This doesn't appear to be a dental practice website. PracticeRank audits are designed specifically for dental practices." }),
           { status: 400, headers: { ...corsHeaders(env), "Content-Type": "application/json" } }
         );
+      }
+      if (siteData.scraped && vert === "legal" && !siteData.isLegalSite && !siteData.isDentalSite) {
+        // If neither legal nor dental signals, check loosely
+        const legalCheck = LEGAL_KEYWORDS.some(kw => (siteData.visibleText || "").toLowerCase().includes(kw));
+        if (!legalCheck) {
+          return new Response(
+            JSON.stringify({ error: "This doesn't appear to be a law firm website. This audit is designed for legal practices." }),
+            { status: 400, headers: { ...corsHeaders(env), "Content-Type": "application/json" } }
+          );
+        }
+      }
+      if (siteData.scraped && vert === "medical" && !siteData.isMedicalSite && !siteData.isDentalSite) {
+        const medCheck = MEDICAL_KEYWORDS.some(kw => (siteData.visibleText || "").toLowerCase().includes(kw));
+        if (!medCheck) {
+          return new Response(
+            JSON.stringify({ error: "This doesn't appear to be a medical practice website. This audit is designed for medical practices." }),
+            { status: 400, headers: { ...corsHeaders(env), "Content-Type": "application/json" } }
+          );
+        }
       }
 
       // ── Step 2: Fetch VERIFIED data from Google Places API ──
@@ -232,7 +253,8 @@ export default {
           siteData.state,
           siteData.domain,
           siteData.phone,
-          env.GOOGLE_PLACES_API_KEY
+          env.GOOGLE_PLACES_API_KEY,
+          vert
         );
 
         // If Google found the place, search for additional locations + competitors
@@ -245,7 +267,8 @@ export default {
             siteData.practiceName,
             siteData.domain,
             placeData,
-            env.GOOGLE_PLACES_API_KEY
+            env.GOOGLE_PLACES_API_KEY,
+            vert
           );
           if (otherLocations.length > 0) {
             placeData.locations = [
@@ -254,23 +277,40 @@ export default {
             ];
             // Aggregate: combined review count, weighted average rating
             const totalReviews = placeData.locations.reduce((sum, l) => sum + l.reviewCount, 0);
-            const weightedRating = placeData.locations.reduce((sum, l) => sum + l.rating * l.reviewCount, 0) / totalReviews;
+            const weightedRating = totalReviews > 0
+              ? placeData.locations.reduce((sum, l) => sum + l.rating * l.reviewCount, 0) / totalReviews
+              : 0;
             placeData.combinedReviewCount = totalReviews;
             placeData.combinedRating = Math.round(weightedRating * 10) / 10;
             placeData.isMultiLocation = true;
+
+            // Use the location with the most reviews as the "primary" for city/state
+            const primaryLoc = placeData.locations.reduce((best, l) => l.reviewCount > best.reviewCount ? l : best, placeData.locations[0]);
+            if (primaryLoc.reviewCount > placeData.reviewCount) {
+              placeData.city = primaryLoc.city || placeData.city;
+              placeData.state = primaryLoc.state || placeData.state;
+              placeData.primaryLocationNote = `Primary office determined by review volume: ${primaryLoc.city || primaryLoc.address}`;
+            }
           }
 
+          // Search for competitors near the Google-matched location
           competitors = await fetchNearbyCompetitors(
             lat,
             lng,
             placeData.name,
-            env.GOOGLE_PLACES_API_KEY
+            env.GOOGLE_PLACES_API_KEY,
+            vert
           );
+
+          // Validate competitors — quick-check their websites to confirm they're real competitors
+          if (competitors.length > 0) {
+            competitors = await validateCompetitors(competitors, vert);
+          }
         }
       }
 
       // ── Step 3: Build prompt with real scraped + verified data ──
-      const prompt = buildAuditPrompt(practiceUrl, siteData, placeData, competitors);
+      const prompt = buildAuditPrompt(practiceUrl, siteData, placeData, competitors, vert);
 
       // ── Step 4: Call Claude with the real data ──
       const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -302,6 +342,9 @@ export default {
 
       // ── Step 5: Post-validate — override Claude's guesses with verified data ──
       report = validateAndCorrectReport(report, siteData, placeData, competitors);
+
+      // ── Step 6: Final safety checks — catch data mix-ups before returning ──
+      report = finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors);
 
       // Save lead to KV with per-domain prefix for customer isolation
       const domainSlug = practiceUrl.replace(/^https?:\/\//, "").replace(/[^a-z0-9]/gi, "_").toLowerCase();
@@ -355,22 +398,25 @@ export default {
 // ── Google Places API — Verified Business Data ──
 // ════════════════════════════════════════════════════════════════
 
-async function fetchGooglePlaceData(practiceName, city, state, domain, phone, apiKey) {
+async function fetchGooglePlaceData(practiceName, city, state, domain, phone, apiKey, vertical = "dental") {
   try {
+    const placeType = VERTICAL_CONFIG[vertical]?.placeType || "dentist";
+    const placeLabel = VERTICAL_CONFIG[vertical]?.placeLabel || "dentist";
+
     // Strategy: try multiple search queries to find the right place
     const queries = [];
 
-    // Best query: name + city + state + "dentist"
+    // Best query: name + city + state + type
     if (practiceName && city && state) {
-      queries.push(`${practiceName} dentist ${city} ${state}`);
+      queries.push(`${practiceName} ${placeLabel} ${city} ${state}`);
     }
-    // Fallback: name + "dentist"
+    // Fallback: name + type
     if (practiceName) {
-      queries.push(`${practiceName} dentist`);
+      queries.push(`${practiceName} ${placeLabel}`);
     }
     // Fallback: domain-based search
-    const domainName = domain.replace(/^www\./, "").replace(/\.(com|net|org|dental|dentist)$/i, "").replace(/[-_]/g, " ");
-    queries.push(`${domainName} dentist ${city || ""} ${state || ""}`.trim());
+    const domainName = domain.replace(/^www\./, "").replace(/\.(com|net|org|dental|dentist|law|legal|medical|health)$/i, "").replace(/[-_]/g, " ");
+    queries.push(`${domainName} ${placeLabel} ${city || ""} ${state || ""}`.trim());
 
     const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.location,places.businessStatus,places.addressComponents";
 
@@ -386,8 +432,8 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
         },
         body: JSON.stringify({
           textQuery: query,
-          includedType: "dentist",
-          maxResultCount: 5,
+          includedType: placeType,
+          maxResultCount: 10,
         }),
       });
       const data = await res.json();
@@ -412,16 +458,21 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
     }
 
     // Verify this is actually the right business by checking domain match
-    const placeWebsite = (place.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/+$/, "").replace(/^www\./, "");
-    const inputDomain = domain.replace(/^www\./, "");
-    const domainMatch = placeWebsite && inputDomain &&
-      (placeWebsite.includes(inputDomain) || inputDomain.includes(placeWebsite));
+    const placeWebsite = normalizeDomain(place.websiteUri);
+    const inputDomainNorm = normalizeDomain(domain);
+    const domainMatch = placeWebsite && inputDomainNorm &&
+      (placeWebsite === inputDomainNorm || placeWebsite.startsWith(inputDomainNorm) || inputDomainNorm.startsWith(placeWebsite));
 
-    // Check name similarity
+    // Check name similarity using proper comparison
     const placeName = place.displayName?.text || "";
-    const nameMatch = practiceName && placeName &&
-      (placeName.toLowerCase().includes(practiceName.toLowerCase().slice(0, 10)) ||
-       practiceName.toLowerCase().includes(placeName.toLowerCase().slice(0, 10)));
+    const nameSimScore = nameSimilarity(practiceName, placeName);
+    const nameMatch = nameSimScore >= 0.5;
+
+    // Determine match confidence based on strongest signals
+    let matchConfidence = "low";
+    if (domainMatch) matchConfidence = "high";
+    else if (nameSimScore >= 0.8) matchConfidence = "high";
+    else if (nameMatch) matchConfidence = "medium";
 
     return {
       verified: true,
@@ -438,8 +489,9 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
       businessStatus: place.businessStatus || "",
       placeId: place.id,
       domainMatch,
-      nameMatch: !!nameMatch,
-      matchConfidence: domainMatch ? "high" : nameMatch ? "medium" : "low",
+      nameMatch,
+      nameSimScore,
+      matchConfidence,
     };
   } catch (e) {
     console.error("Google Places API error:", e.message);
@@ -447,35 +499,51 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
   }
 }
 
-async function fetchOtherLocations(practiceName, domain, primaryPlace, apiKey) {
+async function fetchOtherLocations(practiceName, domain, primaryPlace, apiKey, vertical = "dental") {
   // Search for other locations of the same practice by name (without city filter)
   if (!practiceName) return [];
+  const placeType = VERTICAL_CONFIG[vertical]?.placeType || "dentist";
+  const placeLabel = VERTICAL_CONFIG[vertical]?.placeLabel || "dentist";
 
   try {
     const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.addressComponents";
 
-    const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": FIELD_MASK,
-      },
-      body: JSON.stringify({
-        textQuery: `${practiceName} dentist`,
-        includedType: "dentist",
-        maxResultCount: 10,
-      }),
-    });
-    const data = await res.json();
+    // Try with type filter first, then without (some multi-location offices may not be typed correctly)
+    let allPlaces = [];
+    for (const query of [`${practiceName} ${placeLabel}`, practiceName]) {
+      const searchBody = { textQuery: query, maxResultCount: 10 };
+      // Only add type filter on first query
+      if (query.includes(placeLabel)) searchBody.includedType = placeType;
 
-    if (!data.places || data.places.length === 0) return [];
+      const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": FIELD_MASK,
+        },
+        body: JSON.stringify(searchBody),
+      });
+      const data = await res.json();
+      if (data.places) {
+        // Deduplicate by place ID
+        const existingIds = new Set(allPlaces.map(p => p.id));
+        for (const p of data.places) {
+          if (!existingIds.has(p.id)) {
+            allPlaces.push(p);
+            existingIds.add(p.id);
+          }
+        }
+      }
+    }
+
+    if (allPlaces.length === 0) return [];
 
     const inputDomain = (domain || "").replace(/^www\./, "").toLowerCase();
     const primaryId = primaryPlace.placeId;
     const locations = [];
 
-    for (const place of data.places) {
+    for (const place of allPlaces) {
       // Skip the primary location we already found
       if (place.id === primaryId) continue;
 
@@ -488,15 +556,19 @@ async function fetchOtherLocations(practiceName, domain, primaryPlace, apiKey) {
       // Strong name match: names share significant overlap (not just a few chars)
       const nameMatch = primaryName.length > 5 && placeName.length > 5 &&
         (placeName.includes(primaryName) || primaryName.includes(placeName) ||
-         placeName.replace(/\s+(dental|dentistry|dds|dmd)\s*/gi, "").trim() === primaryName.replace(/\s+(dental|dentistry|dds|dmd)\s*/gi, "").trim());
+         placeName.replace(/\s+(dental|dentistry|dds|dmd|law|legal|attorney|esq|medical|clinic|health)\s*/gi, "").trim() === primaryName.replace(/\s+(dental|dentistry|dds|dmd|law|legal|attorney|esq|medical|clinic|health)\s*/gi, "").trim());
 
       if (!domainMatch && !nameMatch) continue;
 
-      // Parse city from address components
+      // Parse city and state from address components
       let city = "";
+      let state = "";
       for (const comp of place.addressComponents || []) {
         if ((comp.types || []).includes("locality")) {
           city = comp.longText || comp.shortText || "";
+        }
+        if ((comp.types || []).includes("administrative_area_level_1")) {
+          state = comp.shortText || "";
         }
       }
 
@@ -504,7 +576,7 @@ async function fetchOtherLocations(practiceName, domain, primaryPlace, apiKey) {
         name: place.displayName?.text || "",
         address: place.formattedAddress || "",
         city,
-        state: "",
+        state,
         rating: place.rating || 0,
         reviewCount: place.userRatingCount || 0,
         placeId: place.id,
@@ -518,10 +590,36 @@ async function fetchOtherLocations(practiceName, domain, primaryPlace, apiKey) {
   }
 }
 
+function normalizeDomain(d) {
+  return (d || "").replace(/^https?:\/\//, "").replace(/\/+$/, "").replace(/^www\./, "").toLowerCase();
+}
+
+function normalizePhone(p) {
+  return (p || "").replace(/\D/g, "").slice(-10); // last 10 digits
+}
+
+function nameSimilarity(a, b) {
+  // Proper similarity check instead of 10-char prefix
+  if (!a || !b) return 0;
+  const na = a.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+  const nb = b.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+  if (na === nb) return 1.0;
+  if (na.includes(nb) || nb.includes(na)) return 0.8;
+  // Check word overlap
+  const wordsA = na.split(/\s+/).filter(w => w.length > 2);
+  const wordsB = nb.split(/\s+/).filter(w => w.length > 2);
+  // Remove common filler words
+  const filler = new Set(["the", "and", "law", "firm", "group", "office", "dental", "medical", "clinic", "practice", "llc", "inc", "pllc", "llp", "dds", "dmd", "esq"]);
+  const sigA = wordsA.filter(w => !filler.has(w));
+  const sigB = wordsB.filter(w => !filler.has(w));
+  if (sigA.length === 0 || sigB.length === 0) return 0;
+  const overlap = sigA.filter(w => sigB.some(w2 => w2.includes(w) || w.includes(w2))).length;
+  return overlap / Math.max(sigA.length, sigB.length);
+}
+
 function findBestMatch(results, practiceName, domain, phone, city) {
-  const inputDomain = (domain || "").replace(/^www\./, "").toLowerCase();
-  const inputName = (practiceName || "").toLowerCase();
-  const inputPhone = (phone || "").replace(/\D/g, "");
+  const inputDomain = normalizeDomain(domain);
+  const inputPhone = normalizePhone(phone);
   const inputCity = (city || "").toLowerCase();
 
   let bestScore = -1;
@@ -529,18 +627,27 @@ function findBestMatch(results, practiceName, domain, phone, city) {
 
   for (const r of results) {
     let score = 0;
-    const rName = (r.displayName?.text || "").toLowerCase();
+    const rName = r.displayName?.text || "";
 
-    // Name contains our name or vice versa
-    if (inputName && rName && (rName.includes(inputName.slice(0, 10)) || inputName.includes(rName.slice(0, 10)))) {
-      score += 3;
+    // Domain match (strongest signal — this is definitive)
+    const rWebsite = normalizeDomain(r.websiteUri);
+    const domainMatches = inputDomain && rWebsite &&
+      (rWebsite === inputDomain || rWebsite.startsWith(inputDomain) || inputDomain.startsWith(rWebsite));
+    if (domainMatches) {
+      score += 10;
     }
 
-    // Domain match (strongest signal)
-    const rWebsite = (r.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/+$/, "").replace(/^www\./, "").toLowerCase();
-    if (inputDomain && rWebsite && (rWebsite.includes(inputDomain) || inputDomain.includes(rWebsite))) {
-      score += 5;
+    // Phone match (very strong signal)
+    const rPhone = normalizePhone(r.nationalPhoneNumber);
+    if (inputPhone && rPhone && inputPhone === rPhone) {
+      score += 7;
     }
+
+    // Name similarity (use proper comparison, not 10-char prefix)
+    const sim = nameSimilarity(practiceName, rName);
+    if (sim >= 0.8) score += 4;
+    else if (sim >= 0.5) score += 2;
+    else if (sim >= 0.3) score += 1;
 
     // City match
     const rAddr = (r.formattedAddress || "").toLowerCase();
@@ -548,10 +655,9 @@ function findBestMatch(results, practiceName, domain, phone, city) {
       score += 2;
     }
 
-    // Has reviews (more likely to be a real match)
-    if ((r.userRatingCount || 0) > 10) {
-      score += 1;
-    }
+    // Tiebreaker: prefer locations with more reviews (more established/primary office)
+    const reviewBonus = Math.min((r.userRatingCount || 0) / 100, 0.9); // up to 0.9 bonus, never enough to override a real signal
+    score += reviewBonus;
 
     if (score > bestScore) {
       bestScore = score;
@@ -559,21 +665,60 @@ function findBestMatch(results, practiceName, domain, phone, city) {
     }
   }
 
-  return bestScore >= 2 ? bestResult : (results[0] || null);
+  // Require a minimum confidence — domain match, phone match, or strong name+city match
+  // Never return a random first result as fallback
+  if (bestScore >= 4) return bestResult;  // domain, phone, or strong name match
+  if (bestScore >= 3) return bestResult;  // name + city
+  return null; // No confident match — better to return nothing than wrong data
 }
 
-async function fetchNearbyCompetitors(lat, lng, practiceName, apiKey) {
+/**
+ * Find nearby competitors via Google Places API.
+ *
+ * Strategy: searchNearby (type-based) first, then searchText fallback
+ * if no results. Handles both single and multi-type verticals (e.g.,
+ * medical uses ["doctor", "hospital"]). Self-filtering uses name similarity.
+ */
+async function fetchNearbyCompetitors(lat, lng, practiceName, apiKey, vertical = "dental") {
+  const config = VERTICAL_CONFIG[vertical];
+  const placeTypeRaw = config?.placeType || "dentist";
+  // placeType can be a string or array — normalize to array for includedTypes
+  const placeTypes = Array.isArray(placeTypeRaw) ? placeTypeRaw : [placeTypeRaw];
+
+  const fieldMask = "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.websiteUri,places.primaryType";
+
+  // Shared transform: filter self, normalize shape, sort by review count
+  const filterAndMap = (places) => {
+    return places
+      .filter(r => {
+        const rName = r.displayName?.text || "";
+        const sim = nameSimilarity(practiceName, rName);
+        return sim < 0.5;
+      })
+      .map(r => ({
+        name: r.displayName?.text || "",
+        rating: r.rating || 0,
+        reviewCount: r.userRatingCount || 0,
+        address: r.formattedAddress || "",
+        placeId: r.id,
+        website: r.websiteUri || "",
+        primaryType: r.primaryType || "",
+      }))
+      .sort((a, b) => b.reviewCount - a.reviewCount)
+      .slice(0, 10);
+  };
+
   try {
-    // Search for dentists within ~8km (5 miles) using Places API (New)
+    // Search within ~8km (5 miles) using Places API (New)
     const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress",
+        "X-Goog-FieldMask": fieldMask,
       },
       body: JSON.stringify({
-        includedTypes: ["dentist"],
+        includedTypes: placeTypes,
         maxResultCount: 20,
         locationRestriction: {
           circle: {
@@ -585,30 +730,141 @@ async function fetchNearbyCompetitors(lat, lng, practiceName, apiKey) {
     });
     const data = await res.json();
 
-    if (!data.places || data.places.length === 0) return [];
+    if (data.places && data.places.length > 0) {
+      return filterAndMap(data.places);
+    }
 
-    // Filter out the practice itself + sort by review count
-    const pName = (practiceName || "").toLowerCase();
-    const competitors = data.places
-      .filter(r => {
-        const rName = (r.displayName?.text || "").toLowerCase();
-        return !(rName.includes(pName.slice(0, 10)) || pName.includes(rName.slice(0, 10)));
-      })
-      .map(r => ({
-        name: r.displayName?.text || "",
-        rating: r.rating || 0,
-        reviewCount: r.userRatingCount || 0,
-        address: r.formattedAddress || "",
-        placeId: r.id,
-      }))
-      .sort((a, b) => b.reviewCount - a.reviewCount)
-      .slice(0, 10);
+    // Fallback: text search for verticals where searchNearby returns nothing
+    const label = config?.placeLabel || vertical;
+    const textQuery = `${label} near ${lat},${lng}`;
+    console.log(`searchNearby returned 0 results for ${vertical}, falling back to textSearch: "${textQuery}"`);
 
-    return competitors;
+    const textRes = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": fieldMask,
+      },
+      body: JSON.stringify({
+        textQuery,
+        maxResultCount: 20,
+        locationBias: {
+          circle: {
+            center: { latitude: lat, longitude: lng },
+            radius: 8000.0,
+          },
+        },
+      }),
+    });
+    const textData = await textRes.json();
+
+    if (!textData.places || textData.places.length === 0) return [];
+    return filterAndMap(textData.places);
   } catch (e) {
     console.error("Competitor search error:", e.message);
     return [];
   }
+}
+
+/**
+ * Validate competitors are in the correct industry.
+ *
+ * Three-stage filter:
+ *   1. Name exclusion — reject obviously wrong businesses (tax, insurance, etc.)
+ *   2. Name inclusion — accept businesses with industry keywords in name
+ *   3. Website/primaryType — for ambiguous names, check website content or Google type
+ *
+ * Falls back to returning non-excluded competitors if validation is too aggressive.
+ */
+async function validateCompetitors(competitors, vertical) {
+
+  const nameKeywords = {
+    dental: ["dental", "dentist", "orthodont", "oral", "smile", "tooth", "teeth", "dds", "dmd", "periodon", "endodon", "prosthodon"],
+    legal: ["law", "attorney", "lawyer", "legal", "counsel", "esq", "advocacy", "litigation", "injury", "defense", "defenders", "advocates"],
+    medical: ["medical", "health", "clinic", "doctor", "physician", "care", "wellness", "dermatol", "orthoped", "cardiolog", "pediatric", "urgent care"],
+  };
+  const nkw = nameKeywords[vertical] || nameKeywords.dental;
+
+  // Non-competitor business types that Google sometimes mixes in
+  const excludePatterns = [
+    "tax relief", "tax service", "tax prepar", "accounting", "accountant", "cpa",
+    "insurance agent", "insurance broker", "real estate agent", "realtor",
+    "financial advisor", "financial planner", "mortgage", "bail bond",
+    "notary", "title company", "escrow", "collection agency",
+  ];
+
+  // Website keywords to check (broader than name — catches sites that don't have industry in name)
+  const siteKeywords = {
+    dental: ["dentist", "dental", "teeth", "orthodont", "oral health", "cleaning", "crown", "implant", "cavity"],
+    legal: ["attorney", "lawyer", "law firm", "practice area", "legal", "litigation", "case result", "court", "counsel", "verdict", "settlement"],
+    medical: ["doctor", "physician", "medical", "patient", "treatment", "diagnosis", "appointment", "specialist", "board certified", "clinic"],
+  };
+  const skw = siteKeywords[vertical] || siteKeywords.dental;
+
+  // Resolve expected Google place types for primaryType matching (string or array)
+  const expectedTypes = (() => {
+    const pt = VERTICAL_CONFIG[vertical]?.placeType;
+    if (!pt) return [];
+    return Array.isArray(pt) ? pt : [pt];
+  })();
+
+  const validated = [];
+
+  for (const comp of competitors) {
+    const nameLower = comp.name.toLowerCase();
+
+    // Quick reject: obviously wrong industry
+    if (excludePatterns.some(ex => nameLower.includes(ex))) {
+      console.log(`Competitor rejected (name): "${comp.name}" — wrong industry`);
+      continue;
+    }
+
+    // Quick accept: name contains industry keywords
+    if (nkw.some(kw => nameLower.includes(kw))) {
+      validated.push(comp);
+      continue;
+    }
+
+    const matchesPrimaryType = comp.primaryType && expectedTypes.includes(comp.primaryType);
+
+    // Ambiguous name — check their website if we have one (only for top candidates)
+    if (comp.website && validated.length < 8) {
+      try {
+        const res = await fetch(comp.website, {
+          headers: { "User-Agent": "PracticeRank-Audit/1.0" },
+          redirect: "follow",
+          signal: AbortSignal.timeout(3000),
+        });
+        if (res.ok) {
+          const html = (await res.text()).toLowerCase().slice(0, 5000);
+          const matchCount = skw.filter(kw => html.includes(kw)).length;
+          // 1 keyword match is enough — many legit sites only mention their specialty once on homepage
+          if (matchCount >= 1) {
+            validated.push(comp);
+            continue;
+          } else {
+            console.log(`Competitor rejected (website): "${comp.name}" — 0 industry keywords found on site`);
+            continue;
+          }
+        }
+      } catch (e) {
+        // Website unreachable — give benefit of doubt if Google typed them correctly
+        if (matchesPrimaryType) {
+          validated.push(comp);
+          continue;
+        }
+      }
+    }
+
+    // No website and ambiguous name — check Google's primary type
+    if (matchesPrimaryType) {
+      validated.push(comp);
+    }
+  }
+
+  // If we filtered too aggressively, return what we have
+  return validated.length > 0 ? validated : competitors.filter(c => !excludePatterns.some(ex => c.name.toLowerCase().includes(ex))).slice(0, 5);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -745,6 +1001,113 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
       combined_reviews: placeData.combinedReviewCount,
       combined_rating: placeData.combinedRating,
     };
+  }
+
+  return report;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ── Final Safety Checks — catch data mix-ups before release ──
+// ════════════════════════════════════════════════════════════════
+
+function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors) {
+  const warnings = [];
+  const inputDomain = normalizeDomain(practiceUrl);
+
+  // CHECK 1: Practice name in report shouldn't match a competitor name
+  if (report.practice_name && competitors.length > 0) {
+    for (const comp of competitors) {
+      const sim = nameSimilarity(report.practice_name, comp.name);
+      if (sim >= 0.6) {
+        warnings.push(`Report practice name "${report.practice_name}" is suspiciously similar to competitor "${comp.name}" — possible data mix-up`);
+        // Use the scraped name or Google-verified name instead
+        if (placeData?.name && placeData.domainMatch) {
+          report.practice_name = placeData.name;
+        } else if (siteData.practiceName) {
+          report.practice_name = siteData.practiceName;
+        }
+      }
+    }
+  }
+
+  // CHECK 2: Competitor shouldn't have the same name as the practice
+  if (report.categories?.reviews?.competitor_name && report.practice_name) {
+    const compSim = nameSimilarity(report.practice_name, report.categories.reviews.competitor_name);
+    if (compSim >= 0.6) {
+      warnings.push(`Competitor "${report.categories.reviews.competitor_name}" is too similar to practice name "${report.practice_name}" — removing`);
+      // Use the second competitor if available
+      if (competitors.length > 1) {
+        report.categories.reviews.competitor_name = competitors[1].name;
+        report.categories.reviews.competitor_reviews = competitors[1].reviewCount;
+      } else {
+        report.categories.reviews.competitor_name = "Top local competitor";
+        report.categories.reviews.competitor_reviews = null;
+      }
+    }
+  }
+
+  // CHECK 3: If Google match confidence is "low", flag the data as unverified
+  // and add a disclaimer so we don't present wrong business data
+  if (placeData && placeData.matchConfidence === "low") {
+    warnings.push("Google Places match confidence is LOW — business data may not be accurate");
+    report.data_confidence = "low";
+    // Don't trust Google review data if match is low
+    if (report.categories?.reviews) {
+      report.categories.reviews.data_note = "Review data could not be verified — numbers shown are estimates";
+    }
+  }
+
+  // CHECK 4: Review count sanity — practice reviews shouldn't match a competitor's exact count
+  if (report.categories?.reviews && competitors.length > 0) {
+    const reportReviews = report.categories.reviews.count;
+    for (const comp of competitors) {
+      if (reportReviews === comp.reviewCount && comp.reviewCount > 0) {
+        warnings.push(`Practice review count (${reportReviews}) exactly matches competitor "${comp.name}" (${comp.reviewCount}) — possible data swap`);
+        // If we have Google-verified data, use that
+        if (placeData && placeData.domainMatch && placeData.reviewCount !== comp.reviewCount) {
+          report.categories.reviews.count = placeData.reviewCount;
+          report.categories.reviews.rating = placeData.rating;
+        }
+      }
+    }
+  }
+
+  // CHECK 5: Competitor geographic check — flag if competitor address doesn't
+  // share the same state as the practice
+  if (report.state && competitors.length > 0) {
+    const practiceState = report.state.toLowerCase();
+    const filteredCompetitors = competitors.filter(c => {
+      const addr = (c.address || "").toLowerCase();
+      // Check if address contains the practice state abbreviation or full name
+      return addr.includes(practiceState) || addr.includes(`, ${practiceState}`);
+    });
+    // If we filtered out competitors, update the report
+    if (filteredCompetitors.length > 0 && filteredCompetitors.length < competitors.length) {
+      const removed = competitors.length - filteredCompetitors.length;
+      warnings.push(`Removed ${removed} competitors from different states`);
+    }
+  }
+
+  // CHECK 6: Findings shouldn't mention the competitor name as if it's the practice
+  if (report.categories && report.categories.reviews?.competitor_name) {
+    const compName = report.categories.reviews.competitor_name.toLowerCase();
+    for (const [catKey, cat] of Object.entries(report.categories)) {
+      if (Array.isArray(cat.findings)) {
+        cat.findings = cat.findings.map(f => {
+          // If a finding mentions the competitor as "your practice" or similar, flag it
+          if (f.toLowerCase().includes(compName) && catKey !== "reviews") {
+            warnings.push(`Finding in "${catKey}" mentions competitor "${report.categories.reviews.competitor_name}" — removed`);
+            return null;
+          }
+          return f;
+        }).filter(Boolean);
+      }
+    }
+  }
+
+  if (warnings.length > 0) {
+    report.safety_warnings = warnings;
+    console.log("Safety check warnings:", warnings.join("; "));
   }
 
   return report;
@@ -992,8 +1355,8 @@ async function scrapePracticeSite(practiceUrl) {
   const postalCode = extractMeta(html, /"postalCode"\s*:\s*"([^"]+)"/);
   const phone = extractMeta(html, /(?:tel:|href=["']tel:)([^"'<]+)/i) ||
     extractMeta(html, /(\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4})/);
-  const schemaName = extractMeta(html, /"@type"\s*:\s*"(?:Dentist|LocalBusiness|Dental[^"]*|MedicalBusiness|HealthBusiness|ProfessionalService)"[^}]*"name"\s*:\s*"([^"]+)"/) ||
-    extractMeta(html, /"name"\s*:\s*"([^"]+)"[^}]*"@type"\s*:\s*"(?:Dentist|LocalBusiness|Dental[^"]*|MedicalBusiness)"/);
+  const schemaName = extractMeta(html, /"@type"\s*:\s*"(?:Dentist|LocalBusiness|Dental[^"]*|MedicalBusiness|HealthBusiness|ProfessionalService|LegalService|Attorney|LawFirm|Organization)"[^}]*"name"\s*:\s*"([^"]+)"/) ||
+    extractMeta(html, /"name"\s*:\s*"([^"]+)"[^}]*"@type"\s*:\s*"(?:Dentist|LocalBusiness|Dental[^"]*|MedicalBusiness|LegalService|Attorney|LawFirm)"/);
   const titleName = (title || "").replace(/\s*[|\-–—].*/g, "").trim();
   const practiceName = schemaName || ogTitle || titleName || "";
 
@@ -1034,17 +1397,27 @@ async function scrapePracticeSite(practiceUrl) {
     hasLlmsTxt = lRes.ok && (await lRes.text()).length > 50;
   } catch (_) {}
 
-  // ── Check if this is actually a dental practice website ──
+  // ── Check if this is actually a dental/legal/medical website ──
   const allText = `${title} ${metaDesc} ${practiceName} ${visibleText}`.toLowerCase();
   const dentalSignals = DENTAL_KEYWORDS.filter(kw => allText.includes(kw));
   const hasDentalSchema = schemaTypes.some(t => /dentist|dental|medical/i.test(t));
   const isDentalSite = dentalSignals.length >= 2 || (dentalSignals.length >= 1 && hasDentalSchema);
+
+  const legalSignals = LEGAL_KEYWORDS.filter(kw => allText.includes(kw));
+  const hasLegalSchema = schemaTypes.some(t => /attorney|legal|lawyer|law.?firm/i.test(t));
+  const isLegalSite = legalSignals.length >= 1;
+
+  const medicalSignals = MEDICAL_KEYWORDS.filter(kw => allText.includes(kw));
+  const hasMedicalSchema = schemaTypes.some(t => /physician|medical|doctor|health|hospital|clinic/i.test(t));
+  const isMedicalSite = medicalSignals.length >= 1;
 
   const raw = {
     scraped: true,
     domain,
     finalUrl,
     isDentalSite,
+    isLegalSite,
+    isMedicalSite,
     dentalSignals,
     practiceName: practiceName || "",
     title: title || "",
@@ -1147,6 +1520,50 @@ const DENTAL_KEYWORDS = [
   "family dent", "pediatric dent", "dds", "dmd",
 ];
 
+const LEGAL_KEYWORDS = [
+  "law firm", "attorney", "lawyer", "legal", "law office", "law group",
+  "personal injury", "family law", "criminal defense", "estate planning",
+  "immigration law", "real estate law", "litigation", "counsel", "esq",
+  "bar association", "juris doctor", "practice areas",
+];
+
+const MEDICAL_KEYWORDS = [
+  "medical", "doctor", "physician", "clinic", "healthcare", "health care",
+  "dermatolog", "orthoped", "cardiolog", "pediatric", "primary care",
+  "urgent care", "family medicine", "internal medicine", "specialist",
+  "board certified", "patient", "md", "do", "np", "telehealth",
+];
+
+const VERTICAL_CONFIG = {
+  dental: {
+    placeType: "dentist",
+    placeLabel: "dentist",
+    businessTerm: "practice",
+    clientTerm: "patient",
+    clientTermPlural: "patients",
+    providerTerm: "dentist",
+    ltv: "$800-$2,500",
+  },
+  legal: {
+    placeType: "lawyer",
+    placeLabel: "lawyer",
+    businessTerm: "firm",
+    clientTerm: "client",
+    clientTermPlural: "clients",
+    providerTerm: "attorney",
+    ltv: "$5,000-$50,000",
+  },
+  medical: {
+    placeType: ["doctor", "hospital"],
+    placeLabel: "medical provider",
+    businessTerm: "practice",
+    clientTerm: "patient",
+    clientTermPlural: "patients",
+    providerTerm: "doctor",
+    ltv: "$2,000-$10,000",
+  },
+};
+
 function validateScrapedData(data) {
   const checks = {};
   let overallConfidence = "high";
@@ -1162,14 +1579,16 @@ function validateScrapedData(data) {
     overallConfidence = "low";
   } else {
     const nameLower = name.toLowerCase();
-    const hasDentalWord = DENTAL_KEYWORDS.some(kw => nameLower.includes(kw));
+    const hasIndustryWord = DENTAL_KEYWORDS.some(kw => nameLower.includes(kw)) ||
+      LEGAL_KEYWORDS.some(kw => nameLower.includes(kw)) ||
+      MEDICAL_KEYWORDS.some(kw => nameLower.includes(kw));
     const appearsInText = data.visibleText.toLowerCase().includes(nameLower);
-    if (hasDentalWord && appearsInText) {
-      checks.practiceName = { status: "verified", note: "Name contains dental keyword and appears in page content" };
+    if (hasIndustryWord && appearsInText) {
+      checks.practiceName = { status: "verified", note: "Name contains industry keyword and appears in page content" };
     } else if (appearsInText) {
-      checks.practiceName = { status: "likely_valid", note: "Name appears in page content but has no dental keyword" };
-    } else if (hasDentalWord) {
-      checks.practiceName = { status: "likely_valid", note: "Name contains dental keyword but not found in visible text" };
+      checks.practiceName = { status: "likely_valid", note: "Name appears in page content but has no industry keyword" };
+    } else if (hasIndustryWord) {
+      checks.practiceName = { status: "likely_valid", note: "Name contains industry keyword but not found in visible text" };
     } else {
       checks.practiceName = { status: "unverified", note: "Name does not contain dental keywords and was not found in page body text" };
       if (overallConfidence === "high") overallConfidence = "medium";
@@ -1247,7 +1666,8 @@ function validateScrapedData(data) {
 // ── Build the audit prompt with real scraped + verified data ──
 // ════════════════════════════════════════════════════════════════
 
-function buildAuditPrompt(practiceUrl, site, placeData, competitors) {
+function buildAuditPrompt(practiceUrl, site, placeData, competitors, vertical = "dental") {
+  const vc = VERTICAL_CONFIG[vertical] || VERTICAL_CONFIG.dental;
   let siteContext = "";
 
   if (site.scraped) {
@@ -1303,9 +1723,16 @@ Match confidence: ${placeData.matchConfidence} (domain match: ${placeData.domain
 - Website (Google): ${placeData.website}
 
 ${placeData.isMultiLocation ? `
-MULTI-LOCATION PRACTICE: This practice has ${placeData.locations.length} Google Business listings:
+MULTI-LOCATION BUSINESS: This business has ${placeData.locations.length} Google Business listings across multiple markets:
 ${placeData.locations.map((l, i) => `  ${i + 1}. ${l.name} — ${l.city || l.address} — ${l.rating} stars, ${l.reviewCount} reviews`).join("\n")}
 Combined total: ${placeData.combinedReviewCount} reviews, ${placeData.combinedRating} avg rating
+
+IMPORTANT FOR MULTI-LOCATION BUSINESSES:
+- Acknowledge ALL locations in the executive summary and findings — do NOT treat this as a single-location business
+- For local SEO findings, evaluate per-location Google Business Profile optimization
+- Do NOT say "no visible address or location information" if the business clearly has multiple office locations
+- The local SEO recommendation should focus on optimizing EACH location's individual GBP listing and local citations
+- For the city/state fields, use the primary/headquarters location
 
 CRITICAL: For the reviews category, you MUST use the COMBINED totals:
 - count: ${placeData.combinedReviewCount}
@@ -1339,48 +1766,107 @@ CRITICAL: For competitor_name and competitor_reviews, use the #1 competitor abov
 Do NOT make up competitor names or review counts.`;
   }
 
-  return `You are PracticeRank's expert dental practice auditor. Generate an audit report for: "${practiceUrl}"
+  // ── Vertical-specific prompt pieces ──
+  const verticalPrompts = {
+    dental: {
+      role: "expert dental practice auditor",
+      badExample1: '"No structured FAQ data detected — AI search engines like ChatGPT and Gemini cannot extract service information from this site, making it invisible to the 40%+ of patients who now use AI to find dentists"',
+      badExample2: '"Missing AI discoverability file — this site has no machine-readable summary for AI assistants, so ChatGPT, Gemini, and Perplexity have no structured way to learn about or recommend this practice"',
+      aiVisNote: "what patients see when they ask about dentists in this area",
+      directoryNote: "Apple Maps, healthcare directories, citation consistency",
+      contentNote: "service pages, blog presence, dental keyword targeting",
+      extraGuidance: "",
+    },
+    legal: {
+      role: "expert law firm marketing and intake auditor with deep knowledge of legal marketing ethics and bar advertising rules",
+      badExample1: '"No structured FAQ data detected — AI search engines like ChatGPT and Gemini cannot extract practice area information from this site, making it invisible to the 40%+ of potential clients who now use AI to research legal options before contacting a firm"',
+      badExample2: '"Missing AI discoverability file — this site has no machine-readable summary for AI assistants, so ChatGPT, Gemini, and Perplexity have no structured way to learn about or recommend this firm when users ask for lawyer recommendations"',
+      aiVisNote: "what potential clients see when they ask AI assistants about lawyers, practice areas, or legal questions in this area",
+      directoryNote: "Avvo, Martindale-Hubbell, FindLaw, Justia, Super Lawyers, state/local bar association listings, legal directory presence and profile completeness",
+      contentNote: "practice area pages (depth and specificity per area), case results/verdicts, attorney bio pages with credentials and bar admissions, legal guides/blog content, client testimonials compliance",
+      extraGuidance: `
+LEGAL-SPECIFIC ANALYSIS — evaluate these additional factors:
+- Practice area coverage: Does the site have dedicated pages for each practice area, or generic content? Law firms with deep practice area pages (e.g., "car accident lawyer in [city]") rank dramatically better than firms with a single "areas of practice" list.
+- Attorney profiles: Are individual attorney pages optimized with bar admissions, education, notable cases, and speaking engagements? These are critical trust signals for both AI and search.
+- Case results/verdicts: Does the site showcase specific outcomes? Case results pages are the #1 conversion driver for PI, criminal defense, and family law firms.
+- Client intake optimization: Is there a clear call-to-action for free consultations? Is the phone number prominent? Are contact forms above the fold?
+- Legal directory authority: Avvo ratings, Martindale-Hubbell AV ratings, Super Lawyers selections, and state bar profiles create powerful trust signals that AI engines weight heavily.
+- E-E-A-T signals: Legal content requires strong author attribution, credentials, and expertise signals. Google and AI engines penalize anonymous legal content.
+- Referral/co-counsel signals: Does the site indicate any referral network presence or co-counsel relationships?
+- Average case values for priority_actions estimates: PI ($50K-$500K+), Family law ($5K-$15K), Criminal defense ($5K-$25K), Estate planning ($2K-$8K), Business law ($10K-$50K+). Use these to calculate revenue_lost_annually.`,
+    },
+    medical: {
+      role: "expert medical practice marketing auditor with deep knowledge of healthcare marketing, HIPAA-compliant web presence, and patient acquisition strategies",
+      badExample1: '"No structured FAQ data detected — AI search engines like ChatGPT and Gemini cannot extract condition and treatment information from this site, making it invisible to the 40%+ of patients who now use AI to research symptoms, treatments, and find doctors"',
+      badExample2: '"Missing AI discoverability file — this site has no machine-readable summary for AI assistants, so ChatGPT, Gemini, and Perplexity have no structured way to learn about or recommend this practice when patients search for care"',
+      aiVisNote: "what patients see when they ask AI assistants about symptoms, conditions, treatments, or doctors in this area",
+      directoryNote: "Healthgrades, Vitals, ZocDoc, WebMD, RateMDs, hospital/health system affiliations, insurance network directories, state medical board profile",
+      contentNote: "condition/treatment pages (depth per specialty), provider profiles with board certifications and hospital affiliations, patient education content, insurance/accepted plans information, telehealth availability",
+      extraGuidance: `
+MEDICAL-SPECIFIC ANALYSIS — evaluate these additional factors:
+- Specialty coverage: Does the site have dedicated pages for each condition/treatment they handle? A dermatology practice needs pages for acne, eczema, skin cancer screening, cosmetic procedures, etc. — not just a generic "services" list.
+- Provider profiles: Are individual doctor pages optimized with board certifications, medical school, residency, fellowship, hospital affiliations, and specializations? These are the strongest trust signals in healthcare.
+- Insurance information: Is there a clear insurance/accepted plans page? This is the #1 question patients have. Missing this means losing patients at the research stage.
+- Patient education content: Does the site have condition-specific educational content? Medical practices that answer patient questions on their site get recommended by AI engines that pull from authoritative health content.
+- Online scheduling: Is there ZocDoc integration, online booking, or at minimum a prominent appointment request form? Friction in scheduling means lost patients.
+- Telehealth presence: Does the site mention virtual visit options? Post-2020, 40%+ of patients prefer telehealth for initial consultations.
+- Health directory authority: Healthgrades ratings, hospital affiliations, board certification badges, and medical society memberships are weighted heavily by AI engines for healthcare recommendations.
+- E-E-A-T signals: Medical content absolutely requires author credentials, medical review dates, and clear expertise signals. Google's medic update specifically targets unverified health content.
+- Multi-provider practices: For group practices, are individual providers discoverable? Each doctor should have their own optimized page.
+- Average patient LTV by specialty: Primary care ($2K-$5K), Dermatology ($3K-$8K), Orthopedics ($5K-$15K), Cardiology ($8K-$20K), Cosmetic/plastic surgery ($10K-$50K+). Use these to calculate revenue_lost_annually.`,
+    },
+  };
+  const vp = verticalPrompts[vertical] || verticalPrompts.dental;
+
+  return `You are PracticeRank's ${vp.role}. Generate an audit report for: "${practiceUrl}"
+Industry vertical: ${vertical} (${vc.businessTerm} — use "${vc.clientTerm}/${vc.clientTermPlural}" terminology, not "patient" unless vertical is medical/dental)
 
 ${siteContext}
 ${googleContext}
 ${competitorContext}
 
-CRITICAL: You MUST use the practice name, city, and state from the verified Google data above (if available). For review count and rating, use the EXACT Google-verified numbers. For competitor data, use the EXACT competitor names and review counts provided. DO NOT fabricate or estimate any of these values — we have real data.
+CRITICAL DATA INTEGRITY RULES:
+- You MUST use the practice name, city, and state from the verified Google data above (if available).
+- For review count and rating, use the EXACT Google-verified numbers. For competitor data, use the EXACT competitor names and review counts provided. DO NOT fabricate or estimate any of these values — we have real data.
+- NEVER confuse the practice being audited with a competitor. The practice is "${practiceUrl}" — any other business name is a competitor, not the client.
+- NEVER attribute a competitor's review count, rating, or address to the practice being audited.
+- If data seems contradictory or unclear, say so rather than guessing.
+${vp.extraGuidance}
 
-You MUST analyze the practice across these 7 categories and generate specific, actionable findings. Be realistic — most practices score poorly on AI readiness and Maps optimization. Do NOT inflate scores.
+You MUST analyze the ${vc.businessTerm} across these 7 categories and generate specific, actionable findings. Be realistic — most ${vc.businessTerm}s score poorly on AI readiness and Maps optimization. Do NOT inflate scores.
 
 CRITICAL TONE RULES — READ CAREFULLY:
-- Your job is to DIAGNOSE problems and show their IMPACT on patient inquiries — NOT to prescribe exact fixes.
-- For findings: describe WHAT is wrong/missing and WHY it costs them patients. Do NOT tell them exactly how to fix it.
+- Your job is to DIAGNOSE problems and show their IMPACT on ${vc.clientTerm} inquiries — NOT to prescribe exact fixes.
+- For findings: describe WHAT is wrong/missing and WHY it costs them ${vc.clientTermPlural}. Do NOT tell them exactly how to fix it.
 - BAD finding: "Add FAQPage JSON-LD schema markup to each service page to get cited by AI search engines"
-- GOOD finding: "No structured FAQ data detected — AI search engines like ChatGPT and Gemini cannot extract service information from this site, making it invisible to the 40%+ of patients who now use AI to find dentists"
+- GOOD finding: ${vp.badExample1}
 - BAD finding: "Create an llms.txt file at the site root following the llmstxt.org specification"
-- GOOD finding: "Missing AI discoverability file — this site has no machine-readable summary for AI assistants, so ChatGPT, Gemini, and Perplexity have no structured way to learn about or recommend this practice"
-- For priority_actions: frame as OUTCOMES they need ("Get visible in AI search results", "Fix Google Maps listing gaps") not HOW-TO instructions. The description should emphasize the patient/revenue impact and what's at stake — not the technical steps.
+- GOOD finding: ${vp.badExample2}
+- For priority_actions: frame as OUTCOMES they need ("Get visible in AI search results", "Fix Google Maps listing gaps") not HOW-TO instructions. The description should emphasize the ${vc.clientTerm}/revenue impact and what's at stake — not the technical steps.
 - Never mention specific technical implementations like "JSON-LD", "schema markup code", "llms.txt file format", "robots.txt directives", or specific tools/APIs. Use plain language: "structured data", "AI-readable content", "search engine signals", "directory presence".
-- The goal: the practice owner reads this and thinks "I'm losing patients and I need expert help to fix this" — NOT "I can Google these fixes myself or hand this to another agency."
+- The goal: the ${vc.businessTerm} owner reads this and thinks "I'm losing ${vc.clientTermPlural} and I need expert help to fix this" — NOT "I can Google these fixes myself or hand this to another agency."
 
 SCORING CATEGORIES (each 0-100):
 1. OVERALL SCORE — weighted average of all categories
 2. GOOGLE BUSINESS PROFILE — completeness, photos, posts frequency, Q&A, categories, hours accuracy
-3. AI SEARCH READINESS — whether AI assistants (ChatGPT, Gemini, Grok, Claude, Perplexity) can find and recommend this practice
-4. REVIEW STRENGTH — total review count, average rating, review velocity (new reviews/month), response rate, sentiment
-5. LOCAL SEO — directory presence, Apple Maps, citation consistency, neighborhood visibility, local authority signals
-6. CONTENT & ON-PAGE SEO — content depth, blog presence, keyword targeting, internal structure, meta optimization
+3. AI SEARCH READINESS — whether AI assistants (ChatGPT, Gemini, Grok, Claude, Perplexity) can find and recommend this ${vc.businessTerm}
+4. REVIEW STRENGTH — total review count, average rating, review velocity, response rate, sentiment
+5. LOCAL SEO — ${vp.directoryNote}, neighborhood visibility, local authority signals
+6. CONTENT & ON-PAGE SEO — ${vp.contentNote}, internal structure, meta optimization
 7. TECHNICAL SEO — page speed, mobile-friendliness, SSL, sitemap, Core Web Vitals
 
 For each category, provide:
 - A score (0-100)
 - A status: "critical" (0-30), "needs_work" (31-60), "good" (61-80), "excellent" (81-100)
-- 2-3 specific findings — describe the PROBLEM and its PATIENT IMPACT, never the technical fix. Reference real data from the scrape where possible.
+- 2-3 specific findings — describe the PROBLEM and its impact on ${vc.clientTerm} acquisition, never the technical fix. Reference real data from the scrape where possible.
 
 Also generate:
-- Executive summary (2-3 sentences, lead with patient inquiry impact, create urgency)
-- The practice name, city, and state — USE THE VERIFIED GOOGLE VALUES if available, otherwise use scraped values
+- Executive summary (2-3 sentences, lead with ${vc.clientTerm} inquiry impact, create urgency)
+- The ${vc.businessTerm} name, city, and state — USE THE VERIFIED GOOGLE VALUES if available, otherwise use scraped values
 - Top competitor name and their review count — USE THE VERIFIED COMPETITOR DATA provided above
-- 5 priority recommendations ranked by patient inquiry impact (each with title, outcome-focused description emphasizing patients lost, impact level, and estimated new patients/month)
-- AI platform visibility: for each of ChatGPT, Gemini, Grok, Claude, Perplexity — would they likely recommend this practice? (yes/no/partial + 1 sentence explaining what patients see when they ask about dentists in this area)
-- Growth projections at 3, 6, and 12 months (estimated new patient inquiries/month)
+- 5 priority recommendations ranked by ${vc.clientTerm} inquiry impact (each with title, outcome-focused description emphasizing ${vc.clientTermPlural} lost, impact level, and estimated new ${vc.clientTermPlural}/month)
+- AI platform visibility: for each of ChatGPT, Gemini, Grok, Claude, Perplexity — would they likely recommend this ${vc.businessTerm}? (yes/no/partial + 1 sentence explaining ${vp.aiVisNote})
+- Growth projections at 3, 6, and 12 months (estimated new ${vc.clientTerm} inquiries/month)
 - A "money left on the table" estimate — annual revenue being lost to competitors
 
 Respond ONLY with valid JSON (no markdown, no code fences, no explanation):
@@ -1390,7 +1876,7 @@ Respond ONLY with valid JSON (no markdown, no code fences, no explanation):
   "state": "<string>",
   "overall_score": <int>,
   "grade": "<A through F>",
-  "executive_summary": "<string — 2-3 sentences, lead with patient impact>",
+  "executive_summary": "<string — 2-3 sentences, lead with ${vc.clientTerm} impact>",
   "categories": {
     "gbp": { "score": <int>, "status": "<string>", "findings": ["<string>", "<string>"] },
     "ai_readiness": { "score": <int>, "status": "<string>", "findings": ["<string>", "<string>", "<string>"] },
@@ -1420,7 +1906,7 @@ Respond ONLY with valid JSON (no markdown, no code fences, no explanation):
     "month_12": "<string like +25-35>"
   },
   "revenue_lost_annually": "<string like $180,000-$360,000>",
-  "patient_lifetime_value": "<string like $800-$2,500>"
+  "patient_lifetime_value": "<string like ${vc.ltv}>"
 }`;
 }
 
@@ -1502,8 +1988,13 @@ export {
   scoreToGrade,
   extractMeta,
   DENTAL_KEYWORDS,
+  LEGAL_KEYWORDS,
+  MEDICAL_KEYWORDS,
+  VERTICAL_CONFIG,
   BAD_NAME_PATTERNS,
   VALID_STATES,
   AREA_CODE_STATES,
   BLOCKED_HOSTS,
+  nameSimilarity,
+  validateCompetitors,
 };

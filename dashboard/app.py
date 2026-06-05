@@ -35,7 +35,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 import httpx
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify, send_file, Response, abort
 
 from geo_agent.db import CustomerDB
 from geo_agent.staging import StagingManager
@@ -86,6 +86,32 @@ def get_staging() -> StagingManager:
     return StagingManager(data_dir=DATA_DIR)
 
 
+# --- Audit Logging ---
+
+AUDIT_DIR = Path(DATA_DIR).parent / "audit_logs"
+
+
+def audit_log(action: str, customer_id: str = "", details: str = "", **extra):
+    """Write an audit log entry as JSONL. One file per day."""
+    try:
+        AUDIT_DIR.mkdir(parents=True, exist_ok=True)
+        now = datetime.now(timezone.utc)
+        entry = {
+            "timestamp": now.isoformat(),
+            "user": session.get("username", "system"),
+            "action": action,
+            "customer_id": customer_id,
+            "details": details,
+            "ip": request.remote_addr if request else "",
+        }
+        entry.update(extra)
+        log_file = AUDIT_DIR / f"audit_{now.strftime('%Y-%m-%d')}.jsonl"
+        with open(log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        logger.exception("Failed to write audit log")
+
+
 # --- Auth ---
 
 def login_required(f):
@@ -102,23 +128,35 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "")
         password = request.form.get("password", "")
+
+        # Try DB-based multi-user auth first
+        db = get_db()
+        user = db.authenticate_user(username, password)
+        if user:
+            session["logged_in"] = True
+            session["username"] = user["username"]
+            session["display_name"] = user["display_name"] or user["username"]
+            audit_log("login", details=f"DB user '{user['username']}' logged in")
+            return redirect(url_for("index"))
+
+        # Fallback to legacy env-var auth
         expected_user = os.environ.get("DASHBOARD_USER", "admin")
         expected_pass = os.environ.get("DASHBOARD_PASS", "")
-
-        if not expected_pass:
-            flash("DASHBOARD_PASS environment variable not set. Set it before logging in.", "error")
-            return render_template("login.html")
-
-        if username == expected_user and password == expected_pass:
+        if expected_pass and username == expected_user and password == expected_pass:
             session["logged_in"] = True
             session["username"] = username
+            session["display_name"] = username
+            audit_log("login", details=f"Legacy user '{username}' logged in")
             return redirect(url_for("index"))
+
+        audit_log("login_failed", details=f"Failed login attempt for '{username}'")
         flash("Invalid credentials.", "error")
     return render_template("login.html")
 
 
 @app.route("/logout")
 def logout():
+    audit_log("logout")
     session.clear()
     return redirect(url_for("login"))
 
@@ -159,6 +197,87 @@ def index():
         return render_template("index.html", customers=customers, stats=stats)
     finally:
         db.close()
+
+
+# --- SEO Health Score & CTR Opportunities ---
+
+# Expected CTR by position (industry averages)
+_EXPECTED_CTR = {
+    1: 0.30, 2: 0.15, 3: 0.10, 4: 0.07, 5: 0.05,
+    6: 0.04, 7: 0.03, 8: 0.025, 9: 0.02, 10: 0.018,
+    11: 0.015, 12: 0.012, 13: 0.010, 14: 0.009, 15: 0.008,
+    16: 0.007, 17: 0.006, 18: 0.005, 19: 0.004, 20: 0.003,
+}
+
+
+def _compute_seo_health(latest_audit, keyword_summary, gsc_daily) -> int:
+    """Compute SEO health score (0-100) from audit, keywords, and traffic."""
+    # PageSpeed scores (25%)
+    psi = 0
+    if latest_audit:
+        scores = [
+            latest_audit.get("performance_score", 0) or 0,
+            latest_audit.get("seo_score", 0) or 0,
+            latest_audit.get("accessibility_score", 0) or 0,
+            latest_audit.get("best_practices_score", 0) or 0,
+        ]
+        psi = sum(scores) / 4 if scores else 0
+
+    # Keyword coverage (25%) — % of tracked keywords in top 20
+    kw_pct = 0
+    if keyword_summary:
+        in_top_20 = sum(1 for k in keyword_summary if k.get("current_position") and k["current_position"] <= 20)
+        kw_pct = (in_top_20 / len(keyword_summary) * 100) if keyword_summary else 0
+
+    # Traffic trend (25%) — compare last 7 days vs prior 7 days
+    traffic_score = 50  # default neutral
+    if gsc_daily and len(gsc_daily) >= 14:
+        recent = sum(d.get("clicks", 0) for d in gsc_daily[-7:])
+        prior = sum(d.get("clicks", 0) for d in gsc_daily[-14:-7])
+        if prior > 0:
+            growth = (recent - prior) / prior
+            traffic_score = min(100, max(0, 50 + growth * 200))
+
+    # Technical health (25%) — penalty for audit issues
+    tech_score = 100
+    if latest_audit:
+        # Use raw_data to count issues if available
+        tech_score = max(0, min(100, psi))  # fallback to PSI average
+
+    return round(psi * 0.25 + kw_pct * 0.25 + traffic_score * 0.25 + tech_score * 0.25)
+
+
+def _compute_ctr_opportunities(keyword_summary) -> list[dict]:
+    """Find keywords with high impressions but CTR well below expected."""
+    opportunities = []
+    if not keyword_summary:
+        return opportunities
+
+    for kw in keyword_summary:
+        pos = kw.get("current_position")
+        impr = kw.get("current_impressions", 0)
+        clicks = kw.get("current_clicks", 0)
+        if not pos or not impr or impr < 50:
+            continue
+
+        pos_bucket = min(20, max(1, round(pos)))
+        expected = _EXPECTED_CTR.get(pos_bucket, 0.003)
+        actual_ctr = clicks / impr if impr > 0 else 0
+
+        # Flag if actual CTR is less than 50% of expected
+        if actual_ctr < expected * 0.5:
+            opportunities.append({
+                "keyword": kw["keyword"],
+                "position": pos,
+                "impressions": impr,
+                "clicks": clicks,
+                "ctr": actual_ctr,
+                "expected_ctr": expected,
+            })
+
+    # Sort by impressions desc (biggest opportunity first)
+    opportunities.sort(key=lambda x: x["impressions"], reverse=True)
+    return opportunities[:10]
 
 
 # --- Customer Detail ---
@@ -228,6 +347,49 @@ def customer_detail(customer_id):
                 "body_html": body_html,
             })
 
+        # SEO Tools data
+        integrations = db.get_integrations(customer_id)
+        keyword_summary = db.get_keyword_summary(customer_id)
+        latest_audit = db.get_latest_audit(customer_id)
+        audit_issues = db.get_audit_issues(customer_id, status="open") if latest_audit else []
+        backlinks = db.get_backlinks(customer_id)
+        content_topics = db.get_content_topics(customer_id, status="suggested")
+
+        # Date range from query param (default 30d)
+        date_range = request.args.get("range", "30d")
+        range_days = {"7d": 7, "30d": 30, "90d": 90, "180d": 180}.get(date_range, 30)
+
+        # GSC traffic data (daily clicks/impressions + top pages)
+        gsc_daily = []
+        gsc_top_pages = []
+        gsc_prev_clicks = 0
+        gsc_prev_impressions = 0
+        gsc_integ = next((i for i in integrations if i["integration"] == "gsc" and i["status"] == "active"), None)
+        if gsc_integ:
+            try:
+                _gsc_prop = gsc_integ["config"].get("property_url", "")
+                if _gsc_prop:
+                    from geo_agent.gsc_client import fetch_search_metrics, fetch_top_pages
+                    from datetime import timedelta as _td
+                    _end = (datetime.now(timezone.utc) - _td(days=2)).strftime("%Y-%m-%d")
+                    _start = (datetime.now(timezone.utc) - _td(days=2 + range_days)).strftime("%Y-%m-%d")
+                    gsc_daily = fetch_search_metrics(_gsc_prop, _start, _end, ["date"]) or []
+                    gsc_top_pages = fetch_top_pages(_gsc_prop, _start, _end, limit=10) or []
+                    # Previous period for comparison
+                    _prev_end = (datetime.now(timezone.utc) - _td(days=2 + range_days)).strftime("%Y-%m-%d")
+                    _prev_start = (datetime.now(timezone.utc) - _td(days=2 + range_days * 2)).strftime("%Y-%m-%d")
+                    prev_daily = fetch_search_metrics(_gsc_prop, _prev_start, _prev_end, ["date"]) or []
+                    gsc_prev_clicks = sum(d.get("clicks", 0) for d in prev_daily)
+                    gsc_prev_impressions = sum(d.get("impressions", 0) for d in prev_daily)
+            except Exception:
+                pass
+
+        # SEO Health Score
+        seo_health_score = _compute_seo_health(latest_audit, keyword_summary, gsc_daily)
+
+        # CTR Opportunities
+        ctr_opportunities = _compute_ctr_opportunities(keyword_summary)
+
         # Active alerts for this customer
         customer_alerts = db.get_alerts(customer_id, active_only=True, limit=10)
 
@@ -237,6 +399,51 @@ def customer_detail(customer_id):
 
         # Squarespace connection status
         squarespace_connected = db.get_squarespace_credentials(customer_id) is not None
+
+        # WordPress PracticeRank plugin connection status
+        from geo_agent.secrets import get_secrets as _get_secrets
+        _wp_key = _get_secrets().get_customer_secret(customer_id, "WP_API_KEY")
+        wp_connected = bool(_wp_key)
+
+        # Auto-sync platform access status based on actual evidence
+        access_map = {a["platform"]: a for a in access}
+        _sync_changes = False
+        # GSC: if we have GSC data, mark as granted
+        if gsc_daily and access_map.get("gsc", {}).get("status") == "pending":
+            db.update_access_status(customer_id, "gsc", "granted")
+            _sync_changes = True
+        # Webflow: if OAuth connected
+        if webflow_connected and access_map.get("webflow", {}).get("status") == "pending":
+            db.update_access_status(customer_id, "webflow", "granted")
+            _sync_changes = True
+        # Squarespace: if credentials exist
+        if squarespace_connected and access_map.get("squarespace", {}).get("status") == "pending":
+            db.update_access_status(customer_id, "squarespace", "granted")
+            _sync_changes = True
+        # GBP: if we have Google Places data (rating/reviews)
+        if places and access_map.get("gbp", {}).get("status") == "pending":
+            db.update_access_status(customer_id, "gbp", "granted")
+            _sync_changes = True
+        # GA: if integration configured
+        ga_int = next((i for i in integrations if i["integration"] == "ga" and i["status"] == "active"), None)
+        if ga_int and access_map.get("ga", {}).get("status") == "pending":
+            db.update_access_status(customer_id, "ga", "granted")
+            _sync_changes = True
+        # Refresh access list if anything changed
+        if _sync_changes:
+            access = db.get_platform_access(customer_id)
+
+        # Tier 2 data
+        competitor_domains = db.get_competitor_domains(customer_id)
+        citations = db.get_citations(customer_id)
+        review_list = db.get_reviews(customer_id, limit=20)
+        review_stats = db.get_review_stats(customer_id)
+        gbp_audit = db.get_latest_gbp_audit(customer_id)
+
+        # Tier 3 data
+        page_scores = db.get_page_scores(customer_id)
+        topic_clusters = db.get_topic_clusters(customer_id)
+        ai_readiness = db.get_latest_ai_readiness(customer_id)
 
         # Check if there are previously published files (for re-publish button)
         published_schema = Path(DATA_DIR) / "published" / customer_id / "schema.html"
@@ -273,10 +480,32 @@ def customer_detail(customer_id):
             webflow_connected=webflow_connected,
             webflow_app=webflow_app,
             squarespace_connected=squarespace_connected,
+            wp_connected=wp_connected,
             has_published_schema=has_published_schema,
             geo_files=geo_files,
             worker_api_url=WORKER_API_URL,
             published_schema_content=published_schema_content,
+            integrations=integrations,
+            keyword_summary=keyword_summary,
+            latest_audit=latest_audit,
+            audit_issues=audit_issues,
+            backlinks=backlinks,
+            content_topics=content_topics,
+            gsc_daily=gsc_daily,
+            gsc_top_pages=gsc_top_pages,
+            gsc_prev_clicks=gsc_prev_clicks,
+            gsc_prev_impressions=gsc_prev_impressions,
+            date_range=date_range,
+            seo_health_score=seo_health_score,
+            ctr_opportunities=ctr_opportunities,
+            competitor_domains=competitor_domains,
+            citations=citations,
+            review_list=review_list,
+            review_stats=review_stats,
+            gbp_audit=gbp_audit,
+            page_scores=page_scores,
+            topic_clusters=topic_clusters,
+            ai_readiness=ai_readiness,
         )
     finally:
         db.close()
@@ -369,7 +598,7 @@ def add_customer():
             api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
             if api_key:
                 try:
-                    from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors
+                    from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors, get_place_types, validate_competitors
                     verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key)
                     if verified:
                         db.update_customer(customer_id,
@@ -382,7 +611,15 @@ def add_customer():
                             verified.match_confidence,
                             verified.lat, verified.lng)
                         if verified.lat and verified.lng:
-                            comps = fetch_nearby_competitors(verified.lat, verified.lng, name, api_key)
+                            bt = business_type or "practice"
+                            pt = get_place_types(bt)
+                            tq = ""
+                            if not pt and bt not in ("practice", ""):
+                                tq = f"{bt} near {verified.city} {verified.state}".strip()
+                            comps = fetch_nearby_competitors(
+                                verified.lat, verified.lng, name, api_key,
+                                place_types=pt or None, text_query=tq)
+                            comps = validate_competitors(comps, bt)
                             for c in comps[:5]:
                                 db.add_competitor(customer_id, c.name, c.rating,
                                     c.review_count, c.address, c.place_id)
@@ -405,6 +642,7 @@ def add_customer():
             except Exception as e:
                 logger.warning(f"Failed to auto-start AI check for {customer_id}: {e}")
 
+            audit_log("customer_created", customer_id=customer_id, details=f"Created '{name}' ({domain}), platform={platform}, type={business_type}")
             flash(f"Customer '{name}' added successfully! First AI mention check running in background.", "success")
             return redirect(url_for("customer_detail", customer_id=customer_id))
         except Exception as e:
@@ -424,6 +662,7 @@ def api_discover():
     data = request.get_json()
     name = data.get("name", "")
     url = data.get("url", "")
+    business_type = (data.get("business_type") or "practice").lower()
 
     if not name or not url:
         return jsonify({"error": "Name and URL required"}), 400
@@ -464,7 +703,7 @@ def api_discover():
     api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
     if api_key:
         try:
-            from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors
+            from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors, get_place_types, validate_competitors
             verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key)
             if verified:
                 result["places"] = {
@@ -475,7 +714,12 @@ def api_discover():
                     "match_confidence": verified.match_confidence,
                 }
                 if verified.lat and verified.lng:
-                    comps = fetch_nearby_competitors(verified.lat, verified.lng, name, api_key)
+                    place_types = get_place_types(business_type)
+                    comps = fetch_nearby_competitors(
+                        verified.lat, verified.lng, name, api_key,
+                        place_types=place_types or None,
+                    )
+                    comps = validate_competitors(comps, business_type)
                     result["competitors"] = [
                         {"name": c.name, "rating": c.rating, "review_count": c.review_count}
                         for c in comps[:5]
@@ -497,6 +741,7 @@ def update_access(customer_id):
         new_status = request.form["status"]
         if new_status in ("granted", "not_needed", "pending"):
             db.update_access_status(customer_id, platform, new_status)
+            audit_log("access_updated", customer_id=customer_id, details=f"{platform} -> {new_status}")
 
             # If all access granted, set status to active
             pending = db.get_pending_access(customer_id)
@@ -531,6 +776,7 @@ def update_status(customer_id):
         new_status = request.form["status"]
         if new_status in ("onboarding", "active", "paused", "churned", "archived"):
             db.set_customer_status(customer_id, new_status)
+            audit_log("status_changed", customer_id=customer_id, details=f"Status -> {new_status}")
             flash(f"Status updated to {new_status}.", "success")
     finally:
         db.close()
@@ -550,6 +796,7 @@ def approve_staging(customer_id):
             latest_run = db.get_latest_run(customer_id)
             if latest_run and latest_run["status"] == "staged":
                 db.approve_run(latest_run["id"])
+            audit_log("staging_approved", customer_id=customer_id)
             flash("Changes approved!", "success")
         else:
             flash("No staged changes to approve.", "error")
@@ -717,6 +964,7 @@ def publish_staging(customer_id):
         db.dismiss_alerts_for_customer(customer_id, publish_alerts_to_clear)
         cleared_count = len(publish_alerts_to_clear)
 
+        audit_log("published", customer_id=customer_id, details=f"{len(published)} files published")
         all_warnings = webflow_warnings + worker_warnings
         if all_warnings:
             msg = f"Published {len(published)} files. {' '.join(all_warnings)}"
@@ -770,6 +1018,7 @@ def republish_webflow(customer_id):
                 flash("Schema injected but failed to publish Webflow site.", "warning")
             else:
                 verification = _verify_publish(customer_id, db)
+                audit_log("republish_webflow", customer_id=customer_id)
                 msg = "Schema pushed to Webflow and site published."
                 if verification:
                     msg += f" {verification}"
@@ -797,6 +1046,7 @@ def repush_worker(customer_id):
             return redirect(url_for("customer_detail", customer_id=customer_id))
 
         warnings = _publish_llms_to_worker(customer_id, db, published_dir)
+        audit_log("repush_worker", customer_id=customer_id)
         if warnings:
             flash(f"Re-push warnings: {' '.join(warnings)}", "warning")
         else:
@@ -993,15 +1243,138 @@ def save_webflow_app(customer_id):
         client_secret = request.form.get("webflow_client_secret", "").strip()
         if client_id and client_secret:
             db.save_webflow_oauth_app(customer_id, client_id, client_secret)
+            audit_log("webflow_app_saved", customer_id=customer_id)
             flash("Webflow OAuth app saved. Click 'Connect Webflow' to authorize.", "success")
         elif not client_id and not client_secret:
             db.delete_webflow_oauth_app(customer_id)
+            audit_log("webflow_app_removed", customer_id=customer_id)
             flash("Webflow OAuth app removed. Will use default.", "info")
         else:
             flash("Both Client ID and Client Secret are required.", "error")
     finally:
         db.close()
     return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
+# --- WordPress Plugin Setup ---
+
+@app.route("/download/practicerank-seo-plugin.zip")
+@login_required
+def download_wp_plugin():
+    """Download the PracticeRank SEO WordPress plugin as a .zip file."""
+    import zipfile
+    from io import BytesIO
+
+    plugin_path = Path(__file__).resolve().parent.parent / "wp-plugins" / "practicerank-seo.php"
+    if not plugin_path.exists():
+        abort(404, "Plugin file not found")
+
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.write(plugin_path, "practicerank-seo/practicerank-seo.php")
+        # Add a readme for the plugin directory
+        zf.writestr("practicerank-seo/readme.txt", (
+            "=== PracticeRank SEO ===\n"
+            "Contributors: practicerank\n"
+            "Tags: seo, schema, llms.txt, ai search\n"
+            "Requires at least: 5.6\n"
+            "Tested up to: 6.7\n"
+            "Requires PHP: 7.4\n"
+            "Stable tag: 2.0\n"
+            "License: Proprietary\n\n"
+            "== Description ==\n"
+            "Full SEO/AEO integration for PracticeRank-managed sites. Injects JSON-LD schema,\n"
+            "serves llms.txt for AI discoverability, optimizes robots.txt, and accepts content\n"
+            "pushes via authenticated REST API.\n\n"
+            "== Installation ==\n"
+            "1. Upload the plugin folder to /wp-content/plugins/\n"
+            "2. Activate from the Plugins page\n"
+            "3. Go to Settings > PracticeRank to view your API key\n"
+            "4. Share the API key with your PracticeRank account manager\n\n"
+            "== Changelog ==\n"
+            "= 2.0 =\n"
+            "* JSON-LD schema injection (LocalBusiness, FAQ, Service, MedicalProcedure)\n"
+            "* REST API for schema, content, and file pushes\n"
+            "* Admin settings page with connection status\n"
+            "* SEO plugin detection (Yoast, RankMath, AIOSEO)\n"
+            "* Content deduplication and draft mode\n"
+        ))
+    buf.seek(0)
+    return send_file(buf, mimetype="application/zip", as_attachment=True,
+                     download_name="practicerank-seo-plugin.zip")
+
+
+@app.route("/customer/<customer_id>/wp-api-key", methods=["POST"])
+@login_required
+def save_wp_api_key(customer_id):
+    """Save WordPress PracticeRank plugin API key for a customer."""
+    api_key = request.form.get("wp_api_key", "").strip()
+    if not api_key:
+        flash("API key is required.", "error")
+        return redirect(url_for("customer_detail", customer_id=customer_id))
+
+    # Store as environment variable (persisted via .env on droplet)
+    env_key = f"WP_API_KEY_{customer_id.upper().replace('-', '_')}"
+    os.environ[env_key] = api_key
+
+    # Also append to .env file if it exists
+    env_file = Path(__file__).resolve().parent.parent / ".env"
+    if env_file.exists():
+        existing = env_file.read_text()
+        # Remove old entry if present
+        lines = [l for l in existing.splitlines() if not l.startswith(f"{env_key}=")]
+        lines.append(f"{env_key}={api_key}")
+        env_file.write_text("\n".join(lines) + "\n")
+
+    audit_log("wp_api_key_saved", customer_id=customer_id)
+    flash("WordPress API key saved. Use 'Test Connection' to verify.", "success")
+    return redirect(url_for("customer_detail", customer_id=customer_id))
+
+
+@app.route("/api/wordpress/test-connection", methods=["POST"])
+@login_required
+def api_test_wp_connection():
+    """Test the WordPress PracticeRank plugin connection."""
+    data = request.get_json()
+    customer_id = data.get("customer_id")
+    if not customer_id:
+        return jsonify({"ok": False, "error": "customer_id required"}), 400
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+
+        from geo_agent.secrets import get_secrets as _gs
+        wp_key = _gs().get_customer_secret(customer_id, "WP_API_KEY")
+        if not wp_key:
+            return jsonify({"ok": False, "error": "No API key configured. Install the plugin and paste the key above."}), 400
+
+        from geo_agent.publishers.wordpress import WordPressPublisher
+        publisher = WordPressPublisher(
+            site_url=f"https://{customer.get('domain', '')}",
+            api_key=wp_key,
+        )
+        try:
+            health = publisher.health_check()
+            if health:
+                # Update access status
+                db.update_access_status(customer_id, "wordpress", "granted")
+                return jsonify({
+                    "ok": True,
+                    "site_name": health.get("site_name"),
+                    "wp_version": health.get("wp_version"),
+                    "schema_enabled": health.get("schema_enabled"),
+                    "has_llms_txt": health.get("has_llms_txt"),
+                    "content_as_draft": health.get("content_as_draft"),
+                    "seo_plugin": health.get("seo_plugin", "none"),
+                })
+            return jsonify({"ok": False, "error": "Plugin not responding. Check it is installed and activated."}), 502
+        finally:
+            publisher.close()
+    finally:
+        db.close()
 
 
 # --- Update Customer Fields ---
@@ -1024,6 +1397,8 @@ def edit_customer(customer_id):
 
         if fields:
             db.update_customer(customer_id, **fields)
+            changed = ", ".join(f"{k}={v[:50]}" for k, v in fields.items() if isinstance(v, str))
+            audit_log("customer_edited", customer_id=customer_id, details=changed)
             flash("Customer updated.", "success")
     finally:
         db.close()
@@ -1103,7 +1478,7 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
     platform_steps = {
         "webflow": "**Webflow** — We need API access to manage your site's SEO\n   - **Important**: Your Workspace must be on the **Core plan** ($19/mo) or higher for API access\n     - Go to Workspace Settings > Plans to check/upgrade\n   - Generate a **Site API token**: Site Settings > Integrations > API Access > Generate API Token\n     - Enable these scopes: Sites (Read), Pages (Read+Write), Custom Code (Read+Write), CMS (Read+Write), Assets (Read+Write)\n   - Also send us the **Site ID** from Site Settings > General\n   - Optionally, add kdoherty@practicerank.ai as a site collaborator for visual editing",
         "squarespace": "**Squarespace** — Add kdoherty@practicerank.ai as a contributor\n   - Go to Settings > Permissions > Contributors > Invite contributor",
-        "wordpress": "**WordPress** — Create an admin account for kdoherty@practicerank.ai\n   - Go to Users > Add New > Set role to Administrator",
+        "wordpress": "**WordPress** — Install the PracticeRank SEO plugin\n   - Download the plugin from the dashboard (customer detail page → Setup Guide)\n   - Go to Plugins > Add New Plugin > Upload Plugin, install and activate\n   - Go to Settings > PracticeRank, copy the API Key and send it to us\n   - Optionally, create an admin account for kdoherty@practicerank.ai (Users > Add New > Administrator)",
         "shopify": "**Shopify** — Create a custom app for API access\n   - Go to Settings > Apps and sales channels > Develop apps\n   - Click \"Allow custom app development\" (if not already enabled)\n   - Click \"Create an app\" — name it \"PracticeRank\"\n   - Under Configuration > Admin API integration, click Configure and enable:\n     - `read_themes` / `write_themes`\n     - `read_content` / `write_content`\n     - `read_products` / `write_products`\n     - `read_online_store_pages` / `write_online_store_pages`\n   - Click Install app, then send us the Admin API access token",
     }
     access_steps = platform_steps.get(platform, f"**{platform.title()}** — Please share login or collaborator access")
@@ -1217,9 +1592,154 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         pct = f"{rate * 100:.0f}%" if isinstance(rate, (int, float)) else "0%"
         ai_baseline_summary = f"Your {btype_label} was mentioned in **{mentions} out of {total}** AI search queries we tested ({pct} visibility rate)."
         if mentions == 0:
-            ai_baseline_summary += " This means AI assistants like ChatGPT, Claude, and Google AI currently do not recommend your {btype_label} when patients search for your services.".replace("{btype_label}", btype_label)
+            ai_baseline_summary += f" This means AI assistants like ChatGPT, Claude, and Google AI currently do not recommend your {btype_label} when potential customers search for your services."
         elif rate and rate < 0.3:
             ai_baseline_summary += f" There's significant room to improve — top competitors typically achieve 40-60% visibility."
+
+    # Weekly SEO report data
+    report_week = datetime.now().strftime("%b %d, %Y")
+    weekly_clicks = "—"
+    prev_weekly_clicks = "—"
+    weekly_clicks_delta = "—"
+    weekly_impressions = "—"
+    prev_weekly_impressions = "—"
+    weekly_impressions_delta = "—"
+    weekly_avg_position = "—"
+    prev_weekly_avg_position = "—"
+    weekly_position_delta = "—"
+    weekly_ctr = "—"
+    prev_weekly_ctr = "—"
+    weekly_ctr_delta = "—"
+    top_keywords_table = "No keyword data available yet."
+    keyword_movers = "No keyword movement data available yet."
+    ai_visibility_rate = "—"
+    ai_visibility_change = ""
+    weekly_activity_summary = "- Monitoring search performance and AI visibility"
+    weekly_next_steps = "- Continue optimization and content strategy"
+
+    # Try to pull GSC data for weekly report
+    try:
+        db = get_db()
+        cid = customer.get("id", "")
+        if cid:
+            gsc_daily = db.get_gsc_daily(cid, limit=14)
+            if gsc_daily:
+                this_week = gsc_daily[:7]
+                last_week = gsc_daily[7:14]
+                tw_clicks = sum(d.get("clicks", 0) for d in this_week)
+                tw_impr = sum(d.get("impressions", 0) for d in this_week)
+                lw_clicks = sum(d.get("clicks", 0) for d in last_week) if last_week else 0
+                lw_impr = sum(d.get("impressions", 0) for d in last_week) if last_week else 0
+                weekly_clicks = str(tw_clicks)
+                prev_weekly_clicks = str(lw_clicks)
+                weekly_impressions = f"{tw_impr:,}"
+                prev_weekly_impressions = f"{lw_impr:,}"
+                if lw_clicks:
+                    delta = tw_clicks - lw_clicks
+                    weekly_clicks_delta = f"+{delta}" if delta > 0 else str(delta)
+                if lw_impr:
+                    delta = tw_impr - lw_impr
+                    weekly_impressions_delta = f"+{delta:,}" if delta > 0 else f"{delta:,}"
+                tw_ctr = (tw_clicks / tw_impr * 100) if tw_impr else 0
+                lw_ctr = (lw_clicks / lw_impr * 100) if lw_impr else 0
+                weekly_ctr = f"{tw_ctr:.1f}%"
+                prev_weekly_ctr = f"{lw_ctr:.1f}%"
+                if lw_ctr:
+                    delta = tw_ctr - lw_ctr
+                    weekly_ctr_delta = f"+{delta:.1f}%" if delta > 0 else f"{delta:.1f}%"
+                tw_pos = sum(d.get("position", 0) for d in this_week) / len(this_week) if this_week else 0
+                lw_pos = sum(d.get("position", 0) for d in last_week) / len(last_week) if last_week else 0
+                weekly_avg_position = f"{tw_pos:.1f}"
+                prev_weekly_avg_position = f"{lw_pos:.1f}" if last_week else "—"
+                if lw_pos:
+                    delta = lw_pos - tw_pos  # lower is better
+                    weekly_position_delta = f"+{delta:.1f} (improved)" if delta > 0 else f"{delta:.1f}"
+
+            # Top keywords
+            kw_summary = db.get_keyword_summary(cid)
+            if kw_summary:
+                top_kws = sorted(kw_summary, key=lambda k: k.get("clicks", 0), reverse=True)[:10]
+                kw_lines = ["| Keyword | Position | Clicks | Impressions |", "|---------|----------|--------|-------------|"]
+                for kw in top_kws:
+                    kw_lines.append(f"| {kw.get('keyword', '')} | {kw.get('position', '—'):.1f} | {kw.get('clicks', 0)} | {kw.get('impressions', 0):,} |")
+                top_keywords_table = "\n".join(kw_lines)
+    except Exception:
+        pass
+
+    # Monthly GSC data (for monthly report template)
+    monthly_clicks = "—"
+    prev_monthly_clicks = "—"
+    monthly_clicks_delta = "—"
+    monthly_impressions = "—"
+    prev_monthly_impressions = "—"
+    monthly_impressions_delta = "—"
+    monthly_avg_position = "—"
+    prev_monthly_avg_position = "—"
+    monthly_position_delta = "—"
+    try:
+        db2 = get_db()
+        cid2 = customer.get("id", "")
+        if cid2:
+            gsc_monthly = db2.get_gsc_daily(cid2, limit=60)
+            if gsc_monthly:
+                this_month = gsc_monthly[:30]
+                last_month = gsc_monthly[30:60]
+                tm_clicks = sum(d.get("clicks", 0) for d in this_month)
+                tm_impr = sum(d.get("impressions", 0) for d in this_month)
+                lm_clicks = sum(d.get("clicks", 0) for d in last_month) if last_month else 0
+                lm_impr = sum(d.get("impressions", 0) for d in last_month) if last_month else 0
+                monthly_clicks = f"{tm_clicks:,}"
+                prev_monthly_clicks = f"{lm_clicks:,}"
+                monthly_impressions = f"{tm_impr:,}"
+                prev_monthly_impressions = f"{lm_impr:,}"
+                if lm_clicks:
+                    delta = tm_clicks - lm_clicks
+                    monthly_clicks_delta = f"+{delta:,}" if delta > 0 else f"{delta:,}"
+                if lm_impr:
+                    delta = tm_impr - lm_impr
+                    monthly_impressions_delta = f"+{delta:,}" if delta > 0 else f"{delta:,}"
+                tm_pos = sum(d.get("position", 0) for d in this_month) / len(this_month) if this_month else 0
+                lm_pos = sum(d.get("position", 0) for d in last_month) / len(last_month) if last_month else 0
+                monthly_avg_position = f"{tm_pos:.1f}"
+                prev_monthly_avg_position = f"{lm_pos:.1f}" if last_month else "—"
+                if lm_pos:
+                    delta = lm_pos - tm_pos  # lower is better
+                    monthly_position_delta = f"+{delta:.1f} (improved)" if delta > 0 else f"{delta:.1f}"
+        db2.close()
+    except Exception:
+        pass
+
+    # PracticeRank score for email templates
+    practicerank_score_str = "—"
+    practicerank_grade_str = ""
+    practicerank_delta_str = ""
+    quick_wins_summary_str = ""
+    try:
+        cid_pr = customer.get("id", "")
+        if cid_pr:
+            db_pr = get_db()
+            try:
+                from geo_agent.practicerank_score import compute_practicerank_score
+                from geo_agent.quick_wins import detect_quick_wins, format_for_email
+                result_pr = compute_practicerank_score(db_pr, cid_pr)
+                if result_pr.get("score") is not None:
+                    practicerank_score_str = str(result_pr["score"])
+                    grade_info = result_pr.get("grade", {})
+                    practicerank_grade_str = grade_info.get("letter", "?")
+                    # Check previous score
+                    prev_scores = db_pr.get_practicerank_scores(cid_pr, limit=2)
+                    if len(prev_scores) >= 2:
+                        delta_val = result_pr["score"] - prev_scores[1]["overall_score"]
+                        if delta_val > 0:
+                            practicerank_delta_str = f" — up {delta_val} pts from last week"
+                        elif delta_val < 0:
+                            practicerank_delta_str = f" — down {abs(delta_val)} pts from last week"
+                wins = detect_quick_wins(db_pr, cid_pr)
+                quick_wins_summary_str = format_for_email(wins, max_items=3)
+            finally:
+                db_pr.close()
+    except Exception:
+        pass
 
     replacements = {
         "{practice_name}": customer.get("name", ""),
@@ -1252,19 +1772,54 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{cdn_provider}": (customer.get("hosting_info") or {}).get("cdn", "none"),
         "{cms_platform}": (customer.get("hosting_info") or {}).get("cms", platform.title()),
         "{domain_expiry}": (customer.get("hosting_info") or {}).get("domain_expiry", "unknown"),
-        # Report content
+        # Monthly report
         "{report_month}": report_month,
+        "{monthly_clicks}": monthly_clicks,
+        "{prev_monthly_clicks}": prev_monthly_clicks,
+        "{monthly_clicks_delta}": monthly_clicks_delta,
+        "{monthly_impressions}": monthly_impressions,
+        "{prev_monthly_impressions}": prev_monthly_impressions,
+        "{monthly_impressions_delta}": monthly_impressions_delta,
+        "{monthly_avg_position}": monthly_avg_position,
+        "{prev_monthly_avg_position}": prev_monthly_avg_position,
+        "{monthly_position_delta}": monthly_position_delta,
+        # Report content
         "{changes_list}": changes_list,
         "{next_month_plans}": next_month_plans,
         "{changes_summary}": changes_summary,
         "{diff_summary}": diff_summary,
         "{content_rec_summary}": _content_rec_summary(content_recs or []),
         "{content_rec_count}": str(len(content_recs or [])),
+        # Weekly report
+        "{report_week}": report_week,
+        "{weekly_clicks}": weekly_clicks,
+        "{prev_weekly_clicks}": prev_weekly_clicks,
+        "{weekly_clicks_delta}": weekly_clicks_delta,
+        "{weekly_impressions}": weekly_impressions,
+        "{prev_weekly_impressions}": prev_weekly_impressions,
+        "{weekly_impressions_delta}": weekly_impressions_delta,
+        "{weekly_avg_position}": weekly_avg_position,
+        "{prev_weekly_avg_position}": prev_weekly_avg_position,
+        "{weekly_position_delta}": weekly_position_delta,
+        "{weekly_ctr}": weekly_ctr,
+        "{prev_weekly_ctr}": prev_weekly_ctr,
+        "{weekly_ctr_delta}": weekly_ctr_delta,
+        "{top_keywords_table}": top_keywords_table,
+        "{keyword_movers}": keyword_movers,
+        "{ai_visibility_rate}": ai_visibility_rate,
+        "{ai_visibility_change}": ai_visibility_change,
+        "{weekly_activity_summary}": weekly_activity_summary,
+        "{weekly_next_steps}": weekly_next_steps,
         # Auto-discovered data
         "{business_type}": btype_label,
         "{google_snapshot}": google_snapshot or "- No Google Business Profile data found yet",
         "{competitor_summary}": competitor_summary or "- Competitor data not yet available",
         "{ai_baseline_summary}": ai_baseline_summary or "We'll run an AI visibility baseline scan once onboarding is complete.",
+        # PracticeRank score
+        "{practicerank_score}": practicerank_score_str,
+        "{practicerank_grade}": practicerank_grade_str,
+        "{practicerank_delta}": practicerank_delta_str,
+        "{quick_wins_summary}": quick_wins_summary_str,
     }
     for k, v in replacements.items():
         content = content.replace(k, v)
@@ -1305,6 +1860,7 @@ def _get_va_todos(customer: dict, access: list[dict], contacts: list[dict],
             add(f"access_{a['platform']}", f"Get {a['platform'].upper()} access", auto_done=is_done, phase="access")
 
         add("places_verified", "Verify Google Places data", auto_done=places is not None)
+        add("gsc_setup", "Add your Google account as Full user in customer's Search Console, then save property URL in Integrations tab")
         add("followup_sent", "Send access follow-up email (if needed)")
         add("first_audit", "Run first site audit", auto_done=bool(runs))
         add("onboard_complete_email", "Send onboarding complete email")
@@ -2435,6 +2991,7 @@ def api_board_move():
     db = get_db()
     try:
         db.set_onboarding_step(customer_id, new_step)
+        audit_log("board_moved", customer_id=customer_id, details=f"Moved to '{new_step}'")
         return jsonify({"ok": True, "step": new_step})
     finally:
         db.close()
@@ -2460,6 +3017,7 @@ def api_seo_recheck(customer_id):
 
         # Re-detect
         detected = _auto_detect_seo_status(domain, customer_id)
+        audit_log("seo_recheck", customer_id=customer_id)
         return jsonify({"ok": True, "detected": {k: v for k, v in detected.items()}, "domain": domain})
     finally:
         db.close()
@@ -2912,6 +3470,15 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
             stats["avg_quality"] = round(sum(stats["qualities"]) / len(stats["qualities"])) if stats["qualities"] else 0
             del stats["qualities"]
 
+        # Extract competitor entities from responses
+        try:
+            from geo_agent.entity_extractor import extract_and_store
+            entity_count = extract_and_store(db, run_id, customer_id, customer["name"])
+            logger.info(f"AI check {run_id}: extracted {entity_count} entities")
+            db.auto_discover_competitors_from_entities(customer_id, min_mentions=3)
+        except Exception as e:
+            logger.warning(f"Entity extraction failed (non-fatal): {e}")
+
         # Clear SEO cache
         domain = customer.get("domain", "")
         cache_key = f"{domain}:{customer_id}"
@@ -2962,6 +3529,7 @@ def api_run_ai_mentions(customer_id):
             daemon=True,
         )
         t.start()
+        audit_log("ai_check_started", customer_id=customer_id, details=f"run_id={run_id}")
 
         return jsonify({"ok": True, "run_id": run_id})
     finally:
@@ -3101,6 +3669,34 @@ def api_ai_mention_trends(customer_id):
         db.close()
 
 
+@app.route("/api/ai-mentions/<customer_id>/weekly")
+@login_required
+def api_ai_weekly_summaries(customer_id):
+    """Get weekly-grouped AI mention summaries."""
+    db = CustomerDB()
+    try:
+        weeks_param = request.args.get("weeks", 12, type=int)
+        prompt_set = request.args.get("prompt_set", "benchmark")
+        weeks = db.get_weekly_ai_summaries(customer_id, weeks=weeks_param, prompt_set=prompt_set)
+        return jsonify({"ok": True, "weeks": weeks})
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>/share-of-voice")
+@login_required
+def api_ai_share_of_voice(customer_id):
+    """Get competitive share of voice from AI response entity extraction."""
+    db = CustomerDB()
+    try:
+        last_n = request.args.get("runs", 3, type=int)
+        sov = db.get_share_of_voice(customer_id, last_n_runs=last_n)
+        trend = db.get_competitor_entity_trend(customer_id, limit_weeks=8)
+        return jsonify({"ok": True, "share_of_voice": sov, "trend": trend})
+    finally:
+        db.close()
+
+
 @app.route("/api/ai-mentions/<customer_id>/report")
 @login_required
 def api_ai_mention_report_docx(customer_id):
@@ -3177,6 +3773,339 @@ def api_ai_mention_report_docx(customer_id):
         db.close()
 
 
+@app.route("/api/visibility/<customer_id>")
+@login_required
+def api_visibility_score(customer_id):
+    """Get composite AI visibility score with all signal breakdowns."""
+    db = CustomerDB()
+    try:
+        # Rolling mention average
+        rolling = db.get_rolling_mention_stats(customer_id, window=12)
+
+        # Latest single-run data for comparison
+        latest_run = db.get_latest_ai_run_summary(customer_id)
+
+        # GSC data
+        gsc_weeks = db.get_gsc_weekly_summary(customer_id, weeks=8)
+
+        # llms.txt hits
+        llms_kpis = db.get_kpis(customer_id, "llms_txt_hits", limit=4)
+
+        # Reviews
+        places = db.get_google_places(customer_id)
+        competitors = db.get_competitors(customer_id)
+        review_kpis = db.get_kpis(customer_id, "review_count", limit=4)
+
+        # Build signal scores (each 0-100)
+        signals = {}
+
+        # AI Mentions — use rolling average, much more stable than single run
+        if rolling:
+            rate = rolling["current_rate"]
+            if rate >= 0.40:
+                ai_score = 100
+            elif rate >= 0.05:
+                ai_score = int(25 + (rate - 0.05) / 0.35 * 75)
+            else:
+                ai_score = int(rate / 0.05 * 25)
+            signals["ai_mentions"] = {
+                "score": ai_score, "available": True, "weight": 0.25,
+                "detail": f"{rate:.0%} rolling avg ({rolling['run_count']} runs, trend: {rolling['trend']})",
+                "rolling_rate": rolling["current_rate"],
+                "prev_rate": rolling["prev_rate"],
+                "trend": rolling["trend"],
+                "rates": rolling["rates"],
+                "dates": rolling["dates"],
+            }
+        else:
+            signals["ai_mentions"] = {"score": 0, "available": False, "weight": 0.25, "detail": "Need 3+ runs for rolling average"}
+
+        # GSC Clicks — growth based
+        if gsc_weeks and len(gsc_weeks) >= 2:
+            current_clicks = gsc_weeks[0]["clicks"]
+            prev_clicks = gsc_weeks[1]["clicks"]
+            if prev_clicks > 0:
+                growth = (current_clicks - prev_clicks) / prev_clicks
+                gsc_score = min(100, max(0, int(50 + growth * 250)))
+            else:
+                gsc_score = 50 if current_clicks > 0 else 0
+            signals["gsc_clicks"] = {
+                "score": gsc_score, "available": True, "weight": 0.30,
+                "detail": f"{current_clicks} clicks this week ({'+' if current_clicks >= prev_clicks else ''}{current_clicks - prev_clicks} vs last)",
+                "weeks": list(reversed(gsc_weeks)),
+            }
+        else:
+            signals["gsc_clicks"] = {"score": 0, "available": False, "weight": 0.30, "detail": "GSC access not yet granted"}
+
+        # llms.txt Hits
+        if llms_kpis:
+            hits = int(llms_kpis[0]["value"])
+            if hits >= 100:
+                llms_score = 100
+            elif hits >= 50:
+                llms_score = 75
+            elif hits >= 10:
+                llms_score = 50
+            elif hits >= 1:
+                llms_score = 25
+            else:
+                llms_score = 0
+            signals["llms_hits"] = {
+                "score": llms_score, "available": True, "weight": 0.25,
+                "detail": f"{hits} total hits",
+            }
+        else:
+            signals["llms_hits"] = {"score": 0, "available": False, "weight": 0.25, "detail": "No llms.txt hit data yet"}
+
+        # Review Growth
+        if places and places.get("review_count"):
+            our_reviews = places["review_count"]
+            comp_avg = (sum(c["review_count"] for c in competitors) / len(competitors)) if competitors else our_reviews
+            ratio = our_reviews / max(comp_avg, 1)
+            review_score = min(100, int(ratio * 60))
+            # Growth bonus
+            if len(review_kpis) >= 2:
+                growth = int(review_kpis[0]["value"]) - int(review_kpis[1]["value"])
+                review_score = min(100, review_score + min(growth * 2, 20))
+            signals["reviews"] = {
+                "score": review_score, "available": True, "weight": 0.20,
+                "detail": f"{our_reviews} reviews (market avg: {comp_avg:.0f})",
+            }
+        else:
+            signals["reviews"] = {"score": 0, "available": False, "weight": 0.20, "detail": "No review data"}
+
+        # Compute composite score, redistributing unavailable weights
+        available = {k: v for k, v in signals.items() if v["available"]}
+        if available:
+            total_weight = sum(v["weight"] for v in available.values())
+            score = sum(v["score"] * (v["weight"] / total_weight) for v in available.values())
+            score = int(round(score))
+        else:
+            score = 0
+
+        grade = "A" if score >= 80 else "B" if score >= 60 else "C" if score >= 40 else "D" if score >= 20 else "F"
+
+        return jsonify({
+            "ok": True,
+            "score": score,
+            "grade": grade,
+            "signals": signals,
+            "latest_run": {
+                "rate": latest_run["mention_rate"] if latest_run else None,
+                "mentions": latest_run["mention_count"] if latest_run else None,
+                "total": latest_run["total_queries"] if latest_run else None,
+            } if latest_run else None,
+        })
+    finally:
+        db.close()
+
+
+@app.route("/api/practicerank-score/<customer_id>")
+@login_required
+def api_practicerank_score(customer_id):
+    """Get current PracticeRank score with pillar breakdown."""
+    from geo_agent.practicerank_score import compute_practicerank_score, grade_from_score
+    db = CustomerDB()
+    try:
+        result = compute_practicerank_score(db, customer_id)
+        # Also get previous score for delta
+        prev = None
+        scores = db.get_practicerank_scores(customer_id, limit=2)
+        if len(scores) >= 2:
+            prev = scores[1]["overall_score"]
+        return jsonify({"ok": True, **result, "prev_score": prev})
+    finally:
+        db.close()
+
+
+@app.route("/api/score-history/<customer_id>")
+@login_required
+def api_score_history(customer_id):
+    """Get daily score history for trend chart."""
+    range_param = request.args.get("range", "90d")
+    limit = {"30d": 30, "90d": 90, "180d": 180, "365d": 365}.get(range_param, 90)
+    db = CustomerDB()
+    try:
+        scores = db.get_practicerank_scores(customer_id, limit=limit)
+        return jsonify({
+            "ok": True,
+            "scores": list(reversed(scores)),  # chronological order
+        })
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-trend/<customer_id>")
+@login_required
+def api_ai_trend(customer_id):
+    """Get AI mention rate trend data for chart."""
+    limit = int(request.args.get("limit", 20))
+    db = CustomerDB()
+    try:
+        runs = db.get_ai_mention_runs(customer_id, limit=limit)
+        trend_data = []
+        for run in reversed(runs):  # chronological
+            engines = run.get("engines_json", "{}")
+            if isinstance(engines, str):
+                try:
+                    engines = json.loads(engines)
+                except (json.JSONDecodeError, TypeError):
+                    engines = {}
+            trend_data.append({
+                "date": run["run_date"][:10],
+                "mention_rate": round((run.get("mention_rate") or 0) * 100, 1),
+                "total_mentions": run.get("total_mentions", 0),
+                "total_queries": run.get("total_queries", 0),
+                "avg_position": round(run.get("avg_position") or 0, 1),
+                "engines": {
+                    k: {"mentions": v.get("mentions", 0), "queries": v.get("queries", 0)}
+                    for k, v in engines.items() if isinstance(v, dict)
+                },
+            })
+        return jsonify({"ok": True, "trend": trend_data})
+    finally:
+        db.close()
+
+
+@app.route("/api/quick-wins/<customer_id>")
+@login_required
+def api_quick_wins(customer_id):
+    """Get prioritized quick wins for a customer."""
+    from geo_agent.quick_wins import detect_quick_wins
+    db = CustomerDB()
+    try:
+        wins = detect_quick_wins(db, customer_id)
+        return jsonify({
+            "ok": True,
+            "wins": [w.to_dict() for w in wins[:8]],
+        })
+    finally:
+        db.close()
+
+
+@app.route("/api/analytics/scores")
+@login_required
+def api_analytics_scores():
+    """Get latest scores for all customers (leaderboard)."""
+    db = CustomerDB()
+    try:
+        scores = db.get_all_latest_scores()
+        # Enrich with customer names, exclude archived
+        customers = {c["id"]: c for c in db.list_customers()}
+        result = []
+        for s in scores:
+            cust = customers.get(s["customer_id"], {})
+            if cust.get("status") == "archived":
+                continue
+            from geo_agent.practicerank_score import grade_from_score
+            grade = grade_from_score(s["overall_score"])
+            result.append({
+                **s,
+                "name": cust.get("name", s["customer_id"]),
+                "domain": cust.get("domain", ""),
+                "grade": grade,
+            })
+        return jsonify({"ok": True, "scores": result})
+    finally:
+        db.close()
+
+
+@app.route("/api/gsc/<customer_id>")
+@login_required
+def api_gsc_metrics(customer_id):
+    """Get GSC metrics for a date range. Pulls live from GSC API if integration exists."""
+    range_param = request.args.get("range", "30d")
+    range_days = {"7d": 7, "30d": 30, "90d": 90, "180d": 180}.get(range_param, 30)
+
+    db = CustomerDB()
+    try:
+        # Try live GSC pull
+        gsc_daily = []
+        gsc_top_pages = []
+        keyword_summary = []
+        integrations = db.get_integrations(customer_id)
+        gsc_int = next((i for i in integrations if i["integration"] == "gsc" and i["status"] == "active"), None)
+        if gsc_int:
+            import json as _json
+            config = _json.loads(gsc_int.get("config_json", "{}"))
+            _gsc_prop = config.get("property_url", "")
+            if _gsc_prop:
+                try:
+                    from geo_agent.gsc_client import fetch_search_metrics, fetch_top_pages
+                    from datetime import timedelta as _td
+                    _end = (datetime.now(timezone.utc) - _td(days=2)).strftime("%Y-%m-%d")
+                    _start = (datetime.now(timezone.utc) - _td(days=2 + range_days)).strftime("%Y-%m-%d")
+                    gsc_daily = fetch_search_metrics(_gsc_prop, _start, _end, ["date"]) or []
+                    gsc_top_pages = fetch_top_pages(_gsc_prop, _start, _end, limit=10) or []
+                    # Previous period for comparison
+                    _prev_end = _start
+                    _prev_start = (datetime.now(timezone.utc) - _td(days=2 + range_days * 2)).strftime("%Y-%m-%d")
+                    prev_daily = fetch_search_metrics(_gsc_prop, _prev_start, _prev_end, ["date"]) or []
+                except Exception:
+                    prev_daily = []
+        else:
+            prev_daily = []
+
+        if not gsc_daily:
+            # Fallback to stored data
+            daily = db.get_gsc_daily(customer_id, limit=range_days)
+            gsc_daily = list(reversed(daily))
+            prev_daily = []
+
+        # Compute summary stats
+        total_clicks = sum(d.get("clicks", 0) for d in gsc_daily)
+        total_impressions = sum(d.get("impressions", 0) for d in gsc_daily)
+        avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0
+        avg_pos = sum(d.get("position", 0) for d in gsc_daily) / len(gsc_daily) if gsc_daily else 0
+        prev_clicks = sum(d.get("clicks", 0) for d in prev_daily)
+        prev_impressions = sum(d.get("impressions", 0) for d in prev_daily)
+
+        # Keyword summary
+        keyword_summary = db.get_keyword_summary(customer_id)
+
+        return jsonify({
+            "ok": True,
+            "daily": gsc_daily,
+            "top_pages": gsc_top_pages,
+            "keyword_summary": (keyword_summary or [])[:10],
+            "stats": {
+                "clicks": total_clicks,
+                "impressions": total_impressions,
+                "ctr": round(avg_ctr, 1),
+                "position": round(avg_pos, 1),
+                "prev_clicks": prev_clicks,
+                "prev_impressions": prev_impressions,
+                "days": len(gsc_daily),
+            },
+            "range": range_param,
+            "date_start": gsc_daily[0]["date"] if gsc_daily else "",
+            "date_end": gsc_daily[-1]["date"] if gsc_daily else "",
+        })
+    finally:
+        db.close()
+
+
+@app.route("/api/gsc/<customer_id>/pull", methods=["POST"])
+@login_required
+def api_gsc_pull(customer_id):
+    """Manually trigger a GSC data pull for a customer."""
+    try:
+        from geo_agent.gsc_client import track_gsc_metrics
+        db = CustomerDB()
+        try:
+            result = track_gsc_metrics(db, customer_id)
+            if result:
+                audit_log("gsc_pull", customer_id=customer_id, details=f"{result.get('total_clicks', 0)} clicks")
+                return jsonify({"ok": True, "result": result})
+            return jsonify({"ok": False, "error": "GSC pull returned no data — check service account access"}), 400
+        finally:
+            db.close()
+    except ImportError:
+        return jsonify({"ok": False, "error": "google-api-python-client not installed"}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/checklist", methods=["POST"])
 @login_required
 def api_checklist():
@@ -3192,6 +4121,7 @@ def api_checklist():
     db = get_db()
     try:
         db.set_checklist_item(customer_id, task_key, completed)
+        audit_log("checklist_toggled", customer_id=customer_id, details=f"{task_key} -> {'done' if completed else 'undone'}")
 
         # Auto-advance kanban step based on current state
         customer = db.get_customer(customer_id)
@@ -3252,6 +4182,7 @@ def api_board_status():
     db = get_db()
     try:
         db.set_customer_status(customer_id, new_status)
+        audit_log("board_status_changed", customer_id=customer_id, details=f"Status -> {new_status}")
         # Recompute board step after status change
         customer = db.get_customer(customer_id)
         if customer:
@@ -3451,6 +4382,7 @@ def api_generate_report():
             data_dir=DATA_DIR,
         )
 
+        audit_log("report_generated", customer_id=customer_id, details=f"score={result['scores']['overall']}/100")
         flash(f"Report generated — score: {result['scores']['overall']}/100. "
               f"{len(result['files'])} files created.", "success")
         return redirect(url_for("customer_detail", customer_id=customer_id))
@@ -3525,18 +4457,21 @@ def download_report_docx(customer_id):
 @app.route("/analytics")
 @login_required
 def analytics():
-    """llms.txt analytics dashboard across all customers."""
+    """Cross-customer analytics dashboard."""
     db = get_db()
     try:
-        customers = db.list_customers(status="active")
+        all_customers = [c for c in db.list_customers() if c.get("status") != "archived"]
 
         analytics_data = []
-        for c in customers:
-            # Get llms.txt hit KPIs
-            hits_kpis = db.get_kpis(c["id"], "llms_txt_hits", limit=12)
-            review_kpis = db.get_kpis(c["id"], "review_count", limit=2)
-            mention_kpis = db.get_kpis(c["id"], "ai_mentions", limit=2)
-            position_kpis = db.get_kpis(c["id"], "ai_avg_position", limit=2)
+        total_clicks = 0
+        total_impressions = 0
+        for c in all_customers:
+            cid = c["id"]
+            # KPIs
+            hits_kpis = db.get_kpis(cid, "llms_txt_hits", limit=12)
+            review_kpis = db.get_kpis(cid, "review_count", limit=2)
+            mention_kpis = db.get_kpis(cid, "ai_mentions", limit=2)
+            position_kpis = db.get_kpis(cid, "ai_avg_position", limit=2)
 
             def _num(kpi_list, idx=0, default=0):
                 try:
@@ -3546,33 +4481,78 @@ def analytics():
 
             current_hits = _num(hits_kpis)
             prev_hits = _num(hits_kpis, 1)
-            hits_delta = current_hits - prev_hits
-
             current_reviews = _num(review_kpis)
             prev_reviews = _num(review_kpis, 1)
-
             current_mentions = _num(mention_kpis)
             avg_position = _num(position_kpis, default=None)
 
+            # GSC data (last 30 days)
+            gsc = db.get_gsc_daily(cid, limit=30)
+            clicks_30d = sum(d.get("clicks", 0) for d in gsc)
+            impr_30d = sum(d.get("impressions", 0) for d in gsc)
+            total_clicks += clicks_30d
+            total_impressions += impr_30d
+
+            # Google Places
+            places = db.get_google_places(cid)
+            rating = places.get("rating") if places else None
+            review_count = places.get("review_count", 0) if places else int(current_reviews)
+
+            # Onboarding progress
+            access = db.get_platform_access(cid)
+            access_total = len(access)
+            access_done = sum(1 for a in access if a["status"] in ("granted", "not_needed"))
+
+            # AI mention run
+            ai_run = db.get_latest_ai_run_summary(cid)
+            ai_mention_rate = 0
+            ai_total_queries = 0
+            if ai_run:
+                ai_mention_rate = ai_run.get("mention_rate", 0)
+                ai_total_queries = ai_run.get("total_queries", 0)
+
+            # SEO tasks
+            checklist = db.get_checklist(cid)
+            seo_tasks = _get_seo_tasks(c, checklist)
+            seo_done = sum(1 for t in seo_tasks if t.get("done"))
+            seo_total = len(seo_tasks)
+
             analytics_data.append({
-                "id": c["id"],
+                "id": cid,
                 "name": c["name"],
                 "domain": c["domain"],
+                "status": c.get("status", "onboarding"),
+                "platform": c.get("platform", ""),
                 "llms_hits": current_hits,
-                "llms_hits_delta": hits_delta,
+                "llms_hits_delta": current_hits - prev_hits,
                 "llms_history": [{"date": k["date"], "value": k["value"]} for k in reversed(hits_kpis[:7])],
-                "reviews": current_reviews,
+                "reviews": review_count,
                 "reviews_delta": current_reviews - prev_reviews,
-                "ai_mentions": current_mentions,
+                "rating": rating,
+                "ai_mentions": int(current_mentions),
+                "ai_mention_rate": ai_mention_rate,
+                "ai_total_queries": ai_total_queries,
                 "ai_position": avg_position,
+                "clicks_30d": clicks_30d,
+                "impressions_30d": impr_30d,
+                "access_done": access_done,
+                "access_total": access_total,
+                "seo_done": seo_done,
+                "seo_total": seo_total,
             })
 
         # Aggregate stats
+        active_count = sum(1 for d in analytics_data if d["status"] == "active")
+        onboarding_count = sum(1 for d in analytics_data if d["status"] == "onboarding")
         totals = {
             "total_hits": sum(d["llms_hits"] for d in analytics_data),
             "total_reviews": sum(d["reviews"] for d in analytics_data),
             "total_mentions": sum(d["ai_mentions"] for d in analytics_data),
+            "total_clicks": total_clicks,
+            "total_impressions": total_impressions,
             "customers_tracked": len(analytics_data),
+            "active_count": active_count,
+            "onboarding_count": onboarding_count,
         }
 
         return render_template("analytics.html", data=analytics_data, totals=totals)
@@ -3721,6 +4701,7 @@ def api_dismiss_alert():
     db = get_db()
     try:
         db.dismiss_alert(int(alert_id))
+        audit_log("alert_dismissed", details=f"alert_id={alert_id}")
         return jsonify({"ok": True})
     finally:
         db.close()
@@ -3795,6 +4776,10 @@ def api_content_status():
     db = get_db()
     try:
         ok = db.update_content_recommendation_status(rec_id, new_status)
+        if ok:
+            rec = db.get_content_recommendation(rec_id)
+            cid = rec["customer_id"] if rec else ""
+            audit_log("content_status_changed", customer_id=cid, details=f"rec={rec_id} -> {new_status}")
         return jsonify({"ok": ok, "status": new_status})
     finally:
         db.close()
@@ -3803,7 +4788,7 @@ def api_content_status():
 @app.route("/api/content/publish", methods=["POST"])
 @login_required
 def api_content_publish():
-    """Publish approved content recommendations to Webflow CMS."""
+    """Publish approved content recommendations to Webflow or WordPress CMS."""
     data = request.get_json()
     rec_ids = data.get("rec_ids", [])
     if not rec_ids and data.get("rec_id"):
@@ -3824,7 +4809,62 @@ def api_content_publish():
         if not customer:
             return jsonify({"error": "Customer not found"}), 404
 
-        # Get OAuth token
+        platform = customer.get("platform", "webflow")
+
+        # WordPress publishing via PracticeRank plugin
+        if platform == "wordpress":
+            from geo_agent.secrets import get_secrets
+            wp_api_key = get_secrets().get_customer_secret(customer_id, "WP_API_KEY")
+            if not wp_api_key:
+                return jsonify({"error": "No WordPress API key. Install the PracticeRank SEO plugin and add the key."}), 400
+
+            from geo_agent.publishers.wordpress import WordPressPublisher
+            publisher = WordPressPublisher(
+                site_url=f"https://{customer.get('domain', '')}",
+                api_key=wp_api_key,
+            )
+            try:
+                health = publisher.health_check()
+                if not health:
+                    return jsonify({"error": "Cannot reach WordPress PracticeRank plugin. Check the plugin is installed and active."}), 502
+
+                results = []
+                for rid in rec_ids:
+                    r = db.get_content_recommendation(rid)
+                    if not r or not r.get("generated_content"):
+                        results.append({"rec_id": rid, "ok": False, "error": "No generated content"})
+                        continue
+                    wp_type = "page" if r.get("rec_type") == "new_page" else "post"
+                    result = publisher.push_content(
+                        title=r.get("title", r.get("rec_title", "Untitled")),
+                        content_html=r["generated_content"],
+                        content_type=wp_type,
+                        slug=r.get("slug"),
+                        category=r.get("category", ""),
+                        meta_description=r.get("meta_description", ""),
+                    )
+                    if result and result.get("post_id"):
+                        db.update_content_recommendation(rid, {
+                            "status": "published",
+                            "published_url": result.get("url", ""),
+                            "wp_post_id": result["post_id"],
+                        })
+                        results.append({"rec_id": rid, "ok": True, "url": result.get("url"), "post_id": result["post_id"]})
+                    else:
+                        results.append({"rec_id": rid, "ok": False, "error": "Push failed"})
+
+                success_count = sum(1 for r in results if r["ok"])
+                audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{len(rec_ids)} published to WordPress")
+                return jsonify({
+                    "ok": success_count > 0,
+                    "published": success_count,
+                    "total": len(rec_ids),
+                    "results": results,
+                })
+            finally:
+                publisher.close()
+
+        # Webflow publishing (default)
         oauth_token = db.get_webflow_oauth_token(customer_id)
         if not oauth_token:
             return jsonify({"error": "No Webflow OAuth token. Connect Webflow first."}), 400
@@ -3841,6 +4881,7 @@ def api_content_publish():
             content_pub = WebflowContentPublisher(publisher, db, customer_id)
             results = content_pub.publish_batch(rec_ids)
             success_count = sum(1 for r in results if r["ok"])
+            audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{len(rec_ids)} published to Webflow")
             return jsonify({
                 "ok": success_count > 0,
                 "published": success_count,
@@ -3991,6 +5032,7 @@ def api_content_push_squarespace():
         try:
             results = asyncio.run(publisher.publish_batch(rec_ids))
             success_count = sum(1 for r in results if r["ok"])
+            audit_log("content_pushed_squarespace", customer_id=customer_id, details=f"{success_count}/{len(rec_ids)} pushed")
             return jsonify({
                 "ok": success_count > 0,
                 "published": success_count,
@@ -4036,6 +5078,7 @@ def api_squarespace_credentials():
             site_url=site_url,
             totp_secret_encrypted=totp_encrypted,
         )
+        audit_log("squarespace_creds_saved", customer_id=customer_id)
         return jsonify({"ok": True})
     finally:
         db.close()
@@ -4082,6 +5125,7 @@ def api_content_generate():
                 db.add_content_recommendation(rec.to_dict())
                 saved += 1
 
+            audit_log("content_generated", customer_id=customer_id, details=f"{saved} recommendations generated")
             return jsonify({"ok": True, "generated": saved})
         except Exception as e:
             logger.error(f"Content generation failed for {customer_id}: {e}")
@@ -4186,6 +5230,7 @@ def archive_customer(customer_id):
     db = get_db()
     try:
         db.set_customer_status(customer_id, "archived")
+        audit_log("customer_archived", customer_id=customer_id)
         flash("Customer archived.", "success")
     except InvalidTransition as e:
         flash(f"Cannot archive: {e}", "error")
@@ -4201,7 +5246,7 @@ def restore_customer(customer_id):
     db = get_db()
     try:
         db.set_customer_status(customer_id, "onboarding")
-        flash("Customer restored to onboarding.", "success")
+        audit_log("customer_restored", customer_id=customer_id)
     except InvalidTransition as e:
         flash(f"Cannot restore: {e}", "error")
     finally:
@@ -4345,6 +5390,7 @@ def api_trigger_run():
     with open(log_file, "w") as lf:
         subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, cwd=str(Path(__file__).resolve().parent.parent))
 
+    audit_log("run_triggered", customer_id=customer_id, details=f"run_id={run_id}")
     logger.info(f"Triggered pipeline run {run_id} for {customer_id}")
 
     if request.headers.get("HX-Request"):
@@ -4385,6 +5431,7 @@ def api_cancel_run():
         db.conn.execute("UPDATE runs SET status = 'failed', errors_json = ? WHERE id = ?",
                         ('["Cancelled by user"]', run_id))
         db.conn.commit()
+        audit_log("run_cancelled", customer_id=customer_id or run.get("customer_id", ""), details=f"run_id={run_id}")
         logger.info(f"Cancelled run #{run_id} for {customer_id or run.get('customer_id')}")
 
         if request.headers.get("HX-Request"):
@@ -4459,6 +5506,771 @@ def api_run_logs(run_id):
     if log_file.exists():
         return log_file.read_text(), 200, {"Content-Type": "text/plain"}
     return "No log file found for this run.", 404, {"Content-Type": "text/plain"}
+
+
+# --- SEO Tools: Integrations, Keywords, Audits, Backlinks, Topics ---
+
+
+@app.route("/api/customer/<customer_id>/integrations", methods=["GET"])
+@login_required
+def api_get_integrations(customer_id):
+    """Get all integrations for a customer."""
+    db = get_db()
+    try:
+        integrations = db.get_integrations(customer_id)
+        # Fill in defaults for unconfigured integrations
+        configured = {i["integration"] for i in integrations}
+        defaults = ["gsc", "google_places", "pagespeed"]
+        for name in defaults:
+            if name not in configured:
+                integrations.append({
+                    "integration": name, "status": "not_configured",
+                    "config": {}, "last_checked": None, "last_error": None,
+                })
+        return jsonify({"ok": True, "integrations": integrations})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/integrations", methods=["POST"])
+@login_required
+def api_save_integration(customer_id):
+    """Save an integration config for a customer."""
+    data = request.get_json()
+    integration = data.get("integration", "")
+    config = data.get("config", {})
+    if not integration:
+        return jsonify({"error": "Missing integration name"}), 400
+
+    db = get_db()
+    try:
+        db.save_integration(customer_id, integration, config, status="configured")
+        audit_log("integration_saved", customer_id=customer_id,
+                  details=f"{integration}: {json.dumps(config)}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/integrations/<integration>/test", methods=["POST"])
+@login_required
+def api_test_integration(customer_id, integration):
+    """Test an integration connection."""
+    db = get_db()
+    try:
+        integ = db.get_integration(customer_id, integration)
+        if not integ:
+            return jsonify({"ok": False, "error": "Integration not configured"}), 400
+
+        if integration == "gsc":
+            try:
+                from geo_agent.gsc_client import _build_service, _resolve_site_url
+                service = _build_service()
+                if service is None:
+                    db.update_integration_status(customer_id, integration, "error",
+                                                 "GSC service account not configured (set GSC_SERVICE_ACCOUNT_JSON or GSC_SERVICE_ACCOUNT_KEY)")
+                    return jsonify({"ok": False, "error": "GSC service account not configured on server"})
+                property_url = integ["config"].get("property_url", "")
+                if not property_url:
+                    customer = db.get_customer(customer_id)
+                    domain = customer["domain"] if customer else ""
+                    property_url = _resolve_site_url(service, domain)
+                    if property_url:
+                        integ["config"]["property_url"] = property_url
+                        db.save_integration(customer_id, integration, integ["config"], "active")
+                # Try a test query
+                from geo_agent.gsc_client import fetch_search_metrics
+                from datetime import timedelta
+                end = datetime.now(timezone.utc) - timedelta(days=2)
+                start = end - timedelta(days=3)
+                result = fetch_search_metrics(
+                    property_url,
+                    start.strftime("%Y-%m-%d"),
+                    end.strftime("%Y-%m-%d"),
+                )
+                if result is not None:
+                    db.update_integration_status(customer_id, integration, "active")
+                    return jsonify({"ok": True, "message": f"Connected! Found {len(result)} days of data.", "property_url": property_url})
+                else:
+                    db.update_integration_status(customer_id, integration, "error", "Query returned no data")
+                    return jsonify({"ok": False, "error": "GSC query failed — check that the service account has access to this property"})
+            except ImportError:
+                return jsonify({"ok": False, "error": "google-api-python-client not installed on server"})
+        elif integration == "pagespeed":
+            # PageSpeed always works (free, no key)
+            db.update_integration_status(customer_id, integration, "active")
+            return jsonify({"ok": True, "message": "PageSpeed Insights API is free and requires no configuration."})
+        else:
+            return jsonify({"ok": False, "error": f"Unknown integration: {integration}"}), 400
+    finally:
+        db.close()
+
+
+# --- Keywords ---
+
+def _auto_generate_keywords(db, customer_id: str) -> list[str]:
+    """Generate keyword suggestions from customer data."""
+    customer = db.get_customer(customer_id)
+    if not customer:
+        return []
+    city = customer.get("city", "")
+    state = customer.get("state", "")
+    name = customer["name"]
+    biz_type = customer.get("business_type", "practice")
+    services = db.get_services(customer_id)
+    specialties = customer.get("specialties", [])
+
+    keywords = []
+    location = f"{city} {state}".strip() if city else ""
+
+    # Service + location combos
+    for svc in services:
+        svc_name = svc["name"].lower()
+        if location:
+            keywords.append(f"{svc_name} {city.lower()}")
+            keywords.append(f"best {svc_name} {city.lower()}")
+        keywords.append(f"{svc_name} near me")
+
+    # Specialty combos
+    for spec in (specialties or []):
+        spec_lower = spec.lower()
+        if location:
+            keywords.append(f"{spec_lower} {city.lower()}")
+
+    # Business type combos
+    type_labels = {
+        "practice": "dentist", "dental": "dentist", "legal": "lawyer",
+        "medical": "doctor", "veterinary": "vet",
+    }
+    label = type_labels.get(biz_type, biz_type)
+    if location:
+        keywords.append(f"{label} {city.lower()}")
+        keywords.append(f"best {label} {city.lower()}")
+    keywords.append(f"{label} near me")
+
+    # Brand keywords
+    keywords.append(f"{name.lower()} reviews")
+    keywords.append(name.lower())
+
+    return list(set(k.strip() for k in keywords if k.strip()))
+
+
+@app.route("/api/customer/<customer_id>/keywords", methods=["GET"])
+@login_required
+def api_get_keywords(customer_id):
+    db = get_db()
+    try:
+        keywords = db.get_keyword_summary(customer_id)
+        return jsonify({"ok": True, "keywords": keywords})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/keywords", methods=["POST"])
+@login_required
+def api_add_keywords(customer_id):
+    data = request.get_json()
+    keywords = data.get("keywords", [])
+    if isinstance(keywords, str):
+        keywords = [k.strip() for k in keywords.split(",") if k.strip()]
+    if not keywords:
+        return jsonify({"error": "No keywords provided"}), 400
+
+    db = get_db()
+    try:
+        added = 0
+        for kw in keywords:
+            if db.add_tracked_keyword(customer_id, kw, source="manual"):
+                added += 1
+        audit_log("keywords_added", customer_id=customer_id, details=f"Added {added} keywords")
+        return jsonify({"ok": True, "added": added, "total": len(keywords)})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/keywords/delete", methods=["POST"])
+@login_required
+def api_delete_keyword(customer_id):
+    data = request.get_json()
+    keyword = data.get("keyword", "")
+    if not keyword:
+        return jsonify({"error": "No keyword provided"}), 400
+    db = get_db()
+    try:
+        db.remove_tracked_keyword(customer_id, keyword)
+        audit_log("keyword_removed", customer_id=customer_id, details=keyword)
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/keywords/auto-generate", methods=["POST"])
+@login_required
+def api_auto_generate_keywords(customer_id):
+    db = get_db()
+    try:
+        suggestions = _auto_generate_keywords(db, customer_id)
+        existing = {k["keyword"] for k in db.get_tracked_keywords(customer_id)}
+        new_keywords = [k for k in suggestions if k not in existing]
+        added = 0
+        for kw in new_keywords:
+            if db.add_tracked_keyword(customer_id, kw, source="auto"):
+                added += 1
+        audit_log("keywords_auto_generated", customer_id=customer_id, details=f"Added {added} of {len(suggestions)} suggestions")
+        return jsonify({"ok": True, "added": added, "suggestions": suggestions})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/keywords/pull-gsc", methods=["POST"])
+@login_required
+def api_pull_keyword_ranks(customer_id):
+    """Pull keyword rank data from GSC for tracked keywords."""
+    db = get_db()
+    try:
+        integ = db.get_integration(customer_id, "gsc")
+        if not integ or integ["status"] != "active":
+            return jsonify({"ok": False, "error": "GSC integration not configured or not active. Set it up in the Integrations section."}), 400
+
+        property_url = integ["config"].get("property_url", "")
+        if not property_url:
+            return jsonify({"ok": False, "error": "GSC property URL not set"}), 400
+
+        try:
+            from geo_agent.gsc_client import fetch_search_metrics
+        except ImportError:
+            return jsonify({"ok": False, "error": "google-api-python-client not installed"}), 500
+
+        from datetime import timedelta
+        end_date = (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
+        start_date = (datetime.now(timezone.utc) - timedelta(days=9)).strftime("%Y-%m-%d")
+
+        data = fetch_search_metrics(property_url, start_date, end_date, dimensions=["query", "date"])
+        if data is None:
+            return jsonify({"ok": False, "error": "GSC query failed"}), 500
+
+        tracked = {k["keyword"] for k in db.get_tracked_keywords(customer_id)}
+        updated = 0
+        discovered = 0
+
+        # Index data by (query, date)
+        for row in data:
+            query = row.get("query", "").lower().strip()
+            date = row.get("date", "")
+            if query in tracked:
+                db.save_keyword_rank(customer_id, query, date,
+                                     row.get("position"), row.get("clicks", 0),
+                                     row.get("impressions", 0), row.get("ctr", 0.0))
+                updated += 1
+            elif row.get("impressions", 0) >= 10:
+                # High-impression keyword not tracked — add as discovered
+                if db.add_tracked_keyword(customer_id, query, source="gsc_discovered"):
+                    discovered += 1
+                db.save_keyword_rank(customer_id, query, date,
+                                     row.get("position"), row.get("clicks", 0),
+                                     row.get("impressions", 0), row.get("ctr", 0.0))
+
+        audit_log("keyword_ranks_pulled", customer_id=customer_id,
+                  details=f"Updated {updated} ranks, discovered {discovered} new keywords")
+        return jsonify({"ok": True, "updated": updated, "discovered": discovered,
+                        "total_rows": len(data)})
+    finally:
+        db.close()
+
+
+# --- Site Audits ---
+
+@app.route("/api/customer/<customer_id>/audit/run", methods=["POST"])
+@login_required
+def api_run_audit(customer_id):
+    """Run a site audit for a customer."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"error": "Customer not found"}), 404
+
+        from geo_agent.site_auditor import run_site_audit
+        result = run_site_audit(customer["domain"], customer.get("platform", ""))
+        audit_id = db.save_site_audit(
+            customer_id, result["audit_date"],
+            result["scores"], result["issues"], result.get("raw_data"),
+        )
+        audit_log("site_audit_run", customer_id=customer_id,
+                  details=f"Scores: perf={result['scores'].get('performance')}, seo={result['scores'].get('seo')}, issues={len(result['issues'])}")
+        return jsonify({"ok": True, "audit_id": audit_id, "scores": result["scores"],
+                        "issues_count": len(result["issues"])})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/audit/latest", methods=["GET"])
+@login_required
+def api_get_audit(customer_id):
+    db = get_db()
+    try:
+        audit = db.get_latest_audit(customer_id)
+        issues = db.get_audit_issues(customer_id) if audit else []
+        return jsonify({"ok": True, "audit": audit, "issues": issues})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/audit/issues/<int:issue_id>/status", methods=["POST"])
+@login_required
+def api_update_audit_issue(customer_id, issue_id):
+    data = request.get_json()
+    status = data.get("status", "")
+    if status not in ("open", "fixed", "ignored"):
+        return jsonify({"error": "Invalid status"}), 400
+    db = get_db()
+    try:
+        db.update_audit_issue_status(issue_id, status)
+        audit_log("audit_issue_updated", customer_id=customer_id,
+                  details=f"Issue {issue_id} -> {status}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+# --- Backlinks ---
+
+@app.route("/api/customer/<customer_id>/backlinks", methods=["GET"])
+@login_required
+def api_get_backlinks(customer_id):
+    db = get_db()
+    try:
+        backlinks = db.get_backlinks(customer_id)
+        return jsonify({"ok": True, "backlinks": backlinks})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/backlinks/pull", methods=["POST"])
+@login_required
+def api_pull_backlinks(customer_id):
+    """Pull backlinks from GSC."""
+    db = get_db()
+    try:
+        integ = db.get_integration(customer_id, "gsc")
+        if not integ or integ["status"] != "active":
+            return jsonify({"ok": False, "error": "GSC integration not active"}), 400
+
+        property_url = integ["config"].get("property_url", "")
+        if not property_url:
+            return jsonify({"ok": False, "error": "GSC property URL not set"}), 400
+
+        try:
+            from geo_agent.gsc_client import _build_service
+        except ImportError:
+            return jsonify({"ok": False, "error": "google-api-python-client not installed"}), 500
+
+        service = _build_service()
+        if not service:
+            return jsonify({"ok": False, "error": "GSC service unavailable"}), 500
+
+        # Use GSC Links API to get external linking domains
+        links = []
+        try:
+            response = service.links().list(siteUrl=property_url).execute()
+            for item in response.get("items", []):
+                links.append({
+                    "domain": item.get("siteUrl", "").replace("http://", "").replace("https://", "").rstrip("/"),
+                    "count": item.get("count", 0),
+                })
+        except Exception:
+            pass
+
+        # If links API didn't work, try searchanalytics for referring pages
+        if not links:
+            try:
+                from datetime import timedelta as _td
+                # Get pages that link to our site via search referrals
+                response = service.searchanalytics().query(
+                    siteUrl=property_url,
+                    body={
+                        "startDate": (datetime.now(timezone.utc) - _td(days=90)).strftime("%Y-%m-%d"),
+                        "endDate": (datetime.now(timezone.utc) - _td(days=1)).strftime("%Y-%m-%d"),
+                        "dimensions": ["page"],
+                        "rowLimit": 100,
+                    },
+                ).execute()
+                seen_domains = set()
+                customer_domain = property_url.replace("sc-domain:", "").replace("https://", "").replace("http://", "").rstrip("/")
+                for row in response.get("rows", []):
+                    page_url = row.get("keys", [""])[0]
+                    try:
+                        domain = urlparse(page_url).netloc
+                        if domain and domain not in seen_domains and customer_domain not in domain:
+                            seen_domains.add(domain)
+                            links.append({"domain": domain, "count": row.get("clicks", 1)})
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+        if links:
+            summary = db.save_backlinks(customer_id, links)
+            audit_log("backlinks_pulled", customer_id=customer_id,
+                      details=f"{summary['total']} total, {summary['new']} new, {summary['lost']} lost")
+            return jsonify({"ok": True, **summary})
+        else:
+            return jsonify({"ok": True, "message": "No backlink data available from GSC. This requires a verified property with incoming links.", "total": 0, "new": 0, "lost": 0})
+    finally:
+        db.close()
+
+
+# --- Content Topics ---
+
+@app.route("/api/customer/<customer_id>/topics", methods=["GET"])
+@login_required
+def api_get_topics(customer_id):
+    db = get_db()
+    try:
+        topics = db.get_content_topics(customer_id)
+        return jsonify({"ok": True, "topics": topics})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/topics", methods=["POST"])
+@login_required
+def api_add_topic(customer_id):
+    data = request.get_json()
+    topic = data.get("topic", "").strip()
+    keyword = data.get("target_keyword", "").strip()
+    priority = data.get("priority", "medium")
+    if not topic:
+        return jsonify({"error": "Topic is required"}), 400
+    db = get_db()
+    try:
+        topic_id = db.add_content_topic(customer_id, topic, keyword,
+                                        source="manual", priority=priority)
+        audit_log("topic_added", customer_id=customer_id, details=topic)
+        return jsonify({"ok": True, "topic_id": topic_id})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/topics/<int:topic_id>/status", methods=["POST"])
+@login_required
+def api_update_topic_status(customer_id, topic_id):
+    data = request.get_json()
+    status = data.get("status", "")
+    if status not in ("suggested", "approved", "in_progress", "published", "rejected"):
+        return jsonify({"error": "Invalid status"}), 400
+    db = get_db()
+    try:
+        db.update_content_topic_status(topic_id, status)
+        audit_log("topic_status_updated", customer_id=customer_id,
+                  details=f"Topic {topic_id} -> {status}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+# --- Tier 2: Competitor Domains API ---
+
+
+@app.route("/api/customer/<customer_id>/competitors", methods=["GET", "POST", "DELETE"])
+@login_required
+def api_competitor_domains(customer_id):
+    db = get_db()
+    try:
+        if request.method == "POST":
+            data = request.get_json()
+            db.add_competitor_domain(
+                customer_id, data["domain"], data.get("name", ""), data.get("discovered_via", "manual")
+            )
+            audit_log("add_competitor", customer_id, details=f"Added competitor: {data['domain']}")
+            return jsonify({"ok": True})
+        elif request.method == "DELETE":
+            data = request.get_json()
+            db.remove_competitor_domain(customer_id, data["domain"])
+            audit_log("remove_competitor", customer_id, details=f"Removed competitor: {data['domain']}")
+            return jsonify({"ok": True})
+        else:
+            return jsonify({"ok": True, "competitors": db.get_competitor_domains(customer_id)})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/competitors/ai-comparison")
+@login_required
+def api_competitor_ai_comparison(customer_id):
+    """Compare AI mention rates between this customer and their competitors."""
+    db = CustomerDB()
+    try:
+        # Get this customer's latest AI run
+        runs = db.get_ai_mention_runs(customer_id, limit=1)
+        business = None
+        if runs:
+            r = runs[0]
+            business = {
+                "name": db.get_customer(customer_id).get("name", customer_id),
+                "mention_rate": r.get("mention_rate", 0) or 0,
+                "total_mentions": r.get("total_mentions", 0),
+                "total_queries": r.get("total_queries", 0),
+            }
+
+        # Get competitor data from competitor_analysis if available
+        competitors = db.get_competitors(customer_id)
+        comp_data = []
+        for c in competitors[:8]:
+            comp_ai = c.get("ai_mention_rate")
+            if comp_ai is not None:
+                comp_data.append({
+                    "name": c.get("name", c.get("domain", "?")),
+                    "mention_rate": comp_ai,
+                })
+            else:
+                # Check if competitor has their own AI mention runs (if they're also a customer)
+                comp_domain = c.get("domain", "")
+                # Just include basic info
+                comp_data.append({
+                    "name": c.get("name", comp_domain),
+                    "mention_rate": None,
+                })
+
+        # Filter to only competitors with data
+        comp_with_data = [c for c in comp_data if c["mention_rate"] is not None]
+        return jsonify({
+            "ok": True,
+            "business": business,
+            "competitors": comp_with_data,
+        })
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/competitors/discover", methods=["POST"])
+@login_required
+def api_discover_competitors(customer_id):
+    """Auto-discover competitors using Google Places nearby search (~15-25 min drive)."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+
+        places = db.get_google_places(customer_id)
+        if not places or not places.get("lat") or not places.get("lng"):
+            return jsonify({"ok": False, "error": "No location data. Run agent first to detect Google Places data."}), 400
+
+        api_key = os.environ.get("GOOGLE_PLACES_API_KEY", "")
+        if not api_key:
+            return jsonify({"ok": False, "error": "GOOGLE_PLACES_API_KEY not configured"}), 500
+
+        from geo_agent.google_places import fetch_nearby_competitors
+
+        # Clean up existing dirty domains (one-time fix for UTM params)
+        existing = db.get_competitor_domains(customer_id)
+        for comp in existing:
+            old_domain = comp["competitor_domain"]
+            if "?" in old_domain or "utm_" in old_domain or old_domain.startswith("www."):
+                parsed = urlparse("https://" + old_domain if "://" not in old_domain else old_domain)
+                clean = (parsed.netloc or parsed.path.split("/")[0]).replace("www.", "")
+                if clean and clean != old_domain:
+                    try:
+                        db.remove_competitor_domain(customer_id, old_domain)
+                        db.add_competitor_domain(customer_id, clean, comp.get("competitor_name", ""),
+                                                 comp.get("discovered_via", "auto_discovered"),
+                                                 comp.get("rating", 0), comp.get("review_count", 0),
+                                                 comp.get("address", ""), comp.get("place_id", ""))
+                    except Exception:
+                        pass
+
+        # ~15-25 min drive = ~16km radius
+        radius = int(request.get_json(silent=True, force=True).get("radius", 16000) if request.get_json(silent=True, force=True) else 16000)
+        max_results = 15
+
+        # Determine place types based on business_type
+        from geo_agent.google_places import get_place_types, validate_competitors
+        bt = (customer.get("business_type") or "practice").lower()
+        place_types = get_place_types(bt)
+
+        # Build text query for industries without a Google place type
+        text_query = ""
+        if not place_types:
+            specialties = customer.get("specialties") or []
+            if isinstance(specialties, str):
+                import json as _json
+                try:
+                    specialties = _json.loads(specialties)
+                except Exception:
+                    specialties = [specialties]
+            city = customer.get("city", "")
+            state = customer.get("state", "")
+            if specialties:
+                text_query = f"{specialties[0]} near {city} {state}".strip()
+            elif bt not in ("practice", ""):
+                text_query = f"{bt} near {city} {state}".strip()
+
+        comps = fetch_nearby_competitors(
+            lat=places["lat"], lng=places["lng"],
+            practice_name=customer["name"],
+            api_key=api_key,
+            radius_meters=radius,
+            max_results=max_results,
+            place_types=place_types or None,
+            text_query=text_query,
+        )
+        # Validate competitors — filter wrong-industry results
+        comps = validate_competitors(comps, bt)
+
+        added = 0
+        for c in comps:
+            try:
+                # Clean domain: strip UTM params and extract hostname
+                clean_domain = ""
+                if c.website:
+                    parsed = urlparse(c.website if "://" in c.website else "https://" + c.website)
+                    clean_domain = parsed.netloc or parsed.path.split("/")[0]
+                    clean_domain = clean_domain.replace("www.", "")
+                if not clean_domain:
+                    clean_domain = c.name.lower().replace(" ", "-").replace("&", "and")
+
+                db.add_competitor_domain(
+                    customer_id,
+                    clean_domain,
+                    c.name,
+                    "auto_discovered",
+                    rating=c.rating,
+                    review_count=c.review_count,
+                    address=c.address,
+                    place_id=c.place_id,
+                )
+                added += 1
+            except Exception:
+                pass  # duplicate
+
+        audit_log("competitors_discovered", customer_id=customer_id,
+                  details=f"Found {len(comps)}, added {added} new (radius={radius}m)")
+        return jsonify({"ok": True, "found": len(comps), "added": added})
+    except Exception as e:
+        logger.warning(f"Competitor discovery failed for {customer_id}: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/competitors/analyze", methods=["POST"])
+@login_required
+def api_analyze_competitor(customer_id):
+    """Compare AI mention visibility between customer and a competitor."""
+    db = get_db()
+    try:
+        data = request.get_json()
+        competitor_name = data.get("competitor_name", "")
+        if not competitor_name:
+            return jsonify({"ok": False, "error": "No competitor name"}), 400
+
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+
+        # Get customer's latest AI mention run results
+        runs = db.get_ai_mention_runs(customer_id, limit=1)
+        if not runs:
+            return jsonify({"ok": False, "error": "No AI mention data. Run an AI mention check first."}), 400
+
+        latest_run = runs[0]
+        run_results = db.get_ai_mention_results(latest_run["run_id"])
+
+        # Count where customer is mentioned vs competitor
+        your_mentions = 0
+        their_mentions = 0
+        total_queries = len(run_results)
+        queries_they_win = []
+
+        customer_name_lower = customer["name"].lower()
+        competitor_lower = competitor_name.lower()
+
+        for r in run_results:
+            response_text = (r.get("response_text") or "").lower()
+            you_mentioned = customer_name_lower in response_text or (customer.get("domain") or "").lower() in response_text
+            they_mentioned = competitor_lower in response_text
+
+            if you_mentioned:
+                your_mentions += 1
+            if they_mentioned:
+                their_mentions += 1
+            if they_mentioned and not you_mentioned:
+                queries_they_win.append(r.get("query", "unknown"))
+
+        # Generate insights
+        insights = []
+        if their_mentions > your_mentions:
+            insights.append(f"{competitor_name} is mentioned {their_mentions - your_mentions} more times across AI searches.")
+        elif your_mentions > their_mentions:
+            insights.append(f"You're ahead by {your_mentions - their_mentions} mentions across AI searches.")
+        else:
+            insights.append("You and this competitor have equal AI visibility.")
+
+        if queries_they_win:
+            insights.append(f"They appear in {len(queries_they_win)} queries where you don't — these are your opportunities.")
+
+        your_rate = (your_mentions / total_queries * 100) if total_queries > 0 else 0
+        their_rate = (their_mentions / total_queries * 100) if total_queries > 0 else 0
+        if their_rate > 30 and your_rate < 20:
+            insights.append("They have strong AI presence. Focus on structured data, FAQ schema, and llms.txt.")
+
+        return jsonify({
+            "ok": True,
+            "result": {
+                "your_mentions": your_mentions,
+                "their_mentions": their_mentions,
+                "total_queries": total_queries,
+                "you_win": your_mentions >= their_mentions,
+                "queries_they_win": queries_they_win[:5],
+                "insights": insights,
+            },
+        })
+    except Exception as e:
+        logger.warning(f"Competitor analysis failed for {customer_id}: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+
+# --- Tier 2: Citations API ---
+
+
+@app.route("/api/customer/<customer_id>/citations", methods=["GET", "POST"])
+@login_required
+def api_citations(customer_id):
+    db = get_db()
+    try:
+        if request.method == "POST":
+            data = request.get_json()
+            db.save_citation(
+                customer_id,
+                data["directory"],
+                data.get("listed", False),
+                data.get("nap_match", False),
+                data.get("url_correct", False),
+                data.get("listing_url", ""),
+            )
+            return jsonify({"ok": True})
+        else:
+            return jsonify({"ok": True, "citations": db.get_citations(customer_id)})
+    finally:
+        db.close()
+
+
+# --- Tier 2: Reviews API ---
+
+
+@app.route("/api/customer/<customer_id>/reviews", methods=["GET"])
+@login_required
+def api_reviews(customer_id):
+    db = get_db()
+    try:
+        reviews = db.get_reviews(customer_id)
+        stats = db.get_review_stats(customer_id)
+        return jsonify({"ok": True, "reviews": reviews, "stats": stats})
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

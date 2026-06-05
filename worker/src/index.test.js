@@ -10,10 +10,15 @@ import {
   scoreToGrade,
   extractMeta,
   DENTAL_KEYWORDS,
+  LEGAL_KEYWORDS,
+  MEDICAL_KEYWORDS,
+  VERTICAL_CONFIG,
   BAD_NAME_PATTERNS,
   VALID_STATES,
   AREA_CODE_STATES,
   BLOCKED_HOSTS,
+  nameSimilarity,
+  validateCompetitors,
 } from "./index.js";
 
 // ════════════════════════════════════════════════════════════════
@@ -592,5 +597,125 @@ describe("error handling security", () => {
       : "An error occurred generating your audit. Please try again.";
     expect(safeMessage).toBe("Failed to parse audit response. Please try again.");
     expect(safeMessage).not.toContain("token");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ── Dynamic Vertical Support ──
+// ════════════════════════════════════════════════════════════════
+
+describe("VERTICAL_CONFIG", () => {
+  it("has all three core verticals", () => {
+    expect(VERTICAL_CONFIG).toHaveProperty("dental");
+    expect(VERTICAL_CONFIG).toHaveProperty("legal");
+    expect(VERTICAL_CONFIG).toHaveProperty("medical");
+  });
+
+  it("medical placeType is an array with doctor and hospital", () => {
+    const med = VERTICAL_CONFIG.medical;
+    expect(Array.isArray(med.placeType)).toBe(true);
+    expect(med.placeType).toContain("doctor");
+    expect(med.placeType).toContain("hospital");
+  });
+
+  it("dental and legal placeType are strings (single type)", () => {
+    expect(VERTICAL_CONFIG.dental.placeType).toBe("dentist");
+    expect(VERTICAL_CONFIG.legal.placeType).toBe("lawyer");
+  });
+
+  it("all verticals have required display fields", () => {
+    for (const [key, config] of Object.entries(VERTICAL_CONFIG)) {
+      expect(config, `${key} missing placeLabel`).toHaveProperty("placeLabel");
+      expect(config, `${key} missing businessTerm`).toHaveProperty("businessTerm");
+      expect(config, `${key} missing clientTerm`).toHaveProperty("clientTerm");
+      expect(config, `${key} missing providerTerm`).toHaveProperty("providerTerm");
+    }
+  });
+});
+
+describe("LEGAL_KEYWORDS and MEDICAL_KEYWORDS", () => {
+  it("LEGAL_KEYWORDS includes essential terms", () => {
+    expect(LEGAL_KEYWORDS).toContain("attorney");
+    expect(LEGAL_KEYWORDS).toContain("lawyer");
+    expect(LEGAL_KEYWORDS).toContain("law firm");
+    expect(LEGAL_KEYWORDS).toContain("litigation");
+  });
+
+  it("MEDICAL_KEYWORDS includes essential terms", () => {
+    expect(MEDICAL_KEYWORDS).toContain("doctor");
+    expect(MEDICAL_KEYWORDS).toContain("physician");
+    expect(MEDICAL_KEYWORDS).toContain("clinic");
+    expect(MEDICAL_KEYWORDS).toContain("urgent care");
+  });
+});
+
+describe("nameSimilarity", () => {
+  it("identical names return 1.0", () => {
+    expect(nameSimilarity("Smith Law", "Smith Law")).toBe(1.0);
+  });
+
+  it("completely different names return 0.0", () => {
+    expect(nameSimilarity("Smith Law", "Downtown Dental")).toBe(0.0);
+  });
+
+  it("empty string returns 0.0", () => {
+    expect(nameSimilarity("", "Test")).toBe(0.0);
+    expect(nameSimilarity("Test", "")).toBe(0.0);
+  });
+
+  it("same business with suffix still >= 0.5 (self-filter threshold)", () => {
+    expect(nameSimilarity("Hilltop Dental", "Hilltop Family Dental")).toBeGreaterThanOrEqual(0.5);
+  });
+});
+
+describe("validateCompetitors", () => {
+  it("rejects wrong-industry names (tax, insurance, etc.)", async () => {
+    const comps = [
+      { name: "Optima Tax Relief", primaryType: "", website: "" },
+      { name: "Smith Insurance Agent", primaryType: "", website: "" },
+      { name: "Downtown Law Firm", primaryType: "lawyer", website: "" },
+    ];
+    const result = await validateCompetitors(comps, "legal");
+    expect(result.length).toBe(1);
+    expect(result[0].name).toBe("Downtown Law Firm");
+  });
+
+  it("accepts competitors with industry name keywords", async () => {
+    const comps = [
+      { name: "River City Legal Group", primaryType: "", website: "" },
+      { name: "Smith & Associates Attorney", primaryType: "", website: "" },
+    ];
+    const result = await validateCompetitors(comps, "legal");
+    expect(result.length).toBe(2);
+  });
+
+  it("medical vertical accepts both doctor and hospital primaryType", async () => {
+    const comps = [
+      { name: "Springfield General", primaryType: "hospital", website: "" },
+      { name: "Dr. Johnson Office", primaryType: "doctor", website: "" },
+      { name: "Joe's Auto Shop", primaryType: "car_repair", website: "" },
+    ];
+    const result = await validateCompetitors(comps, "medical");
+    // Springfield General: name has no medical keyword, but primaryType=hospital matches
+    // Dr. Johnson: name has "doctor" keyword → accepted
+    // Joe's Auto: rejected (no keyword, wrong primaryType)
+    expect(result.some(c => c.name === "Springfield General")).toBe(true);
+    expect(result.some(c => c.name.includes("Johnson"))).toBe(true);
+    expect(result.some(c => c.name.includes("Auto"))).toBe(false);
+  });
+
+  it("falls back to returning filtered list when too aggressive", async () => {
+    const comps = [
+      { name: "Generic Business Name", primaryType: "", website: "" },
+    ];
+    // Unknown vertical, no keywords match — should return the competitor
+    // since fallback returns non-excluded competitors
+    const result = await validateCompetitors(comps, "dental");
+    expect(result.length).toBe(1);
+  });
+
+  it("returns empty array for empty input", async () => {
+    const result = await validateCompetitors([], "legal");
+    expect(result.length).toBe(0);
   });
 });

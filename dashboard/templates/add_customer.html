@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Add Customer - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Add Customer</span>
+{% endblock %}
 {% block content %}
 
 <h1>Add New Customer</h1>
@@ -83,6 +88,7 @@
 document.getElementById('discover-btn').addEventListener('click', async function() {
     const name = document.getElementById('name').value;
     const url = document.getElementById('url').value;
+    const business_type = document.getElementById('business_type').value;
     if (!name || !url) {
         alert('Enter a practice name and URL first.');
         return;
@@ -101,7 +107,7 @@ document.getElementById('discover-btn').addEventListener('click', async function
         const resp = await fetch('/api/discover', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({name, url}),
+            body: JSON.stringify({name, url, business_type}),
         });
         const data = await resp.json();
 
