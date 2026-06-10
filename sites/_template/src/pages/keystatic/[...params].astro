@@ -1,0 +1,8 @@
+---
+import { makePage } from '@keystatic/astro/ui'
+import keystaticConfig from '../../../keystatic.config'
+
+const Page = makePage(keystaticConfig)
+---
+
+<Page client:only="react" />

@@ -18,6 +18,7 @@ import logging
 import os
 import re
 import secrets
+import signal
 import sys
 import threading
 import time
@@ -5100,7 +5101,14 @@ def analytics():
 
             # SEO tasks
             checklist = db.get_checklist(cid)
-            seo_tasks = _get_seo_tasks(c, checklist)
+            seo_tasks = _get_seo_tasks(
+                checklist,
+                c.get("business_type", "practice"),
+                platform=c.get("platform", "webflow"),
+                domain=c.get("domain", ""),
+                customer_id=cid,
+                city=c.get("city", ""),
+            )
             seo_done = sum(1 for t in seo_tasks if t.get("done"))
             seo_total = len(seo_tasks)
 
@@ -5998,9 +6006,17 @@ def api_trigger_run():
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     with open(log_file, "w") as lf:
-        subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, cwd=str(Path(__file__).resolve().parent.parent))
+        proc = subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, cwd=str(Path(__file__).resolve().parent.parent))
 
-    audit_log("run_triggered", customer_id=customer_id, details=f"run_id={run_id}")
+    # Record the OS pid so the run can be truly cancelled (and reaped if orphaned).
+    db2 = get_db()
+    try:
+        db2.conn.execute("UPDATE runs SET pid = ? WHERE id = ?", (proc.pid, run_id))
+        db2.conn.commit()
+    finally:
+        db2.close()
+
+    audit_log("run_triggered", customer_id=customer_id, details=f"run_id={run_id} pid={proc.pid}")
     logger.info(f"Triggered pipeline run {run_id} for {customer_id}")
 
     if request.headers.get("HX-Request"):
@@ -6038,11 +6054,24 @@ def api_cancel_run():
                 return '<span style="color:var(--warning);font-size:0.85rem;">No active run found</span>'
             return jsonify({"error": "No active run found"}), 404
 
+        # Kill the actual pipeline subprocess so it stops spending API tokens.
+        pid = run.get("pid")
+        killed = False
+        if pid:
+            try:
+                os.kill(int(pid), signal.SIGTERM)
+                killed = True
+            except ProcessLookupError:
+                pass  # already exited
+            except (OSError, ValueError) as e:
+                logger.warning(f"Could not kill pid {pid} for run #{run_id}: {e}")
+
         db.conn.execute("UPDATE runs SET status = 'failed', errors_json = ? WHERE id = ?",
                         ('["Cancelled by user"]', run_id))
         db.conn.commit()
-        audit_log("run_cancelled", customer_id=customer_id or run.get("customer_id", ""), details=f"run_id={run_id}")
-        logger.info(f"Cancelled run #{run_id} for {customer_id or run.get('customer_id')}")
+        audit_log("run_cancelled", customer_id=customer_id or run.get("customer_id", ""),
+                  details=f"run_id={run_id} pid={pid} killed={killed}")
+        logger.info(f"Cancelled run #{run_id} (pid={pid}, killed={killed}) for {customer_id or run.get('customer_id')}")
 
         if request.headers.get("HX-Request"):
             return f'<span style="color:var(--warning);font-size:0.85rem;">Run #{run_id} cancelled</span>'
@@ -6881,6 +6910,46 @@ def api_reviews(customer_id):
         return jsonify({"ok": True, "reviews": reviews, "stats": stats})
     finally:
         db.close()
+
+
+def reap_stale_runs():
+    """Mark runs left in 'running' with a dead/missing pid as failed.
+
+    A container restart orphans subprocesses, leaving runs stuck in 'running'
+    forever. Runs this once at startup (works under gunicorn workers too).
+    """
+    def _pid_alive(pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+            return True
+        except ProcessLookupError:
+            return False
+        except OSError:
+            return True  # exists but not ours — assume alive
+
+    try:
+        db = get_db()
+        try:
+            rows = db.conn.execute("SELECT id, pid FROM runs WHERE status = 'running'").fetchall()
+            reaped = 0
+            for row in rows:
+                pid = row["pid"]
+                if not pid or not _pid_alive(int(pid)):
+                    db.conn.execute(
+                        "UPDATE runs SET status = 'failed', errors_json = ? WHERE id = ?",
+                        ('["Orphaned run reaped at startup"]', row["id"]),
+                    )
+                    reaped += 1
+            if reaped:
+                db.conn.commit()
+                logger.info(f"Reaped {reaped} orphaned run(s) at startup")
+        finally:
+            db.close()
+    except Exception as e:  # never block startup on the reaper
+        logger.warning(f"reap_stale_runs failed: {e}")
+
+
+reap_stale_runs()
 
 
 if __name__ == "__main__":

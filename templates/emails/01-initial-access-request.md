@@ -14,7 +14,7 @@ Welcome to PracticeRank! We're excited to start optimizing {practice_name}'s onl
 
 {ai_baseline_summary}
 
-**Your Local Competition:**
+**Your Competition:**
 
 {competitor_summary}
 
@@ -26,6 +26,8 @@ To get started, we need access to a few key platforms. Here's what we need and h
 
 1. **Google Search Console** — Add kdoherty@practicerank.ai as a Full User
    - Go to Search Console > Settings > Users and permissions > Add user
+   - Email: **kdoherty@practicerank.ai**
+   - Permission level: **Full**
 
 2. **Google Analytics** — Add kdoherty@practicerank.ai as an Editor
    - Go to Admin > Account Access Management > Add user

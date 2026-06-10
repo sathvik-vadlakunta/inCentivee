@@ -58,6 +58,48 @@ class TestValidateOutput:
         assert warnings == []
 
 
+    def test_legal_no_dental_contamination(self):
+        profile = get_profile("legal")
+        files = {
+            "llms.txt": "# FRB Law — Personal injury attorneys in New York\nLitigation and legal services.",
+        }
+        warnings = validate_output(profile, files, business_type="legal")
+        assert warnings == []
+
+    def test_legal_with_dental_contamination(self):
+        profile = get_profile("legal")
+        files = {
+            "llms.txt": "# FRB Law — Dental practice in New York",
+        }
+        warnings = validate_output(profile, files, business_type="legal")
+        assert len(warnings) > 0
+        assert any("dental" in w.lower() for w in warnings)
+
+    def test_medical_no_contamination(self):
+        profile = get_profile("medical")
+        files = {
+            "llms.txt": "# City Health — Primary care physicians in Austin",
+        }
+        warnings = validate_output(profile, files, business_type="medical")
+        assert warnings == []
+
+    def test_medical_with_legal_contamination(self):
+        profile = get_profile("medical")
+        files = {
+            "llms.txt": "# City Health — Personal injury attorney consultations",
+        }
+        warnings = validate_output(profile, files, business_type="medical")
+        assert len(warnings) > 0
+
+    def test_dental_with_legal_contamination(self):
+        profile = get_profile("practice")
+        files = {
+            "llms.txt": "# Hilltop Dental — Attorney and litigation services",
+        }
+        warnings = validate_output(profile, files, business_type="practice")
+        assert len(warnings) > 0
+
+
 class TestValidateSchemaType:
     def test_correct_dental_schema(self):
         profile = get_profile("practice")
@@ -84,6 +126,40 @@ class TestValidateSchemaType:
         warnings = validate_schema_type(profile, schema)
         assert len(warnings) > 0
         assert any("medicalSpecialty" in w for w in warnings)
+
+    def test_legal_schema_correct(self):
+        profile = get_profile("legal")
+        schema = '{"@type": "LegalService", "name": "FRB Law"}'
+        warnings = validate_schema_type(profile, schema)
+        assert warnings == []
+
+    def test_legal_schema_with_dentist_type(self):
+        profile = get_profile("legal")
+        schema = '{"@type": "Dentist", "name": "FRB Law"}'
+        warnings = validate_schema_type(profile, schema)
+        assert len(warnings) == 1
+        assert "Dentist" in warnings[0]
+
+    def test_medical_schema_correct(self):
+        profile = get_profile("medical")
+        schema = '{"@type": "MedicalBusiness", "name": "City Health"}'
+        warnings = validate_schema_type(profile, schema)
+        assert warnings == []
+
+    def test_medical_schema_with_legal_type(self):
+        profile = get_profile("medical")
+        schema = '{"@type": "LegalService", "name": "City Health"}'
+        warnings = validate_schema_type(profile, schema)
+        assert len(warnings) == 1
+        assert "LegalService" in warnings[0]
+
+    def test_no_duplicate_warnings(self):
+        """Ensure the new wrong_types check doesn't duplicate the legacy is_practice check."""
+        profile = get_profile("legal")
+        schema = '{"@type": "Dentist", "name": "Test"}'
+        warnings = validate_schema_type(profile, schema)
+        dentist_warnings = [w for w in warnings if "Dentist" in w]
+        assert len(dentist_warnings) == 1
 
     def test_empty_schema_no_warnings(self):
         profile = get_profile("service")

@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Pipeline Board - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Board</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">

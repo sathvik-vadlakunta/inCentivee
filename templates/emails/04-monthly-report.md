@@ -6,7 +6,15 @@ Here's your monthly PracticeRank report for {practice_name}.
 
 ---
 
-**Key Metrics:**
+**Search Performance:**
+
+| Metric | This Month | Last Month | Change |
+|--------|-----------|------------|--------|
+| Total Clicks | {monthly_clicks} | {prev_monthly_clicks} | {monthly_clicks_delta} |
+| Impressions | {monthly_impressions} | {prev_monthly_impressions} | {monthly_impressions_delta} |
+| Avg Position | {monthly_avg_position} | {prev_monthly_avg_position} | {monthly_position_delta} |
+
+**Reviews & AI Visibility:**
 
 | Metric | This Month | Last Month | Change |
 |--------|-----------|------------|--------|

@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders(env) });
     }
@@ -34,6 +34,57 @@ export default {
       }
       leads.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       return new Response(JSON.stringify(leads, null, 2), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // GET /reports — list all stored report metadata (auth required)
+    // GET /reports/:leadId — get full report JSON (auth required)
+    if (url.pathname.startsWith("/reports") && request.method === "GET") {
+      const authHeader = request.headers.get("Authorization") || "";
+      const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!env.LEADS_SECRET || bearerToken !== env.LEADS_SECRET) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const reportIdMatch = url.pathname.match(/^\/reports\/(lead_.+)$/);
+
+      if (reportIdMatch) {
+        // Single report — return full JSON
+        const val = await env.LEADS.get(`report_${reportIdMatch[1]}`, "json");
+        if (!val) {
+          return new Response(JSON.stringify({ error: "Report not found" }), {
+            status: 404, headers: { "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify(val, null, 2), {
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      // List all reports (metadata only for fast listing)
+      const list = await env.LEADS.list({ prefix: "report_" });
+      const reports = [];
+      for (const key of list.keys) {
+        const val = await env.LEADS.get(key.name, "json");
+        if (val) {
+          reports.push({
+            id: val.id,
+            lead_id: val.lead_id,
+            timestamp: val.timestamp,
+            practice_url: val.practice_url,
+            domain: val.domain,
+            vertical: val.vertical,
+            email: val.email,
+            name: val.name,
+            meta: val.meta,
+          });
+        }
+      }
+      reports.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      return new Response(JSON.stringify(reports, null, 2), {
         headers: { "Content-Type": "application/json" },
       });
     }
@@ -189,7 +240,7 @@ export default {
       const body = await request.json();
       const { practiceUrl, email, name, phone, vertical } = body;
       // vertical: "dental" (default), "legal", "medical"
-      const vert = ["dental", "legal", "medical"].includes(vertical) ? vertical : "dental";
+      let vert = ["dental", "legal", "medical"].includes(vertical) ? vertical : "dental";
 
       if (!practiceUrl || !email) {
         return new Response(
@@ -216,32 +267,23 @@ export default {
       // ── Step 1: Scrape the actual website to get real practice info ──
       const siteData = await scrapePracticeSite(practiceUrl);
 
-      // ── Step 1b: Reject off-vertical websites ──
-      if (siteData.scraped && vert === "dental" && !siteData.isDentalSite) {
+      // ── Step 1a: Check if scraper got blocked ──
+      if (!siteData.scraped && !siteData.visibleText) {
         return new Response(
-          JSON.stringify({ error: "This doesn't appear to be a dental practice website. PracticeRank audits are designed specifically for dental practices." }),
-          { status: 400, headers: { ...corsHeaders(env), "Content-Type": "application/json" } }
+          JSON.stringify({
+            error: `We couldn't reach ${practiceUrl}. This usually means the site is blocking automated access, the URL is incorrect, or the site is temporarily down. Please double-check the URL and try again. If the problem persists, contact us at support@practicerank.ai for a manual review.`,
+            domain: siteData.domain,
+            blocked: true,
+          }),
+          {
+            status: 422,
+            headers: { ...corsHeaders(env), "Content-Type": "application/json" },
+          }
         );
       }
-      if (siteData.scraped && vert === "legal" && !siteData.isLegalSite && !siteData.isDentalSite) {
-        // If neither legal nor dental signals, check loosely
-        const legalCheck = LEGAL_KEYWORDS.some(kw => (siteData.visibleText || "").toLowerCase().includes(kw));
-        if (!legalCheck) {
-          return new Response(
-            JSON.stringify({ error: "This doesn't appear to be a law firm website. This audit is designed for legal practices." }),
-            { status: 400, headers: { ...corsHeaders(env), "Content-Type": "application/json" } }
-          );
-        }
-      }
-      if (siteData.scraped && vert === "medical" && !siteData.isMedicalSite && !siteData.isDentalSite) {
-        const medCheck = MEDICAL_KEYWORDS.some(kw => (siteData.visibleText || "").toLowerCase().includes(kw));
-        if (!medCheck) {
-          return new Response(
-            JSON.stringify({ error: "This doesn't appear to be a medical practice website. This audit is designed for medical practices." }),
-            { status: 400, headers: { ...corsHeaders(env), "Content-Type": "application/json" } }
-          );
-        }
-      }
+
+      // ── Step 1b: Auto-detect vertical from site content ──
+      vert = detectVertical(vert, siteData);
 
       // ── Step 2: Fetch VERIFIED data from Google Places API ──
       let placeData = null;
@@ -367,6 +409,42 @@ export default {
         data_confidence: report.data_confidence,
       };
       await env.LEADS.put(leadId, JSON.stringify(lead));
+
+      // Save full report JSON to KV for dashboard retrieval (non-blocking)
+      const reportPayload = {
+        id: leadId,
+        lead_id: leadId,
+        timestamp: lead.timestamp,
+        practice_url: practiceUrl,
+        domain: domainSlug,
+        vertical: vert,
+        email: email,
+        name: name || "Not provided",
+        report: report,
+        meta: {
+          practice_name: report.practice_name,
+          city: report.city,
+          state: report.state,
+          overall_score: report.overall_score,
+          grade: report.grade,
+          data_confidence: report.data_confidence,
+          revenue_lost: report.revenue_lost_annually,
+          category_scores: {
+            gbp: report.categories?.gbp?.score,
+            reviews: report.categories?.reviews?.score,
+            ai_readiness: report.categories?.ai_readiness?.score,
+            local_seo: report.categories?.local_seo?.score,
+            content: report.categories?.content?.score,
+            technical: report.categories?.technical?.score,
+          },
+          competitor_count: (report.competitors || []).length,
+        },
+      };
+      ctx.waitUntil(
+        env.LEADS.put(`report_${leadId}`, JSON.stringify(reportPayload), {
+          expirationTtl: 365 * 86400,
+        })
+      );
 
       // Send email notifications (non-blocking — don't fail the audit if email fails)
       if (env.RESEND_API_KEY) {
@@ -922,19 +1000,6 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
       report.categories.reviews.score = calculateReviewScore(realCount, realRating, competitors);
       report.categories.reviews.status = scoreToStatus(report.categories.reviews.score);
 
-      // Fix findings across ALL categories if they mentioned wrong review count
-      const fixReviewCount = (f) => f.replace(/\b\d+\s*reviews?\b/gi, (match) => {
-        const num = parseInt(match);
-        if (num !== realCount && num < 1000) {
-          return `${realCount} reviews`;
-        }
-        return match;
-      });
-      for (const cat of Object.values(report.categories)) {
-        if (Array.isArray(cat.findings)) {
-          cat.findings = cat.findings.map(fixReviewCount);
-        }
-      }
     }
   }
 
@@ -950,6 +1015,38 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
         corrections.push(`competitor: "${claudeCompName}" (${claudeCompReviews}) → "${topCompetitor.name}" (${topCompetitor.reviewCount}) (Google verified)`);
         report.categories.reviews.competitor_name = topCompetitor.name;
         report.categories.reviews.competitor_reviews = topCompetitor.reviewCount;
+      }
+    }
+  }
+
+  // ── Fix findings text AFTER competitor data is finalized ──
+  // Replace wrong review counts in findings, but preserve competitor review counts
+  if (placeData && placeData.reviewCount > 0) {
+    const realCount = placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount;
+    const compReviews = report.categories?.reviews?.competitor_reviews || 0;
+    const compName = report.categories?.reviews?.competitor_name || "";
+
+    const fixReviewCount = (f) => {
+      // Split finding into segments around competitor mentions to avoid clobbering those numbers
+      return f.replace(/\b(\d+)\s*(total\s+)?reviews?\b/gi, (match, numStr) => {
+        const num = parseInt(numStr);
+        // Don't replace if it matches the competitor count
+        if (compReviews > 0 && num === compReviews) return match;
+        // Don't replace if it's the correct count already
+        if (num === realCount) return match;
+        // Don't replace large numbers (likely competitor or industry stats)
+        if (num > 500) return match;
+        // Check if this mention is near the competitor name (within 100 chars before)
+        const idx = f.indexOf(match);
+        const before = f.slice(Math.max(0, idx - 100), idx).toLowerCase();
+        if (compName && before.includes(compName.toLowerCase().split(" ")[0])) return match;
+        return `${realCount} reviews`;
+      });
+    };
+
+    for (const cat of Object.values(report.categories)) {
+      if (Array.isArray(cat.findings)) {
+        cat.findings = cat.findings.map(fixReviewCount);
       }
     }
   }
@@ -1105,6 +1202,32 @@ function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors
     }
   }
 
+  // CHECK 7: If we have NO real competitors from Google, Claude may have fabricated competitor data.
+  // Clear fabricated competitor names/counts and soften the findings language.
+  if (competitors.length === 0 && report.categories?.reviews) {
+    const compName = report.categories.reviews.competitor_name;
+    const compReviews = report.categories.reviews.competitor_reviews;
+    if (compName && compName !== "Top local competitor") {
+      warnings.push(`No real competitors found via Google but Claude generated "${compName}" (${compReviews} reviews) — clearing fabricated data`);
+      report.categories.reviews.competitor_name = null;
+      report.categories.reviews.competitor_reviews = null;
+      // Fix findings that reference the fabricated competitor
+      if (Array.isArray(report.categories.reviews.findings)) {
+        report.categories.reviews.findings = report.categories.reviews.findings.map(f => {
+          // Remove specific competitor name references
+          if (compName) {
+            f = f.replace(new RegExp(compName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'top local competitors');
+          }
+          // Remove specific fabricated review count comparisons
+          if (compReviews) {
+            f = f.replace(new RegExp(`\\b${compReviews}\\s*reviews?`, 'gi'), 'more reviews');
+          }
+          return f;
+        });
+      }
+    }
+  }
+
   if (warnings.length > 0) {
     report.safety_warnings = warnings;
     console.log("Safety check warnings:", warnings.join("; "));
@@ -1159,7 +1282,7 @@ function scoreToGrade(score) {
   if (score >= 90) return "A";
   if (score >= 80) return "B";
   if (score >= 70) return "C";
-  if (score >= 60) return "D";
+  if (score >= 55) return "D";
   return "F";
 }
 
@@ -1893,11 +2016,11 @@ Respond ONLY with valid JSON (no markdown, no code fences, no explanation):
     "perplexity": { "visible": "<yes|no|partial>", "reason": "<string>" }
   },
   "priority_actions": [
-    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_patients_mo": "<string like +5-8>" },
-    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_patients_mo": "<string>" },
-    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_patients_mo": "<string>" },
-    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_patients_mo": "<string>" },
-    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_patients_mo": "<string>" }
+    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_new_inquiries_mo": "<string like +5-8>" },
+    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_new_inquiries_mo": "<string>" },
+    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_new_inquiries_mo": "<string>" },
+    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_new_inquiries_mo": "<string>" },
+    { "title": "<string>", "description": "<string>", "impact": "<high|medium>", "est_new_inquiries_mo": "<string>" }
   ],
   "projections": {
     "current_inquiries_mo": "<string like 3-5>",
@@ -1906,7 +2029,7 @@ Respond ONLY with valid JSON (no markdown, no code fences, no explanation):
     "month_12": "<string like +25-35>"
   },
   "revenue_lost_annually": "<string like $180,000-$360,000>",
-  "patient_lifetime_value": "<string like ${vc.ltv}>"
+  "${vc.clientTerm}_lifetime_value": "<string like ${vc.ltv}>"
 }`;
 }
 
@@ -1977,6 +2100,35 @@ function classifyUserAgent(ua) {
 }
 
 // ── Exports for testing ──
+/**
+ * Detect the correct vertical from scraped site content.
+ * Only auto-detects when user submitted from the default dental page.
+ * If they explicitly chose legal or medical, trust their selection —
+ * sites often have cross-industry keywords (e.g. law firm with "healthcare" practice area).
+ *
+ * @param {string} userVertical - The vertical the user selected ("dental", "legal", "medical")
+ * @param {object} siteData - Scraped site data with isDentalSite, isLegalSite, isMedicalSite, visibleText
+ * @returns {string} The resolved vertical to use for the audit
+ */
+function detectVertical(userVertical, siteData) {
+  if (!siteData || !siteData.scraped) return userVertical;
+
+  // Trust explicit user selection for legal/medical — never override
+  if (userVertical === "legal" || userVertical === "medical") return userVertical;
+
+  // Only auto-detect from the default dental page when site isn't dental
+  if (userVertical === "dental" && !siteData.isDentalSite) {
+    const text = (siteData.visibleText || "").toLowerCase();
+    const legalHits = LEGAL_KEYWORDS.filter(kw => text.includes(kw)).length;
+    const medicalHits = MEDICAL_KEYWORDS.filter(kw => text.includes(kw)).length;
+    // Require at least 3 keyword matches to auto-switch, and pick the stronger signal
+    if (legalHits >= 3 && legalHits > medicalHits) return "legal";
+    if (medicalHits >= 3 && medicalHits > legalHits) return "medical";
+  }
+
+  return userVertical;
+}
+
 export {
   validatePracticeUrl,
   isValidEmail,
@@ -1997,4 +2149,5 @@ export {
   BLOCKED_HOSTS,
   nameSimilarity,
   validateCompetitors,
+  detectVertical,
 };

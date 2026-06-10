@@ -80,10 +80,10 @@ def _get_specialties(customer: Customer) -> str:
     return ", ".join(all_specs) if all_specs else ""
 
 
-def _extract_description(content: str, max_len: int = 120) -> str:
+def _extract_description(content: str, title: str = "", max_len: int = 120) -> str:
     """Extract the first meaningful sentence from page content for link descriptions.
 
-    Skips nav cruft and finds the first real sentence.
+    Skips nav cruft, page title echoes, and finds the first real body sentence.
     """
     if not content:
         return ""
@@ -95,6 +95,26 @@ def _extract_description(content: str, max_len: int = 120) -> str:
     if not text:
         return ""
 
+    # Strip the page title / H1 from the start of content.
+    # WordPress renders H1 as leading text: "Teeth Whitening South Jordan, UT A radiant smile..."
+    # The HTML <title> may differ slightly ("Teeth Whitening in South Jordan, UT | Brighten...")
+    if title:
+        # Extract the core topic from the title (before pipe/dash separators)
+        core_title = re.split(r'\s*[|–—]\s*', title)[0].strip()
+        # Remove location suffix for fuzzy matching ("in City, ST")
+        core_no_loc = re.sub(r'\s+in\s+[\w\s,]+[A-Z]{2}\b.*$', '', core_title).strip()
+        # Try to find and strip matching leading text from content
+        for prefix in [core_title, core_no_loc]:
+            if len(prefix) > 10 and text.lower().startswith(prefix.lower()):
+                text = text[len(prefix):].strip()
+                # Strip trailing location remnant ("South Jordan, UT") or pipe separators
+                text = re.sub(r'^(?:in\s+)?[\w\s,]+[A-Z]{2}\s*', '', text, count=1).strip()
+                text = re.sub(r'^[|–—]\s*[^.!?]+\s+', '', text, count=1).strip() if text[:1] in '|–—' else text
+                break
+
+    # Normalize title for comparison (strip location suffixes like "in City, ST")
+    title_words = set(re.sub(r'\s+', ' ', title.lower().split("|")[0]).split()) if title else set()
+
     # Split into sentences and find the first one with substance
     sentences = re.split(r'(?<=[.!?])\s+', text)
     for sentence in sentences:
@@ -105,6 +125,18 @@ def _extract_description(content: str, max_len: int = 120) -> str:
         # Skip sentences that look like nav items (all-caps, no periods)
         if sentence.isupper() and len(sentence) < 50:
             continue
+        # Skip if it still looks like nav (menu items without punctuation)
+        if "Home About Us" in sentence or "Meet Our" in sentence:
+            continue
+        # Skip lines that are just service menu listings
+        if sentence.count("Dentistry") > 3 or sentence.count("Dental") > 5:
+            continue
+        # Skip if this sentence is basically the page title repeated
+        if title_words:
+            sent_words = set(sentence.lower().split())
+            overlap = len(title_words & sent_words) / max(len(title_words), 1)
+            if overlap > 0.7 and len(sentence) < len(title) + 20:
+                continue
 
         # Truncate to max_len on word boundary
         if len(sentence) > max_len:
@@ -117,8 +149,15 @@ def _extract_description(content: str, max_len: int = 120) -> str:
     return text
 
 
+def _normalize_page_url(url: str) -> str:
+    """Normalize a page URL for output — strip www if non-www resolves."""
+    norm = normalize_url(url)
+    # Also ensure consistent scheme
+    return norm
+
+
 def _dedup_pages(pages: list[PageData]) -> list[PageData]:
-    """Remove duplicate pages based on normalized URL."""
+    """Remove duplicate pages based on normalized URL (www vs non-www, trailing slash)."""
     seen_urls: set[str] = set()
     deduped: list[PageData] = []
     for page in pages:
@@ -126,6 +165,8 @@ def _dedup_pages(pages: list[PageData]) -> list[PageData]:
         if norm in seen_urls:
             continue
         seen_urls.add(norm)
+        # Normalize the URL in-place so output is consistent
+        page.url = _normalize_page_url(page.url)
         deduped.append(page)
     return deduped
 
@@ -233,7 +274,7 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
     if service_pages:
         lines.append(f"## {_service_section_label(customer, profile)}")
         for page in service_pages:
-            desc = _extract_description(page.content)
+            desc = _extract_description(page.content, title=page.title)
             if desc:
                 lines.append(f"- [{page.title}]({page.url}): {desc}")
             else:

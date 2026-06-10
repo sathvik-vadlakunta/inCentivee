@@ -32,6 +32,180 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
+def build_benchmark_prompts(
+    practice_name: str, city: str, state: str, specialties: list[str],
+    business_type: str = "practice", competitors: list[str] | None = None,
+    services: list[str] | None = None,
+) -> list[dict]:
+    """Build a fixed set of high-signal prompts for scheduled mention tracking.
+
+    Returns ~20-30 prompts (vs 65+ from build_comprehensive_prompts). Uses the
+    SAME prompts every run for apples-to-apples trend data. Covers all services
+    (up to 8), brand, general discovery, recommendations, competitors, reputation.
+
+    Cost: ~$0.15-0.20/customer/run with max_tokens=300 and concise system prompt.
+    At 3x/week × 8 customers = ~$15-20/month.
+    """
+    prompts = []
+    seen = set()
+
+    def add(prompt: str, category: str):
+        key = prompt.lower().strip()
+        if key not in seen:
+            seen.add(key)
+            prompts.append({"prompt": prompt, "category": category})
+
+    # --- Brand (3) — do the AIs know this business? ---
+    add(f"tell me about {practice_name}", "brand")
+    add(f"is {practice_name} good", "brand")
+    add(f"{practice_name} reviews", "brand")
+
+    # Deduplicated services list (services first, then specialties as fallback)
+    all_services = []
+    for s in (services or []) + (specialties or []):
+        sl = s.lower()
+        if sl not in [x for x in all_services]:
+            all_services.append(sl)
+
+    if business_type in ("practice", "dental_practice"):
+        # --- General discovery (4) ---
+        add(f"best dentist in {city} {state}", "general")
+        add(f"top rated dental practice in {city}", "general")
+        add(f"find a dentist in {city} {state}", "general")
+        add(f"who is the best dentist in {city}", "general")
+
+        # --- Service-specific (up to 8 services × 1 prompt each) ---
+        for svc in all_services[:8]:
+            add(f"best {svc} in {city} {state}", "service")
+        if not all_services:
+            add(f"best dental care in {city} {state}", "service")
+
+        # --- Recommendation (3) — natural language queries ---
+        add(f"recommend a dentist in {city} {state}", "recommendation")
+        if all_services:
+            add(f"who do you recommend for {all_services[0]} in {city}", "recommendation")
+        if len(all_services) > 1:
+            add(f"where should I go for {all_services[1]} in {city}", "recommendation")
+
+        # --- Comparison (up to 3) ---
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"best dentist in {city} compared", "comparison")
+
+        # --- Reputation (2) ---
+        add(f"is {practice_name} in {city} good", "reputation")
+        add(f"{practice_name} patient experience", "reputation")
+
+        # --- Cost/insurance (2) — high-intent queries ---
+        add(f"affordable dentist in {city} {state}", "service")
+        add(f"dentist that accepts insurance in {city}", "service")
+
+    elif business_type == "ecommerce":
+        industry = "products"
+        for s in (services or []) + specialties:
+            sl = s.lower()
+            if any(w in sl for w in ("peptide", "semaglutide", "tirzepatide", "bpc")):
+                industry = "research peptides"
+                break
+            elif any(w in sl for w in ("supplement", "vitamin", "nutrition")):
+                industry = "supplements"
+                break
+
+        add(f"best {industry} supplier", "general")
+        add(f"where to buy {industry} online", "general")
+        add(f"most trusted {industry} company", "general")
+        add(f"best place to order {industry}", "general")
+
+        # Service/product-specific (up to 8)
+        for svc in all_services[:8]:
+            add(f"best {svc} supplier", "service")
+
+        add(f"recommend a {industry} supplier", "recommendation")
+        if all_services:
+            add(f"where to buy {all_services[0]}", "recommendation")
+
+        add(f"is {practice_name} legit", "reputation")
+        add(f"{practice_name} quality and purity", "reputation")
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"best {industry} companies compared", "comparison")
+
+    elif business_type == "technology":
+        industry_keywords = []
+        for s in specialties[:5]:
+            sl = s.lower()
+            if any(w in sl for w in ("dental", "denture", "scan", "cad")):
+                industry_keywords.append("dental")
+                break
+        industry = industry_keywords[0] if industry_keywords else "technology"
+
+        add(f"best {industry} technology companies", "general")
+        add(f"top {industry} software companies", "general")
+        add(f"{practice_name} {industry} technology", "brand")
+        add(f"best AI companies in {industry}", "general")
+
+        for svc in all_services[:8]:
+            add(f"best {svc.lower()} software", "service")
+
+        add(f"recommend {industry} software", "recommendation")
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"{practice_name} reviews", "reputation")
+
+    elif business_type == "legal":
+        add(f"best lawyer in {city} {state}", "general")
+        add(f"top rated law firm in {city}", "general")
+        add(f"find an attorney in {city} {state}", "general")
+
+        for svc in all_services[:8]:
+            add(f"best {svc} lawyer in {city} {state}", "service")
+        if not all_services:
+            add(f"best attorney in {city} {state}", "service")
+
+        add(f"recommend a lawyer in {city} {state}", "recommendation")
+        if all_services:
+            add(f"who handles {all_services[0]} cases in {city}", "recommendation")
+
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"is {practice_name} a good law firm", "reputation")
+
+    elif business_type == "medical":
+        add(f"best doctor in {city} {state}", "general")
+        add(f"top rated medical practice in {city}", "general")
+        add(f"find a doctor in {city} {state}", "general")
+
+        for svc in all_services[:8]:
+            add(f"best {svc} doctor in {city} {state}", "service")
+
+        add(f"recommend a doctor in {city} {state}", "recommendation")
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"is {practice_name} a good medical practice", "reputation")
+
+    else:
+        # Generic business type
+        add(f"best {business_type} in {city} {state}", "general")
+        add(f"top {business_type} companies", "general")
+        add(f"find a {business_type} in {city} {state}", "general")
+
+        for svc in all_services[:8]:
+            add(f"best {svc.lower()}", "service")
+
+        add(f"recommend a {business_type} in {city} {state}", "recommendation")
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"{practice_name} reviews", "reputation")
+
+    return prompts
+
+
 def build_prompts(practice_name: str, city: str, state: str, specialties: list[str], business_type: str = "practice") -> list[str]:
     """Build basic search prompts (backward compat). Use build_comprehensive_prompts for full checks."""
     return [p["prompt"] for p in build_comprehensive_prompts(practice_name, city, state, specialties, business_type)]
@@ -228,7 +402,14 @@ def build_comprehensive_prompts(
     return prompts
 
 
-def query_claude(prompt: str) -> str | None:
+# System prompt that forces concise responses — cuts output tokens ~70%
+_CONCISE_SYSTEM = (
+    "Answer concisely. If listing recommendations, give a brief numbered list "
+    "with name and one sentence each. No lengthy explanations."
+)
+
+
+def query_claude(prompt: str, max_tokens: int = 300) -> str | None:
     """Query Claude and return the response text."""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
@@ -237,9 +418,11 @@ def query_claude(prompt: str) -> str | None:
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=api_key)
+        # Haiku for mention checks — 97% cheaper than Sonnet, sufficient for this.
         resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=1000,
+            model="claude-haiku-4-5-20251001",
+            max_tokens=max_tokens,
+            system=_CONCISE_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
         )
         return resp.content[0].text
@@ -248,7 +431,7 @@ def query_claude(prompt: str) -> str | None:
         return None
 
 
-def query_openai(prompt: str) -> str | None:
+def query_openai(prompt: str, max_tokens: int = 300) -> str | None:
     """Query ChatGPT and return the response text."""
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
@@ -262,8 +445,11 @@ def query_openai(prompt: str) -> str | None:
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
                     "model": "gpt-4o-mini",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1000,
+                    "messages": [
+                        {"role": "system", "content": _CONCISE_SYSTEM},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "max_tokens": max_tokens,
                 },
             )
             resp.raise_for_status()
@@ -273,7 +459,7 @@ def query_openai(prompt: str) -> str | None:
         return None
 
 
-def query_perplexity(prompt: str) -> str | None:
+def query_perplexity(prompt: str, max_tokens: int = 300) -> str | None:
     """Query Perplexity Sonar (searches live web, respects llms.txt)."""
     api_key = os.environ.get("PERPLEXITY_API_KEY", "")
     if not api_key:
@@ -287,8 +473,11 @@ def query_perplexity(prompt: str) -> str | None:
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
                     "model": "sonar",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1000,
+                    "messages": [
+                        {"role": "system", "content": _CONCISE_SYSTEM},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "max_tokens": max_tokens,
                 },
             )
             resp.raise_for_status()
@@ -298,7 +487,7 @@ def query_perplexity(prompt: str) -> str | None:
         return None
 
 
-def query_gemini(prompt: str) -> str | None:
+def query_gemini(prompt: str, max_tokens: int = 300) -> str | None:
     """Query Google Gemini (free tier, 15 RPM)."""
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
@@ -311,7 +500,8 @@ def query_gemini(prompt: str) -> str | None:
                 f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}",
                 headers={"Content-Type": "application/json"},
                 json={
-                    "contents": [{"parts": [{"text": prompt}]}],
+                    "contents": [{"parts": [{"text": f"{_CONCISE_SYSTEM}\n\n{prompt}"}]}],
+                    "generationConfig": {"maxOutputTokens": max_tokens},
                 },
             )
             resp.raise_for_status()
@@ -321,7 +511,7 @@ def query_gemini(prompt: str) -> str | None:
         return None
 
 
-def query_grok(prompt: str) -> str | None:
+def query_grok(prompt: str, max_tokens: int = 300) -> str | None:
     """Query xAI Grok (OpenAI-compatible API)."""
     api_key = os.environ.get("XAI_API_KEY", "")
     if not api_key:
@@ -335,8 +525,11 @@ def query_grok(prompt: str) -> str | None:
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
                     "model": "grok-3-mini",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1000,
+                    "messages": [
+                        {"role": "system", "content": _CONCISE_SYSTEM},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "max_tokens": max_tokens,
                 },
             )
             resp.raise_for_status()

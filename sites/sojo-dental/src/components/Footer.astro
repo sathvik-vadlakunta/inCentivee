@@ -1,0 +1,72 @@
+---
+import practice from '@data/practice.json'
+
+const currentYear = new Date().getFullYear()
+---
+
+<footer class="bg-dark text-gray-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Practice Info -->
+      <div>
+        <h3 class="text-white text-lg font-bold font-heading mb-4">{practice.name}</h3>
+        <p class="text-sm mb-2">{practice.address.street}</p>
+        <p class="text-sm mb-4">
+          {practice.address.city}, {practice.address.state} {practice.address.zip}
+        </p>
+        <a
+          href={`tel:${practice.phone.replace(/[^+\d]/g, '')}`}
+          class="text-primary hover:text-white transition-colors font-semibold"
+        >
+          {practice.phone}
+        </a>
+        {practice.email && (
+          <p class="mt-1">
+            <a href={`mailto:${practice.email}`} class="text-sm hover:text-white transition-colors">
+              {practice.email}
+            </a>
+          </p>
+        )}
+      </div>
+
+      <!-- Hours -->
+      <div>
+        <h3 class="text-white text-lg font-bold font-heading mb-4">Office Hours</h3>
+        <ul class="space-y-1 text-sm">
+          {practice.hours.map((h: { days: string; open?: string; close?: string; note?: string }) => (
+            <li class="flex justify-between">
+              <span>{h.days}</span>
+              <span class="text-gray-400">
+                {h.note ? h.note : `${h.open} – ${h.close}`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-white text-lg font-bold font-heading mb-4">Quick Links</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/services" class="hover:text-white transition-colors">Our Services</a></li>
+          <li><a href="/about" class="hover:text-white transition-colors">About Us</a></li>
+          <li><a href="/team" class="hover:text-white transition-colors">Meet Our Team</a></li>
+          <li><a href="/patient-resources" class="hover:text-white transition-colors">Patient Resources</a></li>
+          <li><a href="/blog" class="hover:text-white transition-colors">Blog</a></li>
+          <li><a href="/contact" class="hover:text-white transition-colors">Contact Us</a></li>
+          {practice.patientPortal && (
+            <li>
+              <a href={practice.patientPortal} target="_blank" rel="noopener" class="hover:text-white transition-colors">
+                Patient Portal
+              </a>
+            </li>
+          )}
+        </ul>
+      </div>
+    </div>
+
+    <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-500">
+      <p>&copy; {currentYear} {practice.name}. All rights reserved.</p>
+    </div>
+  </div>
+</footer>

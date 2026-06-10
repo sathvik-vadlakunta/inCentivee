@@ -19,6 +19,7 @@ import {
   BLOCKED_HOSTS,
   nameSimilarity,
   validateCompetitors,
+  detectVertical,
 } from "./index.js";
 
 // ════════════════════════════════════════════════════════════════
@@ -717,5 +718,214 @@ describe("validateCompetitors", () => {
   it("returns empty array for empty input", async () => {
     const result = await validateCompetitors([], "legal");
     expect(result.length).toBe(0);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ── Vertical Auto-Detection ──
+// ════════════════════════════════════════════════════════════════
+
+describe("detectVertical", () => {
+  // Helper to build mock site data
+  function mockSite({ isDental = false, isLegal = false, isMedical = false, text = "" }) {
+    return {
+      scraped: true,
+      isDentalSite: isDental,
+      isLegalSite: isLegal,
+      isMedicalSite: isMedical,
+      visibleText: text,
+    };
+  }
+
+  // --- User explicitly chose legal — NEVER override ---
+
+  it("trusts explicit legal selection even with medical keywords", () => {
+    // frblaw.com scenario: law firm with "healthcare" practice area
+    const site = mockSite({
+      isLegal: true,
+      isMedical: true, // false positive from "healthcare" keyword
+      text: "law firm attorney litigation healthcare compliance estate planning counsel",
+    });
+    expect(detectVertical("legal", site)).toBe("legal");
+  });
+
+  it("trusts explicit legal selection even with zero legal signals", () => {
+    const site = mockSite({ text: "some random website content" });
+    expect(detectVertical("legal", site)).toBe("legal");
+  });
+
+  it("trusts explicit legal selection even if site looks dental", () => {
+    const site = mockSite({
+      isDental: true,
+      text: "dentist dental practice orthodontist",
+    });
+    expect(detectVertical("legal", site)).toBe("legal");
+  });
+
+  // --- User explicitly chose medical — NEVER override ---
+
+  it("trusts explicit medical selection even with legal keywords", () => {
+    const site = mockSite({
+      isMedical: true,
+      isLegal: true, // false positive from "legal" in content
+      text: "physician clinic healthcare patient legal notice terms of service",
+    });
+    expect(detectVertical("medical", site)).toBe("medical");
+  });
+
+  it("trusts explicit medical selection with no medical signals", () => {
+    const site = mockSite({ text: "welcome to our website" });
+    expect(detectVertical("medical", site)).toBe("medical");
+  });
+
+  // --- Default dental page: auto-detect when site is NOT dental ---
+
+  it("auto-detects legal from dental page when strong legal signals", () => {
+    const site = mockSite({
+      text: "law firm attorney personal injury litigation estate planning criminal defense family law",
+    });
+    expect(detectVertical("dental", site)).toBe("legal");
+  });
+
+  it("auto-detects medical from dental page when strong medical signals", () => {
+    const site = mockSite({
+      text: "physician clinic primary care board certified internal medicine family medicine specialist",
+    });
+    expect(detectVertical("dental", site)).toBe("medical");
+  });
+
+  it("does NOT auto-detect with fewer than 3 keyword matches", () => {
+    // Only 2 legal keywords — not enough to switch
+    const site = mockSite({
+      text: "attorney law firm welcome to our website",
+    });
+    expect(detectVertical("dental", site)).toBe("dental");
+  });
+
+  it("picks legal over medical when legal has more matches", () => {
+    // law firm that mentions healthcare (like frblaw.com)
+    const site = mockSite({
+      text: "law firm attorney litigation counsel estate planning healthcare compliance practice areas",
+    });
+    expect(detectVertical("dental", site)).toBe("legal");
+  });
+
+  it("picks medical over legal when medical has more matches", () => {
+    const site = mockSite({
+      text: "physician clinic healthcare patient primary care board certified internal medicine attorney referral",
+    });
+    expect(detectVertical("dental", site)).toBe("medical");
+  });
+
+  // --- Dental site stays dental ---
+
+  it("keeps dental when site IS dental", () => {
+    const site = mockSite({
+      isDental: true,
+      text: "dentist dental practice cosmetic dentistry",
+    });
+    expect(detectVertical("dental", site)).toBe("dental");
+  });
+
+  it("keeps dental when site is dental even with medical keywords", () => {
+    const site = mockSite({
+      isDental: true,
+      text: "dental practice patient healthcare board certified oral surgeon",
+    });
+    expect(detectVertical("dental", site)).toBe("dental");
+  });
+
+  // --- Edge cases ---
+
+  it("returns user vertical when siteData is null", () => {
+    expect(detectVertical("legal", null)).toBe("legal");
+    expect(detectVertical("dental", null)).toBe("dental");
+  });
+
+  it("returns user vertical when site was not scraped", () => {
+    expect(detectVertical("dental", { scraped: false })).toBe("dental");
+  });
+
+  it("stays dental when no signals detected at all", () => {
+    const site = mockSite({ text: "welcome to our company we sell widgets" });
+    expect(detectVertical("dental", site)).toBe("dental");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ── Vertical Detection — Integration Tests (real site content) ──
+// These simulate real scraped content from known sites to prevent
+// regressions like the frblaw.com healthcare false positive.
+// ════════════════════════════════════════════════════════════════
+
+describe("detectVertical — real site scenarios", () => {
+  it("frblaw.com on legal page stays legal (healthcare practice area false positive)", () => {
+    // Real content from Falcon Rappaport & Berkman LLP
+    const site = {
+      scraped: true,
+      isDentalSite: false,
+      isLegalSite: true,
+      isMedicalSite: true, // triggered by "healthcare"
+      visibleText: "Falcon Rappaport & Berkman LLP 80+ attorneys across 23 practice areas law firm attorney litigation corporate securities bankruptcy estate planning intellectual property labor employment healthcare compliance counsel probate trusts",
+    };
+    expect(detectVertical("legal", site)).toBe("legal");
+  });
+
+  it("frblaw.com on dental page auto-detects to legal", () => {
+    const site = {
+      scraped: true,
+      isDentalSite: false,
+      isLegalSite: true,
+      isMedicalSite: true,
+      visibleText: "Falcon Rappaport & Berkman LLP 80+ attorneys across 23 practice areas law firm attorney litigation corporate securities bankruptcy estate planning intellectual property labor employment healthcare compliance counsel probate trusts",
+    };
+    expect(detectVertical("dental", site)).toBe("legal");
+  });
+
+  it("mayo clinic on medical page stays medical", () => {
+    const site = {
+      scraped: true,
+      isDentalSite: false,
+      isLegalSite: false,
+      isMedicalSite: true,
+      visibleText: "Mayo Clinic physician healthcare medical doctor patient primary care specialist board certified internal medicine cardiology dermatology orthopedics clinic hospital",
+    };
+    expect(detectVertical("medical", site)).toBe("medical");
+  });
+
+  it("dental practice with patient keyword stays dental on medical page", () => {
+    // Dental sites often use "patient" which is a MEDICAL_KEYWORD
+    const site = {
+      scraped: true,
+      isDentalSite: true,
+      isLegalSite: false,
+      isMedicalSite: true, // "patient" triggers this
+      visibleText: "family dental practice dentist cosmetic dentistry patient care oral hygiene teeth whitening",
+    };
+    // User selected medical but site is dental — we trust user selection
+    expect(detectVertical("medical", site)).toBe("medical");
+  });
+
+  it("personal injury law firm on dental page auto-detects legal", () => {
+    const site = {
+      scraped: true,
+      isDentalSite: false,
+      isLegalSite: true,
+      isMedicalSite: false,
+      visibleText: "Morgan & Morgan personal injury attorney law firm lawyer free consultation litigation accident injury criminal defense family law",
+    };
+    expect(detectVertical("dental", site)).toBe("legal");
+  });
+
+  it("medical spa with legal terms stays on chosen vertical", () => {
+    // Med spa might have "terms of service" legal language
+    const site = {
+      scraped: true,
+      isDentalSite: false,
+      isLegalSite: false,
+      isMedicalSite: true,
+      visibleText: "medical spa dermatology aesthetic clinic botox physician board certified patient healthcare terms of service legal notice",
+    };
+    expect(detectVertical("medical", site)).toBe("medical");
   });
 });

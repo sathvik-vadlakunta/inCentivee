@@ -1,22 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Login - PracticeRank{% endblock %}
-{% block content %}
-<div style="max-width: 400px; margin: 4rem auto;">
-    <div class="card" style="text-align: center;">
-        <h1 style="color: var(--primary); margin-bottom: 0.5rem;">PracticeRank</h1>
-        <p style="color: var(--muted); margin-bottom: 1.5rem;">Customer Management Dashboard</p>
+{% block content_login %}
+<div class="card" style="text-align: center;">
+    <h1 style="color: var(--primary); margin-bottom: 0.5rem;">PracticeRank</h1>
+    <p style="color: var(--muted); margin-bottom: 1.5rem;">Customer Management Dashboard</p>
 
-        <form method="POST" action="{{ url_for('login') }}">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required autofocus>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
-        </form>
-    </div>
+    <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required autofocus>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
+    </form>
 </div>
 {% endblock %}

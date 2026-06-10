@@ -4,7 +4,7 @@
 
 - **$3,000/month** flat fee per practice
 - No setup fees, no long-term contracts
-- 90-day performance guarantee: if <10 new patient inquiries in first 90 days, next month free
+- 90-day results-or-refund guarantee: if the PracticeRank Score doesn't improve 20+ points in 90 days, full refund (client keeps everything built) — this is the public-facing guarantee; keep it consistent everywhere
 - Exclusivity: one practice per specialty per zip code (creates urgency)
 - Founding partner pricing: $1,500-2,000/mo for first 10 clients (6-month discount)
 

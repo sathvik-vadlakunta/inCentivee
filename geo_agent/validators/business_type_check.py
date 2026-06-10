@@ -28,6 +28,30 @@ DENTAL_MARKERS = [
     "sedation dentistry", "dental lab",
 ]
 
+# Terms that should ONLY appear for legal customers
+LEGAL_MARKERS = [
+    "attorney", "lawyer", "law firm", "legal counsel",
+    "practice area", "litigation", "deposition",
+    "plaintiff", "defendant", "settlement",
+    "personal injury", "family law", "criminal defense",
+    "estate planning", "probate", "bankruptcy",
+    "case evaluation", "legal consultation",
+    "bar association", "avvo", "martindale",
+    "verdict", "trial", "court",
+]
+
+# Terms that should ONLY appear for medical (non-dental) customers
+MEDICAL_MARKERS = [
+    "physician", "medical doctor", "primary care",
+    "dermatology", "orthopedic", "cardiology",
+    "internal medicine", "family medicine",
+    "telehealth", "medical practice",
+    "healthgrades", "vitals", "zocdoc",
+    "specialist referral", "medical specialty",
+    "radiology", "pediatrician", "neurolog",
+    "oncolog", "gastroenterol", "pulmonolog",
+]
+
 # Terms that should ONLY appear for ecommerce customers
 ECOMMERCE_MARKERS = [
     "add to cart", "checkout", "shopping cart",
@@ -38,11 +62,19 @@ ECOMMERCE_MARKERS = [
 FORBIDDEN_TERMS: dict[str, list[str]] = {}
 
 # For non-dental businesses, dental terms are forbidden
-for _bt in ["technology", "product", "service", "ecommerce", "precious_metals_buyer"]:
-    FORBIDDEN_TERMS[_bt] = DENTAL_MARKERS
+for _bt in ["technology", "product", "service", "ecommerce", "precious_metals_buyer", "legal", "medical"]:
+    FORBIDDEN_TERMS[_bt] = list(DENTAL_MARKERS)
+
+# For non-legal businesses, legal terms are forbidden
+for _bt in ["practice", "technology", "product", "service", "ecommerce", "precious_metals_buyer", "medical"]:
+    FORBIDDEN_TERMS.setdefault(_bt, []).extend(LEGAL_MARKERS)
+
+# For non-medical businesses, medical terms are forbidden (except dental/medical share some terms)
+for _bt in ["technology", "product", "service", "ecommerce", "precious_metals_buyer", "legal"]:
+    FORBIDDEN_TERMS.setdefault(_bt, []).extend(MEDICAL_MARKERS)
 
 # For non-ecommerce, ecommerce terms are forbidden
-for _bt in ["practice", "technology", "service", "precious_metals_buyer"]:
+for _bt in ["practice", "technology", "service", "precious_metals_buyer", "legal", "medical"]:
     FORBIDDEN_TERMS.setdefault(_bt, []).extend(ECOMMERCE_MARKERS)
 
 
@@ -113,9 +145,25 @@ def validate_schema_type(
     # Extract all @type values
     types_found = re.findall(r'"@type"\s*:\s*"([^"]+)"', schema_html)
 
+    # Check for wrong schema types based on industry
+    wrong_types = {
+        "legal": ["Dentist", "MedicalBusiness", "Physician"],
+        "medical": ["Dentist", "LegalService", "Attorney"],
+        "practice": ["LegalService", "Attorney", "MedicalBusiness", "Physician"],
+    }
+
+    checked_types = set()
+    for wrong_type in wrong_types.get(profile.industry, []):
+        if wrong_type in types_found:
+            warnings.append(
+                f"[schema.html] Uses @type '{wrong_type}' but business is "
+                f"'{profile.industry}' — should be '{profile.schema_type}'"
+            )
+            checked_types.add(wrong_type)
+
     if not profile.is_practice:
-        # Non-practice businesses should NOT have Dentist type
-        if "Dentist" in types_found:
+        # Non-practice businesses should NOT have Dentist type (catch-all for unlisted industries)
+        if "Dentist" in types_found and "Dentist" not in checked_types:
             warnings.append(
                 f"[schema.html] Uses @type 'Dentist' but business is "
                 f"'{profile.industry}' — should be '{profile.schema_type}'"

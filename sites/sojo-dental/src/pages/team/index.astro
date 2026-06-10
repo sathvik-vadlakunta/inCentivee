@@ -1,0 +1,164 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import TeamCard from '@components/TeamCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const doctors = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+
+const staff = [
+  {
+    name: 'Jen',
+    role: 'Office Manager | Registered Dental Hygienist',
+    photo: '/images/staff/jen.webp',
+    bio: 'Jen is the office manager and a hygienist at SoJo Dental. With over 25 years of experience, she is known for her clear communication, calm demeanor and commitment to helping patients feel confident and well taken care of. Jen loves developing relationships with patients and enjoys seeing how better oral health can boost their self-confidence. She values our team environment and is fortunate to work with such amazing patients daily. Outside the office, you will find her camping, hunting, enjoying the outdoors or at a concert!',
+  },
+  {
+    name: 'Ashlyn',
+    role: 'Receptionist | Dental Assistant',
+    photo: '/images/staff/ashlyn.webp',
+    bio: 'A South Jordan native, Ashlyn has been drawn to dentistry since childhood and has spent the last five years helping patients feel comfortable and cared for. She especially enjoys relieving pain and improving patient comfort. She loves the supportive team at SoJo Dental and the strong relationships they have built with each other and their patients. Her calm, empathetic approach helps put people at ease. Outside the office, Ashlyn enjoys traveling, spending time with loved ones and going to the gym. She is also working on prerequisites for dental hygiene school to continue growing in the field she loves.',
+  },
+  {
+    name: 'Katie',
+    role: 'Financial | Insurance Manager',
+    photo: '/images/staff/katie.webp',
+    bio: 'Katie is the financial and insurance manager at SoJo Dental and has been in the dental field for nearly 10 years. A native of Herriman, she got her start in dentistry after attending dental assistant school. Katie prefers to stay busy, navigating patients through their financial pathways, understanding their insurance benefits, and supporting the staff in any capacity she can. She is known for her empathy and genuine interest in every patient\'s story, always striving to make them feel heard and understood. A self-described proud 49ers fan, Katie also enjoys camping with her family in Duchesne and spending time at the range.',
+  },
+  {
+    name: 'Michele',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/michele.webp',
+    bio: 'Michele is a registered dental hygienist with 25 years of experience. She was drawn to dentistry as a child, always liking the feeling of freshly cleaned teeth. She now strives to provide each patient with the same care and quality that she has adopted as her standard. Michele loves building rapport with patients and creating a warm, welcoming environment. At SoJo Dental, she appreciates being part of a collaborative team and discovering each patient\'s uniqueness. When she is not working, Michele enjoys hitting the golf course, skiing Utah\'s slopes and cheering on her two sons as they play football at Georgetown!',
+  },
+  {
+    name: 'Katana',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/katana.webp',
+    bio: 'Katana is a registered dental hygienist originally from Gilbert, Arizona. Inspired by her dentist uncle and a lifelong love of smiling, she was drawn to dentistry as a way to help others feel confident in their smiles. With over five years of experience, Katana is known for her warm, nonjudgmental approach and the ability to build easy rapport with patients. She loves the fun, supportive team at SoJo Dental and the chance to build genuine relationships with patients. A former basketball player and sports enthusiast, Katana loves spending time with her husband and their dog, reading and being with family and friends. Fun fact: she was named after a Japanese sword!',
+  },
+  {
+    name: 'Karolee',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/karolee.webp',
+    bio: 'Born and raised in Salt Lake City, Karolee found her passion for dentistry while working as a dental assistant. Driven by a desire to help others and find a meaningful, balanced career, she returned to school and has now worked in the field for 30 years \u2013 15 of those as a hygienist. Karolee loves connecting with patients and helping them achieve their best oral health. She values the strong team dynamic at SoJo Dental and enjoys working alongside a staff that truly cares about each patient. Outside the office, you will find Karolee hiking, trail running in the mountains, traveling or spending time with her four grown kids.',
+  },
+  {
+    name: 'Sarah',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/sarah.webp',
+    bio: 'Sarah is a registered dental hygienist with nine years of experience in the dental field. From Florida originally, she was attracted to dentistry by a need to make a positive contribution and help her community. With her friendly demeanor, Sarah takes the time to really listen to her patients and make them feel at ease and cared for during their appointments. She appreciates the camaraderie at SoJo Dental and values establishing long-term relationships with her patients. In her free time, Sarah remains busy hiking with her dog, watching reality television and instructing at a dental hygiene school in Orem!',
+  },
+  {
+    name: 'Payton',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/payton.webp',
+    bio: 'Payton is a registered dental hygienist from Idaho Falls, Idaho, who enjoys helping people attain the smile they want. She has been in the dental field for over five years and is well known for making her patients feel comfortable in a welcoming, non-judgmental setting. At SoJo Dental, Payton loves being part of a compassionate, energetic team. She always smiles when greeting patients and is happy to make each visit a positive one. Payton enjoys time outside, playing basketball, listening to music and spending time with family and friends.',
+  },
+  {
+    name: 'Cambree',
+    role: 'Dental Assistant',
+    photo: '/images/staff/cambree.webp',
+    bio: 'Cambree is a dental assistant from West Valley, Utah, who has always had a passion for the medical field. She started dentistry through a family connection and fell in love with it. She is now working to attend dental hygiene school. With her experience, Cambree enjoys putting her skills to use to improve oral health for patients. She strives to make each patient visit simple and stress-free. She is most known for going the extra mile for her patients to help them feel at ease, and her warm smile and can-do attitude. Outside of work, Cambree is a cheerleader at Salt Lake Community College!',
+  },
+  {
+    name: 'Melanie',
+    role: 'Dental Assistant',
+    photo: '/images/staff/melanie.webp',
+    bio: 'Melanie is a dental assistant from Ogden, Utah, who launched her dental career thanks to a close friend, and has never looked back! Four years later, she enjoys getting to know patients and learning something new every day. At SoJo Dental, Melanie values the friendships with the team and the freedom to keep growing professionally. Patients appreciate her caring and thoughtful personality \u2013 she treats them the way she\'d want to be treated. During her spare time, Melanie likes to spend time with her grandchildren and also works at the Spaghetti Factory!',
+  },
+  {
+    name: 'Kenna',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/kenna.webp',
+    bio: 'Kenna grew up in Bluffdale, Utah and now lives in Herriman, where her passion for dentistry began at just 17 years old. She started as a dental assistant in high school and spent five years working in pediatric and orthodontic offices while completing her education in dental hygiene. Kenna has been a dental hygienist for two years and loves educating patients about oral health while building lasting relationships. Her favorite part of working at SoJo Dental is the supportive team and the happy, peaceful environment they create together. Outside of work, Kenna is an avid reader, finishing around 50 books a year, and loves cooking, traveling and music of all kinds.',
+  },
+  {
+    name: 'Heidi',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/heidi.webp',
+    bio: 'Originally from Boise, Idaho, Heidi found her way into dentistry after high school while exploring a path into healthcare. She began her career in dental assisting, quickly discovering a love for the dental field and deciding to take the next step by becoming a hygienist. Heidi worked as a dental assistant for seven years and has now spent 22 years as a dental hygienist. She enjoys getting to know her patients and values the relationships she builds while addressing their individual concerns. Her favorite part of working at SoJo Dental is the amazing people she gets to work with each day. Outside the office, Heidi plays roller derby and travels to other states competing with her team.',
+  },
+  {
+    name: 'Sophia',
+    role: 'Registered Dental Hygienist',
+    photo: '/images/staff/sophia.webp',
+    bio: 'Originally from California, Sophia was drawn to dentistry after growing up with consistently positive dental experiences and wanting to provide that same welcoming, comfortable care to others. She has been in the dental field for four years and loves connecting with patients and helping them feel confident about their smiles. Sophia especially values the culture at SoJo Dental, sharing that the strong relationships with both her team and patients make coming to work truly enjoyable. Outside of the office, Sophia enjoys reading, going to Pilates and spending time with her husband and their fur baby, Lottie.',
+  },
+]
+---
+
+<Base
+  title="Meet Our Team"
+  description={`Meet the experienced dentists and caring staff at ${practice.name} in South Jordan, Utah. Our vibrant, close-knit team brings energy, warmth and years of shared experience to every visit.`}
+>
+  <Hero
+    title="Meet Our Team"
+    subtitle="Our vibrant, close-knit team brings energy, warmth and years of shared experience to every visit."
+  />
+
+  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-gray-500">
+    <a href="/" class="hover:text-primary">Home</a>
+    <span class="mx-2">/</span>
+    <a href="/about" class="hover:text-primary">About</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-900">Meet Our Team</span>
+  </nav>
+
+  <!-- Doctors -->
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold font-heading text-center mb-4">Our Doctors</h2>
+      <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+        {practice.providers[0].name} and {practice.providers[1].name} are proud to lead a team
+        that has supported generations of patients through quality dental care in South Jordan, Utah.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        {doctors.map((member) => (
+          <TeamCard
+            name={member.data.name}
+            credentials={member.data.credentials}
+            title={member.data.title}
+            photo={member.data.photo}
+            specialties={member.data.specialties}
+            href={`/team/${member.slug}`}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Staff -->
+  <section class="py-16 sm:py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold font-heading text-center mb-4">Our Staff</h2>
+      <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+        Our patients value the long-standing relationships and multilingual care, including services
+        in Spanish and Japanese. Call us at {practice.phone} to meet the team that makes every visit memorable.
+      </p>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {staff.map((member) => (
+          <div class="rounded-xl border border-gray-200 bg-white p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center gap-4 mb-4">
+              <img
+                src={member.photo}
+                alt={member.name}
+                class="w-16 h-16 rounded-full object-cover object-top shrink-0"
+                loading="lazy"
+              />
+              <div>
+                <h3 class="text-lg font-semibold font-heading">{member.name}</h3>
+                <p class="text-sm text-primary font-medium">{member.role}</p>
+              </div>
+            </div>
+            <p class="text-gray-600 text-sm leading-relaxed">{member.bio}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>

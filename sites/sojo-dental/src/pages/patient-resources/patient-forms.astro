@@ -1,0 +1,74 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+---
+
+<Base title="Patient Forms" description={`Access patient forms at ${practice.name}. Complete your paperwork online before your dental appointment in ${practice.address.city}, ${practice.address.state}.`}>
+  <Hero title="Patient Forms" subtitle="Preparing for your visit has never been easier" />
+
+  <section class="py-16 sm:py-20">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-white p-8 sm:p-10 rounded-xl border border-gray-200 shadow-sm text-center">
+        <div class="w-16 h-16 mx-auto mb-6 bg-primary/10 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold font-heading mb-4">Complete Your Forms Online</h2>
+        <p class="text-gray-600 text-lg mb-6">
+          At {practice.name}, we provide convenient access to patient forms so you can complete
+          them at home before seeing Dr. Brian Call or Dr. Conner Ogden, our trusted dentists
+          in {practice.address.city}, {practice.address.state}.
+        </p>
+        <p class="text-gray-600 mb-8">
+          Save time at your appointment by filling out your paperwork ahead of time through our
+          secure patient portal. New patients and returning patients can access all necessary
+          forms online.
+        </p>
+        <a
+          href={practice.patientPortal}
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center justify-center bg-primary text-white px-8 py-3.5 rounded-lg text-lg font-semibold hover:bg-secondary transition-colors"
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          Open Patient Portal
+        </a>
+      </div>
+
+      <div class="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="bg-gray-50 p-6 rounded-xl border border-gray-100">
+          <h3 class="font-semibold font-heading mb-2">New Patients</h3>
+          <p class="text-gray-600 text-sm">
+            Welcome! Complete your new patient forms through the portal before your first visit.
+            This includes your health history, insurance information and consent forms.
+          </p>
+        </div>
+        <div class="bg-gray-50 p-6 rounded-xl border border-gray-100">
+          <h3 class="font-semibold font-heading mb-2">Returning Patients</h3>
+          <p class="text-gray-600 text-sm">
+            Please update your information if anything has changed since your last visit, including
+            insurance details, medications or health conditions.
+          </p>
+        </div>
+      </div>
+
+      <div class="text-center mt-10">
+        <p class="text-gray-600">
+          Forms are also available at our office. Call us at
+          <a href={`tel:${practice.phone.replace(/[^+\d]/g, '')}`} class="text-primary font-semibold hover:text-secondary transition-colors">{practice.phone}</a>
+          if you have any questions. We are here to make your experience smooth and stress-free.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <CTABanner
+    title="Ready For Your Appointment?"
+    subtitle="Complete your forms online and we'll take care of the rest."
+  />
+</Base>

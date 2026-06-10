@@ -36,6 +36,22 @@ class TestGetProfile:
         assert "silver" in profile.service_keywords
         assert profile.customer_term == "customers"
 
+    def test_legal_type(self):
+        profile = get_profile("legal")
+        assert profile.schema_type == "LegalService"
+        assert profile.is_practice is False
+        assert profile.customer_term == "clients"
+        assert profile.provider_term == "attorneys"
+        assert profile.service_category == "practice areas"
+
+    def test_medical_type(self):
+        profile = get_profile("medical")
+        assert profile.schema_type == "MedicalBusiness"
+        assert profile.is_practice is True
+        assert profile.customer_term == "patients"
+        assert profile.provider_term == "providers"
+        assert profile.schema_specialty == "Medicine"
+
     def test_unknown_type_returns_generic(self):
         profile = get_profile("unknown_type")
         assert profile.schema_type == "LocalBusiness"

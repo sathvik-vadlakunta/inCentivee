@@ -63,10 +63,10 @@ class ContentDocxGenerator:
         doc.add_heading(rec.get("title", "Untitled"), level=1)
         if rec.get("description"):
             p = doc.add_paragraph()
-            p.style = "Intense Quote"
             run = p.add_run(f"Meta Description: {rec['description']}")
             run.font.size = Pt(10)
             run.font.italic = True
+            run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
         if rec.get("html_snippet"):
             self._html_to_docx(doc, rec["html_snippet"])
 

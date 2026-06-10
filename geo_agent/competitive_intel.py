@@ -1,7 +1,8 @@
-"""Competitive intelligence monitoring for dental practices.
+"""Competitive intelligence monitoring for businesses (dental, legal, medical, etc).
 
 Tracks competitor review counts, ratings, and schema markup changes.
 Generates alerts when competitors make significant moves.
+Uses vertical-aware place types and competitor validation.
 """
 
 from __future__ import annotations
@@ -15,7 +16,7 @@ from datetime import datetime, timezone
 import httpx
 
 from geo_agent.db import CustomerDB
-from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors
+from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors, get_place_types, validate_competitors
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +66,16 @@ def check_competitor_reviews(
     our_reviews = places.get("review_count", 0)
     our_rating = places.get("rating", 0.0)
 
-    # Fetch current competitor data from Google
+    # Fetch current competitor data from Google using vertical-aware place types
+    business_type = customer.get("business_type", "practice")
+    place_types = get_place_types(business_type) or None
     try:
         current_competitors = fetch_nearby_competitors(
             places["lat"], places["lng"],
             customer["name"], api_key,
+            place_types=place_types,
         )
+        current_competitors = validate_competitors(current_competitors, business_type)
     except Exception as e:
         logger.warning(f"Failed to fetch competitors: {e}")
         return []

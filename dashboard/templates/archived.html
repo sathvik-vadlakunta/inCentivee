@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Archived Customers - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Archived</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">

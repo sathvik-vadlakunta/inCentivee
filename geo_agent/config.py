@@ -34,6 +34,7 @@ class Customer:
     business_type: str = "practice"  # practice/technology/product/service
     webflow_site_id: str = ""
     webflow_api_key: str = ""
+    wp_api_key: str = ""  # PracticeRank WP plugin API key
     specialties: list[str] = field(default_factory=list)
     brand_voice: str = "Professional and warm"
     providers: list[Provider] = field(default_factory=list)
@@ -55,8 +56,11 @@ class Customer:
         customer.webflow_api_key = secrets.get_customer_secret(customer.id, "WEBFLOW_KEY")
         if customer.webflow_api_key:
             logger.info(f"Loaded Webflow key for {customer.id} from secrets manager")
-        else:
-            logger.warning(f"No Webflow key found for {customer.id}")
+        customer.wp_api_key = secrets.get_customer_secret(customer.id, "WP_API_KEY")
+        if customer.wp_api_key:
+            logger.info(f"Loaded WP API key for {customer.id} from secrets manager")
+        if not customer.webflow_api_key and not customer.wp_api_key:
+            logger.warning(f"No CMS API key found for {customer.id}")
         return customer
 
 

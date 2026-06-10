@@ -1,81 +1,172 @@
 {% extends "base.html" %}
 {% block title %}{{ customer.name }} - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('index') }}">Customers</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">{{ customer.name }}</span>
+{% endblock %}
 {% block content %}
 
-<div class="section-header">
-    <div>
-        <h1>{{ customer.name }}</h1>
-        <span style="color: var(--muted);">{{ customer.domain }}</span>
-        <span class="badge badge-{{ customer.status }}" style="margin-left: 0.5rem;">{{ customer.status | title }}</span>
+<div class="customer-header">
+    <div class="customer-header-info">
+        <h1 style="margin:0;font-size:1.35rem;">{{ customer.name }}</h1>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.2rem;">
+            <a href="https://{{ customer.domain }}" target="_blank" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">{{ customer.domain }}</a>
+            <span class="badge badge-{{ customer.status }}">{{ customer.status | title }}</span>
+            <span id="run-status" style="font-size:0.8rem;"></span>
+        </div>
     </div>
-    <div class="flex">
-        <button class="btn btn-sm btn-primary"
+    <div class="customer-header-actions">
+        <button class="btn btn-primary"
             hx-post="{{ url_for('api_trigger_run') }}"
             hx-vals='{"customer_id":"{{ customer.id }}"}'
             hx-confirm="Trigger a full pipeline run for {{ customer.name }}?"
             hx-swap="innerHTML"
             hx-target="#run-status"
-            hx-indicator="#run-spinner">
+            hx-indicator="#run-spinner"
+            style="padding:0.45rem 1.1rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:4px;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Run Agent <span id="run-spinner" class="htmx-indicator spinner" style="margin-left:4px;"></span>
         </button>
-        <button class="btn btn-sm btn-outline" style="color:var(--danger);border-color:var(--danger);"
-            hx-post="{{ url_for('api_cancel_run') }}"
-            hx-vals='{"customer_id":"{{ customer.id }}"}'
-            hx-confirm="Cancel the active run for {{ customer.name }}?"
-            hx-swap="innerHTML"
-            hx-target="#run-status">
-            Cancel Run
-        </button>
-        <span id="run-status"></span>
-        <a href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" class="btn btn-sm btn-outline" target="_blank">Case Study</a>
-        <form method="POST" action="{{ url_for('api_generate_report') }}" style="display:inline;">
-            <input type="hidden" name="customer_id" value="{{ customer.id }}">
-            <button type="submit" class="btn btn-sm btn-outline" onclick="this.textContent='Generating...'">Generate Report</button>
-        </form>
-        {% if report_exists %}
-        <a href="{{ url_for('download_report_docx', customer_id=customer.id) }}" class="btn btn-sm btn-outline">Download Report</a>
-        <a href="{{ url_for('download_report', customer_id=customer.id) }}" class="btn btn-sm btn-outline" title="ZIP with all deploy files">Download ZIP</a>
-        {% endif %}
-        <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="display:inline;">
-            <select name="status" onchange="this.form.submit()" style="width:auto; padding:0.3rem 0.5rem; font-size:0.8rem;">
-                <option value="" disabled selected>Change Status</option>
-                <option value="onboarding">Onboarding</option>
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="churned">Churned</option>
-            </select>
-        </form>
-        {% if customer.status != 'archived' %}
-        <form method="POST" action="{{ url_for('archive_customer', customer_id=customer.id) }}" style="display:inline;" onsubmit="return confirm('Archive this customer?')">
-            <button type="submit" class="btn btn-sm btn-outline" style="color: var(--danger);">Archive</button>
-        </form>
-        {% else %}
-        <form method="POST" action="{{ url_for('restore_customer', customer_id=customer.id) }}" style="display:inline;">
-            <button type="submit" class="btn btn-sm btn-success">Restore</button>
-        </form>
-        {% endif %}
+
+        <!-- Actions dropdown -->
+        <div class="actions-dropdown" id="actions-dropdown">
+            <button class="btn btn-outline" onclick="document.getElementById('actions-dropdown').classList.toggle('open')" style="padding:0.45rem 0.75rem;">
+                Actions
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;margin-left:3px;"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="actions-menu">
+                <button class="actions-item"
+                    hx-post="{{ url_for('api_cancel_run') }}"
+                    hx-vals='{"customer_id":"{{ customer.id }}"}'
+                    hx-confirm="Cancel the active run for {{ customer.name }}?"
+                    hx-swap="innerHTML"
+                    hx-target="#run-status">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    Cancel Run
+                </button>
+
+                <div class="actions-divider"></div>
+                <div class="actions-label">Reports</div>
+                <a class="actions-item" href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" target="_blank">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    View Case Study
+                </a>
+                <form method="POST" action="{{ url_for('api_generate_report') }}" style="margin:0;">
+                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                    <button type="submit" class="actions-item" onclick="this.textContent='Generating...'">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        Generate Report
+                    </button>
+                </form>
+                {% if report_exists %}
+                <a class="actions-item" href="{{ url_for('download_report_docx', customer_id=customer.id) }}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Report (DOCX)
+                </a>
+                <a class="actions-item" href="{{ url_for('download_report', customer_id=customer.id) }}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Deploy ZIP
+                </a>
+                {% endif %}
+
+                <div class="actions-divider"></div>
+                <div class="actions-label">Status</div>
+                <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="margin:0;padding:0.35rem 0.75rem;">
+                    <select name="status" onchange="this.form.submit()" class="actions-select">
+                        <option value="" disabled selected>Change Status...</option>
+                        <option value="onboarding" {% if customer.status == 'onboarding' %}disabled{% endif %}>Onboarding</option>
+                        <option value="active" {% if customer.status == 'active' %}disabled{% endif %}>Active</option>
+                        <option value="paused" {% if customer.status == 'paused' %}disabled{% endif %}>Paused</option>
+                        <option value="churned" {% if customer.status == 'churned' %}disabled{% endif %}>Churned</option>
+                    </select>
+                </form>
+
+                <div class="actions-divider"></div>
+                {% if customer.status != 'archived' %}
+                <form method="POST" action="{{ url_for('archive_customer', customer_id=customer.id) }}" style="margin:0;" onsubmit="return confirm('Archive this customer?')">
+                    <button type="submit" class="actions-item actions-danger">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        Archive Customer
+                    </button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('restore_customer', customer_id=customer.id) }}" style="margin:0;">
+                    <button type="submit" class="actions-item" style="color:var(--success);">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Restore Customer
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Tabs -->
-<div class="tabs">
-    <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
-    <button class="tab" onclick="switchTab('seo', this)">
-        SEO & GEO
-        {% if seo_tasks %}
-            {% set seo_done = seo_tasks | selectattr('done') | list | length %}
-            <span class="tab-badge">{{ seo_done }}/{{ seo_tasks | length }}</span>
-        {% endif %}
+<!-- Content Layout: Vertical Nav + Main Area -->
+<div class="detail-layout">
+<nav class="detail-nav">
+    <button class="detail-nav-item active" onclick="switchTab('overview', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
     </button>
-    <button class="tab" onclick="switchTab('content', this)">
+
+    <div class="detail-nav-group">
+        <button class="detail-nav-item has-children" onclick="switchTab('seo', this);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            SEO & GEO
+            {% if seo_tasks %}
+                {% set seo_done = seo_tasks | selectattr('done') | list | length %}
+                <span class="nav-badge">{{ seo_done }}/{{ seo_tasks | length }}</span>
+            {% endif %}
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="detail-nav-children">
+            <button class="detail-nav-sub active" onclick="switchSeoSubtab('checklist', this)">Checklist</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('overview', this)">Overview</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('rankings', this)">Rankings
+                {% if keyword_summary %}<span class="nav-badge-sm">{{ keyword_summary | length }}</span>{% endif %}
+            </button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('traffic', this)">Traffic</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('audit', this)">Audit
+                {% if audit_issues %}<span class="nav-badge-sm" style="background:#fee2e2;color:#991b1b;">{{ audit_issues | length }}</span>{% endif %}
+            </button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('backlinks', this)">Backlinks</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('competitors', this)">Competitors</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('reviews', this)">Reviews</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('integrations', this)">Integrations</button>
+        </div>
+    </div>
+
+    <button class="detail-nav-item" onclick="switchTab('content', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Content
         {% if content_pending %}
-            <span class="tab-badge" style="background:#fef3c7; color:#92400e;">{{ content_pending }} pending</span>
+            <span class="nav-badge" style="background:#fef3c7;color:#92400e;">{{ content_pending }}</span>
         {% endif %}
     </button>
-    <button class="tab" onclick="switchTab('ai-mentions', this)">AI Mentions</button>
-    <button class="tab" onclick="switchTab('emails', this)">Emails</button>
-</div>
+
+    <button class="detail-nav-item" onclick="switchTab('ai-mentions', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        AI Mentions
+    </button>
+
+    <button class="detail-nav-item" onclick="switchTab('ai-readiness', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        AI Readiness
+    </button>
+
+    <button class="detail-nav-item" onclick="switchTab('emails', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Emails
+    </button>
+
+
+</nav>
+
+<div class="detail-content">
 
 <!-- ==================== OVERVIEW TAB ==================== -->
 <div id="tab-overview" class="tab-content active">
@@ -83,7 +174,7 @@
     <!-- Top summary row -->
     {% if places or (todos and todos | length > 0) %}
     <div class="grid grid-3" style="margin-bottom: 1rem;">
-        {% if places and customer.business_type == 'practice' %}
+        {% if places and customer.business_type in ('practice', 'legal', 'medical') %}
         <div class="card stat">
             <div class="number stars">{{ "%.1f" | format(places.rating) }}</div>
             <div class="label">Google Rating ({{ places.review_count }} reviews)</div>
@@ -107,13 +198,61 @@
     </div>
     {% endif %}
 
+    <!-- PracticeRank Score Section -->
+    <div class="grid grid-3" style="margin-bottom: 1rem; grid-template-columns: 1fr 1.5fr 1fr;">
+        <!-- Score Ring -->
+        <div class="card" style="text-align:center;padding:1rem;" id="pr-score-card">
+            <div style="position:relative;width:120px;height:120px;margin:0 auto 0.5rem;">
+                <svg viewBox="0 0 120 120" id="pr-score-ring">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#6b7280" stroke-width="10"
+                            stroke-dasharray="326.7" stroke-dashoffset="326.7" stroke-linecap="round"
+                            transform="rotate(-90 60 60)" id="pr-score-arc"/>
+                </svg>
+                <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;">
+                    <div style="font-size:1.8rem;font-weight:700;line-height:1;" id="pr-score-num">--</div>
+                    <div style="font-size:0.65rem;color:var(--muted);">/ 100</div>
+                </div>
+            </div>
+            <div style="font-size:0.85rem;font-weight:600;" id="pr-grade-label">Loading...</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem;" id="pr-score-delta"></div>
+        </div>
+
+        <!-- Pillar Bars -->
+        <div class="card" style="padding:1rem;" id="pr-pillars-card">
+            <h3 style="font-size:0.8rem;color:var(--muted);margin:0 0 0.75rem;">Score Breakdown</h3>
+            <div id="pr-pillar-bars" style="display:flex;flex-direction:column;gap:0.5rem;">
+                <div style="color:var(--muted);font-size:0.8rem;">Loading pillars...</div>
+            </div>
+        </div>
+
+        <!-- Quick Wins -->
+        <div class="card" style="padding:1rem;" id="pr-quickwins-card">
+            <h3 style="font-size:0.8rem;color:var(--muted);margin:0 0 0.5rem;">Quick Wins</h3>
+            <div id="pr-quickwins-list" style="display:flex;flex-direction:column;gap:0.4rem;">
+                <div style="color:var(--muted);font-size:0.8rem;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Visibility Trend -->
+    <div class="card" style="margin-bottom:1rem;" id="pr-ai-trend-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+            <h3 style="font-size:0.85rem;color:var(--muted);margin:0;">AI Visibility Trend</h3>
+            <span style="font-size:0.72rem;color:var(--muted);" id="pr-ai-trend-range"></span>
+        </div>
+        <div style="position:relative;height:140px;">
+            <canvas id="pr-ai-trend-chart"></canvas>
+        </div>
+    </div>
+
     <div class="grid grid-2">
         <!-- Left Column: Practice Info -->
         <div>
             <!-- Business Details -->
             <div class="card">
                 <div class="section-header">
-                    <h2>{% if customer.business_type == 'practice' %}Practice Details{% else %}Company Details{% endif %}</h2>
+                    <h2>{% if customer.business_type in ('practice', 'medical') %}Practice Details{% elif customer.business_type == 'legal' %}Firm Details{% else %}Company Details{% endif %}</h2>
                     <button class="btn btn-sm btn-outline" onclick="document.getElementById('edit-form').style.display = document.getElementById('edit-form').style.display === 'none' ? 'block' : 'none'">Edit</button>
                 </div>
                 <table>
@@ -128,6 +267,13 @@
                             <span style="color: var(--muted); font-size: 0.8rem; margin-left: 0.5rem;">No OAuth app configured</span>
                         {% endif %}
                         <button class="btn btn-sm btn-outline" style="margin-left: 0.25rem; font-size: 0.65rem;" onclick="document.getElementById('webflow-app-form').style.display = document.getElementById('webflow-app-form').style.display === 'none' ? 'block' : 'none'">&#9881;</button>
+                        {% elif customer.platform == 'wordpress' %}
+                        {% if wp_connected %}
+                            <span style="color: var(--success); font-size: 0.8rem; margin-left: 0.5rem;">Plugin connected</span>
+                        {% else %}
+                            <span style="color: #f59e0b; font-size: 0.8rem; margin-left: 0.5rem;">Plugin not connected</span>
+                        {% endif %}
+                        <button class="btn btn-sm btn-outline" style="margin-left: 0.25rem; font-size: 0.65rem;" onclick="document.getElementById('wp-plugin-setup').style.display = document.getElementById('wp-plugin-setup').style.display === 'none' ? 'block' : 'none'">Setup Guide</button>
                         {% endif %}
                     </td></tr>
                     {% if customer.platform == 'webflow' %}
@@ -141,12 +287,72 @@
                         </form>
                     </td></tr>
                     {% endif %}
+                    {% if customer.platform == 'wordpress' %}
+                    <tr id="wp-plugin-setup" style="display:none;"><td colspan="2">
+                        <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; font-size: 0.8rem; line-height: 1.6;">
+                            <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem;">PracticeRank SEO Plugin — Setup Guide</div>
+
+                            <div style="background: white; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="font-weight: 600; color: #2563eb; margin-bottom: 0.3rem;">Step 1: Download the Plugin</div>
+                                <p style="margin: 0.2rem 0;">Download <code>practicerank-seo.php</code> from our repository, or ask us to send the .zip file.</p>
+                                <a href="{{ url_for('download_wp_plugin') }}" class="btn btn-sm btn-primary" style="margin-top: 0.4rem; font-size: 0.75rem;">Download Plugin (.zip)</a>
+                            </div>
+
+                            <div style="background: white; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="font-weight: 600; color: #2563eb; margin-bottom: 0.3rem;">Step 2: Install in WordPress</div>
+                                <ol style="margin: 0.3rem 0 0; padding-left: 1.2rem;">
+                                    <li>Log into the WordPress admin dashboard</li>
+                                    <li>Go to <strong>Plugins &rarr; Add New Plugin &rarr; Upload Plugin</strong></li>
+                                    <li>Click <strong>Choose File</strong>, select the downloaded <code>.zip</code> file</li>
+                                    <li>Click <strong>Install Now</strong>, then <strong>Activate Plugin</strong></li>
+                                </ol>
+                            </div>
+
+                            <div style="background: white; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="font-weight: 600; color: #2563eb; margin-bottom: 0.3rem;">Step 3: Copy the API Key</div>
+                                <ol style="margin: 0.3rem 0 0; padding-left: 1.2rem;">
+                                    <li>Go to <strong>Settings &rarr; PracticeRank</strong> in the WordPress sidebar</li>
+                                    <li>Copy the <strong>API Key</strong> shown on the settings page</li>
+                                    <li>Send the key to your PracticeRank account manager, or paste it below:</li>
+                                </ol>
+                                <form method="POST" action="{{ url_for('save_wp_api_key', customer_id=customer.id) }}" style="display: flex; gap: 0.4rem; margin-top: 0.5rem;">
+                                    <input type="text" name="wp_api_key" placeholder="Paste API key here"
+                                           style="flex:1; padding:0.35rem 0.5rem; font-size:0.8rem; font-family:monospace; border:1px solid var(--border); border-radius:4px;">
+                                    <button type="submit" class="btn btn-sm btn-primary">Save Key</button>
+                                </form>
+                            </div>
+
+                            <div style="background: white; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; margin-bottom: 0.75rem;">
+                                <div style="font-weight: 600; color: #2563eb; margin-bottom: 0.3rem;">Step 4: Verify Connection</div>
+                                <p style="margin: 0.2rem 0;">After saving the API key, click the button below to test the connection:</p>
+                                <button class="btn btn-sm btn-outline" style="margin-top: 0.4rem; font-size: 0.75rem;" onclick="testWpConnection('{{ customer.id }}', '{{ customer.domain }}')">Test Connection</button>
+                                <div id="wp-test-result" style="margin-top: 0.4rem; font-size: 0.8rem;"></div>
+                            </div>
+
+                            <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 0.6rem; font-size: 0.75rem; color: #1e40af;">
+                                <strong>What the plugin does:</strong>
+                                <ul style="margin: 0.3rem 0 0; padding-left: 1rem;">
+                                    <li>Injects JSON-LD schema markup (LocalBusiness, FAQ, Service) into every page</li>
+                                    <li>Serves <code>/llms.txt</code> and <code>/llms-full.txt</code> for AI search engine discoverability</li>
+                                    <li>Optimizes <code>robots.txt</code> with AI crawler rules (ChatGPT, Claude, Perplexity, etc.)</li>
+                                    <li>Accepts content pushes (blog posts, pages) via secure REST API</li>
+                                    <li>Works with WordPress 5.6+ (requires REST API and Application Passwords)</li>
+                                    <li>Compatible with Yoast SEO, RankMath, and All in One SEO</li>
+                                </ul>
+                            </div>
+
+                            <div style="margin-top: 0.5rem; font-size: 0.7rem; color: var(--muted);">
+                                Plugin v2.0 &bull; Requires WordPress 5.6+ &bull; PHP 7.4+ &bull; Compatible with all major hosting providers
+                            </div>
+                        </div>
+                    </td></tr>
+                    {% endif %}
                     <tr><td style="color:var(--muted);">Address</td><td>{{ customer.address or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">City/State</td><td>{{ customer.city }}{% if customer.state %}, {{ customer.state }}{% endif %} {{ customer.zip }}</td></tr>
                     <tr><td style="color:var(--muted);">Phone</td><td>{{ customer.phone or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">Email</td><td>{{ customer.email or '--' }}</td></tr>
                     <tr><td style="color:var(--muted);">Hours</td><td style="font-size:0.8rem;">{{ customer.hours or '--' }}</td></tr>
-                    {% if customer.business_type == 'practice' %}
+                    {% if customer.business_type in ('practice', 'medical') %}
                     <tr><td style="color:var(--muted);">Emergency</td><td>{{ 'Yes' if customer.emergency_available else 'No' }}</td></tr>
                     {% endif %}
                     {% if customer.specialties %}
@@ -212,6 +418,19 @@
                         </div>
                         <div class="form-group"><label>Email</label><input type="email" name="email" value="{{ customer.email }}"></div>
                         <div class="form-group"><label>Hours</label><input type="text" name="hours" value="{{ customer.hours }}"></div>
+                        <div class="form-group">
+                            <label>Business Type</label>
+                            <select name="business_type">
+                                <option value="practice" {% if customer.business_type == 'practice' %}selected{% endif %}>Dental Practice</option>
+                                <option value="legal" {% if customer.business_type == 'legal' %}selected{% endif %}>Law Firm</option>
+                                <option value="medical" {% if customer.business_type == 'medical' %}selected{% endif %}>Medical Practice</option>
+                                <option value="ecommerce" {% if customer.business_type == 'ecommerce' %}selected{% endif %}>E-Commerce / Retail</option>
+                                <option value="technology" {% if customer.business_type == 'technology' %}selected{% endif %}>Technology / SaaS</option>
+                                <option value="product" {% if customer.business_type == 'product' %}selected{% endif %}>Product Company</option>
+                                <option value="service" {% if customer.business_type == 'service' %}selected{% endif %}>Service Business</option>
+                                <option value="other" {% if customer.business_type == 'other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
                         <div class="form-group"><label>Brand Voice</label><textarea name="brand_voice" rows="2">{{ customer.brand_voice }}</textarea></div>
                         <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
                     </form>
@@ -253,7 +472,7 @@
             </div>
             {% endif %}
 
-            {% if competitors and customer.business_type == 'practice' %}
+            {% if competitors and customer.business_type in ('practice', 'legal', 'medical') %}
             <div class="card">
                 <h2>Competitors</h2>
                 <table>
@@ -508,6 +727,825 @@
 
 <!-- ==================== SEO & GEO TAB ==================== -->
 <div id="tab-seo" class="tab-content">
+
+
+    <!-- ===== OVERVIEW SUB-TAB (NEW) ===== -->
+    <div id="seo-sub-overview" class="seo-sub-content" style="display:none;">
+
+        <!-- Date range bar + Health score inline -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <div style="display:flex;align-items:center;gap:1rem;">
+                <div style="position:relative;width:56px;height:56px;flex-shrink:0;">
+                    <svg viewBox="0 0 36 36" style="width:56px;height:56px;transform:rotate(-90deg);">
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none" stroke="#e2e8f0" stroke-width="3.5"/>
+                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none" stroke="{% if seo_health_score >= 70 %}#16a34a{% elif seo_health_score >= 40 %}#d97706{% else %}#dc2626{% endif %}"
+                              stroke-width="3.5" stroke-dasharray="{{ seo_health_score }}, 100" stroke-linecap="round"/>
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.05rem;font-weight:700;color:{% if seo_health_score >= 70 %}#16a34a{% elif seo_health_score >= 40 %}#d97706{% else %}#dc2626{% endif %};">
+                        {{ seo_health_score }}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-weight:600;font-size:0.9rem;">SEO Health Score</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">
+                        {% if latest_audit %}Last audit: {{ latest_audit.audit_date }}{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date range pills -->
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+                {% if gsc_daily %}
+                <span style="font-size:0.75rem;color:var(--muted);margin-right:0.25rem;">
+                    <span data-stat="date-range">{{ gsc_daily[0].date }} — {{ gsc_daily[-1].date }}</span>
+                </span>
+                {% endif %}
+                <div style="display:flex;gap:0.2rem;background:#f1f5f9;border-radius:6px;padding:2px;">
+                    <button class="date-range-btn{% if date_range == '7d' %} active{% endif %}" onclick="switchDateRange('7d', this)">7d</button>
+                    <button class="date-range-btn{% if not date_range or date_range == '30d' %} active{% endif %}" onclick="switchDateRange('30d', this)">30d</button>
+                    <button class="date-range-btn{% if date_range == '90d' %} active{% endif %}" onclick="switchDateRange('90d', this)">90d</button>
+                    <button class="date-range-btn{% if date_range == '180d' %} active{% endif %}" onclick="switchDateRange('180d', this)">6m</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metric Cards -->
+        {% if gsc_daily %}
+        {% set total_clicks = gsc_daily | sum(attribute='clicks') %}
+        {% set total_impressions = gsc_daily | sum(attribute='impressions') %}
+        {% set avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0 %}
+        {% set avg_pos = (gsc_daily | sum(attribute='position')) / (gsc_daily | length) if gsc_daily else 0 %}
+
+        <div class="grid grid-4" style="margin-bottom:1rem;">
+            <div class="metric-card">
+                <div class="metric-label">Clicks</div>
+                <div class="metric-value" style="color:#16a34a;" data-stat="clicks">{{ total_clicks }}</div>
+                {% if gsc_prev_clicks is defined and gsc_prev_clicks %}
+                {% set click_change = ((total_clicks - gsc_prev_clicks) / gsc_prev_clicks * 100) if gsc_prev_clicks > 0 else 0 %}
+                <div class="metric-change {% if click_change > 0 %}positive{% elif click_change < 0 %}negative{% else %}neutral{% endif %}">
+                    {% if click_change > 0 %}+{% endif %}{{ "%.0f"|format(click_change) }}% vs prev {{ date_range or '30d' }}
+                </div>
+                {% endif %}
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Impressions</div>
+                <div class="metric-value" style="color:#2563eb;" data-stat="impressions">{{ "{:,}".format(total_impressions) }}</div>
+                {% if gsc_prev_impressions is defined and gsc_prev_impressions %}
+                {% set imp_change = ((total_impressions - gsc_prev_impressions) / gsc_prev_impressions * 100) if gsc_prev_impressions > 0 else 0 %}
+                <div class="metric-change {% if imp_change > 0 %}positive{% elif imp_change < 0 %}negative{% else %}neutral{% endif %}">
+                    {% if imp_change > 0 %}+{% endif %}{{ "%.0f"|format(imp_change) }}% vs prev
+                </div>
+                {% endif %}
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg CTR</div>
+                <div class="metric-value" style="color:#d97706;" data-stat="ctr">{{ "%.1f"|format(avg_ctr) }}%</div>
+                <div class="metric-change neutral" data-stat="days">{{ gsc_daily | length }} days</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Position</div>
+                <div class="metric-value" style="color:#7c3aed;" data-stat="position">{{ "%.1f"|format(avg_pos) }}</div>
+                <div class="metric-change {% if avg_pos <= 10 %}positive{% elif avg_pos <= 20 %}neutral{% else %}negative{% endif %}" data-stat="page">
+                    {% if avg_pos <= 10 %}Page 1{% elif avg_pos <= 20 %}Page 2{% elif avg_pos <= 30 %}Page 3{% else %}Page {{ (avg_pos / 10) | int + 1 }}{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Clicks & Impressions Trend Chart -->
+        <div class="card" style="margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                <h3 style="font-size:0.85rem;color:var(--muted);margin:0;">Clicks & Impressions Trend</h3>
+                <span style="font-size:0.72rem;color:var(--muted);"><span data-stat="date-range">{{ gsc_daily[0].date }} — {{ gsc_daily[-1].date }}</span></span>
+            </div>
+            <div style="position:relative;height:160px;">
+                <canvas id="overview-clicks-chart"></canvas>
+            </div>
+        </div>
+        {% else %}
+        <div class="card" style="margin-bottom:1rem;">
+            <p style="color:var(--muted);font-size:0.85rem;text-align:center;padding:1rem;">No search data available. Configure GSC in the <strong>Integrations</strong> tab and run the agent to pull data.</p>
+        </div>
+        {% endif %}
+
+        <!-- Top Keywords & Top Pages side by side -->
+        <div class="grid grid-2" style="margin-bottom:1rem;">
+            <div class="card">
+                <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Top Keywords</h3>
+                {% if keyword_summary %}
+                <table>
+                    <thead><tr><th>Keyword</th><th style="text-align:right;">Pos</th><th style="text-align:right;">Clicks</th></tr></thead>
+                    <tbody>
+                    {% for kw in keyword_summary[:5] %}
+                    <tr>
+                        <td style="font-size:0.8rem;">{{ kw.keyword | truncate(30) }}</td>
+                        <td style="text-align:right;font-weight:600;color:{% if kw.current_position and kw.current_position <= 10 %}var(--success){% elif kw.current_position and kw.current_position <= 20 %}var(--warning){% else %}var(--danger){% endif %};">
+                            {{ "%.1f"|format(kw.current_position) if kw.current_position else '--' }}
+                        </td>
+                        <td style="text-align:right;">{{ kw.current_clicks or '--' }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color:var(--muted);font-size:0.85rem;">No keywords tracked yet.</p>
+                {% endif %}
+            </div>
+            <div class="card">
+                <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Top Pages</h3>
+                {% if gsc_top_pages %}
+                <table>
+                    <thead><tr><th>Page</th><th style="text-align:right;">Clicks</th><th style="text-align:right;">CTR</th></tr></thead>
+                    <tbody>
+                    {% for page in gsc_top_pages[:5] %}
+                    <tr>
+                        <td style="font-size:0.8rem;" title="{{ page.page }}">{{ page.page | replace('https://', '') | replace('http://', '') | truncate(30) }}</td>
+                        <td style="text-align:right;font-weight:600;">{{ page.clicks }}</td>
+                        <td style="text-align:right;">{{ "%.1f"|format(page.ctr * 100) }}%</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color:var(--muted);font-size:0.85rem;">No page data yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Alerts & Opportunities -->
+        {% if audit_issues or ctr_opportunities %}
+        <div class="card">
+            <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Alerts & Opportunities</h3>
+            <div style="display:grid;gap:0.4rem;">
+                {% for issue in audit_issues[:3] %}
+                <div style="font-size:0.8rem;padding:0.35rem 0.5rem;background:{% if issue.severity == 'critical' %}#fef2f2{% else %}#fffbeb{% endif %};border-radius:4px;">
+                    <span style="font-weight:600;color:{% if issue.severity == 'critical' %}#dc2626{% else %}#d97706{% endif %};">{{ issue.severity | upper }}:</span>
+                    {{ issue.title }}
+                </div>
+                {% endfor %}
+                {% if ctr_opportunities %}
+                {% for opp in ctr_opportunities[:3] %}
+                <div style="font-size:0.8rem;padding:0.35rem 0.5rem;background:#eff6ff;border-radius:4px;">
+                    <span style="font-weight:600;color:#2563eb;">CTR OPP:</span>
+                    "{{ opp.keyword | truncate(30) }}" — {{ opp.impressions }} impr, {{ "%.1f"|format(opp.ctr * 100) }}% CTR (expected {{ "%.1f"|format(opp.expected_ctr * 100) }}%)
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ===== INTEGRATIONS SUB-TAB ===== -->
+    <div id="seo-sub-integrations" class="seo-sub-content" style="display:none;">
+        <div class="card">
+            <h2 style="margin-bottom: 0.75rem;">Data Connections</h2>
+            <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">Configure API connections for this customer. The system uses these to pull keyword rankings, backlinks, and search performance data.</p>
+
+            <!-- GSC Integration -->
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                    <div>
+                        <strong>Google Search Console</strong>
+                        <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">Keywords, backlinks, search performance</span>
+                    </div>
+                    {% set gsc_integ = integrations | selectattr('integration', 'equalto', 'gsc') | first %}
+                    <span class="badge" style="background:{% if gsc_integ and gsc_integ.status == 'active' %}#d1fae5;color:#065f46{% elif gsc_integ and gsc_integ.status == 'configured' %}#fef3c7;color:#92400e{% elif gsc_integ and gsc_integ.status == 'error' %}#fee2e2;color:#991b1b{% else %}#f3f4f6;color:#6b7280{% endif %};">
+                        {{ (gsc_integ.status if gsc_integ else 'not configured') | replace('_', ' ') | title }}
+                    </span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
+                    Uses domain-wide delegation to access GSC. The property URL must match a verified property in your Google Search Console account.
+                </div>
+                <form onsubmit="saveGscIntegration(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.2rem;">GSC Property URL</label>
+                        <input type="text" id="gsc-property-url" placeholder="sc-domain:example.com or https://www.example.com/"
+                               value="{{ gsc_integ.config.property_url if gsc_integ and gsc_integ.config else ('sc-domain:' + customer.domain) }}"
+                               style="width:100%;padding:0.4rem 0.5rem;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap;">Save</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="testIntegration('{{ customer.id }}', 'gsc')" style="white-space:nowrap;">Test</button>
+                </form>
+                <div id="gsc-test-result" style="font-size:0.8rem;margin-top:0.5rem;display:none;"></div>
+                {% if gsc_integ and gsc_integ.last_error %}
+                <div style="font-size:0.8rem;color:var(--danger);margin-top:0.4rem;">Last error: {{ gsc_integ.last_error }}</div>
+                {% endif %}
+            </div>
+
+            <!-- PageSpeed Integration -->
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong>PageSpeed Insights</strong>
+                        <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">Site audits, performance scores</span>
+                    </div>
+                    <span class="badge" style="background:#d1fae5;color:#065f46;">Always Available</span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;">
+                    Free API, no configuration needed. Uses the customer's domain ({{ customer.domain }}).
+                </div>
+            </div>
+
+            <!-- Google Places Integration -->
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong>Google Places</strong>
+                        <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">Reviews, ratings, competitors</span>
+                    </div>
+                    <span class="badge" style="background:{% if places %}#d1fae5;color:#065f46{% else %}#fef3c7;color:#92400e{% endif %};">
+                        {% if places %}Connected ({{ places.review_count }} reviews){% else %}No data yet{% endif %}
+                    </span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-top:0.3rem;">
+                    Automatically detected when the agent runs. {% if not places %}Run the agent to detect Google Places data.{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TRAFFIC SUB-TAB (Split from Rankings) ===== -->
+    <div id="seo-sub-traffic" class="seo-sub-content" style="display:none;">
+
+        {% if gsc_daily %}
+        <!-- Traffic Overview -->
+        <div class="card" style="margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <h2 style="margin:0;">Search Traffic</h2>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    {% if gsc_daily %}
+                    <span style="font-size:0.75rem;color:var(--muted);"><span data-stat="date-range">{{ gsc_daily[0].date }} — {{ gsc_daily[-1].date }}</span></span>
+                    {% endif %}
+                    <div style="display:flex;gap:0.2rem;background:#f1f5f9;border-radius:6px;padding:2px;">
+                        <button class="date-range-btn{% if date_range == '7d' %} active{% endif %}" onclick="switchDateRange('7d', this)">7d</button>
+                        <button class="date-range-btn{% if not date_range or date_range == '30d' %} active{% endif %}" onclick="switchDateRange('30d', this)">30d</button>
+                        <button class="date-range-btn{% if date_range == '90d' %} active{% endif %}" onclick="switchDateRange('90d', this)">90d</button>
+                        <button class="date-range-btn{% if date_range == '180d' %} active{% endif %}" onclick="switchDateRange('180d', this)">6m</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-bottom:1rem;">
+                {% set total_clicks = gsc_daily | sum(attribute='clicks') %}
+                {% set total_impressions = gsc_daily | sum(attribute='impressions') %}
+                {% set avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0 %}
+                {% set avg_pos = (gsc_daily | sum(attribute='position')) / (gsc_daily | length) if gsc_daily else 0 %}
+                <div style="text-align:center;padding:0.75rem;background:#f0fdf4;border-radius:8px;">
+                    <div style="font-size:1.5rem;font-weight:700;color:#16a34a;" data-stat="clicks">{{ total_clicks }}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">Total Clicks</div>
+                </div>
+                <div style="text-align:center;padding:0.75rem;background:#eff6ff;border-radius:8px;">
+                    <div style="font-size:1.5rem;font-weight:700;color:#2563eb;" data-stat="impressions">{{ "{:,}".format(total_impressions) }}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">Impressions</div>
+                </div>
+                <div style="text-align:center;padding:0.75rem;background:#fef3c7;border-radius:8px;">
+                    <div style="font-size:1.5rem;font-weight:700;color:#d97706;" data-stat="ctr">{{ "%.1f"|format(avg_ctr) }}%</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">Avg CTR</div>
+                </div>
+                <div style="text-align:center;padding:0.75rem;background:#faf5ff;border-radius:8px;">
+                    <div style="font-size:1.5rem;font-weight:700;color:#7c3aed;" data-stat="position">{{ "%.1f"|format(avg_pos) }}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">Avg Position</div>
+                </div>
+            </div>
+
+            <!-- Daily traffic chart (Chart.js) -->
+            <div style="position:relative;height:200px;">
+                <canvas id="traffic-chart"></canvas>
+            </div>
+        </div>
+
+        {% if gsc_top_pages %}
+        <!-- Top Pages -->
+        <div class="card" style="margin-bottom:1rem;">
+            <h2 style="margin-bottom:0.75rem;">Top Pages</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Page</th>
+                        <th style="text-align:right;">Clicks</th>
+                        <th style="text-align:right;">Impressions</th>
+                        <th style="text-align:right;">CTR</th>
+                        <th style="text-align:right;">Avg Position</th>
+                    </tr>
+                </thead>
+                <tbody id="top-pages-tbody">
+                {% for page in gsc_top_pages %}
+                <tr>
+                    <td style="font-size:0.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ page.page }}">
+                        {{ page.page | replace('https://', '') | replace('http://', '') | truncate(50) }}
+                    </td>
+                    <td style="text-align:right;font-weight:600;">{{ page.clicks }}</td>
+                    <td style="text-align:right;">{{ "{:,}".format(page.impressions) }}</td>
+                    <td style="text-align:right;">{{ "%.1f"|format(page.ctr * 100) }}%</td>
+                    <td style="text-align:right;">
+                        <span style="color:{% if page.position <= 10 %}var(--success){% elif page.position <= 20 %}var(--warning){% else %}var(--danger){% endif %};">
+                            {{ "%.1f"|format(page.position) }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="card empty-state">
+            <p>No traffic data yet. Configure GSC in the Integrations tab and pull data.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ===== RANKINGS SUB-TAB ===== -->
+    <div id="seo-sub-rankings" class="seo-sub-content" style="display:none;">
+        <div class="card">
+            <div class="section-header" style="margin-bottom:0.75rem;">
+                <h2>Keyword Rankings</h2>
+                <div class="flex">
+                    <button class="btn btn-sm btn-outline" onclick="autoGenerateKeywords('{{ customer.id }}')">Auto-Generate</button>
+                    <button class="btn btn-sm btn-outline" onclick="document.getElementById('add-keyword-form').style.display='block'">+ Add Keywords</button>
+                    <button class="btn btn-sm btn-primary" onclick="pullKeywordRanks('{{ customer.id }}')">Pull from GSC</button>
+                </div>
+            </div>
+
+            <div id="add-keyword-form" style="display:none;margin-bottom:1rem;padding:0.75rem;background:#f8fafc;border-radius:6px;">
+                <form onsubmit="addKeywords(event, '{{ customer.id }}')">
+                    <label style="font-size:0.8rem;color:var(--muted);">Add keywords (comma-separated)</label>
+                    <div style="display:flex;gap:0.5rem;margin-top:0.3rem;">
+                        <input type="text" id="new-keywords-input" placeholder="dental implants austin, best dentist near me" style="flex:1;padding:0.4rem;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;">
+                        <button type="submit" class="btn btn-sm btn-primary">Add</button>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="this.closest('#add-keyword-form').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="keyword-action-result" style="display:none;font-size:0.85rem;padding:0.5rem;border-radius:4px;margin-bottom:0.75rem;"></div>
+
+            {% if keyword_summary %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th style="text-align:right;">Position</th>
+                        <th style="text-align:center;">Trend</th>
+                        <th style="text-align:right;">Clicks</th>
+                        <th style="text-align:right;">Impressions</th>
+                        <th style="text-align:center;">Source</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for kw in keyword_summary %}
+                <tr>
+                    <td style="font-size:0.85rem;">
+                        {{ kw.keyword }}
+                        {% if kw.source == 'gsc_discovered' %}
+                        <span style="font-size:0.65rem;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px;margin-left:4px;">discovered</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right;">
+                        {% if kw.current_position %}
+                        <span style="color:{% if kw.current_position <= 10 %}var(--success){% elif kw.current_position <= 20 %}var(--warning){% else %}var(--danger){% endif %};font-weight:600;">
+                            {{ "%.1f"|format(kw.current_position) }}
+                        </span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="text-align:center;">
+                        {% if kw.current_position and kw.prev_position %}
+                            {% set diff = kw.prev_position - kw.current_position %}
+                            {% if diff > 0.5 %}
+                            <span style="color:var(--success);" title="Improved by {{ '%.1f'|format(diff) }} positions">&#9650; {{ "%.0f"|format(diff) }}</span>
+                            {% elif diff < -0.5 %}
+                            <span style="color:var(--danger);" title="Dropped by {{ '%.1f'|format(diff|abs) }} positions">&#9660; {{ "%.0f"|format(diff|abs) }}</span>
+                            {% else %}
+                            <span style="color:var(--muted);">—</span>
+                            {% endif %}
+                        {% elif kw.current_position %}
+                        <span style="font-size:0.7rem;color:var(--muted);">new</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td style="text-align:right;">{{ kw.current_clicks or '—' }}</td>
+                    <td style="text-align:right;">{{ kw.current_impressions or '—' }}</td>
+                    <td style="text-align:center;font-size:0.7rem;color:var(--muted);">{{ kw.source }}</td>
+                    <td style="text-align:right;">
+                        <button class="btn btn-sm btn-outline" style="font-size:0.65rem;color:var(--danger);padding:2px 6px;"
+                                onclick="deleteKeyword('{{ customer.id }}', '{{ kw.keyword }}')">x</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state" style="padding:2rem;text-align:center;">
+                <p style="color:var(--muted);">No keywords tracked yet.</p>
+                <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem;">Click <strong>Auto-Generate</strong> to create keywords from services and location, or <strong>+ Add Keywords</strong> to add manually.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- CTR Opportunity Report -->
+        {% if ctr_opportunities %}
+        <div class="card" style="margin-top:1rem;">
+            <h2 style="margin-bottom:0.25rem;">CTR Opportunities</h2>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">High impressions but low CTR — improving titles and descriptions could win easy traffic.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th style="text-align:right;">Position</th>
+                        <th style="text-align:right;">Impressions</th>
+                        <th style="text-align:right;">CTR</th>
+                        <th style="text-align:right;">Expected CTR</th>
+                        <th style="text-align:right;">Gap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for opp in ctr_opportunities %}
+                <tr>
+                    <td style="font-size:0.85rem;">{{ opp.keyword }}</td>
+                    <td style="text-align:right;">{{ "%.1f"|format(opp.position) }}</td>
+                    <td style="text-align:right;">{{ opp.impressions }}</td>
+                    <td style="text-align:right;">{{ "%.1f"|format(opp.ctr * 100) }}%</td>
+                    <td style="text-align:right;">{{ "%.1f"|format(opp.expected_ctr * 100) }}%</td>
+                    <td style="text-align:right;color:var(--danger);font-weight:600;">{{ "%.1f"|format((opp.ctr - opp.expected_ctr) * 100) }}%</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ===== AUDIT SUB-TAB ===== -->
+    <div id="seo-sub-audit" class="seo-sub-content" style="display:none;">
+        <div class="card">
+            <div class="section-header" style="margin-bottom:0.75rem;">
+                <h2>Site Audit</h2>
+                <div class="flex">
+                    {% if latest_audit %}
+                    <span style="font-size:0.8rem;color:var(--muted);">Last run: {{ latest_audit.audit_date }}</span>
+                    {% endif %}
+                    <button class="btn btn-sm btn-primary" onclick="runSiteAudit('{{ customer.id }}')" id="run-audit-btn">Run Audit</button>
+                </div>
+            </div>
+
+            {% if latest_audit %}
+            <div class="grid grid-4" style="gap:0.75rem;margin-bottom:1rem;">
+                {% for label, key in [('Performance', 'performance_score'), ('SEO', 'seo_score'), ('Accessibility', 'accessibility_score'), ('Best Practices', 'best_practices_score')] %}
+                <div style="text-align:center;padding:0.75rem;background:#f8fafc;border-radius:8px;">
+                    {% set score = latest_audit[key] or 0 %}
+                    <div style="font-size:1.5rem;font-weight:700;color:{% if score >= 80 %}var(--success){% elif score >= 50 %}var(--warning){% else %}var(--danger){% endif %};">{{ score }}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">{{ label }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if audit_issues %}
+            <h3 style="font-size:0.9rem;margin-bottom:0.5rem;">Open Issues ({{ audit_issues | length }})</h3>
+            <div style="display:grid;gap:0.5rem;">
+                {% for issue in audit_issues %}
+                <div style="padding:0.6rem 0.75rem;border:1px solid var(--border);border-left:3px solid {% if issue.severity == 'critical' %}var(--danger){% elif issue.severity == 'warning' %}var(--warning){% else %}var(--primary){% endif %};border-radius:6px;" id="audit-issue-{{ issue.id }}">
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div>
+                            <span style="font-size:0.65rem;padding:1px 5px;border-radius:3px;font-weight:600;text-transform:uppercase;
+                                background:{% if issue.severity == 'critical' %}#fee2e2;color:#991b1b{% elif issue.severity == 'warning' %}#fef3c7;color:#92400e{% else %}#dbeafe;color:#1e40af{% endif %};">{{ issue.severity }}</span>
+                            <strong style="font-size:0.85rem;margin-left:0.4rem;">{{ issue.title }}</strong>
+                        </div>
+                        <div style="display:flex;gap:0.3rem;">
+                            <button class="btn btn-sm btn-outline" style="font-size:0.65rem;padding:2px 6px;color:var(--success);"
+                                    onclick="updateAuditIssue('{{ customer.id }}', {{ issue.id }}, 'fixed')">Fixed</button>
+                            <button class="btn btn-sm btn-outline" style="font-size:0.65rem;padding:2px 6px;"
+                                    onclick="updateAuditIssue('{{ customer.id }}', {{ issue.id }}, 'ignored')">Ignore</button>
+                        </div>
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--text-light);margin-top:0.3rem;">{{ issue.description }}</div>
+                    {% if issue.fix_instruction %}
+                    <div style="font-size:0.8rem;color:var(--primary);margin-top:0.3rem;padding:0.4rem 0.5rem;background:#eff6ff;border-radius:4px;">
+                        <strong>Fix:</strong> {{ issue.fix_instruction }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:var(--success);font-size:0.85rem;">No open issues found.</p>
+            {% endif %}
+
+            {% else %}
+            <div class="empty-state" style="padding:2rem;text-align:center;">
+                <p style="color:var(--muted);">No audit has been run yet.</p>
+                <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem;">Click <strong>Run Audit</strong> to check the site for SEO issues, performance, and accessibility problems.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== BACKLINKS SUB-TAB ===== -->
+    <div id="seo-sub-backlinks" class="seo-sub-content" style="display:none;">
+        <div class="card">
+            <div class="section-header" style="margin-bottom:0.75rem;">
+                <h2>Backlinks</h2>
+                <button class="btn btn-sm btn-primary" onclick="pullBacklinks('{{ customer.id }}')">Pull from GSC</button>
+            </div>
+
+            <div id="backlinks-action-result" style="display:none;font-size:0.85rem;padding:0.5rem;border-radius:4px;margin-bottom:0.75rem;"></div>
+
+            {% if backlinks %}
+            {% set active_links = backlinks | selectattr('status', 'equalto', 'active') | list %}
+            {% set lost_links = backlinks | selectattr('status', 'equalto', 'lost') | list %}
+            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem;">
+                {{ active_links | length }} active | {{ lost_links | length }} lost
+            </div>
+            <table>
+                <thead><tr><th>Linking Domain</th><th style="text-align:right;">Links</th><th>Status</th><th>First Seen</th></tr></thead>
+                <tbody>
+                {% for bl in backlinks[:30] %}
+                <tr>
+                    <td style="font-size:0.85rem;">{{ bl.linking_domain }}</td>
+                    <td style="text-align:right;">{{ bl.link_count }}</td>
+                    <td>
+                        {% if bl.status == 'lost' %}
+                        <span style="color:var(--danger);font-size:0.75rem;font-weight:600;">LOST</span>
+                        {% elif bl.first_seen and bl.first_seen[:10] >= (now_iso | default('2020-01-01'))[:10] %}
+                        <span style="color:var(--success);font-size:0.75rem;font-weight:600;">NEW</span>
+                        {% else %}
+                        <span style="color:var(--muted);font-size:0.75rem;">active</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.8rem;color:var(--muted);">{{ bl.first_seen[:10] if bl.first_seen else '—' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state" style="padding:2rem;text-align:center;">
+                <p style="color:var(--muted);">No backlink data yet.</p>
+                <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem;">Click <strong>Pull from GSC</strong> to fetch backlink data. Requires GSC integration to be active.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== COMPETITORS SUB-TAB ===== -->
+    <div id="seo-sub-competitors" class="seo-sub-content" style="display:none;">
+        <div class="card">
+            <div class="section-header" style="margin-bottom:0.75rem;">
+                <h2>Competitor Tracking</h2>
+                <div class="flex">
+                    <button class="btn btn-sm btn-outline" onclick="discoverCompetitors('{{ customer.id }}')" id="discover-comp-btn">Auto-Discover Nearby</button>
+                    <button class="btn btn-sm btn-primary" onclick="document.getElementById('add-competitor-form').style.display='block'">+ Add Competitor</button>
+                </div>
+            </div>
+            <div id="competitor-discover-result" style="display:none;font-size:0.85rem;padding:0.5rem;border-radius:4px;margin-bottom:0.75rem;"></div>
+
+            <div id="add-competitor-form" style="display:none;margin-bottom:1rem;padding:0.75rem;background:#f8fafc;border-radius:6px;">
+                <form onsubmit="addCompetitorDomain(event, '{{ customer.id }}')">
+                    <div style="display:flex;gap:0.5rem;">
+                        <input type="text" id="competitor-domain-input" placeholder="competitor.com" style="flex:1;padding:0.4rem;font-size:0.85rem;">
+                        <input type="text" id="competitor-name-input" placeholder="Business Name" style="flex:1;padding:0.4rem;font-size:0.85rem;">
+                        <button type="submit" class="btn btn-sm btn-primary">Add</button>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="this.closest('#add-competitor-form').style.display='none'">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            {% if competitor_domains %}
+            <!-- Your practice comparison header -->
+            {% if places %}
+            <div style="padding:0.6rem 0.75rem;background:#eff6ff;border-radius:6px;margin-bottom:0.75rem;display:flex;align-items:center;gap:1rem;">
+                <div>
+                    <span style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;font-weight:600;">Your Practice</span>
+                    <div style="font-weight:700;font-size:0.95rem;">{{ customer.name }}</div>
+                </div>
+                <div style="text-align:center;">
+                    <span class="stars" style="font-size:1.1rem;">{{ "%.1f"|format(places.rating) }}</span>
+                    <div style="font-size:0.7rem;color:var(--muted);">{{ places.review_count }} reviews</div>
+                </div>
+                <div style="margin-left:auto;font-size:0.8rem;color:var(--muted);">
+                    vs {{ competitor_domains | length }} competitor{{ 's' if competitor_domains | length != 1 }}
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="display:grid;gap:0.6rem;">
+                {% for cd in competitor_domains %}
+                <div style="border:1px solid var(--border);border-radius:8px;padding:0.65rem 0.75rem;transition:border-color 0.15s;" id="comp-row-{{ loop.index }}">
+                    <div style="display:flex;align-items:center;gap:0.75rem;">
+                        <!-- Name & domain -->
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;font-size:0.88rem;">{{ cd.competitor_name or cd.competitor_domain }}</div>
+                            <a href="https://{{ cd.competitor_domain.split('?')[0] }}" target="_blank" style="font-size:0.78rem;color:var(--primary);text-decoration:none;">{{ cd.competitor_domain.split('?')[0] }}</a>
+                            {% if cd.address %}
+                            <div style="font-size:0.72rem;color:var(--muted);margin-top:1px;">{{ cd.address | truncate(60) }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Rating -->
+                        <div style="text-align:center;min-width:70px;">
+                            {% if cd.rating and cd.rating > 0 %}
+                            <div style="font-weight:700;font-size:1rem;color:{% if cd.rating >= 4.5 %}var(--success){% elif cd.rating >= 4.0 %}var(--warning){% else %}var(--danger){% endif %};">
+                                {{ "%.1f"|format(cd.rating) }}
+                            </div>
+                            <div style="font-size:0.65rem;color:var(--muted);">
+                                {{ cd.review_count or 0 }} reviews
+                                {% if places and places.review_count %}
+                                    {% if cd.review_count > places.review_count %}
+                                    <span style="color:var(--danger);">+{{ cd.review_count - places.review_count }}</span>
+                                    {% elif cd.review_count < places.review_count %}
+                                    <span style="color:var(--success);">-{{ places.review_count - cd.review_count }}</span>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span style="font-size:0.75rem;color:var(--muted);">No data</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- AI visibility comparison -->
+                        <div style="text-align:center;min-width:80px;" id="comp-ai-{{ loop.index }}">
+                            <button class="btn btn-sm btn-outline" style="font-size:0.65rem;padding:2px 8px;"
+                                    onclick="analyzeCompetitor('{{ customer.id }}', '{{ cd.competitor_name or cd.competitor_domain }}', {{ loop.index }})">
+                                Analyze AI
+                            </button>
+                        </div>
+
+                        <!-- Source badge -->
+                        <div style="min-width:50px;text-align:center;">
+                            <span style="font-size:0.6rem;padding:1px 5px;border-radius:3px;background:{% if cd.discovered_via == 'auto_discovered' %}#dbeafe;color:#1e40af{% else %}#f3f4f6;color:#6b7280{% endif %};">
+                                {{ cd.discovered_via | replace('_', ' ') }}
+                            </span>
+                        </div>
+
+                        <!-- Remove -->
+                        <button class="btn btn-sm btn-outline" style="font-size:0.6rem;color:var(--danger);padding:2px 6px;flex-shrink:0;"
+                                onclick="removeCompetitorDomain('{{ customer.id }}', '{{ cd.competitor_domain }}', this)"
+                                title="Remove competitor">×</button>
+                    </div>
+
+                    <!-- Expandable analysis results -->
+                    <div id="comp-analysis-{{ loop.index }}" style="display:none;margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border);"></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state" style="padding:2rem;">
+                <p style="color:var(--muted);">No competitors tracked yet.</p>
+                <p style="font-size:0.85rem;color:var(--muted);margin-top:0.5rem;">Click <strong>Auto-Discover Nearby</strong> to find competitors within a 15-25 min drive, or add them manually.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Citations -->
+        <div class="card" style="margin-top:1rem;">
+            <div class="section-header" style="margin-bottom:0.75rem;">
+                <h2>Citation Tracking</h2>
+            </div>
+            {% if citations %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Directory</th>
+                        <th style="text-align:center;">Listed</th>
+                        <th style="text-align:center;">NAP Match</th>
+                        <th style="text-align:center;">URL Correct</th>
+                        <th>Last Checked</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for c in citations %}
+                <tr>
+                    <td style="font-weight:500;">{{ c.directory }}</td>
+                    <td style="text-align:center;">{% if c.listed %}<span style="color:var(--success);">Yes</span>{% else %}<span style="color:var(--muted);">No</span>{% endif %}</td>
+                    <td style="text-align:center;">{% if c.nap_match %}<span style="color:var(--success);">Match</span>{% else %}<span style="color:var(--danger);">Mismatch</span>{% endif %}</td>
+                    <td style="text-align:center;">{% if c.url_correct %}<span style="color:var(--success);">Correct</span>{% else %}<span style="color:var(--danger);">Wrong</span>{% endif %}</td>
+                    <td style="font-size:0.8rem;color:var(--muted);">{{ c.last_checked[:10] if c.last_checked else '--' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:var(--muted);font-size:0.85rem;">No citation data yet. Run a local listings scan from the Checklist tab.</p>
+            {% endif %}
+        </div>
+
+        <!-- GBP Audit -->
+        {% if gbp_audit %}
+        <div class="card" style="margin-top:1rem;">
+            <div class="section-header" style="margin-bottom:0.5rem;">
+                <h2>Google Business Profile Audit</h2>
+                <div style="font-size:1.5rem;font-weight:700;color:{% if gbp_audit.score >= 70 %}var(--success){% elif gbp_audit.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                    {{ gbp_audit.score }}/100
+                </div>
+            </div>
+            {% if gbp_audit.details %}
+            <div style="display:grid;gap:0.3rem;">
+                {% for field, info in gbp_audit.details.items() %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.85rem;">
+                    <span>{{ field | replace('_', ' ') | title }}</span>
+                    <span style="color:{% if info.score > 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
+                        {% if info.score > 0 %}Pass{% else %}Missing{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ===== REVIEWS SUB-TAB ===== -->
+    <div id="seo-sub-reviews" class="seo-sub-content" style="display:none;">
+        <div class="card">
+            <div class="section-header" style="margin-bottom:0.75rem;">
+                <h2>Review Dashboard</h2>
+            </div>
+
+            {% if review_stats and review_stats.total and review_stats.total > 0 %}
+            <!-- Summary Stats -->
+            <div class="grid grid-3" style="margin-bottom:1rem;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Reviews</div>
+                    <div class="metric-value" style="color:var(--primary);">{{ review_stats.total }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Average Rating</div>
+                    <div class="metric-value stars">{{ "%.1f"|format(review_stats.avg_rating) }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">5-Star Rate</div>
+                    <div class="metric-value" style="color:var(--success);">{{ "%.0f"|format(review_stats.five_star / review_stats.total * 100) }}%</div>
+                </div>
+            </div>
+
+            <!-- Rating Distribution -->
+            <div style="margin-bottom:1rem;">
+                <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Rating Distribution</h3>
+                {% for stars, count_key in [(5, 'five_star'), (4, 'four_star'), (3, 'three_star'), (2, 'two_star'), (1, 'one_star')] %}
+                {% set count = review_stats[count_key] or 0 %}
+                {% set pct = (count / review_stats.total * 100) if review_stats.total > 0 else 0 %}
+                <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.25rem;">
+                    <span style="font-size:0.8rem;width:25px;font-weight:600;">{{ stars }}</span>
+                    <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
+                        <div style="width:{{ pct }}%;height:100%;background:{% if stars >= 4 %}var(--success){% elif stars == 3 %}var(--warning){% else %}var(--danger){% endif %};border-radius:4px;"></div>
+                    </div>
+                    <span style="font-size:0.75rem;color:var(--muted);width:40px;">{{ count }} ({{ "%.0f"|format(pct) }}%)</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Recent Reviews -->
+            {% if review_list %}
+            <h3 style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Recent Reviews</h3>
+            <div style="display:grid;gap:0.5rem;">
+                {% for review in review_list[:10] %}
+                <div style="padding:0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                        <span class="stars">{{ '★' * review.rating }}{{ '☆' * (5 - review.rating) }}</span>
+                        <span style="font-size:0.75rem;color:var(--muted);">{{ review.review_date[:10] if review.review_date else '' }}</span>
+                    </div>
+                    {% if review.reviewer_name %}
+                    <div style="font-weight:600;font-size:0.8rem;margin-bottom:0.15rem;">{{ review.reviewer_name }}</div>
+                    {% endif %}
+                    {% if review.review_text %}
+                    <div style="color:var(--text-light);font-size:0.8rem;">{{ review.review_text[:200] }}{% if review.review_text|length > 200 %}...{% endif %}</div>
+                    {% endif %}
+                    {% if review.sentiment %}
+                    <span style="font-size:0.65rem;margin-top:0.2rem;display:inline-block;padding:1px 5px;border-radius:3px;background:{% if review.sentiment == 'positive' %}#d1fae5{% elif review.sentiment == 'negative' %}#fee2e2{% else %}#f3f4f6{% endif %};color:{% if review.sentiment == 'positive' %}#065f46{% elif review.sentiment == 'negative' %}#991b1b{% else %}#6b7280{% endif %};">{{ review.sentiment }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% elif places %}
+            <!-- Show Google Places data if no manual reviews -->
+            <div class="grid grid-3" style="margin-bottom:1rem;">
+                <div class="metric-card">
+                    <div class="metric-label">Google Reviews</div>
+                    <div class="metric-value" style="color:var(--primary);">{{ places.review_count }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Google Rating</div>
+                    <div class="metric-value stars">{{ "%.1f"|format(places.rating) }}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Source</div>
+                    <div class="metric-value" style="font-size:1rem;color:var(--muted);">Google Places</div>
+                </div>
+            </div>
+            <p style="color:var(--muted);font-size:0.85rem;">Review data from Google Places. Detailed review tracking will appear once reviews are imported.</p>
+
+            {% else %}
+            <div class="empty-state" style="padding:2rem;">
+                <p style="color:var(--muted);">No review data yet.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ===== CHECKLIST SUB-TAB (existing SEO tasks) ===== -->
+    <div id="seo-sub-checklist" class="seo-sub-content">
     {% if seo_tasks %}
     {% set seo_done = seo_tasks | selectattr('done') | list | length %}
     {% set seo_pct = (seo_done / seo_tasks | length * 100) | int if seo_tasks | length > 0 else 0 %}
@@ -585,10 +1623,42 @@
         {% endfor %}
     </div>
     {% endif %}
+    </div><!-- end seo-sub-checklist -->
 </div>
 
 <!-- ==================== CONTENT TAB ==================== -->
 <div id="tab-content" class="tab-content">
+
+    <!-- Topic Ideas Section -->
+    {% if content_topics %}
+    <div class="card" style="margin-bottom:1rem;border-left:3px solid #6366f1;">
+        <div class="section-header" style="margin-bottom:0.5rem;">
+            <h2 style="font-size:0.95rem;color:#6366f1;">Topic Ideas ({{ content_topics | length }})</h2>
+        </div>
+        <div style="display:grid;gap:0.5rem;">
+            {% for topic in content_topics[:5] %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
+                <div>
+                    <span style="font-size:0.65rem;padding:1px 5px;border-radius:3px;font-weight:600;
+                        background:{% if topic.priority == 'high' %}#fee2e2;color:#991b1b{% elif topic.priority == 'medium' %}#fef3c7;color:#92400e{% else %}#dbeafe;color:#1e40af{% endif %};">{{ topic.priority | upper }}</span>
+                    <strong style="font-size:0.85rem;margin-left:0.4rem;">{{ topic.topic }}</strong>
+                    {% if topic.target_keyword %}
+                    <span style="font-size:0.75rem;color:var(--muted);margin-left:0.3rem;">Target: {{ topic.target_keyword }}</span>
+                    {% endif %}
+                    <span style="font-size:0.65rem;color:var(--muted);margin-left:0.3rem;">via {{ topic.source }}</span>
+                </div>
+                <div style="display:flex;gap:0.3rem;">
+                    <button class="btn btn-sm btn-success" style="font-size:0.7rem;padding:2px 8px;"
+                            onclick="updateTopicStatus('{{ customer.id }}', {{ topic.id }}, 'approved')">Approve</button>
+                    <button class="btn btn-sm btn-outline" style="font-size:0.7rem;padding:2px 8px;color:var(--danger);"
+                            onclick="updateTopicStatus('{{ customer.id }}', {{ topic.id }}, 'rejected')">Reject</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="section-header" style="margin-bottom: 1rem;">
         <div>
             <h2 style="margin-bottom: 0.25rem;">Content Recommendations</h2>
@@ -691,19 +1761,24 @@
 
 <!-- ==================== AI MENTIONS TAB ==================== -->
 <div id="tab-ai-mentions" class="tab-content">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>
             <h3 style="margin:0;">AI Search Visibility</h3>
-            <p style="color:var(--muted);font-size:0.85em;margin:4px 0 0;">Track how AI engines (ChatGPT, Claude, Grok, Perplexity, Gemini) recommend this practice across different search types.</p>
+            <p style="color:var(--muted);font-size:0.85em;margin:4px 0 0;">Track how AI engines recommend your business.</p>
         </div>
         <div style="display:flex;gap:8px;">
-            <a href="/api/ai-mentions/{{ customer.id }}/report" class="btn btn-outline btn-sm" title="Download branded DOCX report for client review">Download Report</a>
-            <button class="btn btn-outline btn-sm" onclick="exportAiMentionsCsv('{{ customer.id }}')" title="Export latest run as CSV">Export CSV</button>
-            <button class="btn btn-primary" onclick="runFullAiCheck('{{ customer.id }}')" id="ai-full-check-btn">
-                Run AI Mention Check
-            </button>
+            <a href="/api/ai-mentions/{{ customer.id }}/report" class="btn btn-outline btn-sm">Download Report</a>
+            <button class="btn btn-outline btn-sm" onclick="exportAiMentionsCsv('{{ customer.id }}')">Export CSV</button>
+            <button class="btn btn-primary" onclick="runFullAiCheck('{{ customer.id }}')" id="ai-full-check-btn">Run AI Check</button>
         </div>
     </div>
+
+    <!-- Sub-tab navigation -->
+    <div style="display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:16px;">
+        <button class="ai-sub-tab active" onclick="switchAiSub('dashboard', this)" style="padding:8px 16px;border:none;background:none;font-weight:600;font-size:0.85rem;color:var(--primary);border-bottom:2px solid var(--primary);margin-bottom:-2px;cursor:pointer;">Dashboard</button>
+        <button class="ai-sub-tab" onclick="switchAiSub('history', this)" style="padding:8px 16px;border:none;background:none;font-weight:500;font-size:0.85rem;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;cursor:pointer;">Run History</button>
+    </div>
+
     <!-- Live progress bar -->
     <div id="ai-check-progress" style="display:none;margin-bottom:16px;">
         <div style="background:#f3f4f6;border-radius:8px;overflow:hidden;height:28px;position:relative;margin-bottom:8px;">
@@ -717,17 +1792,154 @@
     <!-- Current run results -->
     <div id="ai-full-results" style="display:none;"></div>
 
-    <!-- Historical runs -->
-    <div id="ai-runs-history" style="margin-top:24px;">
-        <h4>Run History</h4>
-        <div id="ai-runs-table">Loading...</div>
+    <!-- ===== DASHBOARD SUB-TAB ===== -->
+    <div id="ai-sub-dashboard">
+        <!-- Row 1: Key Metrics -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;" id="ai-dash-scorecards"></div>
+
+        <!-- Row 2: Trend Chart + AI Score Over Time -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div class="card" style="padding:16px;">
+                <h4 style="margin:0 0 8px;font-size:0.85rem;color:var(--muted);">Mention Rate Over Time</h4>
+                <div style="position:relative;height:180px;">
+                    <canvas id="ai-dash-mention-chart"></canvas>
+                </div>
+            </div>
+            <div class="card" style="padding:16px;">
+                <h4 style="margin:0 0 8px;font-size:0.85rem;color:var(--muted);">AI Visibility Score Over Time</h4>
+                <div style="position:relative;height:180px;">
+                    <canvas id="ai-dash-score-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Engine Performance + Category Breakdown -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div class="card" style="padding:16px;" id="ai-dash-engines">
+                <h4 style="margin:0 0 12px;font-size:0.85rem;color:var(--muted);">Engine Performance</h4>
+                <div id="ai-dash-engine-bars"></div>
+            </div>
+            <div class="card" style="padding:16px;" id="ai-dash-categories">
+                <h4 style="margin:0 0 12px;font-size:0.85rem;color:var(--muted);">Category Coverage</h4>
+                <div id="ai-dash-category-bars"></div>
+            </div>
+        </div>
+
+        <!-- Row 4: Share of Voice -->
+        <div class="card" style="padding:16px;margin-bottom:16px;" id="ai-dash-competitors">
+            <h4 style="margin:0 0 12px;font-size:0.85rem;color:var(--muted);">Share of Voice — AI Search Results</h4>
+            <div id="ai-dash-competitor-content"><span style="color:var(--muted);font-size:0.85rem;">Loading share of voice data...</span></div>
+        </div>
+
+        <!-- Row 5: Blind Spots + Top Mentions side by side -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+            <div id="ai-dash-blindspots"></div>
+            <div id="ai-dash-topmentions"></div>
+        </div>
     </div>
 
-    <!-- AI Visibility Dashboard -->
-    <div id="ai-trends-section" style="margin-top:24px;">
-        <h4 style="margin:0 0 12px;">AI Visibility Dashboard</h4>
-        <div id="ai-trends-content">Loading...</div>
+    <!-- ===== RUN HISTORY SUB-TAB ===== -->
+    <div id="ai-sub-history" style="display:none;">
+        <div id="ai-runs-table">Loading...</div>
     </div>
+</div>
+
+<!-- ==================== AI READINESS TAB ==================== -->
+<div id="tab-ai-readiness" class="tab-content">
+    <div class="card">
+        <div class="section-header" style="margin-bottom:0.75rem;">
+            <h2>AI Search Readiness</h2>
+            {% if ai_readiness %}
+            <div style="font-size:2rem;font-weight:700;color:{% if ai_readiness.score >= 70 %}var(--success){% elif ai_readiness.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                {{ ai_readiness.score }}/100
+            </div>
+            {% endif %}
+        </div>
+
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">How well optimized this site is for AI search engines (ChatGPT, Claude, Perplexity, Google AI Overviews).</p>
+
+        {% if ai_readiness and ai_readiness.breakdown %}
+        <div style="display:grid;gap:0.4rem;">
+            {% for check_name, check_info in ai_readiness.breakdown.items() %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.6rem;border:1px solid var(--border);border-radius:6px;">
+                <div>
+                    <span style="font-size:0.85rem;font-weight:500;">{{ check_name | replace('_', ' ') | title }}</span>
+                    {% if check_info.note %}
+                    <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">{{ check_info.note }}</span>
+                    {% endif %}
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem;">
+                    <span style="font-size:0.8rem;font-weight:600;color:{% if check_info.score > 0 %}var(--success){% else %}var(--danger){% endif %};">
+                        {{ check_info.score }}/{{ check_info.max }}
+                    </span>
+                    <div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
+                        <div style="width:{{ (check_info.score / check_info.max * 100) if check_info.max > 0 else 0 }}%;height:100%;background:{% if check_info.score > 0 %}var(--success){% else %}var(--danger){% endif %};border-radius:3px;"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding:2rem;">
+            <p style="color:var(--muted);">No AI readiness data yet. Run a site audit to generate the AI readiness score.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Content Scores -->
+    {% if page_scores %}
+    <div class="card" style="margin-top:1rem;">
+        <h2 style="margin-bottom:0.5rem;">Content Quality Scores</h2>
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.75rem;">Per-page content analysis — word count, structure, and optimization.</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Page</th>
+                    <th style="text-align:right;">Score</th>
+                    <th style="text-align:right;">Words</th>
+                    <th style="text-align:right;">Readability</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ps in page_scores[:20] %}
+            <tr>
+                <td style="font-size:0.8rem;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ ps.page_url }}">
+                    {{ ps.page_url | replace('https://', '') | replace('http://', '') | truncate(40) }}
+                </td>
+                <td style="text-align:right;font-weight:600;color:{% if ps.score >= 70 %}var(--success){% elif ps.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};">{{ ps.score }}</td>
+                <td style="text-align:right;">{{ ps.word_count }}</td>
+                <td style="text-align:right;">{% if ps.readability_grade %}Grade {{ "%.0f"|format(ps.readability_grade) }}{% else %}--{% endif %}</td>
+                <td style="font-size:0.75rem;color:var(--muted);">{{ ps.date }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Topic Clusters -->
+    {% if topic_clusters %}
+    <div class="card" style="margin-top:1rem;">
+        <h2 style="margin-bottom:0.5rem;">Topic Clusters</h2>
+        <div style="display:grid;gap:0.75rem;">
+            {% for cluster in topic_clusters %}
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:6px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+                    <h3 style="font-size:0.9rem;margin:0;">{{ cluster.cluster_name | title }}</h3>
+                    <span style="font-size:0.75rem;color:var(--muted);">{{ cluster.keywords | length }} keywords</span>
+                </div>
+                {% if cluster.pillar_page_url %}
+                <div style="font-size:0.8rem;color:var(--primary);margin-bottom:0.25rem;">Pillar: {{ cluster.pillar_page_url }}</div>
+                {% endif %}
+                {% if cluster.gap_pages %}
+                <div style="font-size:0.75rem;color:var(--danger);margin-top:0.25rem;">{{ cluster.gap_pages | length }} content gaps identified</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- ==================== EMAILS TAB ==================== -->
@@ -757,7 +1969,221 @@
     {% endif %}
 </div>
 
+</div><!-- end detail-content -->
+</div><!-- end detail-layout -->
+
 <style>
+    /* Customer header */
+    .customer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
+        gap: 1rem;
+    }
+    .customer-header-info h1 { line-height: 1.2; }
+    .customer-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+    }
+    /* Actions dropdown */
+    .actions-dropdown {
+        position: relative;
+    }
+    .actions-menu {
+        display: none;
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        width: 220px;
+        background: var(--bg-card, #fff);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        z-index: 100;
+        padding: 0.35rem 0;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .actions-dropdown.open .actions-menu { display: block; }
+    .actions-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.45rem 0.75rem;
+        border: none;
+        background: none;
+        font-size: 0.82rem;
+        color: var(--text, #0f172a);
+        cursor: pointer;
+        text-align: left;
+        text-decoration: none;
+        font-family: inherit;
+        transition: background 0.1s;
+    }
+    .actions-item:hover { background: #f1f5f9; }
+    .actions-item svg { flex-shrink: 0; opacity: 0.5; }
+    .actions-danger { color: var(--danger); }
+    .actions-danger:hover { background: #fef2f2; }
+    .actions-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0.3rem 0;
+    }
+    .actions-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        padding: 0.35rem 0.75rem 0.15rem;
+    }
+    .actions-select {
+        width: 100%;
+        padding: 0.3rem 0.4rem;
+        font-size: 0.82rem;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg-card, #fff);
+        font-family: inherit;
+        cursor: pointer;
+    }
+    @media (max-width: 640px) {
+        .customer-header { flex-direction: column; }
+        .customer-header-actions { width: 100%; }
+    }
+
+    /* Detail layout — vertical nav + content */
+    .detail-layout {
+        display: flex;
+        gap: 0;
+        min-height: 600px;
+    }
+    .detail-nav {
+        width: 200px;
+        flex-shrink: 0;
+        background: #f8fafc;
+        border-right: 1px solid var(--border);
+        border-radius: 8px 0 0 8px;
+        padding: 0.5rem 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .detail-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        border: none;
+        background: none;
+        font-size: 0.82rem;
+        font-weight: 500;
+        color: var(--text-secondary, #64748b);
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.12s;
+        position: relative;
+        font-family: inherit;
+    }
+    .detail-nav-item:hover {
+        background: #e2e8f0;
+        color: var(--text, #0f172a);
+    }
+    .detail-nav-item.active {
+        background: #dbeafe;
+        color: var(--primary);
+        font-weight: 600;
+        border-right: 3px solid var(--primary);
+    }
+    .detail-nav-item svg { flex-shrink: 0; opacity: 0.7; }
+    .detail-nav-item.active svg { opacity: 1; }
+    .detail-nav-item .chevron {
+        margin-left: auto;
+        transition: transform 0.2s;
+    }
+    .detail-nav-item.expanded .chevron {
+        transform: rotate(180deg);
+    }
+    .nav-badge {
+        font-size: 0.65rem;
+        background: var(--border);
+        color: var(--muted);
+        padding: 1px 5px;
+        border-radius: 9999px;
+        margin-left: auto;
+        font-weight: 600;
+    }
+    .detail-nav-item.active .nav-badge {
+        background: #bfdbfe;
+        color: var(--primary);
+    }
+    .nav-badge-sm {
+        font-size: 0.6rem;
+        background: var(--border);
+        color: var(--muted);
+        padding: 0px 4px;
+        border-radius: 9999px;
+        margin-left: 0.25rem;
+        font-weight: 600;
+    }
+    .detail-nav-children {
+        display: none;
+        padding-left: 0;
+    }
+    .detail-nav-group.open .detail-nav-children {
+        display: block;
+    }
+    .detail-nav-sub {
+        display: block;
+        width: 100%;
+        padding: 0.35rem 0.75rem 0.35rem 2.25rem;
+        border: none;
+        background: none;
+        font-size: 0.78rem;
+        font-weight: 400;
+        color: var(--text-secondary, #64748b);
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.12s;
+        font-family: inherit;
+    }
+    .detail-nav-sub:hover {
+        background: #e2e8f0;
+        color: var(--text, #0f172a);
+    }
+    .detail-nav-sub.active {
+        color: var(--primary);
+        font-weight: 600;
+        background: #eff6ff;
+    }
+    .detail-content {
+        flex: 1;
+        min-width: 0;
+        padding: 0 0 0 1.25rem;
+    }
+    /* Responsive: collapse nav on mobile */
+    @media (max-width: 768px) {
+        .detail-layout { flex-direction: column; }
+        .detail-nav {
+            width: 100%;
+            flex-direction: row;
+            flex-wrap: wrap;
+            border-right: none;
+            border-bottom: 1px solid var(--border);
+            border-radius: 8px 8px 0 0;
+            padding: 0.25rem;
+            gap: 0.15rem;
+        }
+        .detail-nav-item { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
+        .detail-nav-children { display: flex; flex-wrap: wrap; gap: 0.15rem; padding-left: 0; }
+        .detail-nav-sub { padding: 0.25rem 0.5rem; font-size: 0.72rem; }
+        .detail-content { padding: 0.75rem 0 0 0; }
+    }
+
     .tabs {
         display: flex;
         gap: 0;
@@ -866,16 +2292,399 @@
     .guide-content table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
     .guide-content th, .guide-content td { padding: 4px 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.78rem; }
     .guide-content a { color: var(--primary); }
+    /* Date range filter */
+    .date-range-btn {
+        padding: 0.25rem 0.7rem;
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.12s;
+        font-family: inherit;
+    }
+    .date-range-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .date-range-btn.active {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    /* SEO sub-tabs */
+    .seo-subtab {
+        padding: 0.4rem 1rem;
+        border: none;
+        background: none;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--muted);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color 0.15s, border-color 0.15s;
+    }
+    .seo-subtab:hover { color: var(--text); }
+    .seo-subtab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+    }
+    .seo-sub-content { display: none; }
+    #seo-sub-checklist { display: block; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); }
+
+    /* Fix grid overflow — prevent children from expanding beyond column */
+    .grid > div,
+    .grid > .card {
+        min-width: 0;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    .detail-content .card {
+        min-width: 0;
+        overflow: hidden;
+    }
+    .detail-content table {
+        table-layout: fixed;
+        width: 100%;
+    }
+    .detail-content table td {
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
+    .todo-item {
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
 </style>
 
 <script>
+let _activeTab = 'overview';
+let _activeSeoSub = 'checklist';
+
 function switchTab(tabName, btn) {
+    _activeTab = tabName;
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    // Deactivate all nav items (but not sub-items)
+    document.querySelectorAll('.detail-nav-item').forEach(el => el.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
-    btn.classList.add('active');
-    if (tabName === 'ai-mentions') { loadAiRunsHistory('{{ customer.id }}'); loadAiTrends('{{ customer.id }}'); }
+    if (btn) btn.classList.add('active');
+    const group = document.querySelector('.detail-nav-group');
+    const seoBtn = document.querySelector('.detail-nav-item.has-children');
+    if (tabName === 'seo') {
+        // Expand SEO submenu
+        if (group) group.classList.add('open');
+        if (seoBtn) seoBtn.classList.add('expanded');
+        setTimeout(function() { initTrafficChart(); initOverviewChart(); }, 100);
+    } else {
+        // Collapse SEO submenu when switching away
+        if (group) group.classList.remove('open');
+        if (seoBtn) seoBtn.classList.remove('expanded');
+    }
+    if (tabName === 'ai-mentions') { loadAiDashboard('{{ customer.id }}'); }
 }
+
+function switchSeoSubtab(subName, btn) {
+    _activeSeoSub = subName;
+    // Make sure SEO tab is active
+    if (_activeTab !== 'seo') {
+        const seoBtn = document.querySelector('.detail-nav-item.has-children');
+        switchTab('seo', seoBtn);
+    }
+    document.querySelectorAll('.seo-sub-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.detail-nav-sub').forEach(el => el.classList.remove('active'));
+    const sub = document.getElementById('seo-sub-' + subName);
+    if (sub) sub.style.display = 'block';
+    if (btn) btn.classList.add('active');
+    if (subName === 'traffic') setTimeout(initTrafficChart, 100);
+    if (subName === 'overview') setTimeout(initOverviewChart, 100);
+}
+
+function toggleNavGroup(btn) {
+    const group = btn.closest('.detail-nav-group');
+    if (group) {
+        group.classList.toggle('open');
+        btn.classList.toggle('expanded');
+    }
+}
+
+function switchDateRange(range, btn) {
+    document.querySelectorAll('.date-range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    // Update URL without reload
+    const url = new URL(window.location);
+    url.searchParams.set('range', range);
+    url.searchParams.set('tab', _activeTab || 'seo');
+    if (_activeSeoSub) url.searchParams.set('sub', _activeSeoSub);
+    history.replaceState(null, '', url.toString());
+    // Fetch new data via API
+    var customerId = '{{ customer.id }}';
+    fetch('/api/gsc/' + customerId + '?range=' + range)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) return;
+            var s = data.stats;
+            // Update all stat cards (overview + traffic)
+            document.querySelectorAll('[data-stat="clicks"]').forEach(function(el) { el.textContent = s.clicks; });
+            document.querySelectorAll('[data-stat="impressions"]').forEach(function(el) { el.textContent = s.impressions.toLocaleString(); });
+            document.querySelectorAll('[data-stat="ctr"]').forEach(function(el) { el.textContent = s.ctr + '%'; });
+            document.querySelectorAll('[data-stat="position"]').forEach(function(el) { el.textContent = s.position; });
+            document.querySelectorAll('[data-stat="days"]').forEach(function(el) { el.textContent = s.days + ' days'; });
+            document.querySelectorAll('[data-stat="page"]').forEach(function(el) {
+                el.textContent = s.position <= 10 ? 'Page 1' : s.position <= 20 ? 'Page 2' : 'Page ' + Math.ceil(s.position / 10);
+            });
+            // Update date labels
+            var dateLabel = data.date_start + ' — ' + data.date_end;
+            document.querySelectorAll('[data-stat="date-range"]').forEach(function(el) { el.textContent = dateLabel; });
+            // Update overview chart
+            if (_overviewChart && data.daily && data.daily.length) {
+                var labels = data.daily.map(function(d) {
+                    return new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                _overviewChart.data.labels = labels;
+                _overviewChart.data.datasets[0].data = data.daily.map(function(d) { return d.clicks; });
+                _overviewChart.data.datasets[1].data = data.daily.map(function(d) { return d.impressions; });
+                _overviewChart.update();
+            }
+            // Update traffic chart
+            if (_trafficChart && data.daily && data.daily.length) {
+                var labels2 = data.daily.map(function(d) {
+                    return new Date(d.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                _trafficChart.data.labels = labels2;
+                _trafficChart.data.datasets[0].data = data.daily.map(function(d) { return d.clicks; });
+                _trafficChart.data.datasets[1].data = data.daily.map(function(d) { return d.impressions; });
+                _trafficChart.update();
+            }
+            // Update Top Pages table
+            var tbody = document.getElementById('top-pages-tbody');
+            if (tbody && data.top_pages && data.top_pages.length) {
+                var rows = data.top_pages.map(function(p) {
+                    var url = (p.page || '').replace('https://', '').replace('http://', '');
+                    if (url.length > 50) url = url.substring(0, 47) + '...';
+                    var ctr = (p.ctr * 100).toFixed(1);
+                    var pos = p.position.toFixed(1);
+                    var posColor = p.position <= 10 ? 'var(--success)' : p.position <= 20 ? 'var(--warning)' : 'var(--danger)';
+                    return '<tr>' +
+                        '<td style="font-size:0.8rem;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + p.page + '">' + url + '</td>' +
+                        '<td style="text-align:right;font-weight:600;">' + p.clicks + '</td>' +
+                        '<td style="text-align:right;">' + p.impressions.toLocaleString() + '</td>' +
+                        '<td style="text-align:right;">' + ctr + '%</td>' +
+                        '<td style="text-align:right;"><span style="color:' + posColor + ';">' + pos + '</span></td>' +
+                        '</tr>';
+                });
+                tbody.innerHTML = rows.join('');
+            }
+        })
+        .catch(function(err) { console.error('Date range fetch error:', err); });
+}
+
+// Chart.js traffic chart
+let _trafficChart = null;
+let _overviewChart = null;
+
+function initTrafficChart() {
+    const canvas = document.getElementById('traffic-chart');
+    if (!canvas || _trafficChart) return;
+
+    const gscData = {{ gsc_daily | tojson }};
+    if (!gscData || gscData.length === 0) return;
+
+    const labels = gscData.map(d => {
+        const date = new Date(d.date + 'T00:00:00');
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const clicks = gscData.map(d => d.clicks);
+    const impressions = gscData.map(d => d.impressions);
+
+    _trafficChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Clicks',
+                    data: clicks,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 1,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'Impressions',
+                    data: impressions,
+                    borderColor: '#94a3b8',
+                    backgroundColor: 'rgba(148, 163, 184, 0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 1,
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleFont: { size: 12 },
+                    bodyFont: { size: 11 },
+                    callbacks: {
+                        title: function(items) {
+                            const idx = items[0].dataIndex;
+                            return gscData[idx].date;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 10 },
+                        maxRotation: 0,
+                        autoSkip: true,
+                        maxTicksLimit: 8,
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Clicks', font: { size: 10 } },
+                    grid: { color: 'rgba(0,0,0,0.04)' },
+                    ticks: { font: { size: 10 } },
+                    beginAtZero: true,
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Impressions', font: { size: 10 } },
+                    grid: { drawOnChartArea: false },
+                    ticks: { font: { size: 10 } },
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+}
+
+function initOverviewChart() {
+    const canvas = document.getElementById('overview-clicks-chart');
+    if (!canvas || _overviewChart) return;
+
+    const gscData = {{ gsc_daily | tojson }};
+    if (!gscData || gscData.length === 0) return;
+
+    const labels = gscData.map(d => {
+        const date = new Date(d.date + 'T00:00:00');
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    const clicks = gscData.map(d => d.clicks);
+    const impressions = gscData.map(d => d.impressions);
+
+    _overviewChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Clicks',
+                    data: clicks,
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 1,
+                    pointHoverRadius: 4,
+                    yAxisID: 'y',
+                },
+                {
+                    label: 'Impressions',
+                    data: impressions,
+                    borderColor: '#94a3b8',
+                    backgroundColor: 'rgba(148, 163, 184, 0.05)',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 1,
+                    borderDash: [4, 3],
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                    yAxisID: 'y1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } },
+                tooltip: {
+                    backgroundColor: '#0f172a',
+                    titleFont: { size: 11 },
+                    bodyFont: { size: 10 },
+                    callbacks: {
+                        title: function(items) { return gscData[items[0].dataIndex].date; }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }
+                },
+                y: {
+                    type: 'linear', display: true, position: 'left',
+                    title: { display: true, text: 'Clicks', font: { size: 9 } },
+                    grid: { color: 'rgba(0,0,0,0.04)' },
+                    ticks: { font: { size: 9 } },
+                    beginAtZero: true,
+                },
+                y1: {
+                    type: 'linear', display: true, position: 'right',
+                    title: { display: true, text: 'Impressions', font: { size: 9 } },
+                    grid: { drawOnChartArea: false },
+                    ticks: { font: { size: 9 } },
+                    beginAtZero: true,
+                }
+            }
+        }
+    });
+}
+
+// Restore tab/sub state from URL params on load
+document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const sub = params.get('sub');
+
+    if (tab) {
+        const tabBtn = document.querySelector('.detail-nav-item[onclick*="' + tab + '"]');
+        switchTab(tab, tabBtn);
+    }
+    if (sub && (tab === 'seo' || !tab)) {
+        const subBtn = document.querySelector('.detail-nav-sub[onclick*="' + sub + '"]');
+        switchSeoSubtab(sub, subBtn);
+    }
+
+    // Init charts if SEO tab is active on load
+    const seoTab = document.getElementById('tab-seo');
+    if (seoTab && seoTab.classList.contains('active')) {
+        setTimeout(function() { initTrafficChart(); initOverviewChart(); }, 100);
+    }
+});
 
 function copyFormatted(id, btn) {
     const el = document.getElementById(id);
@@ -924,6 +2733,34 @@ function generateContent(customerId) {
         btn.textContent = 'Network Error';
         btn.disabled = false;
         setTimeout(() => { btn.textContent = 'Generate Recommendations'; }, 3000);
+    });
+}
+
+function testWpConnection(customerId, domain) {
+    const resultDiv = document.getElementById('wp-test-result');
+    resultDiv.innerHTML = '<span style="color:var(--muted);">Testing connection...</span>';
+    fetch('/api/wordpress/test-connection', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            resultDiv.innerHTML = '<span style="color:var(--success); font-weight:600;">Connected!</span>'
+                + ' &mdash; ' + (data.site_name || domain)
+                + ' (WP ' + (data.wp_version || '?') + ')'
+                + (data.seo_plugin && data.seo_plugin !== 'none' ? ', SEO: ' + data.seo_plugin : '')
+                + '<br><span style="font-size:0.7rem; color:var(--muted);">Schema: ' + (data.schema_enabled ? 'On' : 'Off')
+                + ' &bull; llms.txt: ' + (data.has_llms_txt ? 'Yes' : 'Not yet')
+                + ' &bull; Content mode: ' + (data.content_as_draft ? 'Draft' : 'Auto-publish') + '</span>';
+            setTimeout(() => window.location.reload(), 2000);
+        } else {
+            resultDiv.innerHTML = '<span style="color:var(--danger);">' + (data.error || 'Connection failed') + '</span>';
+        }
+    })
+    .catch(() => {
+        resultDiv.innerHTML = '<span style="color:var(--danger);">Network error — could not reach server</span>';
     });
 }
 
@@ -1134,9 +2971,10 @@ function runFullAiCheck(customerId) {
                     btn.textContent = 'Run AI Mention Check';
                     btn.disabled = false;
 
-                    // Render full results
+                    // Render full results and refresh dashboard
                     renderAiResults(prog, resultsDiv);
-                    loadAiRunsHistory(customerId);
+                    loadAiDashboard(customerId);
+                    window._aiHistoryLoaded = false;
                 }
 
                 if (prog.status === 'error') {
@@ -1153,8 +2991,8 @@ function runFullAiCheck(customerId) {
                 btn.textContent = 'Run AI Mention Check';
                 btn.disabled = false;
                 progressPct.textContent = 'Connection lost — check results in history';
-                // Still try to reload history in case it finished
-                setTimeout(() => loadAiRunsHistory(customerId), 2000);
+                // Still try to reload dashboard in case it finished
+                setTimeout(function() { loadAiDashboard(customerId); window._aiHistoryLoaded = false; }, 2000);
             };
         })
         .catch(e => {
@@ -1273,43 +3111,166 @@ function exportAiMentionsCsv(customerId) {
     URL.revokeObjectURL(url);
 }
 
-function loadAiTrends(customerId) {
-    fetch('/api/ai-mentions/' + customerId + '/trends')
-        .then(r => r.json())
-        .then(data => {
-            if (!data.ok) return;
-            renderAiDashboard(data);
-        })
-        .catch(() => {
-            const div = document.getElementById('ai-trends-content');
-            if (div) div.innerHTML = '<p style="color:#ef4444;">Failed to load data</p>';
-        });
+function switchAiSub(sub, btn) {
+    document.getElementById('ai-sub-dashboard').style.display = sub === 'dashboard' ? '' : 'none';
+    document.getElementById('ai-sub-history').style.display = sub === 'history' ? '' : 'none';
+    document.querySelectorAll('.ai-sub-tab').forEach(function(t) {
+        t.style.color = 'var(--muted)';
+        t.style.fontWeight = '500';
+        t.style.borderBottomColor = 'transparent';
+    });
+    btn.style.color = 'var(--primary)';
+    btn.style.fontWeight = '600';
+    btn.style.borderBottomColor = 'var(--primary)';
+    if (sub === 'history' && !window._aiHistoryLoaded) {
+        loadAiRunsHistory('{{ customer.id }}');
+        window._aiHistoryLoaded = true;
+    }
 }
 
-function renderAiDashboard(data) {
-    const div = document.getElementById('ai-trends-content');
-    if (!div) return;
-    const dates = data.dates || [];
-    const trends = data.trends || [];
-    const latestDate = dates.length ? dates[dates.length - 1] : null;
+var _aiDashCharts = {};
+
+function loadAiDashboard(customerId) {
+    // Load trends data for dashboard
+    fetch('/api/ai-mentions/' + customerId + '/trends')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok) return;
+            renderAiDashboardNew(data, customerId);
+        })
+        .catch(function() {
+            document.getElementById('ai-dash-scorecards').innerHTML = '<div style="color:#ef4444;">Failed to load AI data</div>';
+        });
+
+    // Load weekly data for charts
+    fetch('/api/ai-mentions/' + customerId + '/weekly')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok || !data.weeks || data.weeks.length === 0) return;
+            renderWeeklyMentionChart(data.weeks);
+            renderWeeklyScorecards(data.weeks);
+        });
+
+    // Load score history for AI score chart
+    fetch('/api/ai-trend/' + customerId + '?limit=30')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (!d.ok || !d.trend || d.trend.length === 0) return;
+            renderAiScoreChart(d.trend);
+        });
+
+    // Load share of voice
+    loadAiCompetitorComparison(customerId);
+}
+
+function renderWeeklyScorecards(weeks) {
+    var sc = document.getElementById('ai-dash-scorecards');
+    if (!sc || !weeks || weeks.length === 0) return;
+    var w = weeks[0];
+    var avgPct = Math.round(w.avg_mention_rate * 100);
+    var scoreColor = avgPct > 30 ? '#059669' : avgPct > 15 ? '#d97706' : '#dc2626';
+
+    var html = _scoreCard('This Week', avgPct + '%', w.run_count + ' runs avg', scoreColor);
+
+    if (w.delta_rate !== null && w.delta_rate !== undefined) {
+        var dp = Math.round(w.delta_rate * 100);
+        var arrow = dp > 0 ? 'up' : dp < 0 ? 'down' : 'flat';
+        var arrowChar = dp > 0 ? '\u2191' : dp < 0 ? '\u2193' : '\u2192';
+        var deltaColor = dp > 0 ? '#059669' : dp < 0 ? '#dc2626' : '#6b7280';
+        html += _scoreCard('vs Last Week', (dp > 0 ? '+' : '') + dp + 'pp ' + arrowChar, w.delta_pct || '', deltaColor);
+    }
+
+    html += _scoreCard('Total Mentions', w.total_mentions + '', w.total_queries + ' queries', '#2563eb');
+    if (w.avg_position) html += _scoreCard('Avg Position', '#' + w.avg_position, 'when mentioned', '#7c3aed');
+
+    // Rolling average from multiple weeks
+    if (weeks.length >= 4) {
+        var rolling = weeks.slice(0, 4).reduce(function(s, wk) { return s + wk.avg_mention_rate; }, 0) / Math.min(weeks.length, 4);
+        html += _scoreCard('4-Week Avg', Math.round(rolling * 100) + '%', 'rolling average', '#6b7280');
+    }
+
+    sc.innerHTML = html;
+}
+
+function renderWeeklyMentionChart(weeks) {
+    if (!weeks || weeks.length < 2 || typeof Chart === 'undefined') return;
+    var reversed = weeks.slice().reverse();
+    var labels = reversed.map(function(w) { return w.week.replace(/^\d{4}-/, ''); });
+    var rates = reversed.map(function(w) { return Math.round(w.avg_mention_rate * 100); });
+    var mins = reversed.map(function(w) { return Math.round(w.worst_run_rate * 100); });
+    var maxs = reversed.map(function(w) { return Math.round(w.best_run_rate * 100); });
+
+    if (_aiDashCharts.mention) _aiDashCharts.mention.destroy();
+    _aiDashCharts.mention = new Chart(document.getElementById('ai-dash-mention-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Weekly Avg %',
+                data: rates,
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139,92,246,0.1)',
+                fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2.5
+            }, {
+                label: 'Best Run',
+                data: maxs,
+                borderColor: 'rgba(34,197,94,0.4)',
+                backgroundColor: 'rgba(34,197,94,0.05)',
+                fill: '+1', tension: 0.3, pointRadius: 0, borderWidth: 1, borderDash: [3,3]
+            }, {
+                label: 'Worst Run',
+                data: mins,
+                borderColor: 'rgba(239,68,68,0.4)',
+                backgroundColor: 'rgba(239,68,68,0.05)',
+                fill: false, tension: 0.3, pointRadius: 0, borderWidth: 1, borderDash: [3,3]
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 9 } } },
+                tooltip: {
+                    callbacks: {
+                        title: function(items) {
+                            var i = items[0].dataIndex;
+                            var w = reversed[i];
+                            return 'Week of ' + w.week_start + ' (' + w.run_count + ' runs)';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'Mention Rate %', font: { size: 9 } }, ticks: { font: { size: 9 } } },
+                x: { ticks: { font: { size: 9 } } }
+            }
+        }
+    });
+}
+
+function renderAiDashboardNew(data, customerId) {
+    var dates = data.dates || [];
+    var trends = data.trends || [];
+    var latestDate = dates.length ? dates[dates.length - 1] : null;
 
     if (!latestDate || trends.length === 0) {
-        div.innerHTML = '<p style="color:var(--muted);font-size:0.85em;">No data yet. Run an AI mention check to get started.</p>';
+        document.getElementById('ai-dash-scorecards').innerHTML = '<div style="color:var(--muted);font-size:0.85em;grid-column:1/-1;">No data yet. Run an AI mention check to get started.</div>';
         return;
     }
 
-    // Aggregate latest run data
-    const engines = {};
-    const categories = {};
-    let totalMentions = 0, totalChecks = 0;
-    const blindSpots = []; // queries where NO engine mentions
-    const topHits = []; // queries mentioned by most engines
+    var engines = {};
+    var categories = {};
+    var totalMentions = 0, totalChecks = 0;
+    var blindSpots = [];
+    var topHits = [];
+    var catLabels = {brand:'Brand Awareness',general:'General Discovery',service:'Service-Specific',location:'Location/Area',comparison:'Competitor Comparison',reputation:'Reputation',recommendation:'Recommendations'};
 
-    trends.forEach(t => {
-        let qMentions = 0, qChecks = 0;
-        const qEngines = [];
-        for (const [eng, engData] of Object.entries(t.engines)) {
-            const latest = engData[latestDate];
+    trends.forEach(function(t) {
+        var qMentions = 0, qChecks = 0;
+        var qEngines = [];
+        for (var eng in t.engines) {
+            var engData = t.engines[eng];
+            var latest = engData[latestDate];
             if (!latest) continue;
             if (!engines[eng]) engines[eng] = {mentions: 0, total: 0};
             engines[eng].total++;
@@ -1322,139 +3283,225 @@ function renderAiDashboard(data) {
             }
             qChecks++;
         }
-        // Category stats
-        const cat = t.category;
+        var cat = t.category;
         if (!categories[cat]) categories[cat] = {mentions: 0, total: 0, queries: 0, found: 0};
         categories[cat].queries++;
         categories[cat].total += qChecks;
         categories[cat].mentions += qMentions;
         if (qMentions > 0) categories[cat].found++;
-
         if (qMentions === 0 && qChecks > 0) blindSpots.push(t.prompt);
         if (qMentions > 0) topHits.push({prompt: t.prompt, count: qMentions, total: qChecks, engines: qEngines});
     });
+    topHits.sort(function(a, b) { return b.count - a.count; });
 
-    topHits.sort((a, b) => b.count - a.count);
-    const overallRate = totalChecks > 0 ? Math.round(totalMentions / totalChecks * 100) : 0;
-    const bestEngine = Object.entries(engines).sort((a, b) => (b[1].mentions/b[1].total) - (a[1].mentions/a[1].total))[0];
-    const worstEngine = Object.entries(engines).sort((a, b) => (a[1].mentions/a[1].total) - (b[1].mentions/b[1].total))[0];
-    const queriesFound = trends.filter(t => {
-        return Object.values(t.engines).some(e => e[latestDate]?.mentioned);
+    var overallRate = totalChecks > 0 ? Math.round(totalMentions / totalChecks * 100) : 0;
+    var queriesFound = trends.filter(function(t) {
+        for (var eng in t.engines) { var e = t.engines[eng]; if (e[latestDate] && e[latestDate].mentioned) return true; }
+        return false;
     }).length;
+    var engSorted = Object.entries(engines).sort(function(a, b) { return (b[1].mentions/b[1].total) - (a[1].mentions/a[1].total); });
+    var bestEngine = engSorted[0];
+    var worstEngine = engSorted[engSorted.length - 1];
 
-    let html = '';
-
-    // === SCORECARDS ===
-    html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px;">';
-    const scoreColor = overallRate > 40 ? '#059669' : overallRate > 20 ? '#d97706' : '#dc2626';
-    html += _scoreCard('Mention Rate', overallRate + '%', totalMentions + '/' + totalChecks + ' checks', scoreColor);
-    html += _scoreCard('Query Coverage', queriesFound + '/' + trends.length, Math.round(queriesFound/trends.length*100) + '% of queries found', '#2563eb');
-    html += _scoreCard('Blind Spots', blindSpots.length + '', 'queries with zero mentions', blindSpots.length > 5 ? '#dc2626' : '#d97706');
+    // Scorecards
+    var sc = document.getElementById('ai-dash-scorecards');
+    var scoreColor = overallRate > 40 ? '#059669' : overallRate > 20 ? '#d97706' : '#dc2626';
+    var html = _scoreCard('Mention Rate', overallRate + '%', totalMentions + '/' + totalChecks + ' checks', scoreColor);
+    html += _scoreCard('Query Coverage', queriesFound + '/' + trends.length, Math.round(queriesFound/trends.length*100) + '% found', '#2563eb');
+    html += _scoreCard('Blind Spots', blindSpots.length + '', 'zero mentions', blindSpots.length > 5 ? '#dc2626' : '#d97706');
     if (bestEngine) {
-        const bePct = Math.round(bestEngine[1].mentions / bestEngine[1].total * 100);
-        html += _scoreCard('Best Engine', bestEngine[0], bePct + '% mention rate', '#059669');
+        var bePct = Math.round(bestEngine[1].mentions / bestEngine[1].total * 100);
+        html += _scoreCard('Best Engine', bestEngine[0], bePct + '%', '#059669');
     }
-    html += '</div>';
+    if (worstEngine && engSorted.length > 1) {
+        var wePct = Math.round(worstEngine[1].mentions / worstEngine[1].total * 100);
+        html += _scoreCard('Weakest Engine', worstEngine[0], wePct + '%', '#dc2626');
+    }
+    sc.innerHTML = html;
 
-    // === ENGINE PERFORMANCE ===
-    html += '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h5 style="margin:0 0 12px;font-size:0.9em;color:#374151;">Engine Performance</h5>';
-    const engSorted = Object.entries(engines).sort((a, b) => (b[1].mentions/b[1].total) - (a[1].mentions/a[1].total));
-    engSorted.forEach(([eng, stats]) => {
-        const pct = Math.round(stats.mentions / stats.total * 100);
-        const barColor = pct > 40 ? '#22c55e' : pct > 15 ? '#f59e0b' : '#ef4444';
-        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
-        html += '<span style="font-size:0.8em;font-weight:600;color:#374151;min-width:80px;">' + eng + '</span>';
-        html += '<div style="flex:1;height:20px;background:#f3f4f6;border-radius:4px;overflow:hidden;position:relative;">';
-        html += '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;transition:width 0.5s;"></div>';
+    // Engine bars
+    var engDiv = document.getElementById('ai-dash-engine-bars');
+    html = '';
+    engSorted.forEach(function(entry) {
+        var eng = entry[0], stats = entry[1];
+        var pct = Math.round(stats.mentions / stats.total * 100);
+        var barColor = pct > 40 ? '#22c55e' : pct > 15 ? '#f59e0b' : '#ef4444';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">';
+        html += '<span style="font-size:0.8em;font-weight:600;min-width:75px;">' + eng + '</span>';
+        html += '<div style="flex:1;height:18px;background:#f3f4f6;border-radius:4px;overflow:hidden;">';
+        html += '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;"></div>';
         html += '</div>';
-        html += '<span style="font-size:0.8em;font-weight:600;color:#374151;min-width:65px;text-align:right;">' + stats.mentions + '/' + stats.total + ' (' + pct + '%)</span>';
+        html += '<span style="font-size:0.75em;font-weight:600;min-width:55px;text-align:right;">' + stats.mentions + '/' + stats.total + ' (' + pct + '%)</span>';
         html += '</div>';
     });
-    html += '</div>';
+    engDiv.innerHTML = html;
 
-    // === CATEGORY BREAKDOWN ===
-    const catLabels = {brand:'Brand Awareness',general:'General Discovery',service:'Service-Specific',location:'Location/Area',comparison:'Competitor Comparison',reputation:'Reputation',recommendation:'Recommendations'};
-    html += '<div style="background:white;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:16px;">';
-    html += '<h5 style="margin:0 0 12px;font-size:0.9em;color:#374151;">Category Coverage</h5>';
-    html += '<table style="width:100%;font-size:0.82em;border-collapse:collapse;">';
-    html += '<tr style="border-bottom:2px solid #e5e7eb;"><th style="text-align:left;padding:6px;">Category</th><th style="text-align:center;padding:6px;">Queries</th><th style="text-align:center;padding:6px;">Found In</th><th style="text-align:center;padding:6px;">Mention Rate</th><th style="padding:6px;min-width:120px;"></th></tr>';
-    for (const [cat, stats] of Object.entries(categories).sort((a,b) => b[1].mentions/b[1].total - a[1].mentions/a[1].total)) {
-        const pct = stats.total > 0 ? Math.round(stats.mentions / stats.total * 100) : 0;
-        const barColor = pct > 40 ? '#22c55e' : pct > 15 ? '#f59e0b' : '#ef4444';
-        const foundPct = stats.queries > 0 ? Math.round(stats.found / stats.queries * 100) : 0;
-        html += '<tr style="border-bottom:1px solid #f3f4f6;">';
-        html += '<td style="padding:6px;font-weight:500;">' + (catLabels[cat] || cat) + '</td>';
-        html += '<td style="text-align:center;padding:6px;">' + stats.queries + '</td>';
-        html += '<td style="text-align:center;padding:6px;">' + stats.found + '/' + stats.queries + ' (' + foundPct + '%)</td>';
-        html += '<td style="text-align:center;padding:6px;font-weight:600;color:' + barColor + ';">' + pct + '%</td>';
-        html += '<td style="padding:6px;"><div style="height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:4px;"></div></div></td>';
-        html += '</tr>';
-    }
-    html += '</table>';
-    html += '</div>';
+    // Category bars
+    var catDiv = document.getElementById('ai-dash-category-bars');
+    html = '';
+    var catEntries = Object.entries(categories).sort(function(a, b) {
+        return (b[1].total > 0 ? b[1].mentions/b[1].total : 0) - (a[1].total > 0 ? a[1].mentions/a[1].total : 0);
+    });
+    catEntries.forEach(function(entry) {
+        var cat = entry[0], stats = entry[1];
+        var pct = stats.total > 0 ? Math.round(stats.mentions / stats.total * 100) : 0;
+        var barColor = pct > 40 ? '#22c55e' : pct > 15 ? '#f59e0b' : '#ef4444';
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+        html += '<span style="font-size:0.78em;min-width:110px;color:#374151;">' + (catLabels[cat] || cat) + '</span>';
+        html += '<div style="flex:1;height:14px;background:#f3f4f6;border-radius:3px;overflow:hidden;">';
+        html += '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:3px;"></div>';
+        html += '</div>';
+        html += '<span style="font-size:0.72em;font-weight:600;color:' + barColor + ';min-width:35px;text-align:right;">' + pct + '%</span>';
+        html += '</div>';
+    });
+    catDiv.innerHTML = html;
 
-    // === BLIND SPOTS (zero mentions) ===
+    // Blind spots
+    var bsDiv = document.getElementById('ai-dash-blindspots');
     if (blindSpots.length > 0) {
-        html += '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin-bottom:16px;">';
-        html += '<h5 style="margin:0 0 4px;font-size:0.9em;color:#991b1b;">Blind Spots — Not Found by Any Engine (' + blindSpots.length + ')</h5>';
-        html += '<p style="font-size:0.75em;color:#b91c1c;margin:0 0 10px;">These queries return zero mentions across all AI engines. Focus content optimization here.</p>';
-        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
-        blindSpots.forEach(q => {
-            html += '<span style="display:inline-block;padding:3px 10px;background:white;border:1px solid #fca5a5;border-radius:4px;font-size:0.78em;color:#991b1b;">' + q + '</span>';
+        html = '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:14px;">';
+        html += '<h5 style="margin:0 0 6px;font-size:0.85em;color:#991b1b;">Blind Spots (' + blindSpots.length + ')</h5>';
+        html += '<p style="font-size:0.72em;color:#b91c1c;margin:0 0 8px;">Queries with zero AI mentions — target these for content.</p>';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;">';
+        blindSpots.slice(0, 15).forEach(function(q) {
+            html += '<span style="padding:2px 8px;background:white;border:1px solid #fca5a5;border-radius:4px;font-size:0.75em;color:#991b1b;">' + q + '</span>';
         });
+        if (blindSpots.length > 15) html += '<span style="padding:2px 8px;font-size:0.75em;color:#991b1b;">+' + (blindSpots.length - 15) + ' more</span>';
         html += '</div></div>';
+        bsDiv.innerHTML = html;
     }
 
-    // === TOP MENTIONS (best performing) ===
+    // Top mentions
+    var tmDiv = document.getElementById('ai-dash-topmentions');
     if (topHits.length > 0) {
-        html += '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:16px;">';
-        html += '<h5 style="margin:0 0 8px;font-size:0.9em;color:#166534;">Top Mentions (' + Math.min(topHits.length, 10) + ')</h5>';
-        html += '<table style="width:100%;font-size:0.82em;border-collapse:collapse;">';
-        html += '<tr style="border-bottom:2px solid #bbf7d0;"><th style="text-align:left;padding:4px;">Query</th><th style="text-align:center;padding:4px;">Engines</th><th style="padding:4px;">Found In</th></tr>';
-        topHits.slice(0, 10).forEach(h => {
-            html += '<tr style="border-bottom:1px solid #dcfce7;">';
-            html += '<td style="padding:4px;font-weight:500;">' + h.prompt + '</td>';
-            html += '<td style="text-align:center;padding:4px;font-weight:600;color:#166534;">' + h.count + '/' + h.total + '</td>';
-            html += '<td style="padding:4px;">';
-            h.engines.forEach(e => {
-                html += '<span style="display:inline-block;padding:1px 6px;background:#dcfce7;border-radius:3px;font-size:0.85em;color:#166534;margin:1px;">' + e + '</span>';
-            });
-            html += '</td></tr>';
+        html = '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;">';
+        html += '<h5 style="margin:0 0 6px;font-size:0.85em;color:#166534;">Top Mentions (' + topHits.length + ')</h5>';
+        html += '<p style="font-size:0.72em;color:#166534;margin:0 0 8px;">Queries where you\'re being recommended.</p>';
+        topHits.slice(0, 8).forEach(function(h) {
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #dcfce7;">';
+            html += '<span style="font-size:0.78em;font-weight:500;">' + h.prompt + '</span>';
+            html += '<span style="font-size:0.72em;font-weight:600;color:#166534;">' + h.count + '/' + h.total + '</span>';
+            html += '</div>';
         });
-        html += '</table></div>';
+        html += '</div>';
+        tmDiv.innerHTML = html;
     }
+}
 
-    // === DETAILED QUERY RESULTS (collapsed) ===
-    html += '<details style="margin-top:8px;">';
-    html += '<summary style="cursor:pointer;padding:8px 12px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;font-weight:600;font-size:0.85em;">All Query Results (' + trends.length + ' queries)</summary>';
-    html += '<div style="margin-top:8px;">';
-    html += '<table style="width:100%;font-size:0.8em;border-collapse:collapse;">';
-    html += '<tr style="border-bottom:2px solid #e5e7eb;"><th style="text-align:left;padding:5px;">Query</th><th style="text-align:left;padding:5px;">Category</th>';
-    const engNames = Object.keys(engines);
-    engNames.forEach(e => { html += '<th style="text-align:center;padding:5px;">' + e + '</th>'; });
-    html += '</tr>';
-    trends.forEach(t => {
-        html += '<tr style="border-bottom:1px solid #f3f4f6;">';
-        html += '<td style="padding:5px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + t.prompt + '">' + t.prompt + '</td>';
-        html += '<td style="padding:5px;color:#6b7280;font-size:0.9em;">' + (catLabels[t.category] || t.category) + '</td>';
-        engNames.forEach(eng => {
-            const engData = t.engines[eng];
-            const latest = engData ? engData[latestDate] : null;
-            if (!latest) {
-                html += '<td style="text-align:center;padding:5px;color:#d1d5db;">-</td>';
-            } else if (latest.mentioned) {
-                const pos = latest.position ? '#' + latest.position : '';
-                html += '<td style="text-align:center;padding:5px;"><span style="color:#22c55e;font-weight:700;">Y</span><span style="font-size:0.8em;color:#6b7280;margin-left:2px;">' + pos + '</span></td>';
-            } else {
-                html += '<td style="text-align:center;padding:5px;color:#ef4444;">N</td>';
+function renderAiMentionChart(runs) {
+    if (!runs || runs.length === 0) return;
+    var validRuns = runs.filter(function(r) { return r.total > 0; });
+    // Aggregate by date
+    var byDate = {};
+    validRuns.forEach(function(r) { if (!byDate[r.date] || r.mentions > byDate[r.date].mentions) byDate[r.date] = r; });
+    var chartData = Object.values(byDate).sort(function(a, b) { return a.date.localeCompare(b.date); });
+    if (chartData.length < 1 || typeof Chart === 'undefined') return;
+
+    var labels = chartData.map(function(r) { return r.date.substring(5); });
+    var rates = chartData.map(function(r) { return r.rate ? Math.round((r.rate > 1 ? r.rate : r.rate * 100)) : 0; });
+    var mentions = chartData.map(function(r) { return r.mentions || 0; });
+
+    if (_aiDashCharts.mention) _aiDashCharts.mention.destroy();
+    _aiDashCharts.mention = new Chart(document.getElementById('ai-dash-mention-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Mention Rate %',
+                data: rates,
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139,92,246,0.1)',
+                fill: true, tension: 0.3, pointRadius: 3, yAxisID: 'y'
+            }, {
+                label: 'Total Mentions',
+                data: mentions,
+                borderColor: '#2563eb',
+                borderDash: [4, 3],
+                fill: false, tension: 0.3, pointRadius: 2, yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+            scales: {
+                y: { position: 'left', min: 0, max: 100, title: { display: true, text: 'Rate %', font: { size: 9 } }, ticks: { font: { size: 9 } } },
+                y1: { position: 'right', min: 0, grid: { drawOnChartArea: false }, title: { display: true, text: 'Mentions', font: { size: 9 } }, ticks: { font: { size: 9 } } },
+                x: { ticks: { font: { size: 9 } } }
             }
-        });
-        html += '</tr>';
+        }
     });
-    html += '</table></div></details>';
+}
 
-    div.innerHTML = html;
+function renderAiScoreChart(trend) {
+    if (!trend || trend.length === 0 || typeof Chart === 'undefined') return;
+    var labels = trend.map(function(t) { return t.date.substring(5); });
+    var rates = trend.map(function(t) { return t.mention_rate || 0; });
+
+    if (_aiDashCharts.score) _aiDashCharts.score.destroy();
+    _aiDashCharts.score = new Chart(document.getElementById('ai-dash-score-chart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Mention Rate %',
+                data: rates,
+                borderColor: '#16a34a',
+                backgroundColor: 'rgba(22,163,74,0.1)',
+                fill: true, tension: 0.3, pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { min: 0, max: 100, title: { display: true, text: 'AI Score', font: { size: 9 } }, ticks: { font: { size: 9 } } },
+                x: { ticks: { font: { size: 9 } } }
+            }
+        }
+    });
+}
+
+function loadAiCompetitorComparison(customerId) {
+    var div = document.getElementById('ai-dash-competitor-content');
+    fetch('/api/ai-mentions/' + customerId + '/share-of-voice')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok || !data.share_of_voice || data.share_of_voice.total_entity_mentions === 0) {
+                div.innerHTML = '<span style="color:var(--muted);font-size:0.85rem;">No competitor data yet. Run an AI check to auto-discover competitors from responses.</span>';
+                return;
+            }
+            var sov = data.share_of_voice;
+            var html = '';
+
+            // Customer bar
+            var custPct = Math.round(sov.customer_share * 100);
+            html += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;margin-bottom:6px;">';
+            html += '<span style="font-size:0.82em;font-weight:700;min-width:160px;color:#1e40af;">You</span>';
+            html += '<div style="flex:1;height:18px;background:#dbeafe;border-radius:4px;overflow:hidden;">';
+            html += '<div style="height:100%;width:' + custPct + '%;background:#2563eb;border-radius:4px;"></div></div>';
+            html += '<span style="font-size:0.78em;font-weight:700;color:#1e40af;min-width:85px;text-align:right;">' + custPct + '% (' + sov.customer_mentions + ')</span>';
+            html += '</div>';
+
+            // Competitor bars
+            sov.competitors.slice(0, 8).forEach(function(c) {
+                var cPct = Math.round(c.share * 100);
+                var barColor = cPct > custPct ? '#dc2626' : '#6b7280';
+                var badge = cPct > custPct ? '<span style="font-size:0.6em;color:#dc2626;margin-left:4px;">AHEAD</span>' : '';
+                html += '<div style="display:flex;align-items:center;gap:10px;padding:5px 12px;">';
+                html += '<span style="font-size:0.8em;min-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="' + c.name + '">' + c.name + badge + '</span>';
+                html += '<div style="flex:1;height:14px;background:#f3f4f6;border-radius:4px;overflow:hidden;">';
+                html += '<div style="height:100%;width:' + cPct + '%;background:' + barColor + ';border-radius:4px;"></div></div>';
+                html += '<span style="font-size:0.75em;font-weight:600;color:' + barColor + ';min-width:85px;text-align:right;">' + cPct + '% (' + c.mention_count + ')</span>';
+                html += '</div>';
+            });
+
+            html += '<div style="font-size:0.7em;color:#9ca3af;margin-top:8px;text-align:right;">Based on ' + sov.total_entity_mentions + ' entity mentions across ' + sov.runs_analyzed + ' recent runs</div>';
+            div.innerHTML = html;
+        })
+        .catch(function() {
+            div.innerHTML = '<span style="color:var(--muted);font-size:0.85rem;">Share of voice data not available yet.</span>';
+        });
 }
 
 function _scoreCard(label, value, subtitle, color) {
@@ -1466,70 +3513,101 @@ function _scoreCard(label, value, subtitle, color) {
 }
 
 function loadAiRunsHistory(customerId) {
-    fetch('/api/ai-mentions/' + customerId + '/history')
+    fetch('/api/ai-mentions/' + customerId + '/weekly')
         .then(r => r.json())
         .then(data => {
             const div = document.getElementById('ai-runs-table');
             if (!div) return;
-            if (!data.ok || !data.runs || data.runs.length === 0) {
-                div.innerHTML = '<p style="color:var(--muted);">No runs yet. Click "Run AI Mention Check" to get started.</p>';
-                return;
-            }
-
-            // Filter out runs with 0 total (placeholder/incomplete)
-            const validRuns = data.runs.filter(r => r.total > 0 || r.mentions > 0);
-            if (validRuns.length === 0) {
-                div.innerHTML = '<p style="color:var(--muted);">A check is running. Refresh the page in a few minutes to see results.</p>';
+            if (!data.ok || !data.weeks || data.weeks.length === 0) {
+                div.innerHTML = '<p style="color:var(--muted);">No runs yet. Click "Run AI Check" to get started.</p>';
                 return;
             }
 
             let html = '';
 
-            // Trend chart — always show
-            const uniqueDates = [...new Set(validRuns.map(r => r.date))];
-            if (uniqueDates.length >= 1) {
-                // Aggregate by date (latest run per date)
-                const byDate = {};
-                validRuns.forEach(r => { if (!byDate[r.date] || r.mentions > byDate[r.date].mentions) byDate[r.date] = r; });
-                const chartData = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
-                const maxMentions = Math.max(...chartData.map(r => r.mentions), 1);
-                html += '<div style="display:flex;align-items:flex-end;gap:3px;height:100px;margin-bottom:16px;padding:0 4px;">';
-                chartData.forEach(r => {
-                    const pct = Math.max((r.mentions / maxMentions) * 100, 6);
-                    const color = r.mentions > 0 ? '#2563eb' : '#e5e7eb';
-                    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;">';
-                    html += '<div style="font-size:0.7em;color:#6b7280;margin-bottom:2px;">' + r.mentions + '</div>';
-                    html += '<div style="width:100%;background:' + color + ';height:' + pct + '%;border-radius:3px 3px 0 0;min-height:4px;" title="' + r.date + ': ' + r.mentions + '/' + r.total + '"></div>';
-                    html += '<div style="font-size:0.65em;color:#9ca3af;margin-top:2px;">' + r.date.slice(5) + '</div>';
+            // Weekly trend chart at top
+            const weeks = data.weeks;
+            if (weeks.length >= 2) {
+                const maxRate = Math.max(...weeks.map(w => w.avg_mention_rate), 0.01);
+                html += '<div style="margin-bottom:16px;">';
+                html += '<div style="font-size:0.75em;color:#6b7280;margin-bottom:6px;font-weight:600;">WEEKLY MENTION RATE TREND</div>';
+                html += '<div style="display:flex;align-items:flex-end;gap:4px;height:80px;padding:0 4px;">';
+                weeks.slice().reverse().forEach(w => {
+                    const pct = Math.max((w.avg_mention_rate / maxRate) * 100, 8);
+                    const ratePct = Math.round(w.avg_mention_rate * 100);
+                    const color = ratePct > 30 ? '#22c55e' : ratePct > 15 ? '#f59e0b' : '#ef4444';
+                    // Show min-max range as lighter background
+                    const minPct = Math.max((w.worst_run_rate / maxRate) * 100, 4);
+                    html += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative;">';
+                    html += '<div style="font-size:0.68em;color:#6b7280;margin-bottom:2px;">' + ratePct + '%</div>';
+                    html += '<div style="width:100%;position:relative;height:' + pct + '%;">';
+                    html += '<div style="position:absolute;bottom:0;width:100%;height:100%;background:' + color + ';border-radius:3px 3px 0 0;opacity:0.85;" title="Week ' + w.week + ': ' + ratePct + '% avg (' + w.run_count + ' runs)"></div>';
+                    html += '</div>';
+                    html += '<div style="font-size:0.6em;color:#9ca3af;margin-top:2px;">' + w.week.replace('W', 'W') + '</div>';
+                    html += '</div>';
+                });
+                html += '</div></div>';
+            }
+
+            // Weekly cards
+            weeks.forEach((w, idx) => {
+                const avgPct = Math.round(w.avg_mention_rate * 100);
+                const avgColor = avgPct > 30 ? '#059669' : avgPct > 15 ? '#d97706' : '#dc2626';
+                const deltaHtml = w.delta_rate !== null && w.delta_rate !== undefined
+                    ? '<span style="font-size:0.82em;font-weight:600;color:' + (w.delta_rate > 0 ? '#22c55e' : w.delta_rate < 0 ? '#ef4444' : '#6b7280') + ';">'
+                      + (w.delta_rate > 0 ? '+' : '') + Math.round(w.delta_rate * 100) + 'pp '
+                      + (w.delta_rate > 0 ? '&uarr;' : w.delta_rate < 0 ? '&darr;' : '&rarr;')
+                      + (w.delta_pct ? ' (' + w.delta_pct + ')' : '') + '</span>'
+                    : '<span style="font-size:0.78em;color:#9ca3af;">baseline</span>';
+
+                // Week header
+                html += '<div style="border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;overflow:hidden;">';
+                html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f9fafb;border-bottom:1px solid #e5e7eb;cursor:pointer;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'block\':\'none\'">';
+                html += '<div>';
+                html += '<span style="font-weight:700;font-size:0.9em;">Week of ' + w.week_start + '</span>';
+                html += '<span style="font-size:0.78em;color:#6b7280;margin-left:8px;">' + w.run_count + ' run' + (w.run_count !== 1 ? 's' : '') + '</span>';
+                html += '</div>';
+                html += '<div style="display:flex;align-items:center;gap:12px;">';
+                html += deltaHtml;
+                html += '<span style="font-size:1.1em;font-weight:700;color:' + avgColor + ';">' + avgPct + '%</span>';
+                html += '</div></div>';
+
+                // Week detail (collapsed for older weeks)
+                html += '<div style="' + (idx > 2 ? 'display:none;' : '') + 'padding:10px 14px;">';
+
+                // Per-run grid
+                html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:10px;">';
+                (w.runs || []).forEach(run => {
+                    const runRate = Math.round((run.rate > 1 ? run.rate : run.rate * 100));
+                    const runColor = runRate > 30 ? '#059669' : runRate > 15 ? '#d97706' : '#dc2626';
+                    const dayName = new Date(run.date + 'T12:00:00').toLocaleDateString('en-US', {weekday: 'short'});
+                    html += '<div style="border:1px solid #e5e7eb;border-radius:6px;padding:8px 10px;background:white;">';
+                    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+                    html += '<span style="font-size:0.78em;font-weight:600;color:#374151;">' + dayName + ' ' + run.date.slice(5) + '</span>';
+                    html += '<span style="font-size:0.9em;font-weight:700;color:' + runColor + ';">' + runRate + '%</span>';
+                    html += '</div>';
+                    html += '<div style="font-size:0.75em;color:#6b7280;">' + run.mentions + '/' + run.total + ' mentions</div>';
+                    if (run.avg_position) html += '<div style="font-size:0.72em;color:#9ca3af;">Avg pos: #' + run.avg_position.toFixed(1) + '</div>';
+                    if (run.id) html += '<a href="#" onclick="loadRunDetail(\'' + run.id + '\',\'' + customerId + '\');return false;" style="font-size:0.72em;">View details</a>';
                     html += '</div>';
                 });
                 html += '</div>';
-            }
 
-            // History table
-            html += '<table style="width:100%;font-size:0.85em;border-collapse:collapse;">';
-            html += '<tr style="border-bottom:2px solid #ddd;"><th style="text-align:left;padding:6px;">Date</th><th>Mentions</th><th>Rate</th><th>Avg Pos</th><th>Change</th><th>Engines</th><th></th></tr>';
-            validRuns.forEach(run => {
-                const delta = run.delta !== null && run.delta !== undefined
-                    ? '<span style="color:' + (run.delta > 0 ? '#22c55e' : run.delta < 0 ? '#ef4444' : '#6b7280') + ';">' + (run.delta > 0 ? '+' : '') + run.delta + '</span>'
-                    : '<span style="color:#9ca3af;">baseline</span>';
-                const rateVal = run.rate || 0;
-                const rate = rateVal > 0 ? Math.round(rateVal > 1 ? rateVal : rateVal * 100) + '%' : '-';
-                const pos = run.avg_position ? '#' + run.avg_position.toFixed(1) : '-';
-                // Engine mini-badges
-                let engHtml = '';
-                if (run.engines) {
-                    for (const [eng, stats] of Object.entries(run.engines)) {
-                        if (stats.status === 'active' || stats.status !== 'no_key') {
-                            const c = stats.mentions > 0 ? '#22c55e' : '#ef4444';
-                            engHtml += '<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.75em;background:' + c + '15;color:' + c + ';margin:1px;">' + eng.substring(0,3) + ':' + (stats.mentions||0) + '</span>';
-                        }
-                    }
+                // Per-engine summary for the week
+                if (w.engines && Object.keys(w.engines).length > 0) {
+                    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+                    Object.entries(w.engines).sort((a,b) => (b[1].rate||0) - (a[1].rate||0)).forEach(([eng, stats]) => {
+                        const ePct = Math.round(stats.rate * 100);
+                        const eColor = ePct > 30 ? '#22c55e' : ePct > 10 ? '#f59e0b' : '#ef4444';
+                        html += '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:0.72em;background:' + eColor + '15;color:' + eColor + ';font-weight:600;">';
+                        html += eng + ': ' + stats.mentions + '/' + stats.total + ' (' + ePct + '%)';
+                        html += '</span>';
+                    });
+                    html += '</div>';
                 }
-                const detailBtn = run.id ? '<a href="#" onclick="loadRunDetail(\'' + run.id + '\',\'' + customerId + '\');return false;" style="font-size:0.8em;">Details</a>' : '';
-                html += '<tr style="border-bottom:1px solid #f3f4f6;"><td style="padding:6px;">' + run.date + '</td><td style="text-align:center;font-weight:bold;">' + run.mentions + '/' + (run.total || '?') + '</td><td style="text-align:center;">' + rate + '</td><td style="text-align:center;">' + pos + '</td><td style="text-align:center;">' + delta + '</td><td>' + engHtml + '</td><td style="text-align:center;">' + detailBtn + '</td></tr>';
+
+                html += '</div></div>';
             });
-            html += '</table>';
 
             div.innerHTML = html;
         })
@@ -1730,6 +3808,485 @@ function pushAllToSquarespace(customerId) {
 }
 
 // toggleTodo replaced by HTMX — see partials/todo_list.html
+
+// --- Integrations ---
+function saveGscIntegration(e, customerId) {
+    e.preventDefault();
+    const url = document.getElementById('gsc-property-url').value.trim();
+    fetch('/api/customer/' + customerId + '/integrations', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({integration: 'gsc', config: {property_url: url}})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) showResult('gsc-test-result', 'Saved!', 'success');
+        else showResult('gsc-test-result', data.error || 'Save failed', 'error');
+    });
+}
+
+function testIntegration(customerId, integration) {
+    showResult('gsc-test-result', 'Testing...', 'info');
+    fetch('/api/customer/' + customerId + '/integrations/' + integration + '/test', {method: 'POST'})
+    .then(r => r.json()).then(data => {
+        if (data.ok) showResult('gsc-test-result', data.message || 'Connected!', 'success');
+        else showResult('gsc-test-result', data.error || 'Test failed', 'error');
+    }).catch(() => showResult('gsc-test-result', 'Network error', 'error'));
+}
+
+// --- Keywords ---
+function addKeywords(e, customerId) {
+    e.preventDefault();
+    const input = document.getElementById('new-keywords-input');
+    const keywords = input.value.split(',').map(k => k.trim()).filter(k => k);
+    if (!keywords.length) return;
+    fetch('/api/customer/' + customerId + '/keywords', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({keywords: keywords})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            showResult('keyword-action-result', 'Added ' + data.added + ' keywords', 'success');
+            input.value = '';
+            setTimeout(() => location.reload(), 1000);
+        } else showResult('keyword-action-result', data.error, 'error');
+    });
+}
+
+function deleteKeyword(customerId, keyword) {
+    if (!confirm('Remove "' + keyword + '" from tracking?')) return;
+    fetch('/api/customer/' + customerId + '/keywords/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({keyword: keyword})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) location.reload();
+    });
+}
+
+function autoGenerateKeywords(customerId) {
+    fetch('/api/customer/' + customerId + '/keywords/auto-generate', {method: 'POST'})
+    .then(r => r.json()).then(data => {
+        if (data.ok) {
+            showResult('keyword-action-result', 'Added ' + data.added + ' keywords from services & location', 'success');
+            setTimeout(() => location.reload(), 1200);
+        } else showResult('keyword-action-result', data.error || 'Failed', 'error');
+    });
+}
+
+function pullKeywordRanks(customerId) {
+    showResult('keyword-action-result', 'Pulling keyword data from GSC...', 'info');
+    fetch('/api/customer/' + customerId + '/keywords/pull-gsc', {method: 'POST'})
+    .then(r => r.json()).then(data => {
+        if (data.ok) {
+            showResult('keyword-action-result', 'Updated ' + data.updated + ' ranks, discovered ' + data.discovered + ' new keywords', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else showResult('keyword-action-result', data.error || 'Failed', 'error');
+    }).catch(() => showResult('keyword-action-result', 'Network error', 'error'));
+}
+
+// --- Audit ---
+function runSiteAudit(customerId) {
+    const btn = document.getElementById('run-audit-btn');
+    btn.disabled = true; btn.textContent = 'Running...';
+    fetch('/api/customer/' + customerId + '/audit/run', {method: 'POST'})
+    .then(r => r.json()).then(data => {
+        if (data.ok) {
+            btn.textContent = 'Done! Reloading...';
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            btn.textContent = 'Error: ' + (data.error || 'Unknown');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Run Audit'; }, 3000);
+        }
+    }).catch(() => { btn.textContent = 'Network Error'; btn.disabled = false; });
+}
+
+function updateAuditIssue(customerId, issueId, status) {
+    fetch('/api/customer/' + customerId + '/audit/issues/' + issueId + '/status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: status})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            const el = document.getElementById('audit-issue-' + issueId);
+            if (el) el.style.display = 'none';
+        }
+    });
+}
+
+// --- Backlinks ---
+function pullBacklinks(customerId) {
+    showResult('backlinks-action-result', 'Pulling backlinks from GSC...', 'info');
+    fetch('/api/customer/' + customerId + '/backlinks/pull', {method: 'POST'})
+    .then(r => r.json()).then(data => {
+        if (data.ok) {
+            const msg = data.message || (data.total + ' total, ' + data.new + ' new, ' + data.lost + ' lost');
+            showResult('backlinks-action-result', msg, 'success');
+            if (data.total > 0) setTimeout(() => location.reload(), 1500);
+        } else showResult('backlinks-action-result', data.error || 'Failed', 'error');
+    }).catch(() => showResult('backlinks-action-result', 'Network error', 'error'));
+}
+
+// --- Topics ---
+function updateTopicStatus(customerId, topicId, status) {
+    fetch('/api/customer/' + customerId + '/topics/' + topicId + '/status', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: status})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) location.reload();
+    });
+}
+
+// --- Competitor Domains ---
+function addCompetitorDomain(e, customerId) {
+    e.preventDefault();
+    const domain = document.getElementById('competitor-domain-input').value.trim();
+    const name = document.getElementById('competitor-name-input').value.trim();
+    if (!domain) return;
+    fetch('/api/customer/' + customerId + '/competitors', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({domain: domain, name: name})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) location.reload();
+        else alert(data.error || 'Failed');
+    });
+}
+
+function analyzeCompetitor(customerId, competitorName, idx) {
+    const aiDiv = document.getElementById('comp-ai-' + idx);
+    const analysisDiv = document.getElementById('comp-analysis-' + idx);
+    aiDiv.innerHTML = '<span style="font-size:0.7rem;color:var(--muted);">Analyzing...</span>';
+    analysisDiv.style.display = 'block';
+    analysisDiv.innerHTML = '<div style="font-size:0.8rem;color:var(--muted);text-align:center;padding:0.5rem;">Querying AI engines for competitor mentions...</div>';
+
+    fetch('/api/customer/' + customerId + '/competitors/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({competitor_name: competitorName})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) {
+            const r = data.result;
+            aiDiv.innerHTML = '<div style="font-size:0.85rem;font-weight:700;color:' +
+                (r.you_win ? 'var(--success)' : 'var(--danger)') + ';">' +
+                (r.you_win ? 'Ahead' : 'Behind') + '</div>';
+
+            let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-size:0.8rem;">';
+            html += '<div style="padding:0.4rem;background:#eff6ff;border-radius:4px;text-align:center;">';
+            html += '<div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Your Mentions</div>';
+            html += '<div style="font-weight:700;font-size:1.1rem;color:var(--primary);">' + r.your_mentions + '/' + r.total_queries + '</div></div>';
+            html += '<div style="padding:0.4rem;background:#fef2f2;border-radius:4px;text-align:center;">';
+            html += '<div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Their Mentions</div>';
+            html += '<div style="font-weight:700;font-size:1.1rem;color:var(--danger);">' + r.their_mentions + '/' + r.total_queries + '</div></div>';
+            html += '</div>';
+
+            if (r.insights && r.insights.length > 0) {
+                html += '<div style="margin-top:0.5rem;">';
+                html += '<div style="font-size:0.7rem;color:var(--muted);font-weight:600;margin-bottom:0.25rem;">INSIGHTS</div>';
+                r.insights.forEach(function(insight) {
+                    html += '<div style="font-size:0.78rem;color:var(--text-light);padding:0.2rem 0;border-bottom:1px solid var(--border);">' + insight + '</div>';
+                });
+                html += '</div>';
+            }
+
+            if (r.queries_they_win && r.queries_they_win.length > 0) {
+                html += '<div style="margin-top:0.5rem;">';
+                html += '<div style="font-size:0.7rem;color:var(--danger);font-weight:600;margin-bottom:0.25rem;">QUERIES THEY WIN</div>';
+                r.queries_they_win.forEach(function(q) {
+                    html += '<div style="font-size:0.78rem;padding:0.15rem 0;">"' + q + '"</div>';
+                });
+                html += '</div>';
+            }
+
+            analysisDiv.innerHTML = html;
+        } else {
+            aiDiv.innerHTML = '<button class="btn btn-sm btn-outline" style="font-size:0.65rem;padding:2px 8px;" onclick="analyzeCompetitor(\'' + customerId + '\', \'' + competitorName.replace(/'/g, "\\'") + '\', ' + idx + ')">Retry</button>';
+            analysisDiv.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);padding:0.3rem;">' + (data.error || 'Analysis failed') + '</div>';
+        }
+    }).catch(function() {
+        aiDiv.innerHTML = '<button class="btn btn-sm btn-outline" style="font-size:0.65rem;padding:2px 8px;" onclick="analyzeCompetitor(\'' + customerId + '\', \'' + competitorName.replace(/'/g, "\\'") + '\', ' + idx + ')">Retry</button>';
+        analysisDiv.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);padding:0.3rem;">Network error</div>';
+    });
+}
+
+function discoverCompetitors(customerId) {
+    const btn = document.getElementById('discover-comp-btn');
+    const result = document.getElementById('competitor-discover-result');
+    btn.disabled = true;
+    btn.textContent = 'Searching...';
+    result.style.display = 'block';
+    result.style.background = '#eff6ff';
+    result.style.color = '#1e40af';
+    result.textContent = 'Searching for nearby competitors (16km radius)...';
+    fetch('/api/customer/' + customerId + '/competitors/discover', {method: 'POST'})
+    .then(r => r.json()).then(data => {
+        btn.disabled = false;
+        btn.textContent = 'Auto-Discover Nearby';
+        if (data.ok) {
+            result.style.background = '#d1fae5';
+            result.style.color = '#065f46';
+            result.textContent = 'Found ' + data.found + ' competitors, added ' + data.added + ' new.';
+            if (data.added > 0) setTimeout(() => location.reload(), 1500);
+        } else {
+            result.style.background = '#fee2e2';
+            result.style.color = '#991b1b';
+            result.textContent = data.error || 'Discovery failed';
+        }
+    }).catch(() => {
+        btn.disabled = false;
+        btn.textContent = 'Auto-Discover Nearby';
+        result.style.background = '#fee2e2';
+        result.style.color = '#991b1b';
+        result.textContent = 'Network error';
+    });
+}
+
+function removeCompetitorDomain(customerId, domain, btn) {
+    if (!confirm('Remove ' + domain + '?')) return;
+    fetch('/api/customer/' + customerId + '/competitors', {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({domain: domain})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) btn.closest('tr').remove();
+    });
+}
+
+// --- Helpers ---
+function showResult(elId, msg, type) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.style.display = 'block';
+    el.textContent = msg;
+    el.style.background = type === 'success' ? '#d1fae5' : type === 'error' ? '#fee2e2' : '#dbeafe';
+    el.style.color = type === 'success' ? '#065f46' : type === 'error' ? '#991b1b' : '#1e40af';
+}
+
+// Close actions dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const dd = document.getElementById('actions-dropdown');
+    if (dd && !dd.contains(e.target)) dd.classList.remove('open');
+});
+
+// --- PracticeRank Score ---
+(function() {
+    var cid = '{{ customer.id }}';
+    var PILLAR_LABELS = {
+        ai_visibility: 'AI Visibility',
+        search_growth: 'Search Growth',
+        technical_health: 'Technical Health',
+        content_velocity: 'Content Velocity',
+        reputation: 'Reputation'
+    };
+    var PILLAR_COLORS = {
+        ai_visibility: '#8b5cf6',
+        search_growth: '#16a34a',
+        technical_health: '#2563eb',
+        content_velocity: '#d97706',
+        reputation: '#ec4899'
+    };
+
+    function scoreColor(s) {
+        if (s >= 75) return '#16a34a';
+        if (s >= 60) return '#2563eb';
+        if (s >= 40) return '#d97706';
+        return '#dc2626';
+    }
+
+    // Fetch score + pillars
+    fetch('/api/practicerank-score/' + cid)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.ok || d.score == null) {
+            document.getElementById('pr-score-num').textContent = '--';
+            document.getElementById('pr-grade-label').textContent = 'Insufficient data';
+            document.getElementById('pr-pillar-bars').innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">Not enough data to compute score. Run AI checks and connect GSC to populate.</div>';
+            return;
+        }
+        var score = d.score;
+        var grade = d.grade || {};
+        var pillars = d.pillars || {};
+        var color = scoreColor(score);
+
+        // Score ring animation
+        var arc = document.getElementById('pr-score-arc');
+        var circumference = 326.7;
+        var offset = circumference - (score / 100) * circumference;
+        arc.style.transition = 'stroke-dashoffset 1s ease-out, stroke 0.5s';
+        arc.setAttribute('stroke', color);
+        arc.setAttribute('stroke-dashoffset', offset);
+
+        document.getElementById('pr-score-num').textContent = score;
+        document.getElementById('pr-score-num').style.color = color;
+        document.getElementById('pr-grade-label').textContent = (grade.letter || '?') + ' — ' + (grade.label || '');
+        document.getElementById('pr-grade-label').style.color = color;
+
+        // Delta from previous
+        if (d.prev_score != null) {
+            var delta = score - d.prev_score;
+            var deltaEl = document.getElementById('pr-score-delta');
+            if (delta > 0) {
+                deltaEl.innerHTML = '<span style="color:#16a34a;">&#9650; +' + delta + '</span> from last';
+            } else if (delta < 0) {
+                deltaEl.innerHTML = '<span style="color:#dc2626;">&#9660; ' + delta + '</span> from last';
+            } else {
+                deltaEl.textContent = 'No change';
+            }
+        }
+
+        // Pillar bars
+        var html = '';
+        var pillarOrder = ['ai_visibility', 'search_growth', 'technical_health', 'content_velocity', 'reputation'];
+        pillarOrder.forEach(function(key) {
+            var p = pillars[key];
+            if (!p) return;
+            var pScore = p.score != null ? p.score : 0;
+            var pColor = PILLAR_COLORS[key] || '#6b7280';
+            var pLabel = PILLAR_LABELS[key] || key;
+            var weight = p.weight != null ? Math.round(p.weight * 100) : '';
+            html += '<div>';
+            html += '<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:2px;">';
+            html += '<span style="font-weight:600;">' + pLabel + (weight ? ' <span style="color:var(--muted);font-weight:400;">(' + weight + '%)</span>' : '') + '</span>';
+            html += '<span style="font-weight:600;color:' + scoreColor(pScore) + ';">' + pScore + '</span>';
+            html += '</div>';
+            html += '<div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;">';
+            html += '<div style="background:' + pColor + ';height:100%;border-radius:4px;width:' + pScore + '%;transition:width 0.8s ease-out;"></div>';
+            html += '</div>';
+            html += '</div>';
+        });
+        document.getElementById('pr-pillar-bars').innerHTML = html || '<div style="color:var(--muted);font-size:0.8rem;">No pillar data</div>';
+    }).catch(function() {
+        document.getElementById('pr-score-num').textContent = '--';
+        document.getElementById('pr-grade-label').textContent = 'Error loading';
+    });
+
+    // Fetch quick wins
+    fetch('/api/quick-wins/' + cid)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.ok || !d.wins || d.wins.length === 0) {
+            document.getElementById('pr-quickwins-list').innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">No quick wins right now!</div>';
+            return;
+        }
+        var html = '';
+        var impactColors = {high: '#dc2626', medium: '#d97706', low: '#6b7280'};
+        d.wins.slice(0, 5).forEach(function(w) {
+            var ic = impactColors[w.impact] || '#6b7280';
+            html += '<div style="padding:0.35rem 0.5rem;background:#f8fafc;border-radius:6px;border-left:3px solid ' + ic + ';">';
+            html += '<div style="font-size:0.78rem;font-weight:600;">' + w.title + '</div>';
+            html += '<div style="font-size:0.7rem;color:var(--muted);margin-top:1px;">' + w.description.substring(0, 80) + (w.description.length > 80 ? '...' : '') + '</div>';
+            html += '<div style="font-size:0.65rem;margin-top:2px;">';
+            html += '<span style="color:' + ic + ';font-weight:600;">' + w.impact + ' impact</span>';
+            html += ' &middot; <span style="color:#16a34a;">+' + w.est_score_boost + ' pts</span>';
+            html += '</div>';
+            html += '</div>';
+        });
+        document.getElementById('pr-quickwins-list').innerHTML = html;
+    }).catch(function() {
+        document.getElementById('pr-quickwins-list').innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">Error loading quick wins</div>';
+    });
+
+    // Fetch AI trend
+    fetch('/api/ai-trend/' + cid + '?limit=20')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.ok || !d.trend || d.trend.length === 0) {
+            document.getElementById('pr-ai-trend-card').style.display = 'none';
+            return;
+        }
+        var runs = d.trend;
+        var labels = runs.map(function(r) { return r.date ? r.date.substring(5) : ''; });
+        var rates = runs.map(function(r) { return r.mention_rate != null ? r.mention_rate : 0; });
+        var counts = runs.map(function(r) { return r.total_mentions || 0; });
+
+        if (runs.length >= 2) {
+            document.getElementById('pr-ai-trend-range').textContent = runs[0].date + ' — ' + runs[runs.length-1].date;
+        }
+
+        if (typeof Chart !== 'undefined') {
+            new Chart(document.getElementById('pr-ai-trend-chart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Mention Rate %',
+                        data: rates,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139,92,246,0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        yAxisID: 'y'
+                    }, {
+                        label: 'Mentions',
+                        data: counts,
+                        borderColor: '#2563eb',
+                        borderDash: [4, 3],
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 10 } } } },
+                    scales: {
+                        y: { position: 'left', min: 0, max: 100, title: { display: true, text: 'Rate %', font: { size: 10 } }, ticks: { font: { size: 9 } } },
+                        y1: { position: 'right', min: 0, grid: { drawOnChartArea: false }, title: { display: true, text: 'Mentions', font: { size: 10 } }, ticks: { font: { size: 9 } } },
+                        x: { ticks: { font: { size: 9 } } }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('pr-ai-trend-card').innerHTML = '<div style="color:var(--muted);font-size:0.8rem;padding:1rem;">Chart.js not loaded</div>';
+        }
+    }).catch(function() {
+        document.getElementById('pr-ai-trend-card').style.display = 'none';
+    });
+})();
 </script>
+
+{% if landing_reports %}
+<div class="card" style="margin-top: 1.5rem;">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 1rem;">Landing Page Reports ({{ landing_reports|length }})</h3>
+        <a href="{{ url_for('landing_reports') }}" style="font-size: 0.8rem; color: var(--primary);">View All</a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+                <tr style="background: #f8fafc;">
+                    <th style="padding: 0.5rem 0.75rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border);">Date</th>
+                    <th style="padding: 0.5rem 0.75rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border);">Score</th>
+                    <th style="padding: 0.5rem 0.75rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border);">Grade</th>
+                    <th style="padding: 0.5rem 0.75rem; text-align: left; font-size: 0.75rem; text-transform: uppercase; color: #64748b; border-bottom: 1px solid var(--border);"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lr in landing_reports %}
+                <tr>
+                    <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border);">{{ lr.timestamp[:10] if lr.timestamp else '' }}</td>
+                    <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border);">
+                        <span style="font-weight: 700; color: {% if (lr.overall_score or 0) >= 70 %}#16a34a{% elif (lr.overall_score or 0) >= 40 %}#ca8a04{% else %}#dc2626{% endif %};">{{ lr.overall_score or 0 }}</span>
+                    </td>
+                    <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border);">{{ lr.grade or '' }}</td>
+                    <td style="padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border);"><a href="{{ url_for('report_detail', report_id=lr.id) }}" style="color: var(--primary); font-size: 0.8rem;">View Report</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if landing_reports|length >= 2 %}
+        <div style="padding: 0.75rem; font-size: 0.8rem; color: #64748b; border-top: 1px solid var(--border);">
+            Score Trend: {{ landing_reports[-1].overall_score or 0 }} &rarr; {{ landing_reports[0].overall_score or 0 }}
+            {% set diff = (landing_reports[0].overall_score or 0) - (landing_reports[-1].overall_score or 0) %}
+            ({% if diff >= 0 %}+{% endif %}{{ diff }} points)
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
 
 {% endblock %}

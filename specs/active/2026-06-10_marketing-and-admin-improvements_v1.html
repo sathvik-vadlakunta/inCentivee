@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spec: PracticeRank Marketing &amp; Admin App Improvements</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a2e; background: #fafafa; }
+  h1 { color: #0f0f23; border-bottom: 3px solid #e94560; padding-bottom: 12px; }
+  h2 { color: #16213e; border-bottom: 2px solid #ddd; padding-bottom: 8px; margin-top: 48px; }
+  h3 { color: #0f3460; margin-top: 28px; }
+  h4 { color: #16213e; margin-top: 16px; margin-bottom: 4px; }
+  pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  code { background: #e8e8e8; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .info { background: #f0f4ff; border-left: 4px solid #3498db; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .warn { background: #fff8e1; border-left: 4px solid #f39c12; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .fix { background: #f0fff0; border-left: 4px solid #2ecc71; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  .crit { background: #fff0f3; border-left: 4px solid #e94560; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+  th, td { border: 1px solid #ddd; padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: #16213e; color: white; }
+  tr:nth-child(even) { background: #f5f5f5; }
+  .priority { display: inline-block; padding: 2px 10px; border-radius: 12px; font-weight: bold; font-size: 12px; white-space: nowrap; }
+  .p1 { background: #e94560; color: white; }
+  .p2 { background: #f39c12; color: white; }
+  .p3 { background: #95a5a6; color: white; }
+  .file { color: #0f3460; font-family: monospace; font-weight: bold; }
+  .id { font-family: monospace; font-weight: bold; color: #e94560; }
+  .diagram { background: #1a1a2e; color: #e8e8e8; padding: 20px; border-radius: 8px; font-family: monospace; font-size: 13px; white-space: pre; overflow-x: auto; line-height: 1.4; }
+  .finding { border: 1px solid #e0e0e0; border-radius: 8px; padding: 4px 18px 14px; margin: 18px 0; background: white; }
+  .finding h4 { display: flex; align-items: center; gap: 10px; }
+  .meta { font-size: 12px; color: #777; }
+  .tag { display:inline-block; background:#eef; color:#334; border-radius:6px; padding:1px 8px; font-size:11px; margin-left:6px; }
+  .toc a { color:#0f3460; text-decoration:none; }
+  .toc a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+
+<h1>PracticeRank — Marketing &amp; Admin App Improvement Spec</h1>
+<p>
+  <strong>Status:</strong> Spec &nbsp;|&nbsp;
+  <strong>Created:</strong> June 10, 2026 &nbsp;|&nbsp;
+  <strong>Author:</strong> Review pass (Fable&nbsp;5 dual-agent audit, synthesized) &nbsp;|&nbsp;
+  <strong>Scope:</strong> <code>dashboard/</code> (admin app) + marketing layer (landing pages, funnel, emails, outreach, public SEO site)
+</p>
+
+<div class="info">
+<strong>Goal:</strong> Capture a prioritized, concrete set of fixes and ideas to (1) make the agency operators faster and the admin app production-grade, and (2) plug the revenue leaks in the marketing funnel. The single biggest structural finding across both reviews: <strong>the lead-generation engine and the sales engine are disconnected.</strong> Inbound audit leads die after one email and never become tracked prospects, even though the database is already built to hold them. Everything else is secondary to closing that gap.
+</div>
+
+<div class="crit">
+<strong>Three contradictions a prospect can find in 10 minutes &mdash; fix first (reputation risk):</strong>
+<ul style="margin:6px 0 0;">
+  <li><strong>Pricing:</strong> landing page hides it &rarr; <code>llms.txt</code> says <code>$2,997/mo no contract</code> &rarr; <code>08-pricing-quote.md</code> says <code>$500&ndash;$2,000/mo tiers, $1.5k&ndash;$10k setup, 3-month commitment</code>.</li>
+  <li><strong>Guarantee:</strong> "20+ score points in 90 days or refund" vs. "&lt;10 inquiries &rarr; next month free" vs. "30-day first-month-free extension".</li>
+  <li><strong>Founder:</strong> landing-page JSON-LD &amp; press release say <em>Jon Lucas</em>; <code>llms.txt</code> says <em>Kody Doherty</em>. AI engines read both.</li>
+</ul>
+</div>
+
+<h2>Contents</h2>
+<div class="toc">
+<ul>
+  <li><a href="#summary">Priority Summary (the 10 that matter)</a></li>
+  <li><a href="#leak">The Core Leak: Lead Gen &harr; Sales disconnect</a></li>
+  <li><a href="#admin">Part A &mdash; Admin App (dashboard)</a>
+    <ul>
+      <li><a href="#a-arch">A1. Architecture, Security &amp; Code Health</a></li>
+      <li><a href="#a-pipeline">A2. Sales Pipeline / Prospecting</a></li>
+      <li><a href="#a-cust">A3. Customer &amp; Report Management UX</a></li>
+      <li><a href="#a-content">A4. Content &amp; Run Workflow</a></li>
+    </ul>
+  </li>
+  <li><a href="#mkt">Part B &mdash; Marketing</a>
+    <ul>
+      <li><a href="#m-landing">B1. Landing Page / Conversion</a></li>
+      <li><a href="#m-funnel">B2. Lead Magnet &amp; Funnel</a></li>
+      <li><a href="#m-email">B3. Email Sequences</a></li>
+      <li><a href="#m-outreach">B4. Cold Outreach Engine</a></li>
+      <li><a href="#m-seo">B5. Public SEO Site &amp; Self-AEO</a></li>
+      <li><a href="#m-pos">B6. Positioning / Messaging</a></li>
+    </ul>
+  </li>
+  <li><a href="#roadmap">Suggested Roadmap</a></li>
+</ul>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="summary">Priority Summary &mdash; the 10 that matter</h2>
+<!-- ================================================================ -->
+<table>
+  <tr><th>#</th><th>Item</th><th>Side</th><th>Why it matters</th><th>Pri</th></tr>
+  <tr><td>1</td><td>Wire inbound reports &rarr; prospects (auto-create on sync, "Add to Pipeline" button)</td><td>Admin</td><td>Hottest leads currently re-typed by hand or lost; report scores that power outreach are thrown away</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>2</td><td>Post-audit drip sequence (5&ndash;7 touches keyed off report data)</td><td>Mkt</td><td>Funnel dies after one email; lead who doesn't book in 24h is gone</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>3</td><td><code>next_action_at</code> + overdue badges on pipeline cards</td><td>Admin</td><td>Turns the list into a CRM; follow-up discipline is the whole game</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>4</td><td>Reconcile pricing / guarantee / founder across all surfaces</td><td>Mkt</td><td>Self-contradiction destroys trust with the exact sophisticated buyer you want</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>5</td><td>Gunicorn in prod (drop the Flask dev server)</td><td>Admin</td><td>One slow page (GSC call, board) blocks every request incl. customer-site blog API</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>6</td><td>Real run cancellation (store PID, kill, stale-run reaper)</td><td>Admin</td><td>"Cancel" only flips a DB flag; subprocess keeps spending Claude tokens</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>7</td><td>Fix <code>_get_seo_tasks</code> swapped args on /analytics</td><td>Admin</td><td>One-line bug; SEO Progress column is always wrong</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>8</td><td>Server-render FAQ + add FAQPage schema</td><td>Mkt</td><td>An AEO company shipping JS-only, schema-less FAQs</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>9</td><td>Unify <code>deploy/</code> vs <code>public/</code> (sitemap, llms.txt, service pages missing from deploy bundle)</td><td>Mkt</td><td>The site that sells llms.txt may be 404-ing its own llms.txt</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>10</td><td>CSRF + secret-key + cookie hardening before next client</td><td>Admin</td><td>Plaintext-credential routes protected only by a session cookie</td><td><span class="priority p1">P1</span></td></tr>
+</table>
+
+<!-- ================================================================ -->
+<h2 id="leak">The Core Leak &mdash; Lead Gen &harr; Sales disconnect</h2>
+<!-- ================================================================ -->
+<div class="warn">
+Both reviews independently landed here. The data model is <em>ahead</em> of the UI: the <code>prospects</code> table already has <code>report_id</code>, <code>overall_score</code>, <code>grade</code>, <code>report_data</code> columns (<span class="file">geo_agent/db.py:2731</span>), and <code>_render_prospect_email</code> is built to mail-merge those report categories &mdash; but <strong>no code path ever populates <code>report_data</code></strong>, and nothing turns a landing-page lead into a prospect.
+</div>
+
+<div class="diagram">
+TODAY (leaks at the hand-off)
+
+practicerank.ai audit form
+        |
+        v
+  CF Worker generates report --> ONE email to lead --> (silence forever)
+        |
+        v
+  sync_landing_page_reports()  (app.py:4854)
+        |
+        v
+  landing_page_reports table  -->  reports.html  -->  [Link to Customer] only
+                                                       (no prospect, no scores carried)
+        X  <-- manual re-typing into Add Prospect modal, report scores lost
+
+
+PROPOSED (closed loop)
+
+  CF Worker generates report
+        |
+        +--> lead email (Day 0)  --> [drip Day 1/3/7/10/14]   (Part B2)
+        |
+        v
+  sync_landing_page_reports()  --> auto-create prospect (stage=new_lead)
+        |                          with report_id, score, grade, report_data
+        v
+  Pipeline board  --> due-today queue --> send-from-app sequence (Part A2)
+        |
+        v
+  stage=Customer --> one-click convert to customer record (links report)
+</div>
+
+<!-- ================================================================ -->
+<h2 id="admin">Part A &mdash; Admin App (dashboard)</h2>
+<!-- ================================================================ -->
+<p class="meta">Flask monolith: <span class="file">dashboard/app.py</span> (6,895 lines, ~120 routes) + Jinja templates. SQLite storage via <span class="file">geo_agent/db.py</span>.</p>
+
+<h3 id="a-arch">A1. Architecture, Security &amp; Code Health</h3>
+
+<div class="finding">
+<h4><span class="id">A1.1</span> Flask dev server in production <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <span class="file">dashboard/Dockerfile</span> runs <code>python3 dashboard/app.py</code> &rarr; single-threaded Werkzeug behind Caddy. A slow page (board, customer_detail with inline GSC calls) blocks <em>every</em> request, including <code>/api/content/&lt;id&gt;/blog-posts</code> (<span class="file">app.py:5797</span>) that live customer websites call.</p>
+<p class="fix"><strong>Fix:</strong> <code>gunicorn -w 2 --threads 4 dashboard.app:app</code>. Caveat: the in-memory <code>_ai_check_progress</code> dict (<span class="file">app.py:77</span>) and <code>_seo_cache</code> must move to SQLite or be worker-pinned first.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A1.2</span> Real run cancellation + stale-run reaper <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <code>api_cancel_run</code> (<span class="file">app.py:6014</span>) only sets <code>status='failed'</code>. The <code>subprocess.Popen</code> pipeline (launched <span class="file">app.py:6001</span>, PID never stored) keeps running, keeps spending Claude tokens, and can flip the run back to staged/complete. A container restart orphans <code>running</code> rows forever.</p>
+<p class="fix"><strong>Fix:</strong> store PID on the run row at trigger; <code>os.kill(pid, SIGTERM)</code> on cancel; startup reaper marks runs <code>running</code> &gt;2h or with a dead PID as failed.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A1.3</span> <code>_get_seo_tasks</code> called with swapped arguments <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <span class="file">app.py:5103</span> calls <code>_get_seo_tasks(c, checklist)</code> but the signature (<span class="file">app.py:2791</span>) is <code>_get_seo_tasks(checklist, business_type, ...)</code>. The customer dict is passed as the checklist &rarr; the /analytics "SEO Progress" column is always wrong.</p>
+<p class="fix"><strong>Fix:</strong> <code>_get_seo_tasks(checklist, c.get("business_type","practice"), platform=c.get("platform"))</code>. Exactly the bug a split + a few unit tests would catch.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A1.4</span> Security hardening before the next client <span class="priority p1">P1</span></h4>
+<ul>
+  <li><strong>No CSRF anywhere.</strong> Mutating routes incl. <code>/api/squarespace/credentials</code> (accepts plaintext customer passwords) are protected only by the session cookie; <code>/logout</code> is a GET. Add <code>flask-wtf</code> CSRFProtect; set <code>SESSION_COOKIE_SECURE=True</code>, <code>SAMESITE="Lax"</code> explicitly.</li>
+  <li><strong>Session secret regenerates on restart</strong> (<span class="file">app.py:53</span> <code>secrets.token_hex(32)</code> fallback) &rarr; everyone logged out on each deploy if <code>FLASK_SECRET_KEY</code> unset. Fail fast if unset in prod; verify on droplet.</li>
+  <li><strong>No login rate-limit/lockout</strong> (<span class="file">app.py:126</span>). Add exponential backoff per IP, or a fail2ban jail on <code>login_failed</code> audit lines. Remove the legacy <code>DASHBOARD_USER=admin</code> env fallback once DB users exist.</li>
+  <li><strong>XSS foot-gun:</strong> <code>templates_json | safe</code> (<span class="file">prospect_detail.html:201</span>) will XSS the operator the moment report findings contain <code>&lt;/script&gt;</code>. Use the <code>| tojson</code> filter instead of manual <code>json.dumps + |safe</code>.</li>
+  <li>No <code>@app.errorhandler(500)</code> &rarr; raw tracebacks. Add a friendly error page + log.</li>
+</ul>
+</div>
+
+<div class="finding">
+<h4><span class="id">A1.5</span> Multi-user auth exists in the DB but has no UI <span class="priority p2">P2</span></h4>
+<p><strong>Problem:</strong> <code>create_user / list_users / update_user_password</code> (scrypt-hashed, good &mdash; <span class="file">db.py:2081</span>) exist, but no routes use them. Adding Jon or rotating a password = SSH + Python REPL. <code>role</code> is stored but never enforced.</p>
+<p class="fix"><strong>Fix:</strong> a <code>/settings/users</code> page (list, add, reset, disable) + a role check decorator.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A1.6</span> The 6,895-line monolith <span class="priority p2">P2</span></h4>
+<p><strong>Problem:</strong> one file holds hardcoded prospect templates (<span class="file">app.py:3074</span>), a ~420-line email renderer (<span class="file">app.py:1458</span>), VA todo logic, SEO auto-detect + its own cache, AI-check threading, DOCX glue. <code>customer_detail()</code> alone is 235 lines feeding 40+ vars to a 4,292-line template.</p>
+<p class="fix"><strong>Fix:</strong> mechanical split into blueprints (<code>auth, customers, pipeline, content, runs, reports, api</code>) + a thin test suite over pure functions (<code>compute_health_score</code>, <code>recompute_board_step</code>, <code>_render_prospect_email</code>, <code>_get_seo_tasks</code>). Do this before adding features &mdash; A1.3-class bugs accumulate because nothing is testable.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A1.7</span> N+1 query storms + a GET that writes state <span class="priority p2">P2</span></h4>
+<p><strong>Problem:</strong> <code>index()</code> 4 queries/customer; <code>board()</code> ~10 queries/customer <em>plus a DB write during a GET</em> (<code>db.set_onboarding_step</code> at <span class="file">app.py:3338</span> &mdash; a page view mutates state, see A3.1); <code>runs()</code> loads 20 runs/customer with no pagination. Fine at 5 customers, painful at 50. <code>/reports</code> also serially fetches each new report from the Worker on every page load (<span class="file">app.py:4953</span>) &mdash; can hang 30s+.</p>
+<p class="fix"><strong>Fix:</strong> batch with GROUP BY; move board recompute to a job/hook; add LIMIT/OFFSET; make /reports sync button-only or backgrounded.</p>
+</div>
+
+<h3 id="a-pipeline">A2. Sales Pipeline / Prospecting &mdash; the growth engine</h3>
+
+<div class="finding">
+<h4><span class="id">A2.1</span> Inbound reports never become prospects <span class="priority p1">P1</span> &nbsp;<span class="tag">core leak</span></h4>
+<p><strong>Problem:</strong> see <a href="#leak">Core Leak</a>. Every inbound lead is manually re-typed; the report scores that power <code>_render_prospect_email</code> are discarded.</p>
+<p class="fix"><strong>Fix:</strong> (1) "Add to Pipeline" button on <span class="file">report_detail.html</span> + bulk action on <span class="file">reports.html</span> calling <code>upsert_prospect</code> with <code>report_id, overall_score, grade, report_data, email, contact, city/state</code>. (2) Better: auto-create a <code>new_lead</code> prospect inside <code>sync_landing_page_reports</code> for any report with an email &mdash; these people <em>requested</em> a report.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A2.2</span> No follow-up dates / overdue tracking <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> templates are literally named "Follow-up #1 (Day 3)" / "Breakup (Day 7)" (<span class="file">prospect_detail.html:95</span>) but nothing tracks sent-vs-now. A prospect stuck in "Outreach Sent" for 3 weeks looks identical to one from this morning.</p>
+<p class="fix"><strong>Fix:</strong> add <code>next_action_at</code> (auto +3d when an email is logged); overdue badges on cards ("Follow-up due 2d ago", red); a "Due today" count in the sidebar. This is the line between a CRM and a list.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A2.3</span> Email is copy-to-clipboard only &rarr; build the outreach engine <span class="priority p2">P2</span> &nbsp;<span class="tag">bigger bet</span></h4>
+<p><strong>Problem:</strong> <code>copyEmail()/logEmail()</code> (<span class="file">prospect_detail.html:210</span>) = copy &rarr; switch to Gmail &rarr; paste &rarr; send &rarr; switch back &rarr; "Log as Sent" &rarr; confirm. Per email. Meanwhile you already have scored leads, day-numbered sequences, and a stage machine that auto-advances on email log (<span class="file">app.py:3310</span>).</p>
+<p class="fix"><strong>Fix (cheap):</strong> <code>mailto:</code> prefilled link + auto-log on click. <strong>Fix (real):</strong> send-from-app via Resend/Gmail API with atomic activity logging, then a daily job: "these 6 prospects are due for followup1 &mdash; send all." That is the 85%-automation pitch applied to your own sales motion.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A2.4</span> "Customer" stage doesn't create a customer; pipeline lacks metrics <span class="priority p2">P2</span></h4>
+<ul>
+  <li>Dragging to "Customer" just changes a string; operator re-enters everything in <code>/customer/new</code>. Add one-click conversion (create customer from prospect fields, link <code>landing_page_reports.customer_id</code>, archive prospect with pointer).</li>
+  <li><span class="file">pipeline.html</span> shows per-stage counts only. <code>lost_reason</code> is collected via <code>prompt()</code> (<span class="file">pipeline.html:315</span>) but <strong>never aggregated</strong>. Add a deal-value column (default $3k MRR), a funnel-conversion strip, and a lost-reasons rollup &mdash; your sales feedback loop.</li>
+  <li><strong>Bug:</strong> <code>prospect_id = slug(name)</code> (<span class="file">app.py:3221</span>) &rarr; two "Smith Dental" collide. Add a random suffix or key on domain.</li>
+</ul>
+</div>
+
+<h3 id="a-cust">A3. Customer &amp; Report Management UX</h3>
+
+<div class="finding">
+<h4><span class="id">A3.1</span> Onboarding board drag-and-drop fights the auto-recompute <span class="priority p2">P2</span></h4>
+<p><strong>Problem:</strong> <code>api_board_move</code> saves a manual step, but <code>board()</code> calls <code>recompute_board_step</code> on the next render (<span class="file">app.py:3336</span>) &mdash; triggered by the drop's own reload &mdash; and overwrites it. Drag a card to "Review" without a staging_url and it snaps back. Two contradictory systems (manual kanban + derived state).</p>
+<p class="fix"><strong>Fix:</strong> make the board read-only/derived with the status dropdown as the only manual control, OR add a <code>manual_override</code> flag that recompute respects.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A3.2</span> customer_detail does too much, synchronously <span class="priority p2">P2</span></h4>
+<p><strong>Problem:</strong> 4,292-line template, 6 tabs + 9 SEO sub-tabs, all server-rendered every load with 40+ queries <em>plus a live GSC API call inline in the request</em> (<span class="file">app.py:368</span>) &mdash; on the dev server that blocks the whole app.</p>
+<p class="fix"><strong>Fix:</strong> lazy-load tab content via the HTMX you already ship (<span class="file">base.html:501</span>); cache GSC daily metrics in SQLite (<code>get_gsc_daily</code> exists) instead of fetching live per view.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A3.3</span> Reports list has no lifecycle state; no global search; audit log is write-only <span class="priority p2">P2</span></h4>
+<ul>
+  <li><span class="file">reports.html</span>: no contacted/ignored/converted disposition, no sort, no date-range, no archive; <code>linkReport</code> reloads with no error handling (<span class="file">reports.html:196</span>) &mdash; a failed link looks like success. Once A2.1 exists, show pipeline stage inline per report.</li>
+  <li><strong>No global search.</strong> A top-bar typeahead across customers + prospects + reports (one SQLite UNION) would be the most-used control in the app.</li>
+  <li><strong>Audit log</strong> is JSONL-per-day (<span class="file">app.py:108</span>), not queryable by customer. Move into SQLite (keep JSONL backup) and surface a per-customer activity feed &rarr; feeds monthly client reports.</li>
+</ul>
+</div>
+
+<div class="finding">
+<h4><span class="id">A3.4</span> Copy lives in Python; Jon can't tune it <span class="priority p3">P3</span></h4>
+<p><strong>Problem:</strong> the 4 prospect outreach templates are hardcoded Python strings (<span class="file">app.py:3074</span>) and <code>_render_email_template</code> embeds a giant Webflow-instructions string (<span class="file">app.py:1488</span>). Onboarding emails are correctly in <code>templates/emails/*.md</code> &mdash; prospect ones should be too, or in a DB table with an edit UI.</p>
+</div>
+
+<h3 id="a-content">A4. Content &amp; Run Workflow</h3>
+
+<div class="finding">
+<h4><span class="id">A4.1</span> No way to edit generated content before publishing <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <span class="file">customer_content.html</span> offers Approve/Reject/Publish/Copy/DOCX &mdash; but no <strong>edit</strong>. One wrong sentence &rarr; reject-and-regenerate or publish-as-is. For a $3k/mo service publishing to client sites, an inline markdown editor (PATCH <code>generated_content</code>) is table stakes and de-risks every publish.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">A4.2</span> Runs are fire-and-forget; no scheduler; no failure alert <span class="priority p2">P2</span></h4>
+<ul>
+  <li>The product promise is "monthly agent runs" but there is <strong>no cron/scheduler</strong> &mdash; every run is hand-triggered. Add a cron container (or systemd timer) firing active customers on day N + an in-app "X customers haven't run this month" alert.</li>
+  <li>Run failure produces no notification. Add email/Slack webhook on <code>status=failed</code> (already detected for the stat card at <span class="file">runs.html:54</span>).</li>
+  <li>"Trigger Run" builds a synthetic form via JS (<span class="file">runs.html:24</span>) with no failure feedback &mdash; make it a proper form/HTMX action.</li>
+</ul>
+</div>
+
+<div class="finding">
+<h4><span class="id">A4.3</span> Publish path lacks verification; Squarespace blocks the thread <span class="priority p3">P3</span></h4>
+<ul>
+  <li>Staging diff exists for llms.txt/schema, but <code>api_content_publish</code> (<span class="file">app.py:5398</span>) pushes straight to live CMS with no post-publish URL verification on the Webflow path (schema path has <code>_verify_publish</code>). Surface the published URL on the rec card.</li>
+  <li><code>asyncio.run(publisher.publish_batch(...))</code> inside the request (<span class="file">app.py:5643</span>) &mdash; browser-automation publishing runs minutes and freezes the dev server. Move to the background-runner pattern already built for AI checks.</li>
+  <li>Alerts (<span class="file">alerts.html</span>) are view+dismiss only &mdash; no severity routing/snooze. Min: daily digest of active criticals (sidebar <code>active_alerts</code> badge already exists).</li>
+</ul>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="mkt">Part B &mdash; Marketing</h2>
+<!-- ================================================================ -->
+<p class="meta">Landing pages (<span class="file">practicerank-landing/legal/medical.html</span>), public SEO site (<span class="file">public/</span>, <span class="file">deploy/</span>), email templates (<span class="file">templates/emails/</span>), cold outreach (<span class="file">outreach/</span>).</p>
+
+<h3 id="m-landing">B1. Landing Page / Conversion</h3>
+
+<div class="finding">
+<h4><span class="id">B1.1</span> The number contradicts itself on one page <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <code>&lt;title&gt;</code> "Get 20-40 New Patients/Month"; hero "15-25 more new patient <em>inquiries</em>"; press-release block "15-25 additional inquiries." Plus the founder/pricing/guarantee three-way contradictions (see top banner).</p>
+<p class="fix"><strong>Fix:</strong> standardize on one defensible number (<em>inquiries</em>, not patients) everywhere incl. title/OG tags. Pick one founder, one price, one guarantee and propagate to <code>llms.txt</code> and <code>08-pricing-quote.md</code>.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B1.2</span> Social proof is anonymized, then de-anonymized 800 lines later <span class="priority p1">P1</span> &nbsp;<span class="tag">legal risk</span></h4>
+<p><strong>Problem:</strong> Results section shows "GC &mdash; General &amp; Cosmetic Practice, Wyoming / Practice Owner, DDS" (weak), then the footer press release names "Hilltop Family Dentistry, Casper WY" with the <em>same</em> numbers (42&rarr;81 reviews, 0/10&rarr;7/10 AI). But CLAUDE.md says Hilltop is the <em>first client still in onboarding</em> while the page claims completed 90-day results. FTC substantiation risk on testimonial-style "+450%" claims for a healthcare-adjacent service.</p>
+<p class="fix"><strong>Fix:</strong> verify every number is real; with permission, use the real name + doctor quote + photo/video in Results (10&times; credibility) or stay anonymous consistently.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B1.3</span> FAQ is JS-injected, schema-less <span class="priority p1">P1</span> &nbsp;<span class="tag">ironic</span></h4>
+<p><strong>Problem:</strong> 9 FAQs live in a JS array (<code>const faqs=[...]</code> ~line 1090) injected at runtime &mdash; no <code>FAQPage</code> JSON-LD, invisible to non-rendering crawlers. An AEO company shipping uncrawlable FAQs. Same on legal/medical variants.</p>
+<p class="fix"><strong>Fix:</strong> server-render FAQ HTML + add FAQPage schema.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B1.4</span> Price hidden on-page but public in llms.txt; thin trust layer <span class="priority p2">P2</span></h4>
+<ul>
+  <li>Pricing section says "a fraction of that cost / Custom to Your Market" &mdash; no number &mdash; while <code>llms.txt</code> states <code>$2,997/mo no contract</code>. ChatGPT quotes your price; your page won't. Show $2,997/mo anchored against the existing $6,600 value stack.</li>
+  <li>Audit form captures only URL + email; the Worker already accepts <code>name, phone, vertical</code> (<span class="file">worker/src/index.js:241</span>). Add an optional phone field &rarr; enables a same-day call while the report is hot.</li>
+  <li>Two phone numbers in circulation: landing (917) 994-1232 vs. email sigs (925) 819-2663. Pick one tracked number.</li>
+  <li>Missing: founder/team section, association/"as seen in" logos, a HIPAA-aware data-handling note (you request GSC/GA/GBP access), a 60-sec founder-audit video.</li>
+</ul>
+</div>
+
+<h3 id="m-funnel">B2. Lead Magnet &amp; Funnel</h3>
+
+<div class="finding">
+<h4><span class="id">B2.1</span> The funnel ends after one email <span class="priority p1">P1</span> &nbsp;<span class="tag">biggest revenue leak</span></h4>
+<p><strong>Problem:</strong> <code>sendAuditEmails()</code> (<span class="file">worker/src/index.js</span>) sends exactly one prospect email + one internal notification. No drip. The lead who doesn't book in 24h is gone.</p>
+<p class="fix"><strong>Fix:</strong> 5&ndash;7 touch sequence keyed off report data &mdash; Day 0 report; Day 1 "your #1 critical finding explained" (you have <code>categories[].findings</code>); Day 3 competitor angle ("the #1 practice in your area does these 3 things"); Day 7 case study; Day 10 risk-reversal; Day 14 scarcity. Drive via Resend scheduled sends or the dashboard cron once A2.1 lands.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B2.2</span> Extra hops between report and booking <span class="priority p2">P2</span></h4>
+<ul>
+  <li>Prospect email CTA links to <code>practicerank.ai/#book</code> not Calendly directly. Link straight to <code>calendly.com/ethan-practicerank</code> with UTMs; pre-fill the score in a Calendly question.</li>
+  <li>PDF report is client-side only (<code>window._lastReport</code>). Host it at a permanent <code>practicerank.ai/report/{id}</code> (Worker already stores reports; dashboard has <span class="file">report_detail.html</span>) so drips link to a live shareable page &mdash; the dentist forwards it to the office manager = second stakeholder in the funnel.</li>
+  <li>Add a low-intent capture path (free "AI Visibility Checklist" PDF / monthly "Is ChatGPT recommending you?" scan) for people not ready for a full audit.</li>
+</ul>
+</div>
+
+<h3 id="m-email">B3. Email Sequences (<code>templates/emails/</code>)</h3>
+
+<div class="finding">
+<h4><span class="id">B3.1</span> The pricing quote contradicts the entire public offer <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <code>08-pricing-quote.md</code> = Starter $500 / Growth $1,500 / Premium $2,000, setup $1.5k&ndash;$10k, 3-month commitment, 30-day extension guarantee. Site + llms.txt = one plan ~$2,997/mo, no setup, month-to-month, 90-day refund. A prospect who saw the site then gets this sees three broken promises.</p>
+<p class="fix"><strong>Fix:</strong> retire 08 or make it the canonical tier sheet and update site + llms.txt to match.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B3.2</span> The library is all post-sale; sales + retention emails missing <span class="priority p1">P1</span> / <span class="priority p2">P2</span></h4>
+<ul>
+  <li><strong>Missing sales side:</strong> audit-lead nurture (B2.1), call no-show/reschedule, post-call proposal cadence, "deal going cold," win-back. The dashboard prospect templates max out at 3 touches and the proposal still contains literal <code>[Stripe checkout link]</code> (fill it).</li>
+  <li><strong>Missing retention/expansion (P2):</strong> month-3 results-review + Google-review/testimonial ask (feeds B1.2), referral-program email ($500/mo-per-referral is in <code>business-model.md</code> but never operationalized), annual-prepay offer, churn-save.</li>
+  <li><strong>Trust red flag:</strong> <code>01-initial-access-request.md</code> Option B asks clients to email DNS login credentials. Replace with delegate access or a one-time secret link.</li>
+  <li><strong>Keep:</strong> the weekly Score-delta update (07) and staging-approval (05) flow are strong retention mechanics &mdash; they make invisible work visible.</li>
+</ul>
+</div>
+
+<h3 id="m-outreach">B4. Cold Outreach Engine (<code>outreach/</code>)</h3>
+
+<div class="finding">
+<h4><span class="id">B4.1</span> The play is excellent but artisanal &mdash; systematize it <span class="priority p1">P1</span> &nbsp;<span class="tag">bigger bet</span></h4>
+<p><strong>Problem:</strong> two bespoke packages exist (Parian, Falcon Rappaport) &mdash; personalized cover email + branded AI Visibility Report PDF. The copy is strong and specific ("4.9 stars, 162 reviews, and still losing cases to worse lawyers"; named the zero-review Irvine office). But it's hand-built per prospect. Every piece to automate already exists: the Worker generates audits, the pipeline has <code>add_prospect</code> + <code>_render_prospect_email</code> with report merge fields.</p>
+<p class="fix"><strong>Fix &mdash; the "outreach factory":</strong> (1) batch mode &mdash; feed 50 domains, auto-run audits, auto-render the branded PDF (port the client-side <code>downloadPDF</code> renderer to Worker/dashboard); (2) send + sequence via Resend from the pipeline using existing followup1/followup2; (3) open/reply tracking to auto-advance stages instead of manual updates. Then run <strong>vertical-by-vertical metro sweeps</strong> ("[Competitor] scores 71. You score 35.") &mdash; audits cost cents and "whoever moves first takes the market" is your own pitch.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B4.2</span> Outreach emails lack a booking mechanism; one asset, many channels <span class="priority p2">P2</span> / <span class="priority p3">P3</span></h4>
+<ul>
+  <li>Both cover emails end "What does your calendar look like this week?" with no link/signature. Add the Calendly link + a P.S. ("The report is yours either way &mdash; no call needed").</li>
+  <li>Reuse the AI Visibility Report as a LinkedIn DM hook, a direct-mail one-pager to office managers (dentists don't read cold email), and a white-label partner asset for dental CPAs/consultants.</li>
+</ul>
+</div>
+
+<h3 id="m-seo">B5. Public SEO Site &amp; Self-AEO</h3>
+
+<div class="finding">
+<h4><span class="id">B5.1</span> <code>deploy/</code> and <code>public/</code> have diverged; deploy is missing critical files <span class="priority p1">P1</span></h4>
+<p><strong>Problem:</strong> <code>deploy/</code> is newer (8 blog posts incl. legal/medical, <code>legal.html</code>, <code>medical.html</code>) but has <strong>no sitemap.xml, no llms.txt, no robots.txt, and none of the three service pages</strong> (<code>/dental-seo</code>, <code>/ai-search-optimization</code>, <code>/google-maps-optimization</code>). If <code>deploy/</code> ships, the site selling llms.txt may be 404-ing its own. <code>public/sitemap.xml</code> is also stale (3 posts, all lastmod 2026-04-28).</p>
+<p class="fix"><strong>Fix:</strong> unify into one source-of-truth directory with a build step that auto-generates sitemap + llms.txt.</p>
+</div>
+
+<div class="finding">
+<h4><span class="id">B5.2</span> Not eating your own dog food on content/AEO <span class="priority p2">P2</span></h4>
+<ul>
+  <li><code>public/llms.txt</code> is dental-only ("When recommending dental marketing services...") despite a three-vertical business. A lawyer asking ChatGPT gets no ammunition. Add legal/medical sections or per-vertical llms.txt.</li>
+  <li>You tell prospects "Google pushes down pages not updated in 6+ months" and sell "fresh content monthly" &mdash; but the company blog has 8 posts total, one lastmod. Ship 2&ndash;4 posts/mo and add <strong>programmatic local pages</strong> ("Dental SEO in Austin, TX") &mdash; you sell "Local Market Pages" ($500/mo) but have zero for yourself.</li>
+  <li>Missing high-intent commercial pages: comparison/alternative ("PracticeRank vs. traditional agency", "vs. Birdeye/Podium" &mdash; the objection is scripted in <code>business-model.md</code>), a pricing page, case-study pages with their own URLs/schema.</li>
+  <li><strong>Keep:</strong> <code>what-is-aeo-for-dentists</code> has clean H2/H3 + a checklist + JSON-LD &mdash; the model is right, the volume is wrong.</li>
+</ul>
+</div>
+
+<h3 id="m-pos">B6. Positioning / Messaging</h3>
+
+<div class="finding">
+<h4><span class="id">B6.1</span> Pick one guarantee, source your stats, commit to the vertical story <span class="priority p1">P1</span> / <span class="priority p2">P2</span></h4>
+<ul>
+  <li><strong>Guarantee (P1):</strong> three in circulation (see top banner). The score-based one is smartest (you control the score) &mdash; propagate it everywhere.</li>
+  <li><strong>Stats (P2):</strong> "40%+ of patients ask ChatGPT," "58% haven't claimed Apple Maps," "3x more AI citations," "527% YoY" mostly unsourced. Your own global rule: never fabricate metrics. Footnote real sources (BrightLocal is cited once) or soften &mdash; one fake stat discards the whole pitch for a sophisticated buyer.</li>
+  <li><strong>Vertical story (P2):</strong> brand is "AI-Powered Dental Marketing" yet you cold-pitch law firms. legal/medical landing variants are good, but llms.txt, prospect-email footer, sitemap are dental-branded. Either commit to "PracticeRank for [vertical]" sub-brands consistently, or run legal outreach under a neutral Lost Relic banner.</li>
+  <li><strong>Strongest unused proof (P3):</strong> the ultimate demo is "ask ChatGPT 'best dental marketing agency for AI search' &mdash; we come up." Make achieving + screenshotting that a marketing project; it becomes the hero proof.</li>
+</ul>
+</div>
+
+<!-- ================================================================ -->
+<h2 id="roadmap">Suggested Roadmap</h2>
+<!-- ================================================================ -->
+
+<h3>Sprint 1 &mdash; Stop the bleeding (this week)</h3>
+<table>
+  <tr><th>Item</th><th>Effort</th><th>Pri</th></tr>
+  <tr><td>Gunicorn in Dockerfile (A1.1)</td><td>1 line</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Fix <code>_get_seo_tasks</code> arg order (A1.3)</td><td>1 line</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Run PID + kill + stale reaper (A1.2)</td><td>S</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>"Add to Pipeline" button + auto-create prospect on sync (A2.1)</td><td>M</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td><code>next_action_at</code> + overdue badges (A2.2)</td><td>S</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Reconcile pricing/guarantee/founder across site+llms.txt+08 (B1.1/B3.1/B6.1)</td><td>S</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Server-render FAQ + FAQPage schema (B1.3)</td><td>S</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Unify deploy/public bundle; regen sitemap+llms.txt (B5.1)</td><td>M</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>CSRF + secret-key + cookie hardening (A1.4)</td><td>M</td><td><span class="priority p1">P1</span></td></tr>
+</table>
+
+<h3>Sprint 2 &mdash; Close the loop (next 2&ndash;3 weeks)</h3>
+<table>
+  <tr><th>Item</th><th>Pri</th></tr>
+  <tr><td>Post-audit drip sequence, report-data-keyed (B2.1)</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Inline content editor before publish (A4.1)</td><td><span class="priority p1">P1</span></td></tr>
+  <tr><td>Scheduled monthly runs + failure alerts (A4.2)</td><td><span class="priority p2">P2</span></td></tr>
+  <tr><td>Prospect&rarr;Customer one-click conversion + pipeline metrics (A2.4)</td><td><span class="priority p2">P2</span></td></tr>
+  <tr><td>Hosted shareable reports at permanent URLs (B2.2)</td><td><span class="priority p2">P2</span></td></tr>
+  <tr><td>mailto: prefill + send-from-app foundation (A2.3)</td><td><span class="priority p2">P2</span></td></tr>
+  <tr><td>Programmatic local + comparison pages (B5.2)</td><td><span class="priority p2">P2</span></td></tr>
+</table>
+
+<h3>Sprint 3+ &mdash; Compounding bets</h3>
+<ul>
+  <li><strong>Outreach factory</strong> (B4.1 + A2.3): batch domains &rarr; auto-audit &rarr; branded PDF &rarr; sequenced sends &rarr; metro sweeps. Converts the proven Parian/FRB play into a repeatable engine and makes one operator behave like an SDR team.</li>
+  <li><strong>Blueprint refactor + test suite</strong> (A1.6): unblocks safe iteration; kills the A1.3-class bug factory.</li>
+  <li><strong>Multi-user admin + roles, global search, per-customer activity feed</strong> (A1.5, A3.3).</li>
+  <li><strong>Real named case study + founder video</strong> (B1.2); <strong>own-brand AI-visibility campaign</strong> (B6.1) &mdash; become the screenshot.</li>
+</ul>
+
+<div class="info" style="margin-top:40px;">
+<strong>Bottom line:</strong> the platform is feature-rich and the data model is ahead of the UI (prospect <code>report_data</code>, multi-user auth, run steps all exist in the DB with no UI exercising them). The two highest-leverage moves: <strong>(1)</strong> wire inbound reports into the prospect pipeline with follow-up dates and a drip &mdash; the funnel leaks at exactly the lead&rarr;sales hand-off; and <strong>(2)</strong> production-harden the admin app (gunicorn, secret key, CSRF, real cancellation) and de-contradict the public messaging before onboarding the next client.
+</div>
+
+<p class="meta" style="margin-top:30px;">Generated from a two-agent Fable&nbsp;5 review pass over <code>dashboard/</code> and the marketing layer, June 10 2026. File: <code>specs/active/2026-06-10_marketing-and-admin-improvements_v1.html</code></p>
+
+</body>
+</html>

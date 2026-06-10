@@ -1,0 +1,58 @@
+---
+import practice from '@data/practice.json'
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Dentist',
+  '@id': 'https://sojodental.com/#dentist',
+  name: practice.name,
+  description: practice.tagline,
+  url: `https://${practice.domain}`,
+  telephone: practice.phone,
+  email: practice.email || undefined,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: practice.address.street,
+    addressLocality: practice.address.city,
+    addressRegion: practice.address.state,
+    postalCode: practice.address.zip,
+    addressCountry: 'US',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: practice.geo.lat,
+    longitude: practice.geo.lng,
+  },
+  openingHoursSpecification: practice.hours
+    .filter((h: { note?: string }) => !h.note)
+    .map((h: { days: string; open?: string; close?: string }) => ({
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: h.days,
+      opens: h.open,
+      closes: h.close,
+    })),
+  medicalSpecialty: practice.serviceCategories,
+  sameAs: Object.values(practice.social).filter(Boolean),
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.6',
+    reviewCount: '141',
+    bestRating: '5',
+  },
+  priceRange: '$$',
+  paymentAccepted: 'Cash, Credit Card, Insurance, Cherry Financing',
+  availableLanguage: ['English', 'Japanese', 'Spanish'],
+  logo: 'https://sojodental.com/images/logo.webp',
+  foundingDate: '2012',
+  areaServed: [
+    { '@type': 'City', name: 'South Jordan', addressRegion: 'UT' },
+    { '@type': 'City', name: 'Herriman', addressRegion: 'UT' },
+    { '@type': 'City', name: 'Riverton', addressRegion: 'UT' },
+    { '@type': 'City', name: 'West Jordan', addressRegion: 'UT' },
+    { '@type': 'City', name: 'Draper', addressRegion: 'UT' },
+    { '@type': 'City', name: 'Sandy', addressRegion: 'UT' },
+  ],
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

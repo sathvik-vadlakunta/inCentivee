@@ -130,6 +130,17 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
     if avg_pos:
         db.record_kpi(customer_id, "ai_avg_position", avg_pos, today)
 
+    # Extract competitor entities from responses
+    try:
+        from geo_agent.entity_extractor import extract_and_store
+        entity_count = extract_and_store(db, run_id, customer_id, customer["name"])
+        print(f"  Extracted {entity_count} entities from responses")
+        added = db.auto_discover_competitors_from_entities(customer_id, min_mentions=3)
+        if added:
+            print(f"  Auto-discovered {len(added)} new competitors: {', '.join(added)}")
+    except Exception as e:
+        print(f"  Entity extraction failed (non-fatal): {e}")
+
     return {
         "customer_id": customer_id,
         "customer_name": customer["name"],
@@ -156,7 +167,10 @@ def main():
                 print(f"Customer not found: {args.customer}")
                 sys.exit(1)
         else:
-            customers = db.get_customers()
+            customers = db.list_customers(status="active") + db.list_customers(status="live")
+            # Deduplicate
+            seen = set()
+            customers = [c for c in customers if c["id"] not in seen and not seen.add(c["id"])]
 
         print(f"Running AI mention check for {len(customers)} customer(s)...")
         print(f"Active engines: {', '.join(n for n, fn in ENGINES if fn('_test_') is not None or os.environ.get({'Claude': 'ANTHROPIC_API_KEY', 'ChatGPT': 'OPENAI_API_KEY', 'Perplexity': 'PERPLEXITY_API_KEY', 'Gemini': 'GEMINI_API_KEY', 'Grok': 'XAI_API_KEY'}.get(n, ''), ''))}")

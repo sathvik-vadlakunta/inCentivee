@@ -1,0 +1,573 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+
+const heroSlides = [
+  '/images/hero-banner1.webp',
+  '/images/hero-banner2.webp',
+  '/images/hero-banner3.webp',
+  '/images/hero-banner4.webp',
+]
+
+const drPhotos = [
+  '/images/dr-call-bg.webp',
+  '/images/dr.connorogden.webp',
+]
+
+const reviews = [
+  { text: "Sojo is a great office! The staff is so kind and accommodating. Melanie is the best assistant and made me feel so comfortable and at ease when I got my filling done. Dr. Call is very proficient and does great dental work.", author: "K. G." },
+  { text: "Dr. Call is such a great guy, compassionate, and a gentle dentist. His assistant Melanie is skilled and the kind of person you want to have as a friend. Seriously the whole crew there makes your dental experience into an enjoyable visit.", author: "R. M." },
+  { text: "I've been coming here for several years now! Everyone is so friendly, informative, and GENTLE. Each person that has cleaned my teeth has been amazing. I'd recommend this place to anyone!! 10/10!", author: "A. B." },
+  { text: "I loved SoJo dental. The hygienists were amazing. The dentist does a great job, and is very friendly. I have never had any problems with my fillings. He is reasonable and not \"cavity happy\" like some dentists. His office is homey. His front desk staff is so nice and knowledgeable.", author: "A. S." },
+  { text: "I had a great experience at SoJo Dental. The team was incredibly friendly and made sure I was comfortable during the appointment. The doctors were also very professional & outgoing. The environment and work they do is what I'd recommend to any friend or family member looking for an excellent office.", author: "K. K." },
+]
+---
+
+<Base title={practice.name} description={practice.tagline} hideFooter>
+  {/* ═══════════════════ HERO — Split: dark left 60% with diagonal, image right 40% ═══════════════════ */}
+  <section class="hero-banner relative min-h-[650px] md:min-h-[750px] overflow-hidden bg-dark">
+    {/* Image — right side */}
+    <div class="absolute top-0 right-0 w-full md:w-[42%] h-full">
+      {heroSlides.map((src, i) => (
+        <div
+          class:list={['hero-slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000', i === 0 ? 'opacity-100' : 'opacity-0']}
+          style={`background-image: url('${src}');`}
+          data-slide-index={i}
+        />
+      ))}
+    </div>
+    {/* Dark panel — left side with diagonal edge */}
+    <div class="hero-dark-panel absolute top-0 left-0 h-full bg-dark z-[1]" />
+    {/* Mobile overlay */}
+    <div class="absolute inset-0 bg-dark/70 md:hidden z-[1]" />
+
+    <div class="relative z-10 w-full max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16 flex items-center min-h-[650px] md:min-h-[750px]">
+      <div class="max-w-2xl py-16 md:max-w-[55%] lg:max-w-[50%]">
+        <p class="text-primary font-heading text-base sm:text-lg mb-4">Dentistry Made Easy</p>
+        <h1 class="hero-h1 font-heading text-white leading-[1.1]">
+          Quality Care For Every Smile
+        </h1>
+        <p class="mt-8 text-white/85 leading-relaxed hero-body">
+          Welcome to our dental family! We are excited to have you here and look forward to helping
+          you achieve a healthy, confident smile. Our practice is built on trust, comfort and quality care.
+          From your first visit to your ongoing appointments, our South Jordan dentists and team are dedicated to
+          creating a positive experience tailored to your needs. With a friendly team,
+          modern technology and a passion for patient satisfaction, we make dental
+          visits something to smile about. Whether you are new to the area or simply
+          looking for a fresh start, we are honored to be your choice for dental care in
+          South Jordan, UT.
+        </p>
+      </div>
+    </div>
+
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-3">
+      {heroSlides.map((_, i) => (
+        <button
+          class:list={['hero-dot w-3 h-3 rounded-full transition-colors border border-white/50', i === 0 ? 'bg-primary border-primary' : 'bg-white/30']}
+          data-dot-index={i}
+          aria-label={`Slide ${i + 1}`}
+        />
+      ))}
+    </div>
+  </section>
+
+  {/* ═══════════════════ WARM WELCOME ═══════════════════ */}
+  <section class="relative py-20 sm:py-28 bg-cover bg-center" style="background-image: url('/images/cta-welcome.webp');">
+    <div class="max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16">
+      <h2 class="text-center font-heading text-dark welcome-h2 mb-12">A Warm Welcome To SoJo Dental</h2>
+      <div class="grid md:grid-cols-2 gap-10 lg:gap-20 items-start">
+        <p class="text-dark/80 leading-relaxed welcome-body">
+          A healthy smile is more than just a sign of good oral hygiene – it reflects
+          confidence, vitality and self-care. At SoJo Dental, we believe every patient
+          deserves a dental experience that is not only effective but also encouraging
+          and personalized. From the moment you walk through our doors, you will
+          find a team committed to making you feel at ease and empowered about
+          your dental health. We listen, educate and partner with you to create the
+          best path forward for your smile.
+        </p>
+        <p class="text-dark/80 leading-relaxed welcome-body">
+          What sets us apart is not just our advanced technology or modern
+          techniques – it is the energy we bring to every appointment. Our dentists in
+          South Jordan, Utah, blend professionalism with a genuinely upbeat and
+          inviting atmosphere, making dental care feel less like a chore and more like
+          an investment in yourself. Whether you are here for a routine visit or a
+          complete smile makeover, we are excited to help you discover just how
+          positive a dental visit can be.
+        </p>
+      </div>
+      <div class="text-center mt-12">
+        <a
+          href="/about"
+          class="inline-flex items-center justify-center border-2 border-dark text-dark px-10 py-3.5 text-sm font-bold uppercase tracking-[0.2em] hover:bg-dark hover:text-white transition-colors"
+        >
+          More About Us
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════════ MEET OUR DENTISTS — Rotating doctor photos ═══════════════════ */}
+  <section class="relative overflow-hidden bg-dark">
+    <div class="grid md:grid-cols-2 min-h-[600px] lg:min-h-[700px]">
+      <div class="relative min-h-[500px] md:min-h-full bg-dark">
+        {drPhotos.map((src, i) => (
+          <div
+            class:list={['dr-slide absolute inset-0 bg-cover bg-center transition-opacity duration-1000', i === 0 ? 'opacity-100' : 'opacity-0']}
+            style={`background-image: url('${src}');`}
+            data-dr-index={i}
+          />
+        ))}
+      </div>
+      <div class="bg-dark flex items-center py-16 lg:py-24 px-8 sm:px-12 lg:px-16 xl:px-20">
+        <div class="max-w-xl">
+          <h2 class="text-primary font-heading uppercase dr-heading mb-2">
+            Meet Our Dentists In South Jordan, UT
+          </h2>
+          <p class="text-white/70 text-sm sm:text-base uppercase tracking-[0.15em] mb-8">
+            Brian Call, DDS & Conner Ogden, DMD
+          </p>
+          <p class="text-white/80 leading-relaxed dr-body mb-10">
+            Dr. Brian Call and Dr. Conner Ogden bring a unique blend of experience,
+            compassion and professionalism to every patient interaction. With advanced
+            training and a commitment to continuing education, they stay at the forefront
+            of modern dental care. Each visit is guided by a personalized approach,
+            ensuring your comfort and understanding at every step. Fluent in multiple
+            languages (Japanese and Spanish), our doctors are passionate about creating
+            a welcoming and inclusive environment. Whether addressing preventive needs
+            or complex concerns, they are focused on delivering the highest standard of
+            care for dentistry in South Jordan, Utah. Patients appreciate not only their skill
+            but also their down-to-earth personalities and genuine dedication to lifelong
+            oral health.
+          </p>
+          <a
+            href="/team"
+            class="inline-flex items-center justify-center border-2 border-primary text-primary px-10 py-3.5 text-sm font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-dark transition-colors"
+          >
+            Meet Our Dentists
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════════ OUR SERVICES — Matching live site layout + icons ═══════════════════ */}
+  <section class="py-20 sm:py-28 bg-white">
+    <div class="max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16">
+      {/* Header: title left, description right */}
+      <div class="grid md:grid-cols-[auto_1fr] gap-8 lg:gap-16 items-start mb-16">
+        <h2 class="font-heading text-dark services-h2 uppercase font-bold whitespace-nowrap">Our Services</h2>
+        <p class="text-dark/70 welcome-body leading-relaxed">
+          We offer a comprehensive range of dental services in South Jordan, Utah, tailored to your
+          needs. From routine exams to advanced restorative care, our treatments are designed with
+          comfort and efficiency in mind. Our team takes pride in providing personalized solutions
+          that support your oral health and help you maintain a confident, lasting smile.
+        </p>
+      </div>
+
+      {/* Icon grid — 4 cols top, 3 cols bottom centered
+           All icons: 24×24 viewBox, stroke-width 1 (thin line style), round caps/joins.
+           Based on Tabler Icons (MIT) paths where available. */}
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-y-14 gap-x-8 lg:gap-x-12 mb-8">
+        {/* Cosmetic Dentistry — smile/tooth with sparkle */}
+        <a href="/services" class="group flex flex-col items-center gap-6 text-center">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5.5c-1.074 -.586 -2.583 -1.5 -4 -1.5c-2.1 0 -4 1.247 -4 5c0 4.899 1.056 8.41 2.671 10.537c.573 .756 1.97 .521 2.567 -.236c.398 -.505 .819 -1.439 1.262 -2.801c.292 -.771 .892 -1.504 1.5 -1.5c.602 0 1.21 .737 1.5 1.5c.443 1.362 .864 2.295 1.262 2.8c.597 .759 2 .993 2.567 .237c1.615 -2.127 2.671 -5.637 2.671 -10.537c0 -3.74 -1.908 -5 -4 -5c-1.423 0 -2.92 .911 -4 1.5" />
+              <path d="M12 5.5l3 1.5" />
+              <path d="M20 3v2M19 4h2" stroke-width="1" />
+              <path d="M22 7v1.5M21.25 7.75h1.5" stroke-width="0.8" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Cosmetic Dentistry</h3>
+        </a>
+
+        {/* Family Dentistry — tooth with stethoscope */}
+        <a href="/services" class="group flex flex-col items-center gap-6 text-center">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 4h-1a2 2 0 0 0 -2 2v3.5a5.5 5.5 0 0 0 11 0v-3.5a2 2 0 0 0 -2 -2h-1" />
+              <path d="M8 15a6 6 0 1 0 12 0v-3" />
+              <path d="M11 3v2" />
+              <path d="M6 3v2" />
+              <circle cx="20" cy="10" r="2" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Family Dentistry</h3>
+        </a>
+
+        {/* Dental Implants — implant screw with crown */}
+        <a href="/services/dental-implant-placement" class="group flex flex-col items-center gap-6 text-center">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="7" y="2" width="10" height="5" rx="1.5" />
+              <path d="M10 7h4v2h-4z" />
+              <path d="M10 9l-1.5 12l3.5 1.5l3.5 -1.5l-1.5 -12" />
+              <line x1="8.8" y1="12" x2="15.2" y2="12" />
+              <line x1="9.1" y1="15" x2="14.9" y2="15" />
+              <line x1="9.5" y1="18" x2="14.5" y2="18" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Dental Implants</h3>
+        </a>
+
+        {/* Dental Crowns — crown cap shape */}
+        <a href="/services/same-day-dental-crowns" class="group flex flex-col items-center gap-6 text-center">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5.5c-1.074 -.586 -2.583 -1.5 -4 -1.5c-2.1 0 -4 1.247 -4 5c0 4.899 1.056 8.41 2.671 10.537c.573 .756 1.97 .521 2.567 -.236c.398 -.505 .819 -1.439 1.262 -2.801c.292 -.771 .892 -1.504 1.5 -1.5c.602 0 1.21 .737 1.5 1.5c.443 1.362 .864 2.295 1.262 2.8c.597 .759 2 .993 2.567 .237c1.615 -2.127 2.671 -5.637 2.671 -10.537c0 -3.74 -1.908 -5 -4 -5c-1.423 0 -2.92 .911 -4 1.5" />
+              <path d="M12 5.5l3 1.5" />
+              <path d="M6 6h12l-1.5 -4l-2 2.5l-2.5 -3l-2.5 3l-2 -2.5z" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Dental Crowns</h3>
+        </a>
+      </div>
+
+      {/* Bottom row — 3 items centered */}
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-y-14 gap-x-8 lg:gap-x-12 max-w-4xl mx-auto mb-16">
+        {/* Dental Veneers — three front teeth */}
+        <a href="/services/dental-veneers" class="group flex flex-col items-center gap-6 text-center">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="6" width="6" height="12" rx="3" />
+              <rect x="9" y="4" width="6" height="14" rx="3" />
+              <rect x="16" y="6" width="6" height="12" rx="3" />
+              <circle cx="5" cy="12" r="0.5" fill="currentColor" />
+              <circle cx="12" cy="11" r="0.5" fill="currentColor" />
+              <circle cx="19" cy="12" r="0.5" fill="currentColor" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Dental Veneers</h3>
+        </a>
+
+        {/* Cleanings & Exams — dental mirror + explorer + probe */}
+        <a href="/services/dental-cleanings-and-exams" class="group flex flex-col items-center gap-6 text-center">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="7" cy="5" r="3" />
+              <line x1="7" y1="8" x2="7" y2="22" />
+              <path d="M13 2.5c-.8 .8 -.8 2 0 2.8" />
+              <line x1="13" y1="5.3" x2="13" y2="22" />
+              <path d="M19 2.5c.8 .8 .8 2 0 2.8" />
+              <line x1="19" y1="5.3" x2="19" y2="22" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Cleanings & Exams</h3>
+        </a>
+
+        {/* Wisdom Teeth — broken/cracked tooth */}
+        <a href="/services/wisdom-teeth-removal" class="group flex flex-col items-center gap-6 text-center col-span-2 md:col-span-1">
+          <div class="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center text-dark/40 group-hover:text-primary transition-colors">
+            <svg class="w-full h-full" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5.5c-1.074 -.586 -2.583 -1.5 -4 -1.5c-2.1 0 -4 1.247 -4 5c0 4.899 1.056 8.41 2.671 10.537c.573 .756 1.97 .521 2.567 -.236c.398 -.505 .819 -1.439 1.262 -2.801c.292 -.771 .892 -1.504 1.5 -1.5c.602 0 1.21 .737 1.5 1.5c.443 1.362 .864 2.295 1.262 2.8c.597 .759 2 .993 2.567 .237c1.615 -2.127 2.671 -5.637 2.671 -10.537c0 -3.74 -1.908 -5 -4 -5c-1.423 0 -2.92 .911 -4 1.5" />
+              <path d="M12 5.5l1 2.5l-2 2l2 2" />
+            </svg>
+          </div>
+          <h3 class="text-sm font-heading uppercase tracking-[0.15em] text-dark group-hover:text-primary transition-colors">Wisdom Teeth</h3>
+        </a>
+      </div>
+
+      <div class="text-center">
+        <a
+          href="/services"
+          class="inline-flex items-center justify-center border-2 border-dark text-dark px-10 py-3.5 text-sm font-bold uppercase tracking-[0.2em] hover:bg-dark hover:text-white transition-colors"
+        >
+          View All Services
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════════ TEAM PARALLAX ═══════════════════ */}
+  <section class="team-parallax relative h-[400px] sm:h-[550px] lg:h-[650px] bg-fixed bg-cover bg-top" style="background-image: url('/images/team-pic.webp');">
+    <div class="absolute inset-0 bg-dark/20" />
+  </section>
+
+  {/* ═══════════════════ CORE VALUES — 3 columns + badge images + tooth graphic ═══════════════════ */}
+  <section class="relative py-20 sm:py-28 bg-white overflow-hidden">
+    {/* Tooth/drill graphic on right */}
+    <div class="absolute right-0 bottom-0 w-[350px] h-[400px] opacity-30 bg-contain bg-no-repeat bg-right-bottom hidden lg:block" style="background-image: url('/images/tooth-graphic.webp');" />
+
+    <div class="relative z-10 max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16">
+      <h2 class="text-center font-heading text-dark welcome-h2 mb-14">SoJo Dental Core Values</h2>
+
+      <div class="grid md:grid-cols-3 gap-10 lg:gap-16 mb-16">
+        {/* Compassionate Care */}
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <svg class="w-8 h-8 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 12l3 3 5-5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h3 class="text-xl font-heading text-dark">Compassionate Care</h3>
+          </div>
+          <p class="text-dark/70 leading-relaxed welcome-body pl-11">
+            We prioritize kindness and understanding in every interaction,
+            ensuring each patient feels heard, respected and supported
+            throughout their dental journey.
+          </p>
+        </div>
+
+        {/* Excellence in Treatment */}
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <svg class="w-8 h-8 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 12l3 3 5-5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h3 class="text-xl font-heading text-dark">Excellence in Treatment</h3>
+          </div>
+          <p class="text-dark/70 leading-relaxed welcome-body pl-11">
+            Our team is dedicated to delivering high-quality care using advanced
+            technology and evidence-based techniques to achieve outstanding
+            results.
+          </p>
+        </div>
+
+        {/* Trust and Transparency */}
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <svg class="w-8 h-8 text-primary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 12l3 3 5-5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h3 class="text-xl font-heading text-dark">Trust and Transparency</h3>
+          </div>
+          <p class="text-dark/70 leading-relaxed welcome-body pl-11">
+            We value open communication and honest guidance, empowering
+            patients with clear information to make informed decisions about
+            their dental health.
+          </p>
+        </div>
+      </div>
+
+      {/* Badge images — actual images from live site */}
+      <div class="flex flex-wrap items-center justify-start gap-8 sm:gap-12 lg:gap-16">
+        <img src="/images/bbb-logo.webp" alt="BBB Accredited Business" class="h-16 sm:h-20 w-auto" />
+        <div class="text-center">
+          <p class="text-xs text-dark/60 mb-1">Proud Member of the</p>
+          <img src="/images/ada.webp" alt="American Dental Association" class="h-14 sm:h-16 w-auto" />
+        </div>
+        <img src="/images/indexgooglebadge1.webp" alt="Top-Rated Dentist on Google - 150+ 5-Star Reviews" class="h-20 sm:h-24 w-auto" />
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════════ OUR PASSION ═══════════════════ */}
+  <section class="relative py-20 sm:py-28 bg-dark overflow-hidden">
+    <div class="absolute right-0 top-0 w-1/2 h-full opacity-20 bg-cover bg-center hidden md:block" style="background-image: url('/images/tooth-graphic.webp');" />
+    <div class="relative z-10 max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16">
+      <div class="max-w-2xl">
+        <h2 class="text-primary font-heading services-h2 mb-8">Our Passion For Dental Care</h2>
+        <p class="text-white/80 leading-relaxed welcome-body">
+          Our commitment lies in delivering exceptional dental treatments in South Jordan, UT,
+          that truly make a difference in your life. We are dedicated to creating a positive
+          experience from the moment you walk through our doors. With a focus on comfort,
+          education and lasting results, our team works together to ensure you feel confident
+          in your care. Your smile matters to us, and we are honored to be a trusted part of
+          your health and wellness journey.
+        </p>
+        <a
+          href="/contact"
+          class="mt-10 inline-flex items-center justify-center border-2 border-primary text-primary px-10 py-3.5 text-sm font-bold uppercase tracking-[0.2em] hover:bg-primary hover:text-dark transition-colors"
+        >
+          Schedule A Visit
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════════ REVIEWS CAROUSEL ═══════════════════ */}
+  <section class="relative py-20 sm:py-28 bg-cover bg-center" style="background-image: url('/images/review-bg.webp');">
+    <div class="absolute inset-0 bg-light/90" />
+    <div class="relative z-10 max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16">
+      <h2 class="font-heading text-dark text-center services-h2 mb-14">Real Stories. Real People.</h2>
+
+      <div class="relative">
+        <button class="review-prev absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 bg-dark text-white rounded-full flex items-center justify-center hover:bg-primary transition-colors hidden sm:flex" aria-label="Previous review">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <div class="review-track overflow-hidden">
+          <div class="review-slides flex transition-transform duration-500 gap-6" style="transform: translateX(0);">
+            {reviews.map((review) => (
+              <div class="review-card flex-shrink-0 w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] bg-secondary/90 p-8">
+                <div class="flex items-center gap-1 mb-4">
+                  {[1,2,3,4,5].map(() => (
+                    <svg class="w-5 h-5 text-primary fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                  ))}
+                </div>
+                <p class="text-white text-sm leading-relaxed mb-6">"{review.text}"</p>
+                <p class="text-primary font-bold text-sm uppercase tracking-wider">{review.author}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <button class="review-next absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 bg-dark text-white rounded-full flex items-center justify-center hover:bg-primary transition-colors hidden sm:flex" aria-label="Next review">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="text-center mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a
+          href={practice.social.google}
+          target="_blank"
+          rel="noopener"
+          class="inline-flex items-center justify-center bg-dark text-white px-10 py-3.5 text-sm font-bold uppercase tracking-[0.2em] border-2 border-dark hover:bg-transparent hover:text-dark transition-colors"
+        >
+          Write A Review
+        </a>
+        <a
+          href="/patient-resources/reviews"
+          class="inline-flex items-center justify-center border-2 border-dark text-dark px-10 py-3.5 text-sm font-bold uppercase tracking-[0.2em] hover:bg-dark hover:text-white transition-colors"
+        >
+          Read All Reviews
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {/* ═══════════════════ MAP + CONTACT FOOTER ═══════════════════ */}
+  <section class="grid md:grid-cols-2">
+    <div class="h-[350px] md:h-auto bg-cover bg-center" style="background-image: url('/images/map.webp');">
+      <a href={practice.maps} target="_blank" rel="noopener" class="block w-full h-full min-h-[350px]" aria-label="View on Google Maps" />
+    </div>
+    <div class="bg-dark py-14 px-8 sm:px-12 lg:px-20">
+      <div class="max-w-md">
+        <img src="/images/logo.webp" alt={practice.name} class="h-12 mb-8" />
+        <div class="space-y-4 text-white/80 text-sm mb-8">
+          <a href={`tel:${practice.phone.replace(/[^+\d]/g, '')}`} class="flex items-center gap-3 hover:text-primary transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+            {practice.phone}
+          </a>
+          <a href={practice.maps} target="_blank" rel="noopener" class="flex items-center gap-3 hover:text-primary transition-colors">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            {practice.address.street}, {practice.address.city}, {practice.address.state} {practice.address.zip}
+          </a>
+        </div>
+        <a href={practice.social.google} target="_blank" rel="noopener" class="inline-flex items-center gap-2 text-primary text-sm font-bold uppercase tracking-wider hover:text-white transition-colors mb-8">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google
+        </a>
+        <h3 class="text-white text-sm font-bold uppercase tracking-wider mb-4">Hours</h3>
+        <table class="w-full text-sm text-white/70 mb-6">
+          <tbody>
+            {practice.hours.map((h: { day: string; open: string; close: string }) => (
+              <tr class="border-b border-white/10">
+                <td class="py-1.5">{h.day}</td>
+                <td class="py-1.5 text-right">{h.open && h.close ? `${h.open} – ${h.close}` : 'Closed'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p class="text-white/50 text-xs leading-relaxed">
+          Your dentists in South Jordan, Herriman, Riverton and all areas of the Salt Lake Valley, Utah.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <div class="bg-dark border-t border-white/10 py-4 text-center">
+    <p class="text-white/40 text-xs">&copy; Copyright {new Date().getFullYear()} {practice.name}. All Rights Reserved.</p>
+  </div>
+</Base>
+
+<style>
+  .hero-h1 { font-size: clamp(45px, 5vw, 64px); }
+  .hero-body { font-size: clamp(16px, 1.2vw, 18px); }
+  .welcome-h2 { font-size: clamp(35px, 4vw, 55px); }
+  .welcome-body { font-size: clamp(16px, 1.2vw, 18px); }
+  .dr-heading { font-size: clamp(30px, 3.5vw, 45px); line-height: 1.2; }
+  .dr-body { font-size: clamp(16px, 1.2vw, 18px); }
+  .services-h2 { font-size: clamp(35px, 3vw, 45px); }
+
+  /* Hero dark panel — covers left 60% with diagonal right edge */
+  .hero-dark-panel {
+    width: 62%;
+    clip-path: polygon(0 0, 85% 0, 100% 100%, 0 100%);
+  }
+
+  @media (max-width: 767px) {
+    .hero-dark-panel { display: none; }
+  }
+
+  /* Team parallax — iOS fix */
+  @supports (-webkit-touch-callout: none) {
+    .team-parallax { background-attachment: scroll; }
+  }
+</style>
+
+<script>
+  // Hero slideshow
+  const slides = document.querySelectorAll<HTMLElement>('.hero-slide')
+  const dots = document.querySelectorAll<HTMLElement>('.hero-dot')
+  let current = 0
+  let heroInterval: ReturnType<typeof setInterval>
+
+  function goToSlide(index: number) {
+    slides.forEach((s, i) => { s.style.opacity = i === index ? '1' : '0' })
+    dots.forEach((d, i) => {
+      d.classList.toggle('bg-primary', i === index)
+      d.classList.toggle('border-primary', i === index)
+      d.classList.toggle('bg-white/30', i !== index)
+    })
+    current = index
+  }
+
+  function startHeroSlideshow() {
+    heroInterval = setInterval(() => goToSlide((current + 1) % slides.length), 5000)
+  }
+
+  dots.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      clearInterval(heroInterval)
+      goToSlide(Number(dot.dataset.dotIndex))
+      startHeroSlideshow()
+    })
+  })
+  startHeroSlideshow()
+
+  // Doctor photo rotation
+  const drSlides = document.querySelectorAll<HTMLElement>('.dr-slide')
+  let drCurrent = 0
+  if (drSlides.length > 1) {
+    setInterval(() => {
+      drCurrent = (drCurrent + 1) % drSlides.length
+      drSlides.forEach((s, i) => { s.style.opacity = i === drCurrent ? '1' : '0' })
+    }, 4000)
+  }
+
+  // Review carousel
+  const track = document.querySelector<HTMLElement>('.review-slides')
+  const cards = document.querySelectorAll<HTMLElement>('.review-card')
+  const prevBtn = document.querySelector<HTMLElement>('.review-prev')
+  const nextBtn = document.querySelector<HTMLElement>('.review-next')
+
+  if (track && cards.length > 0) {
+    let reviewIndex = 0
+    const gap = 24
+    function getVisible() { return window.innerWidth >= 1024 ? 3 : window.innerWidth >= 640 ? 2 : 1 }
+    function updateCarousel() {
+      const v = getVisible(), max = Math.max(0, cards.length - v)
+      if (reviewIndex > max) reviewIndex = max
+      track.style.transform = `translateX(-${reviewIndex * (cards[0].offsetWidth + gap)}px)`
+    }
+    prevBtn?.addEventListener('click', () => { if (reviewIndex > 0) { reviewIndex--; updateCarousel() } })
+    nextBtn?.addEventListener('click', () => { if (reviewIndex < cards.length - getVisible()) { reviewIndex++; updateCarousel() } })
+    window.addEventListener('resize', updateCarousel)
+  }
+</script>

@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Audit Logs - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Audit Log</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">
@@ -71,6 +76,7 @@
                 </td>
                 <td style="font-size: 0.8rem;">
                     {% if log.details %}
+                    {% if log.details is mapping %}
                     <details>
                         <summary style="cursor: pointer; color: var(--primary);">
                             {% set detail_preview = [] %}
@@ -83,6 +89,9 @@
                         </summary>
                         <pre style="margin-top: 0.35rem; padding: 0.5rem; background: #f9fafb; border-radius: 4px; font-size: 0.75rem; overflow-x: auto;">{{ log.details | tojson(indent=2) }}</pre>
                     </details>
+                    {% else %}
+                    <span>{{ log.details }}</span>
+                    {% endif %}
                     {% else %}
                     <span style="color: var(--muted);">—</span>
                     {% endif %}

@@ -2,7 +2,7 @@ Subject: Changes Ready for Review — {practice_name}
 
 Hi {contact_name},
 
-We have updates ready for {practice_name}. These are "invisible" technical changes that improve how search engines and AI assistants understand your practice.
+We have updates ready for {practice_name}. These are "invisible" technical changes that improve how search engines and AI assistants understand your {business_type}.
 
 **What's changing:**
 

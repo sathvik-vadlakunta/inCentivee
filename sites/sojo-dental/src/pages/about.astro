@@ -1,0 +1,156 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import TeamCard from '@components/TeamCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const doctors = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+
+const staff = [
+  { name: 'Jen', role: 'Office Manager | Registered Dental Hygienist', photo: '/images/staff/jen.webp', bio: 'Jen is the office manager and a hygienist with over 25 years of experience. She is known for her clear communication, calm demeanor and commitment to helping patients feel confident.' },
+  { name: 'Ashlyn', role: 'Receptionist | Dental Assistant', photo: '/images/staff/ashlyn.webp', bio: 'A South Jordan native, Ashlyn has spent the last five years helping patients feel comfortable and cared for. She is also working on prerequisites for dental hygiene school.' },
+  { name: 'Katie', role: 'Financial | Insurance Manager', photo: '/images/staff/katie.webp', bio: 'Katie has been in the dental field for nearly 10 years. She navigates patients through their financial pathways and helps them understand their insurance benefits.' },
+  { name: 'Michele', role: 'Registered Dental Hygienist', photo: '/images/staff/michele.webp', bio: 'Michele is a registered dental hygienist with 25 years of experience. She strives to provide each patient with the same care and quality she has adopted as her standard.' },
+  { name: 'Katana', role: 'Registered Dental Hygienist', photo: '/images/staff/katana.webp', bio: 'Katana has over five years of experience and is known for her warm, nonjudgmental approach and ability to build easy rapport with patients.' },
+  { name: 'Karolee', role: 'Registered Dental Hygienist', photo: '/images/staff/karolee.webp', bio: 'Karolee has worked in the dental field for 30 years — 15 of those as a hygienist. She loves connecting with patients and helping them achieve their best oral health.' },
+  { name: 'Sarah', role: 'Registered Dental Hygienist', photo: '/images/staff/sarah.webp', bio: 'Sarah has nine years of experience in the dental field. She takes the time to really listen to her patients and make them feel at ease during their appointments.' },
+  { name: 'Payton', role: 'Registered Dental Hygienist', photo: '/images/staff/payton.webp', bio: 'Payton enjoys helping people attain the smile they want. She is well known for making her patients feel comfortable in a welcoming, non-judgmental setting.' },
+  { name: 'Cambree', role: 'Dental Assistant', photo: '/images/staff/cambree.webp', bio: 'Cambree strives to make each patient visit simple and stress-free. She is working to attend dental hygiene school and loves going the extra mile for her patients.' },
+  { name: 'Melanie', role: 'Dental Assistant', photo: '/images/staff/melanie.webp', bio: 'Melanie enjoys getting to know patients and learning something new every day. Patients appreciate her caring and thoughtful personality.' },
+  { name: 'Kenna', role: 'Registered Dental Hygienist', photo: '/images/staff/kenna.webp', bio: 'Kenna started as a dental assistant in high school and now loves educating patients about oral health while building lasting relationships.' },
+  { name: 'Heidi', role: 'Registered Dental Hygienist', photo: '/images/staff/heidi.webp', bio: 'Heidi has spent 22 years as a dental hygienist. She values the relationships she builds while addressing each patient\'s individual concerns.' },
+  { name: 'Sophia', role: 'Registered Dental Hygienist', photo: '/images/staff/sophia.webp', bio: 'Sophia loves connecting with patients and helping them feel confident about their smiles. She values the strong culture and relationships at SoJo Dental.' },
+]
+---
+
+<Base
+  title="About Us"
+  description={`Learn about SoJo Dental — your neighborhood dental home since 2012 in South Jordan, Utah. Meet our doctors and caring staff.`}
+>
+  <Hero title="About SoJo Dental" subtitle="Your neighborhood dental home in South Jordan, Utah since 2012" />
+
+  {/* About — Feature cards instead of wall of text */}
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="text-xl text-gray-700 leading-relaxed max-w-3xl mx-auto text-center mb-16">
+        Since 2012, SoJo Dental has provided exceptional dental care to individuals and families
+        in South Jordan, Herriman, Riverton, West Jordan and the surrounding Salt Lake County communities.
+      </p>
+
+      <div class="grid md:grid-cols-2 gap-8 lg:gap-12">
+        <div class="bg-light rounded-2xl p-8">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-heading font-bold text-dark mb-3">A Comfortable Setting</h3>
+          <p class="text-gray-600 leading-relaxed">
+            Our office doesn't look or feel like a traditional clinic. Designed to resemble
+            a cozy home, our space promotes relaxation the moment you walk in. With a pediatric
+            dental office right next door, coordinating care for your whole family is simple.
+          </p>
+        </div>
+
+        <div class="bg-light rounded-2xl p-8">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-heading font-bold text-dark mb-3">Everything Under One Roof</h3>
+          <p class="text-gray-600 leading-relaxed">
+            From routine cleanings and root canal therapy to dental implants and complete smile makeovers,
+            our team has the skills and technology to deliver exceptional results without referring you
+            elsewhere. Our dentists speak Japanese and Spanish.
+          </p>
+        </div>
+
+        <div class="bg-light rounded-2xl p-8">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-heading font-bold text-dark mb-3">A Team That Stays</h3>
+          <p class="text-gray-600 leading-relaxed">
+            Our energetic, outgoing team has been working together for years, creating a warm
+            and lively environment that patients appreciate. Many of our patients choose us because
+            they feel at home with a team they have come to know well.
+          </p>
+        </div>
+
+        <div class="bg-light rounded-2xl p-8">
+          <div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-heading font-bold text-dark mb-3">Modern Technology</h3>
+          <p class="text-gray-600 leading-relaxed">
+            From digital X-rays that reduce radiation exposure to same-day CEREC crowns,
+            we use the latest tools for the best experience. For patients with dental anxiety,
+            we offer IV sedation — great dental health shouldn't require suffering through fear.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Doctors */}
+  <section class="py-16 sm:py-20 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold font-heading text-center mb-4">Our Doctors</h2>
+      <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+        {practice.providers[0].name} and {practice.providers[1].name} lead a team
+        that has supported generations of patients through quality dental care in South Jordan, Utah.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-3xl mx-auto">
+        {doctors.map((member) => (
+          <TeamCard
+            name={member.data.name}
+            credentials={member.data.credentials}
+            title={member.data.title}
+            photo={member.data.photo}
+            specialties={member.data.specialties}
+            href={`/team/${member.slug}`}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {/* Staff */}
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl font-bold font-heading text-center mb-4">Our Staff</h2>
+      <p class="text-center text-gray-600 max-w-2xl mx-auto mb-12">
+        Our patients value the long-standing relationships and multilingual care. Call us at
+        {practice.phone} to meet the team that makes every visit memorable.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {staff.map((member) => (
+          <div class="rounded-xl overflow-hidden border border-gray-200 bg-white hover:shadow-lg transition-shadow">
+            <div class="aspect-square overflow-hidden bg-gray-100">
+              <img
+                src={member.photo}
+                alt={member.name}
+                class="w-full h-full object-cover object-top"
+                loading="lazy"
+              />
+            </div>
+            <div class="p-6">
+              <h3 class="text-lg font-semibold font-heading">{member.name}</h3>
+              <p class="text-sm text-primary font-medium">{member.role}</p>
+              <p class="text-gray-600 text-sm leading-relaxed mt-3">{member.bio}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>

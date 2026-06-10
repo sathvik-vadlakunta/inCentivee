@@ -1,12 +1,32 @@
+{% if access %}
 <table>
     <thead><tr><th>Platform</th><th>Status</th><th>Action</th></tr></thead>
     <tbody>
     {% for a in access %}
     <tr>
-        <td>{{ a.platform | upper }}</td>
+        <td style="display:flex;align-items:center;gap:0.4rem;">
+            {% if a.platform == 'gsc' %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M10 8l6 4-6 4V8z"/></svg>
+            {% elif a.platform == 'ga' %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 5-9"/></svg>
+            {% elif a.platform == 'gbp' %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+            {% elif a.platform == 'cloudflare' %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 15a4 4 0 014-4h.5A5.5 5.5 0 0118 10h1a3 3 0 010 6H7a4 4 0 01-4-4z"/></svg>
+            {% else %}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            {% endif %}
+            <span>{{ a.platform | upper }}</span>
+        </td>
         <td>
-            <span class="badge badge-{{ a.status }}">{{ a.status | title }}</span>
-            {% if a.granted_at %}<span style="font-size:0.75rem; color:var(--muted);">{{ a.granted_at[:10] }}</span>{% endif %}
+            {% if a.status == 'granted' %}
+            <span class="badge badge-granted" style="background:#d1fae5;color:#065f46;">Connected</span>
+            {% if a.granted_at %}<span style="font-size:0.7rem; color:var(--muted); margin-left:0.25rem;">{{ a.granted_at[:10] }}</span>{% endif %}
+            {% elif a.status == 'not_needed' %}
+            <span class="badge" style="background:#f1f5f9;color:#64748b;">N/A</span>
+            {% else %}
+            <span class="badge badge-pending" style="background:#fef3c7;color:#92400e;">Pending</span>
+            {% endif %}
         </td>
         <td>
             {% if a.status == 'pending' %}
@@ -15,17 +35,23 @@
                 hx-vals='{"platform":"{{ a.platform }}","status":"granted"}'
                 hx-target="#access-table"
                 hx-swap="innerHTML">Grant</button>
-            <button class="btn btn-sm btn-outline"
+            <button class="btn btn-sm btn-outline" style="font-size:0.7rem;"
                 hx-post="{{ url_for('update_access', customer_id=customer.id) }}"
                 hx-vals='{"platform":"{{ a.platform }}","status":"not_needed"}'
                 hx-target="#access-table"
                 hx-swap="innerHTML">N/A</button>
+            {% elif a.status == 'granted' %}
+            <button class="btn btn-sm btn-outline" style="font-size:0.7rem;"
+                hx-post="{{ url_for('update_access', customer_id=customer.id) }}"
+                hx-vals='{"platform":"{{ a.platform }}","status":"pending"}'
+                hx-target="#access-table"
+                hx-swap="innerHTML">Revoke</button>
             {% endif %}
         </td>
     </tr>
     {% endfor %}
     </tbody>
 </table>
-{% if not access %}
+{% else %}
 <p style="color: var(--muted); font-size: 0.85rem;">No platform access configured.</p>
 {% endif %}

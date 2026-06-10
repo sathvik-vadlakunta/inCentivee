@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Case Study - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('case_studies') }}">Case Studies</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">{{ customer_id }}</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">

@@ -33,6 +33,12 @@ def _clean_html(html: str) -> str:
     """Strip HTML tags and collapse whitespace to get plain text."""
     text = re.sub(r"<script[^>]*>.*?</script>", "", html, flags=re.DOTALL)
     text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL)
+    # Strip semantic nav/header/footer blocks before converting to text —
+    # WordPress themes (DentalQore, etc.) use proper <nav>, <header>, <footer>
+    # elements that contain massive menu trees and repeated contact info
+    text = re.sub(r"<nav[^>]*>.*?</nav>", " ", text, flags=re.DOTALL)
+    text = re.sub(r"<header[^>]*>.*?</header>", " ", text, flags=re.DOTALL)
+    text = re.sub(r"<footer[^>]*>.*?</footer>", " ", text, flags=re.DOTALL)
     text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text
@@ -102,6 +108,14 @@ def clean_page_content(raw_text: str) -> str:
         if len(remainder) > 100:
             text = remainder
 
+    # Strip WordPress/DentalQore-style nav blocks:
+    # "Home About Us Meet Our Doctors/Dentists Meet Our Team Our Services ... Request Appointment"
+    # These survive _clean_html when the theme uses <div> instead of <nav>
+    text = re.sub(
+        r"Home About Us Meet Our (?:Doctors|Dentists|Team).*?(?:Request Appointment|Pay Now|Call Us)\s*",
+        " ", text
+    ).strip()
+
     # Remove footer boilerplate patterns
     footer_patterns = [
         r"©\s*\d{4}.*$",  # © 2024 Practice Name...
@@ -111,9 +125,11 @@ def clean_page_content(raw_text: str) -> str:
         r"Powered\s+by\s+\w+.*$",
         r"Website\s+by\s+\w+.*$",
         r"Follow\s+[Uu]s\s+(on\s+)?(Facebook|Instagram|Twitter|LinkedIn|YouTube).*$",
+        # WordPress footer with contact/hours block
+        r"Contact\s+\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\s+\d+.*?(?:Sunday\s+Closed|©).*$",
     ]
     for pattern in footer_patterns:
-        text = re.sub(pattern, "", text, flags=re.IGNORECASE).strip()
+        text = re.sub(pattern, "", text, flags=re.IGNORECASE | re.DOTALL).strip()
 
     # Decode HTML entities
     text = html_lib.unescape(text)
@@ -393,6 +409,8 @@ class GenericCrawler:
         title_match = re.search(r"<title[^>]*>(.*?)</title>", html, re.IGNORECASE | re.DOTALL)
         title = _clean_html(title_match.group(1)).strip() if title_match else slug.strip("/").replace("-", " ").title()
         title = html_lib.unescape(title)
+        # Strip stray brackets from titles — breaks markdown link syntax in llms.txt
+        title = title.replace("[", "").replace("]", "")
 
         # Normalize slug
         slug = slug.rstrip("/") or "/"

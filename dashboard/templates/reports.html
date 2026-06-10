@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Landing Page Reports{% endblock %}
+{% block breadcrumbs %}<a href="{{ url_for('index') }}">Dashboard</a> &rsaquo; Reports{% endblock %}
+
+{% block content %}
+<style>
+    .reports-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .reports-header h2 { margin: 0; font-size: 1.5rem; }
+    .sync-btn { background: var(--primary); color: #fff; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+    .sync-btn:hover { opacity: 0.9; }
+    .sync-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sync-btn .spinner { display: none; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    .sync-btn.loading .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .filters { display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; }
+    .filters select, .filters input { padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.85rem; background: #fff; }
+    .filters input { width: 220px; }
+
+    .reports-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .reports-table th { text-align: left; padding: 0.6rem 0.75rem; background: var(--bg-alt, #f8fafc); border-bottom: 2px solid var(--border); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; }
+    .reports-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .reports-table tr:hover td { background: #f8fafc; }
+
+    .score-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 700; font-size: 0.8rem; }
+    .score-green { background: #dcfce7; color: #166534; }
+    .score-yellow { background: #fef9c3; color: #854d0e; }
+    .score-red { background: #fee2e2; color: #991b1b; }
+
+    .vertical-pill { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .v-dental { background: #dbeafe; color: #1e40af; }
+    .v-legal { background: #fce7f3; color: #9d174d; }
+    .v-medical { background: #d1fae5; color: #065f46; }
+
+    .link-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+    .link-btn:hover { background: var(--primary); color: #fff; }
+    .customer-link { font-size: 0.8rem; color: var(--primary); text-decoration: none; }
+    .customer-link:hover { text-decoration: underline; }
+
+    .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+    .empty-state svg { width: 48px; height: 48px; margin-bottom: 1rem; opacity: 0.4; }
+
+    .sync-result { padding: 0.5rem 1rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; display: none; }
+    .sync-result.success { background: #dcfce7; color: #166534; display: block; }
+    .sync-result.error { background: #fee2e2; color: #991b1b; display: block; }
+
+    .link-dropdown { position: relative; display: inline-block; }
+    .link-dropdown-content { display: none; position: absolute; right: 0; top: 100%; background: #fff; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; min-width: 200px; max-height: 250px; overflow-y: auto; }
+    .link-dropdown-content.show { display: block; }
+    .link-dropdown-content a { display: block; padding: 0.4rem 0.75rem; font-size: 0.8rem; color: #334155; text-decoration: none; }
+    .link-dropdown-content a:hover { background: #f1f5f9; }
+</style>
+
+<div class="reports-header">
+    <h2>Landing Page Reports <span style="font-weight: 400; font-size: 0.9rem; color: #94a3b8;">({{ reports|length }})</span></h2>
+    <button class="sync-btn" id="syncBtn" onclick="syncReports()">
+        <span class="spinner"></span>
+        Sync from API
+    </button>
+</div>
+
+{% if sync_result %}
+<div class="sync-result {% if sync_result.get('error') %}error{% else %}success{% endif %}" style="display: block;">
+    {% if sync_result.get('error') %}
+        Sync error: {{ sync_result.error }}
+    {% elif sync_result.get('synced', 0) > 0 %}
+        Synced {{ sync_result.synced }} new report(s). Total: {{ sync_result.total }}.
+    {% endif %}
+</div>
+{% endif %}
+<div class="sync-result" id="syncResult"></div>
+
+<div class="filters">
+    <select id="filterVertical" onchange="filterReports()">
+        <option value="">All Verticals</option>
+        <option value="dental">Dental</option>
+        <option value="legal">Legal</option>
+        <option value="medical">Medical</option>
+    </select>
+    <select id="filterGrade" onchange="filterReports()">
+        <option value="">All Grades</option>
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+        <option value="F">F</option>
+    </select>
+    <input type="text" id="searchInput" placeholder="Search by name, domain, email..." oninput="filterReports()">
+</div>
+
+{% if reports %}
+<table class="reports-table" id="reportsTable">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Score</th>
+            <th>Practice</th>
+            <th>Location</th>
+            <th>Vertical</th>
+            <th>Email</th>
+            <th>Customer</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in reports %}
+        <tr data-vertical="{{ r.vertical or 'dental' }}" data-grade="{{ r.grade or '' }}" data-search="{{ (r.practice_name or '')|lower }} {{ (r.domain or '')|lower }} {{ (r.email or '')|lower }} {{ (r.contact_name or '')|lower }}">
+            <td>{{ r.timestamp[:10] if r.timestamp else '' }}</td>
+            <td>
+                {% set score = r.overall_score or 0 %}
+                <span class="score-badge {% if score >= 70 %}score-green{% elif score >= 40 %}score-yellow{% else %}score-red{% endif %}">
+                    {{ score }} {{ r.grade or '' }}
+                </span>
+            </td>
+            <td><a href="{{ url_for('report_detail', report_id=r.id) }}" style="color: var(--primary); text-decoration: none; font-weight: 500;">{{ r.practice_name or r.domain or 'Unknown' }}</a></td>
+            <td>{{ r.city or '' }}{% if r.city and r.state %}, {% endif %}{{ r.state or '' }}</td>
+            <td><span class="vertical-pill v-{{ r.vertical or 'dental' }}">{{ r.vertical or 'dental' }}</span></td>
+            <td style="font-size: 0.8rem;">{{ r.email or '' }}</td>
+            <td>
+                {% if r.customer_id and r.customer_name %}
+                    <a href="{{ url_for('customer_detail', customer_id=r.customer_id) }}" class="customer-link">{{ r.customer_name }}</a>
+                {% else %}
+                    <div class="link-dropdown">
+                        <button class="link-btn" onclick="toggleLinkDropdown(this)">Link</button>
+                        <div class="link-dropdown-content">
+                            {% for c in customers %}
+                            <a href="#" onclick="linkReport('{{ r.id }}', '{{ c.id }}', this); return false;">{{ c.name }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+    <p>No reports synced yet.</p>
+    <p>Click <strong>Sync from API</strong> to pull reports from practicerank.ai.</p>
+</div>
+{% endif %}
+
+<script>
+function syncReports() {
+    var btn = document.getElementById('syncBtn');
+    var result = document.getElementById('syncResult');
+    btn.classList.add('loading');
+    btn.disabled = true;
+    result.className = 'sync-result';
+    result.style.display = 'none';
+
+    fetch('{{ url_for("api_sync_reports") }}', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            if (data.error) {
+                result.className = 'sync-result error';
+                result.textContent = 'Error: ' + data.error;
+            } else {
+                result.className = 'sync-result success';
+                result.textContent = 'Synced ' + data.synced + ' new report(s). Total: ' + data.total + ', already synced: ' + data.already_synced;
+                if (data.synced > 0) setTimeout(function() { location.reload(); }, 1500);
+            }
+        })
+        .catch(function(err) {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            result.className = 'sync-result error';
+            result.textContent = 'Sync failed: ' + err.message;
+        });
+}
+
+function filterReports() {
+    var vert = document.getElementById('filterVertical').value.toLowerCase();
+    var grade = document.getElementById('filterGrade').value;
+    var search = document.getElementById('searchInput').value.toLowerCase();
+    var rows = document.querySelectorAll('#reportsTable tbody tr');
+    rows.forEach(function(row) {
+        var matchVert = !vert || row.dataset.vertical === vert;
+        var matchGrade = !grade || row.dataset.grade === grade;
+        var matchSearch = !search || row.dataset.search.indexOf(search) !== -1;
+        row.style.display = (matchVert && matchGrade && matchSearch) ? '' : 'none';
+    });
+}
+
+function toggleLinkDropdown(btn) {
+    var dd = btn.nextElementSibling;
+    document.querySelectorAll('.link-dropdown-content.show').forEach(function(el) {
+        if (el !== dd) el.classList.remove('show');
+    });
+    dd.classList.toggle('show');
+}
+
+function linkReport(reportId, customerId, el) {
+    fetch('/api/reports/' + reportId + '/link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id: customerId })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function() { location.reload(); });
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.link-dropdown')) {
+        document.querySelectorAll('.link-dropdown-content.show').forEach(function(el) { el.classList.remove('show'); });
+    }
+});
+</script>
+{% endblock %}

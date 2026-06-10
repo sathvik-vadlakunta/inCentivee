@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Staged Changes — {{ customer.name }}{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('customer_detail', customer_id=customer.id) }}">{{ customer.name }}</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Staged Changes</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">

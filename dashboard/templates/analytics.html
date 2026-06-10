@@ -1,20 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Analytics - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Analytics</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">
     <h1>Analytics</h1>
-    <span style="color: var(--muted); font-size: 0.85rem;">AI search performance across all customers</span>
+    <span style="color: var(--muted); font-size: 0.85rem;">Performance across all customers</span>
 </div>
 
 <!-- Aggregate Stats -->
-<div class="grid grid-4" style="margin-bottom: 1.5rem;">
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:0.75rem;margin-bottom:1.5rem;">
     <div class="card stat">
-        <div class="number">{{ totals.total_hits | int }}</div>
-        <div class="label">Total llms.txt Hits</div>
+        <div class="number">{{ totals.customers_tracked }}</div>
+        <div class="label">Customers</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.25rem;">
+            {{ totals.active_count }} active · {{ totals.onboarding_count }} onboarding
+        </div>
     </div>
     <div class="card stat">
-        <div class="number">{{ totals.total_mentions | int }}</div>
+        <div class="number" style="color:#16a34a;">{{ "{:,}".format(totals.total_clicks) }}</div>
+        <div class="label">Total Clicks (30d)</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color:#2563eb;">{{ "{:,}".format(totals.total_impressions) }}</div>
+        <div class="label">Impressions (30d)</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color:#7c3aed;">{{ totals.total_mentions | int }}</div>
         <div class="label">AI Mentions</div>
     </div>
     <div class="card stat">
@@ -22,98 +38,217 @@
         <div class="label">Google Reviews</div>
     </div>
     <div class="card stat">
-        <div class="number">{{ totals.customers_tracked }}</div>
-        <div class="label">Customers Tracked</div>
+        <div class="number">{{ totals.total_hits | int }}</div>
+        <div class="label">llms.txt Hits</div>
     </div>
 </div>
 
-<!-- Per-Customer Breakdown -->
+<!-- PracticeRank Score Leaderboard -->
+<div class="card" style="margin-bottom:1rem;" id="pr-leaderboard-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+        <h2 style="margin:0;">PracticeRank Scores</h2>
+        <span style="font-size:0.75rem;color:var(--muted);">Composite score across all pillars</span>
+    </div>
+    <div id="pr-leaderboard-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.75rem;">
+        <div style="color:var(--muted);font-size:0.85rem;">Loading scores...</div>
+    </div>
+</div>
+
 {% if data %}
-<div class="card">
-    <h2>Per-Customer Performance</h2>
-    <table>
+<!-- Per-Customer Performance Table -->
+<div class="card" style="margin-bottom:1rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+        <h2 style="margin:0;">Customer Performance</h2>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+            <input type="text" id="analytics-search" placeholder="Search customers..."
+                   style="padding:0.35rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;width:180px;"
+                   oninput="filterAnalyticsTable(this.value)">
+        </div>
+    </div>
+    <div style="overflow-x:auto;">
+    <table id="analytics-table" style="font-size:0.82rem;">
         <thead>
             <tr>
-                <th>Practice</th>
-                <th style="text-align:right;">llms.txt Hits</th>
-                <th style="text-align:right;">AI Mentions</th>
-                <th style="text-align:right;">AI Position</th>
-                <th style="text-align:right;">Reviews</th>
-                <th>Trend (7 periods)</th>
+                <th style="cursor:pointer;" onclick="sortAnalytics('name')">Customer</th>
+                <th style="text-align:center;cursor:pointer;" onclick="sortAnalytics('status')">Status</th>
+                <th style="text-align:right;cursor:pointer;" onclick="sortAnalytics('clicks_30d')">Clicks (30d)</th>
+                <th style="text-align:right;cursor:pointer;" onclick="sortAnalytics('impressions_30d')">Impressions</th>
+                <th style="text-align:right;cursor:pointer;" onclick="sortAnalytics('ai_mentions')">AI Mentions</th>
+                <th style="text-align:center;">AI Visibility</th>
+                <th style="text-align:right;cursor:pointer;" onclick="sortAnalytics('rating')">Rating</th>
+                <th style="text-align:center;">SEO Progress</th>
+                <th style="text-align:center;">Access</th>
+                <th style="text-align:right;cursor:pointer;" onclick="sortAnalytics('llms_hits')">llms.txt</th>
             </tr>
         </thead>
         <tbody>
-        {% for d in data | sort(attribute='llms_hits', reverse=True) %}
-            <tr>
+        {% for d in data | sort(attribute='clicks_30d', reverse=True) %}
+            <tr data-name="{{ d.name | lower }}">
                 <td>
-                    <a href="{{ url_for('customer_detail', customer_id=d.id) }}">{{ d.name }}</a>
-                    <br><span style="font-size: 0.75rem; color: var(--muted);">{{ d.domain }}</span>
+                    <a href="{{ url_for('customer_detail', customer_id=d.id) }}" style="font-weight:600;">{{ d.name }}</a>
+                    <br><span style="font-size:0.7rem;color:var(--muted);">{{ d.domain }}</span>
+                </td>
+                <td style="text-align:center;">
+                    {% if d.status == 'active' %}
+                    <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#d1fae5;color:#065f46;">Active</span>
+                    {% elif d.status == 'onboarding' %}
+                    <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#dbeafe;color:#1e40af;">Onboarding</span>
+                    {% else %}
+                    <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:0.7rem;font-weight:600;background:#f1f5f9;color:#64748b;">{{ d.status | title }}</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;font-weight:600;color:{% if d.clicks_30d > 0 %}#16a34a{% else %}var(--muted){% endif %};">
+                    {{ d.clicks_30d }}
+                </td>
+                <td style="text-align:right;">{{ "{:,}".format(d.impressions_30d) }}</td>
+                <td style="text-align:right;">
+                    <span style="font-weight:600;">{{ d.ai_mentions }}</span>
+                    {% if d.ai_total_queries %}
+                    <span style="font-size:0.7rem;color:var(--muted);">/{{ d.ai_total_queries }}</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if d.ai_total_queries %}
+                    {% set pct = (d.ai_mention_rate * 100) | int %}
+                    <div style="display:inline-flex;align-items:center;gap:0.3rem;">
+                        <div style="width:50px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                            <div style="width:{{ pct }}%;height:100%;background:{% if pct >= 40 %}#16a34a{% elif pct >= 20 %}#d97706{% else %}#dc2626{% endif %};border-radius:3px;"></div>
+                        </div>
+                        <span style="font-size:0.7rem;font-weight:600;color:{% if pct >= 40 %}#16a34a{% elif pct >= 20 %}#d97706{% else %}#dc2626{% endif %};">{{ pct }}%</span>
+                    </div>
+                    {% else %}
+                    <span style="color:var(--muted);font-size:0.7rem;">No scan</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:right;">
+                    {% if d.rating %}
+                    <span style="color:{% if d.rating >= 4.5 %}#16a34a{% elif d.rating >= 4.0 %}#d97706{% else %}#dc2626{% endif %};font-weight:600;">{{ d.rating }}</span>
+                    <span style="font-size:0.7rem;color:var(--muted);">({{ d.reviews }})</span>
+                    {% else %}
+                    <span style="color:var(--muted);">--</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if d.seo_total > 0 %}
+                    {% set seo_pct = (d.seo_done / d.seo_total * 100) | int %}
+                    <div style="display:inline-flex;align-items:center;gap:0.3rem;">
+                        <div style="width:40px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                            <div style="width:{{ seo_pct }}%;height:100%;background:{% if seo_pct >= 70 %}#16a34a{% elif seo_pct >= 40 %}#d97706{% else %}#dc2626{% endif %};border-radius:3px;"></div>
+                        </div>
+                        <span style="font-size:0.7rem;">{{ d.seo_done }}/{{ d.seo_total }}</span>
+                    </div>
+                    {% else %}
+                    <span style="color:var(--muted);font-size:0.7rem;">--</span>
+                    {% endif %}
+                </td>
+                <td style="text-align:center;">
+                    {% if d.access_total > 0 %}
+                    {% if d.access_done == d.access_total %}
+                    <span style="color:#16a34a;font-size:0.75rem;font-weight:600;">All set</span>
+                    {% else %}
+                    <span style="font-size:0.75rem;">{{ d.access_done }}/{{ d.access_total }}</span>
+                    {% endif %}
+                    {% else %}
+                    <span style="color:var(--muted);font-size:0.7rem;">--</span>
+                    {% endif %}
                 </td>
                 <td style="text-align:right;">
                     {{ d.llms_hits | int }}
                     {% if d.llms_hits_delta != 0 %}
-                    <span style="font-size: 0.75rem; color: {% if d.llms_hits_delta > 0 %}var(--success){% else %}var(--danger){% endif %};">
+                    <span style="font-size:0.7rem;color:{% if d.llms_hits_delta > 0 %}var(--success){% else %}var(--danger){% endif %};">
                         {{ '%+d' | format(d.llms_hits_delta | int) }}
                     </span>
-                    {% endif %}
-                </td>
-                <td style="text-align:right;">{{ d.ai_mentions | int }}</td>
-                <td style="text-align:right;">
-                    {% if d.ai_position %}
-                    <span style="color: {% if d.ai_position <= 2 %}var(--success){% elif d.ai_position <= 4 %}var(--warning){% else %}var(--danger){% endif %};">
-                        #{{ '%.1f' | format(d.ai_position) }}
-                    </span>
-                    {% else %}
-                    <span style="color: var(--muted);">--</span>
-                    {% endif %}
-                </td>
-                <td style="text-align:right;">
-                    {{ d.reviews | int }}
-                    {% if d.reviews_delta != 0 %}
-                    <span style="font-size: 0.75rem; color: {% if d.reviews_delta > 0 %}var(--success){% else %}var(--danger){% endif %};">
-                        {{ '%+d' | format(d.reviews_delta | int) }}
-                    </span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if d.llms_history %}
-                    <div style="display: flex; align-items: flex-end; gap: 2px; height: 24px;">
-                        {% set max_val = d.llms_history | map(attribute='value') | max %}
-                        {% for point in d.llms_history %}
-                        <div style="width: 8px; background: var(--primary); border-radius: 1px; height: {{ (point.value / max_val * 24) | int if max_val > 0 else 2 }}px; min-height: 2px;" title="{{ point.date }}: {{ point.value | int }}"></div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <span style="color: var(--muted); font-size: 0.75rem;">No data</span>
                     {% endif %}
                 </td>
             </tr>
         {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
-<!-- AI Agent Breakdown Info -->
-<div class="card" style="margin-top: 1rem;">
-    <h2>About llms.txt Analytics</h2>
-    <p style="font-size: 0.85rem; color: var(--text-light); line-height: 1.6;">
-        llms.txt hit counts track how often AI assistants read your clients' practice information.
-        The Cloudflare Worker identifies requests from:
-        <strong>ChatGPT</strong> (GPTBot),
-        <strong>Claude</strong> (ClaudeBot),
-        <strong>Perplexity</strong> (PerplexityBot),
-        <strong>Google</strong> (Googlebot/Gemini),
-        <strong>Bing</strong> (BingBot), and
-        <strong>Apple</strong> (Applebot).
-    </p>
-    <p style="font-size: 0.85rem; color: var(--text-light); margin-top: 0.5rem;">
-        AI Position tracks where the practice appears in AI recommendations (1 = mentioned first, lower is better).
-    </p>
-</div>
 {% else %}
 <div class="card empty-state">
-    <p>No analytics data yet. Run the KPI tracker to start collecting data.</p>
+    <p>No customers yet. <a href="{{ url_for('add_customer') }}">Add your first customer</a> to start tracking.</p>
 </div>
 {% endif %}
+
+<script>
+function filterAnalyticsTable(query) {
+    var q = query.toLowerCase();
+    document.querySelectorAll('#analytics-table tbody tr').forEach(function(row) {
+        row.style.display = row.getAttribute('data-name').includes(q) ? '' : 'none';
+    });
+}
+
+// PracticeRank Leaderboard
+(function() {
+    function scoreColor(s) {
+        if (s >= 75) return '#16a34a';
+        if (s >= 60) return '#2563eb';
+        if (s >= 40) return '#d97706';
+        return '#dc2626';
+    }
+    fetch('/api/analytics/scores')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (!d.ok || !d.scores || d.scores.length === 0) {
+            document.getElementById('pr-leaderboard-body').innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">No scores computed yet. Run the daily score job to populate.</div>';
+            return;
+        }
+        var scores = d.scores.sort(function(a, b) { return (b.overall_score || 0) - (a.overall_score || 0); });
+        var html = '';
+        scores.forEach(function(s, i) {
+            var sc = s.overall_score || 0;
+            var color = scoreColor(sc);
+            var grade = sc >= 90 ? 'A' : sc >= 75 ? 'B' : sc >= 60 ? 'C' : sc >= 40 ? 'D' : 'F';
+            html += '<a href="/customer/' + s.customer_id + '" style="text-decoration:none;color:inherit;">';
+            html += '<div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:0.75rem;transition:box-shadow 0.15s;" onmouseover="this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'" onmouseout="this.style.boxShadow=\'none\'">';
+            html += '<div style="position:relative;width:48px;height:48px;flex-shrink:0;">';
+            html += '<svg viewBox="0 0 48 48" width="48" height="48"><circle cx="24" cy="24" r="20" fill="none" stroke="#e5e7eb" stroke-width="4"/>';
+            var circ = 125.7;
+            var off = circ - (sc / 100) * circ;
+            html += '<circle cx="24" cy="24" r="20" fill="none" stroke="' + color + '" stroke-width="4" stroke-dasharray="' + circ + '" stroke-dashoffset="' + off + '" stroke-linecap="round" transform="rotate(-90 24 24)"/></svg>';
+            html += '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:0.75rem;font-weight:700;color:' + color + ';">' + sc + '</div>';
+            html += '</div>';
+            html += '<div style="min-width:0;">';
+            html += '<div style="font-weight:600;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (s.name || s.customer_id) + '</div>';
+            html += '<div style="font-size:0.72rem;color:var(--muted);">Grade ' + grade + '</div>';
+            html += '</div>';
+            html += '</div></a>';
+        });
+        document.getElementById('pr-leaderboard-body').innerHTML = html;
+    }).catch(function() {
+        document.getElementById('pr-leaderboard-body').innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">Error loading scores</div>';
+    });
+})();
+
+var _sortCol = '', _sortAsc = false;
+function sortAnalytics(col) {
+    _sortAsc = (_sortCol === col) ? !_sortAsc : false;
+    _sortCol = col;
+    var tbody = document.querySelector('#analytics-table tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort(function(a, b) {
+        var aVal, bVal;
+        if (col === 'name') {
+            aVal = a.getAttribute('data-name');
+            bVal = b.getAttribute('data-name');
+            return _sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        if (col === 'status') {
+            aVal = a.querySelector('td:nth-child(2)').textContent.trim();
+            bVal = b.querySelector('td:nth-child(2)').textContent.trim();
+            return _sortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        var colMap = {clicks_30d:3, impressions_30d:4, ai_mentions:5, rating:7, llms_hits:10};
+        var idx = colMap[col] || 3;
+        aVal = parseFloat(a.querySelector('td:nth-child('+idx+')').textContent.replace(/[^0-9.-]/g,'')) || 0;
+        bVal = parseFloat(b.querySelector('td:nth-child('+idx+')').textContent.replace(/[^0-9.-]/g,'')) || 0;
+        return _sortAsc ? aVal - bVal : bVal - aVal;
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
+}
+</script>
 
 {% endblock %}

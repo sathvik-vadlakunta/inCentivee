@@ -18,7 +18,7 @@ def generate_robots_txt(customer: Customer) -> str:
 # Strategy: Block AI training crawlers, allow AI search/retrieval bots
 # so {profile.customer_term} can find this business through ChatGPT, Claude, Perplexity, etc.
 
-# BLOCK training bots (they scrape content for model training)
+# BLOCK training bots (they scrape content for model training, not search)
 User-agent: GPTBot
 Disallow: /
 
@@ -40,6 +40,15 @@ Disallow: /
 User-agent: Bytespider
 Disallow: /
 
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: AI2Bot
+Disallow: /
+
+User-agent: Scrapy
+Disallow: /
+
 # ALLOW retrieval/search bots (they fetch content for real-time AI answers)
 User-agent: ChatGPT-User
 Allow: /
@@ -59,6 +68,12 @@ Allow: /
 User-agent: Perplexity-User
 Allow: /
 
+User-agent: Amazonbot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
 User-agent: Googlebot
 Allow: /
 
@@ -70,4 +85,5 @@ User-agent: *
 Allow: /
 
 Sitemap: https://{domain}/sitemap.xml
+Llms-txt: https://{domain}/llms.txt
 """

@@ -1,0 +1,524 @@
+#!/usr/bin/env python3
+"""Build blog HTML pages from markdown content for Cloudflare Pages deploy."""
+
+import os
+import re
+import markdown
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+CONTENT_DIR = ROOT / "content" / "blog"
+DEPLOY_DIR = ROOT / "deploy" / "blog"
+
+
+def parse_frontmatter(text: str) -> tuple[dict, str]:
+    """Parse YAML-ish frontmatter from markdown text."""
+    if not text.startswith("---"):
+        return {}, text
+    end = text.index("---", 3)
+    fm_text = text[3:end].strip()
+    body = text[end + 3:].strip()
+    meta = {}
+    for line in fm_text.split("\n"):
+        if ":" in line:
+            key, val = line.split(":", 1)
+            val = val.strip().strip('"').strip("'")
+            if val.startswith("[") and val.endswith("]"):
+                val = [v.strip().strip('"').strip("'") for v in val[1:-1].split(",")]
+            meta[key.strip()] = val
+    return meta, body
+
+
+def format_date(date_str: str) -> str:
+    """Format 2026-06-04 as June 4, 2026."""
+    from datetime import datetime
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    return dt.strftime("%B %-d, %Y")
+
+
+def generate_post_html(meta: dict, body_html: str) -> str:
+    """Generate a full blog post HTML page."""
+    title = meta.get("title", "")
+    description = meta.get("description", "")
+    date = meta.get("date", "")
+    author = meta.get("author", "Kody Doherty")
+    category = meta.get("category", "")
+    tags = meta.get("tags", [])
+    slug = meta.get("slug", "")
+    date_display = format_date(date) if date else ""
+
+    tag_html = "".join(f'<span class="tag">{t}</span>' for t in (tags if isinstance(tags, list) else []))
+
+    return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title} | PracticeRank Blog</title>
+<meta name="description" content="{description}">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<link rel="canonical" href="https://practicerank.ai/blog/{slug}">
+<meta property="og:title" content="{title}">
+<meta property="og:description" content="{description}">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://practicerank.ai/blog/{slug}">
+<meta property="article:published_time" content="{date}">
+<meta property="article:author" content="{author}">
+
+<script type="application/ld+json">
+{{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{title}",
+  "description": "{description}",
+  "datePublished": "{date}",
+  "author": {{ "@type": "Person", "name": "{author}" }},
+  "publisher": {{ "@type": "Organization", "name": "PracticeRank", "url": "https://practicerank.ai" }},
+  "mainEntityOfPage": {{ "@type": "WebPage", "@id": "https://practicerank.ai/blog/{slug}" }}
+}}
+</script>
+
+{SHARED_STYLES}
+{BLOG_STYLES}
+</head>
+<body>
+
+{NAV_HTML}
+
+<article class="blog-post">
+  <div class="blog-container">
+    <div class="blog-meta">
+      <a href="/blog" class="back-link">&larr; All Articles</a>
+      <span class="blog-category">{category}</span>
+      <time datetime="{date}">{date_display}</time>
+    </div>
+    <div class="blog-content">
+      {body_html}
+    </div>
+    <div class="blog-tags">{tag_html}</div>
+    <div class="blog-author">
+      <div class="author-info">
+        <strong>{author}</strong>
+        <span>PracticeRank</span>
+      </div>
+    </div>
+  </div>
+</article>
+
+<section class="blog-cta">
+  <div class="container">
+    <h2>See How AI Search Engines Rank Your Practice</h2>
+    <p>Get a free AI visibility audit across ChatGPT, Gemini, Claude, Perplexity, and Grok.</p>
+    <a href="/#book" class="btn-primary">Get Your Free Audit &rarr;</a>
+  </div>
+</section>
+
+{FOOTER_HTML}
+
+{SHARED_SCRIPTS}
+</body>
+</html>'''
+
+
+def generate_index_html(posts: list[dict]) -> str:
+    """Generate the blog listing page."""
+    cards = []
+    for p in posts:
+        date_display = format_date(p["date"]) if p.get("date") else ""
+        tags = p.get("tags", [])
+        tag_html = "".join(f'<span class="tag">{t}</span>' for t in (tags if isinstance(tags, list) else [])[:3])
+        cards.append(f'''
+    <a href="/blog/{p["slug"]}" class="blog-card fade-up">
+      <div class="card-category">{p.get("category", "")}</div>
+      <h3>{p.get("title", "")}</h3>
+      <p>{p.get("description", "")}</p>
+      <div class="card-footer">
+        <time datetime="{p.get("date", "")}">{date_display}</time>
+        <div class="card-tags">{tag_html}</div>
+      </div>
+    </a>''')
+
+    cards_html = "\n".join(cards)
+
+    return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blog | PracticeRank — AI Search & SEO Insights</title>
+<meta name="description" content="Expert insights on AI search optimization, SEO, and digital marketing for dental practices, law firms, and medical providers. Learn why AI visibility matters and how it impacts patient and client acquisition.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://practicerank.ai/blog">
+<meta property="og:title" content="PracticeRank Blog — AI Search & SEO Insights">
+<meta property="og:description" content="Expert insights on AI search optimization and digital marketing for healthcare and legal practices.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://practicerank.ai/blog">
+
+{SHARED_STYLES}
+{BLOG_STYLES}
+</head>
+<body>
+
+{NAV_HTML}
+
+<header class="blog-hero">
+  <div class="container">
+    <div class="section-label">PracticeRank Blog</div>
+    <h1 class="section-title">AI Search & Marketing Insights</h1>
+    <p class="section-sub">How AI is changing the way patients and clients find local businesses — and what you can do about it.</p>
+  </div>
+</header>
+
+<section class="blog-grid-section">
+  <div class="container">
+    <div class="blog-grid">
+{cards_html}
+    </div>
+  </div>
+</section>
+
+<section class="blog-cta">
+  <div class="container">
+    <h2>See How AI Search Engines Rank Your Practice</h2>
+    <p>Get a free AI visibility audit across ChatGPT, Gemini, Claude, Perplexity, and Grok.</p>
+    <a href="/#book" class="btn-primary">Get Your Free Audit &rarr;</a>
+  </div>
+</section>
+
+{FOOTER_HTML}
+
+{SHARED_SCRIPTS}
+</body>
+</html>'''
+
+
+# ── Shared page fragments ──
+
+SHARED_STYLES = '''<style>
+  :root {
+    --bg: #08080d;
+    --bg-nav: rgba(8,8,13,0.92);
+    --text: #f0f0f0;
+    --text-secondary: rgba(255,255,255,0.5);
+    --text-muted: rgba(255,255,255,0.35);
+    --text-faint: rgba(255,255,255,0.25);
+    --text-dim: rgba(255,255,255,0.15);
+    --text-ghost: rgba(255,255,255,0.06);
+    --accent: #4ade80;
+    --accent-hover: #22c55e;
+    --accent-bg: rgba(74,222,128,0.08);
+    --accent-border: rgba(74,222,128,0.15);
+    --accent-glow: rgba(74,222,128,0.2);
+    --card-bg: rgba(255,255,255,0.025);
+    --card-border: rgba(255,255,255,0.07);
+    --card-hover-shadow: rgba(0,0,0,0.3);
+    --divider: rgba(255,255,255,0.06);
+    --btn-text: #0a0f0a;
+    --input-bg: rgba(255,255,255,0.06);
+    --input-border: rgba(255,255,255,0.1);
+    color-scheme: dark;
+  }
+  [data-theme="light"] {
+    --bg: #f8faf9;
+    --bg-nav: rgba(248,250,249,0.92);
+    --text: #1a1a2e;
+    --text-secondary: rgba(26,26,46,0.6);
+    --text-muted: rgba(26,26,46,0.45);
+    --text-faint: rgba(26,26,46,0.3);
+    --text-dim: rgba(26,26,46,0.15);
+    --text-ghost: rgba(26,26,46,0.06);
+    --accent: #16a34a;
+    --accent-hover: #15803d;
+    --accent-bg: rgba(22,163,74,0.08);
+    --accent-border: rgba(22,163,74,0.2);
+    --accent-glow: rgba(22,163,74,0.15);
+    --card-bg: #ffffff;
+    --card-border: rgba(26,26,46,0.1);
+    --card-hover-shadow: rgba(0,0,0,0.08);
+    --divider: rgba(26,26,46,0.08);
+    --btn-text: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: rgba(26,26,46,0.15);
+    color-scheme: light;
+  }
+
+  .industry-nav { position: relative; }
+  .industry-nav-btn { background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s; }
+  .industry-nav-btn:hover { border-color: var(--accent); }
+  .industry-dropdown { display: none; position: absolute; top: 100%; right: 0; background: var(--bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem; min-width: 180px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 200; padding-top: 0.75rem; }
+  .industry-nav::after { content: ''; position: absolute; top: 100%; right: 0; width: 100%; height: 10px; }
+  .industry-nav:hover .industry-dropdown { display: block; }
+  .industry-nav.open .industry-dropdown { display: block; }
+  .industry-dropdown a { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; transition: all 0.15s; }
+  .industry-dropdown a:hover { background: var(--accent-bg); color: var(--text); }
+  .industry-dropdown a.active { color: var(--accent); font-weight: 700; }
+  .industry-dropdown .ind-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+
+  .theme-toggle { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 0.4rem 0.5rem; cursor: pointer; font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--text-secondary); }
+  .theme-toggle:hover { border-color: var(--accent); }
+  .theme-toggle .icon-sun, .theme-toggle .icon-moon { display: none; }
+  [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+  [data-theme="light"] .theme-toggle .icon-moon { display: block; }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
+  a { color: inherit; text-decoration: none; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 2rem; border-bottom: 1px solid var(--divider); position: sticky; top: 0; background: var(--bg-nav); backdrop-filter: blur(16px); z-index: 100; }
+  .nav-logo { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; align-items: center; gap: 1.8rem; font-size: 0.88rem; color: var(--text-secondary); }
+  .nav-links a:hover { color: var(--text); }
+  .nav-links a.active-link { color: var(--accent); font-weight: 600; }
+  .nav-cta { background: var(--accent); color: var(--btn-text); font-weight: 700; font-size: 0.85rem; border: none; border-radius: 8px; padding: 0.55rem 1.2rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
+  .nav-cta:hover { background: var(--accent-hover); color: var(--btn-text); }
+  .hamburger { display: none; }
+  dialog.mobile-menu { display: none; }
+  dialog.mobile-menu[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border: none; padding: 2rem; z-index: 1000; background: var(--bg); color: var(--text); font-size: 1.1rem; }
+  dialog.mobile-menu::backdrop { background: transparent; }
+  dialog.mobile-menu a { color: var(--text); text-decoration: none; font-size: 1.1rem; }
+  dialog.mobile-menu a:hover { color: var(--accent); }
+  dialog.mobile-menu .nav-cta { font-size: 1rem; padding: 0.75rem 2rem; display: inline-block; }
+  dialog.mobile-menu .industry-nav { position: static; }
+  dialog.mobile-menu .industry-dropdown { position: static; box-shadow: none; border: none; background: transparent; display: none; text-align: center; min-width: auto; padding: 0.5rem 0 0; }
+  dialog.mobile-menu .industry-nav.open .industry-dropdown { display: flex; flex-direction: column; align-items: center; }
+  dialog.mobile-menu .close-menu { position: absolute; top: 1rem; right: 1.5rem; background: none; border: none; color: var(--text); font-size: 2rem; cursor: pointer; line-height: 1; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+  .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
+  .section-title { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 800; letter-spacing: -0.5px; line-height: 1.18; margin-bottom: 1rem; }
+  .section-sub { color: var(--text-secondary); font-size: 1.05rem; max-width: 600px; line-height: 1.7; }
+
+  .btn-primary { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent); color: var(--btn-text); font-weight: 700; font-size: 1.05rem; border: none; border-radius: 12px; padding: 1rem 2rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px var(--accent-glow); text-decoration: none; }
+  .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 30px var(--accent-glow); transform: translateY(-1px); }
+
+  footer { border-top: 1px solid var(--divider); padding: 3rem 2rem; }
+  .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; }
+  .footer-brand { max-width: 320px; }
+  .footer-brand .nav-logo { margin-bottom: 0.75rem; }
+  .footer-brand p { font-size: 0.82rem; color: var(--text-faint); line-height: 1.7; }
+  .footer-links { display: flex; gap: 3rem; }
+  .footer-col h4 { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem; }
+  .footer-col a { display: block; font-size: 0.85rem; color: var(--text-faint); margin-bottom: 0.5rem; transition: color 0.2s; }
+  .footer-col a:hover { color: var(--text); }
+  .footer-bottom { text-align: center; padding-top: 2rem; margin-top: 2rem; border-top: 1px solid var(--text-ghost); font-size: 0.78rem; color: var(--text-faint); max-width: 1100px; margin-left: auto; margin-right: auto; }
+
+  @media (max-width: 900px) {
+    .nav-links { display: none !important; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 0.5rem; z-index: 101; }
+    .hamburger span { width: 24px; height: 2px; background: var(--text); border-radius: 2px; }
+  }
+  @media (max-width: 600px) {
+    .footer-inner { flex-direction: column; }
+  }
+</style>'''
+
+BLOG_STYLES = '''<style>
+  /* ── Blog Hero ── */
+  .blog-hero { padding: 4rem 2rem 3rem; text-align: center; }
+  .blog-hero .section-sub { margin: 0 auto; }
+
+  /* ── Blog Grid ── */
+  .blog-grid-section { padding: 0 0 4rem; }
+  .blog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+  .blog-card { display: flex; flex-direction: column; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.75rem; transition: all 0.25s; text-decoration: none; }
+  .blog-card:hover { border-color: var(--accent-border); box-shadow: 0 8px 32px var(--card-hover-shadow); transform: translateY(-2px); }
+  .blog-card .card-category { font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; }
+  .blog-card h3 { font-size: 1.15rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.75rem; letter-spacing: -0.3px; }
+  .blog-card p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.65; flex: 1; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--divider); }
+  .card-footer time { font-size: 0.78rem; color: var(--text-muted); }
+  .card-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  /* ── Tags ── */
+  .tag { font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 6px; background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); white-space: nowrap; }
+
+  /* ── Blog Post ── */
+  .blog-post { padding: 3rem 2rem 4rem; }
+  .blog-container { max-width: 760px; margin: 0 auto; }
+  .blog-meta { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 2rem; font-size: 0.82rem; color: var(--text-muted); }
+  .blog-meta .back-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .blog-meta .back-link:hover { text-decoration: underline; }
+  .blog-meta .blog-category { font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent); font-size: 0.7rem; }
+
+  .blog-content h1 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 800; line-height: 1.15; letter-spacing: -0.8px; margin-bottom: 1.5rem; }
+  .blog-content h2 { font-size: 1.35rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 1rem; letter-spacing: -0.3px; }
+  .blog-content h3 { font-size: 1.1rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; }
+  .blog-content p { font-size: 1.02rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 1.25rem; }
+  .blog-content strong { color: var(--text); font-weight: 600; }
+  .blog-content a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .blog-content a:hover { color: var(--accent-hover); }
+  .blog-content ul, .blog-content ol { margin-bottom: 1.25rem; padding-left: 1.5rem; }
+  .blog-content li { font-size: 1.02rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: 0.5rem; }
+  .blog-content li strong { color: var(--text); }
+  .blog-content blockquote { border-left: 3px solid var(--accent); padding-left: 1.25rem; margin: 1.5rem 0; color: var(--text-muted); font-style: italic; }
+  .blog-content em { font-style: italic; }
+  .blog-content hr { border: none; border-top: 1px solid var(--divider); margin: 2.5rem 0; }
+  .blog-content table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; }
+  .blog-content th { text-align: left; padding: 0.75rem 1rem; border-bottom: 2px solid var(--divider); color: var(--text); font-weight: 700; font-size: 0.82rem; }
+  .blog-content td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--divider); color: var(--text-secondary); }
+  .blog-content tr:hover td { background: var(--accent-bg); }
+
+  .blog-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--divider); }
+  .blog-author { display: flex; align-items: center; gap: 1rem; margin-top: 2rem; padding: 1.25rem; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; }
+  .author-info { display: flex; flex-direction: column; }
+  .author-info strong { font-size: 0.95rem; }
+  .author-info span { font-size: 0.8rem; color: var(--text-muted); }
+
+  /* ── Blog CTA ── */
+  .blog-cta { text-align: center; padding: 4rem 2rem; background: var(--card-bg); border-top: 1px solid var(--divider); border-bottom: 1px solid var(--divider); }
+  .blog-cta h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.75rem; }
+  .blog-cta p { color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 1rem; }
+
+  @media (max-width: 600px) {
+    .blog-grid { grid-template-columns: 1fr; }
+    .blog-meta { flex-wrap: wrap; gap: 0.75rem; }
+  }
+</style>'''
+
+NAV_HTML = '''<nav>
+  <a href="/" class="nav-logo">Practice<span>Rank</span></a>
+  <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu"><span></span><span></span><span></span></button>
+  <div class="nav-links" id="nav-links">
+    <a href="/#what-we-do">Services</a>
+    <a href="/#results">Results</a>
+    <a href="/#pricing">What's Included</a>
+    <a href="/blog" class="active-link">Blog</a>
+    <a href="/#faq">FAQ</a>
+    <div class="industry-nav">
+      <button class="industry-nav-btn" onclick="this.parentElement.classList.toggle('open')">Industries &#9662;</button>
+      <div class="industry-dropdown">
+        <a href="/"><span class="ind-icon">&#x1F9B7;</span> Dental Practices</a>
+        <a href="/legal"><span class="ind-icon">&#x2696;</span> Law Firms</a>
+        <a href="/medical"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
+      </div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
+    <a href="/#book" class="nav-cta">Book a Free Call</a>
+  </div>
+</nav>
+<dialog class="mobile-menu" id="mobile-menu">
+  <button class="close-menu" onclick="closeMobileNav()" aria-label="Close">&times;</button>
+  <a href="/#what-we-do" onclick="closeMobileNav()">Services</a>
+  <a href="/#results" onclick="closeMobileNav()">Results</a>
+  <a href="/#pricing" onclick="closeMobileNav()">What's Included</a>
+  <a href="/blog" onclick="closeMobileNav()">Blog</a>
+  <a href="/#faq" onclick="closeMobileNav()">FAQ</a>
+  <div class="industry-nav">
+    <button class="industry-nav-btn" onclick="this.parentElement.classList.toggle('open')">Industries &#9662;</button>
+    <div class="industry-dropdown">
+      <a href="/"><span class="ind-icon">&#x1F9B7;</span> Dental Practices</a>
+      <a href="/legal"><span class="ind-icon">&#x2696;</span> Law Firms</a>
+      <a href="/medical"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
+    </div>
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
+  <a href="/#book" class="nav-cta" onclick="closeMobileNav()">Book a Free Call</a>
+</dialog>'''
+
+FOOTER_HTML = '''<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo">Practice<span>Rank</span></div>
+      <p>AI-powered marketing. Get found everywhere clients search — Google, Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, and AI Overviews.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/#what-we-do">Services</a>
+        <a href="/#results">Results</a>
+        <a href="/#pricing">What's Included</a>
+        <a href="/#faq">FAQ</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/blog">Blog</a>
+        <a href="/#book">Contact</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">&copy; 2026 PracticeRank &mdash; Built by Lost Relic LLC</div>
+</footer>'''
+
+SHARED_SCRIPTS = '''<script>
+  // Scroll reveal
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+  // Mobile nav
+  function toggleMobileNav() {
+    var d = document.getElementById('mobile-menu');
+    if (d.open) { d.close(); } else { d.showModal(); }
+  }
+  function closeMobileNav() {
+    var d = document.getElementById('mobile-menu');
+    if (d && d.open) d.close();
+  }
+
+  // Theme
+  function toggleTheme() {
+    var t = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('pr-theme', t);
+  }
+  (function() {
+    var saved = localStorage.getItem('pr-theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+</script>'''
+
+
+def main():
+    DEPLOY_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Read all blog posts
+    posts = []
+    for md_file in sorted(CONTENT_DIR.glob("*.md")):
+        text = md_file.read_text()
+        meta, body = parse_frontmatter(text)
+        if not meta.get("slug"):
+            continue
+
+        # Convert markdown to HTML
+        body_html = markdown.markdown(body, extensions=["tables", "fenced_code"])
+
+        posts.append({
+            **meta,
+            "body_html": body_html,
+            "filename": md_file.name,
+        })
+
+    # Sort by date descending (newest first)
+    posts.sort(key=lambda p: p.get("date", ""), reverse=True)
+
+    print(f"Found {len(posts)} blog posts")
+
+    # Generate individual post pages
+    for post in posts:
+        slug = post["slug"]
+        slug_dir = DEPLOY_DIR / slug
+        slug_dir.mkdir(parents=True, exist_ok=True)
+
+        html = generate_post_html(post, post["body_html"])
+        (slug_dir / "index.html").write_text(html)
+        print(f"  Built: /blog/{slug}/")
+
+    # Generate blog index
+    index_html = generate_index_html(posts)
+    (DEPLOY_DIR / "index.html").write_text(index_html)
+    print(f"  Built: /blog/")
+
+    print("Done!")
+
+
+if __name__ == "__main__":
+    main()

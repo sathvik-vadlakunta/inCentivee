@@ -1,0 +1,48 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import TeamCard from '@components/TeamCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+---
+
+<Base title="About Us" description={`Learn about ${practice.name} and our team of dental professionals.`}>
+  <Hero title="About Us" subtitle={`${practice.name} — ${practice.address.city}, ${practice.address.state}`} />
+
+  <section class="py-16 sm:py-20">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 prose prose-lg">
+      <slot />
+      <!-- Override this section in your customer site's about.astro -->
+      <p>
+        At {practice.name}, we believe everyone deserves quality dental care in a comfortable,
+        welcoming environment. Our team uses state-of-the-art technology and proven techniques
+        to deliver exceptional results for patients of all ages.
+      </p>
+    </div>
+  </section>
+
+  {team.length > 0 && (
+    <section class="py-16 sm:py-20 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-3xl font-bold font-heading text-center mb-12">Our Providers</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {team.map((member) => (
+            <TeamCard
+              name={member.data.name}
+              credentials={member.data.credentials}
+              title={member.data.title}
+              photo={member.data.photo}
+              specialties={member.data.specialties}
+              href={`/team/${member.slug}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <CTABanner />
+</Base>

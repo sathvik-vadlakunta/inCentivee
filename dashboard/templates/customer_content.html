@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Content - {{ customer.name }} - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('index') }}">Customers</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('customer_detail', customer_id=customer.id) }}">{{ customer.name }}</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Content</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">
@@ -8,6 +17,9 @@
         <a href="{{ url_for('customer_detail', customer_id=customer.id) }}" style="color: var(--muted); font-size: 0.85rem;">&larr; {{ customer.name }}</a>
     </div>
     <div class="flex" style="gap: 0.5rem;">
+        {% if counts.pending > 0 %}
+        <button class="btn btn-success btn-sm" onclick="approveAll('{{ customer.id }}')" id="approve-all-btn">Approve All ({{ counts.pending }})</button>
+        {% endif %}
         {% if counts.approved > 0 %}
         <button class="btn btn-success btn-sm" onclick="publishAllToWebflow('{{ customer.id }}')" id="publish-all-btn">Publish All to Webflow ({{ counts.approved }})</button>
         {% endif %}
@@ -330,6 +342,35 @@ function publishAllToWebflow(customerId) {
         btn.textContent = 'Network Error';
         btn.disabled = false;
         setTimeout(() => { btn.textContent = 'Publish All to Webflow'; }, 3000);
+    });
+}
+
+function approveAll(customerId) {
+    const btn = document.getElementById('approve-all-btn');
+    if (!confirm('Approve all pending content recommendations?')) return;
+    btn.disabled = true;
+    btn.textContent = 'Approving...';
+    fetch('/api/content/approve-all', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Approved ' + data.approved + ' items!';
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            btn.textContent = 'Error';
+            alert(data.error || 'Approve all failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Approve All'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Approve All'; }, 3000);
     });
 }
 

@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* SoJo Dental brand */
+:root {
+  --color-primary: #90C969;
+  --color-secondary: #3C8043;
+  --color-dark: #1B1C1D;
+  --color-light: #FAF8F6;
+  --color-accent: #6BAE45;
+  --font-heading: 'Gotu', serif;
+  --font-body: 'Outfit', sans-serif;
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
+  --color-accent: var(--color-accent);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-dark);
+  background: white;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}

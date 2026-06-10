@@ -1,0 +1,57 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import ServiceCard from '@components/ServiceCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+
+// Group by category
+const categories = [...new Set(services.map((s) => s.data.category))]
+const grouped = categories.map((cat) => ({
+  name: cat,
+  services: services.filter((s) => s.data.category === cat),
+}))
+---
+
+<Base title="Our Services" description={`Dental services offered at ${practice.name} in ${practice.address.city}, ${practice.address.state}.`}>
+  <Hero title="Our Services" subtitle="Comprehensive dental care for your entire family" />
+
+  <section class="py-12 bg-blue-50">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-2xl font-bold font-heading mb-4">Comprehensive Dental Care in 2026</h2>
+      <p class="text-gray-700 text-lg mb-4">
+        Preventive dental care remains the foundation of oral health. <a href="https://www.cdc.gov/oral-health/php/2024-oral-health-surveillance-report/selected-findings.html" class="text-primary underline" target="_blank" rel="noopener">The CDC reports that approximately 1 in 4 adults in the US have untreated tooth decay</a>, and <a href="https://www.nidcr.nih.gov/research/data-statistics/periodontal-disease/adults" class="text-primary underline" target="_blank" rel="noopener">47.2% of adults aged 30 and older have some form of periodontal disease</a>. At Sojo Dental, our comprehensive services help South Jordan families avoid costly dental problems through early detection and treatment.
+      </p>
+      <p class="text-gray-600">
+        For families with children, <a href="https://www.cdc.gov/mmwr/volumes/65/wr/mm6541e1.htm" class="text-primary underline" target="_blank" rel="noopener">dental sealants reduce the risk of cavities in molars by nearly 80%</a>, making preventive treatments an excellent investment in your child's oral health. Our South Jordan practice uses the latest diagnostic and treatment technologies available in 2026 to deliver comfortable, efficient care.
+      </p>
+    </div>
+  </section>
+
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {grouped.map((group) => (
+        <div class="mb-16 last:mb-0">
+          <h2 class="text-2xl font-bold font-heading mb-6 border-b border-gray-200 pb-2">
+            {group.name}
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {group.services.map((service) => (
+              <ServiceCard
+                title={service.data.title}
+                description={service.data.description}
+                href={`/services/${service.slug}`}
+                image={service.data.image}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>

@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% block title %}{{ prospect.name }} - Pipeline{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('pipeline') }}">Pipeline</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">{{ prospect.name }}</span>
+{% endblock %}
+{% block content %}
+
+<div class="section-header">
+    <h1>{{ prospect.name }}</h1>
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+        <select id="stage-select" class="form-select" style="font-size:0.85rem; padding:0.35rem 0.5rem;" onchange="changeStage(this.value)">
+            {% for s in stages %}
+            <option value="{{ s.value }}" {% if s.value == prospect.stage %}selected{% endif %}>{{ s.label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="grid grid-3" style="margin-bottom:1rem;">
+    <div class="card stat">
+        <div class="number" style="color: {{ '#16a34a' if prospect.overall_score and prospect.overall_score >= 70 else ('#f59e0b' if prospect.overall_score and prospect.overall_score >= 50 else '#dc2626') }};">
+            {{ prospect.overall_score or '—' }}
+        </div>
+        <div class="label">Audit Score{% if prospect.grade %} ({{ prospect.grade }}){% endif %}</div>
+    </div>
+    <div class="card stat">
+        <div class="number">{{ prospect.vertical | title }}</div>
+        <div class="label">Vertical</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="font-size:1rem;">{{ prospect.domain }}</div>
+        <div class="label">Domain</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <!-- Left: Info + Email Composer -->
+    <div>
+        <!-- Contact Info -->
+        <div class="card">
+            <h2>Contact Info</h2>
+            <table>
+                <tr><td style="width:30%; color:var(--muted);">Email</td><td>{{ prospect.email or '—' }}</td></tr>
+                <tr><td style="color:var(--muted);">Phone</td><td>{{ prospect.phone or '—' }}</td></tr>
+                <tr><td style="color:var(--muted);">Contact</td><td>{{ prospect.contact_name or '—' }}</td></tr>
+                <tr><td style="color:var(--muted);">Added</td><td>{{ prospect.created_at[:10] if prospect.created_at else '—' }}</td></tr>
+                {% if prospect.lost_reason %}
+                <tr><td style="color:var(--muted);">Lost Reason</td><td style="color:var(--danger);">{{ prospect.lost_reason }}</td></tr>
+                {% endif %}
+            </table>
+            {% if prospect.notes %}
+            <div style="margin-top:0.75rem; padding:0.5rem; background:var(--gray-50); border-radius:4px; font-size:0.85rem;">
+                {{ prospect.notes }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Report Scores -->
+        {% if categories %}
+        <div class="card">
+            <h2>Audit Breakdown</h2>
+            <table>
+                <thead><tr><th>Category</th><th>Score</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for cat_name, cat_data in categories.items() %}
+                {% if cat_data is mapping %}
+                <tr>
+                    <td>{{ cat_name | replace('_', ' ') | title }}</td>
+                    <td>
+                        <span style="font-weight:600; color:{{ '#16a34a' if cat_data.score >= 70 else ('#f59e0b' if cat_data.score >= 50 else '#dc2626') }};">
+                            {{ cat_data.score }}/100
+                        </span>
+                    </td>
+                    <td style="font-size:0.8rem; color:var(--muted);">{{ cat_data.status or '' }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- Email Composer -->
+        <div class="card">
+            <h2>Compose Outreach</h2>
+            <div style="margin-bottom:0.75rem;">
+                <label style="font-size:0.8rem; color:var(--muted);">Template</label>
+                <select id="email-template" onchange="loadTemplate(this.value)" style="width:100%; padding:0.35rem; font-size:0.85rem;">
+                    <option value="">Select a template...</option>
+                    <option value="initial">Initial Outreach</option>
+                    <option value="followup1">Follow-up #1 (Day 3)</option>
+                    <option value="followup2">Breakup Email (Day 7)</option>
+                    <option value="proposal">Proposal</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.8rem; color:var(--muted);">Subject</label>
+                <input type="text" id="email-subject" style="width:100%;" placeholder="Email subject line">
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.8rem; color:var(--muted);">Body</label>
+                <textarea id="email-body" rows="14" style="width:100%; font-size:0.85rem; line-height:1.5;" placeholder="Select a template or write your email..."></textarea>
+            </div>
+            <div class="flex" style="gap:0.5rem;">
+                <button class="btn btn-primary btn-sm" onclick="copyEmail()">Copy to Clipboard</button>
+                <button class="btn btn-outline btn-sm" onclick="logEmail()">Log as Sent</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Activity Timeline -->
+    <div>
+        <!-- Add Note -->
+        <div class="card">
+            <h2>Add Note / Log Call</h2>
+            <form method="POST" action="{{ url_for('add_prospect_note', prospect_id=prospect.id) }}">
+                <div class="form-group">
+                    <select name="activity_type" style="width:100%; padding:0.35rem; font-size:0.85rem;">
+                        <option value="note">Note</option>
+                        <option value="call_logged">Call Logged</option>
+                        <option value="meeting">Meeting</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea name="body" rows="3" placeholder="What happened?" style="width:100%; font-size:0.85rem;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-outline btn-sm">Save</button>
+            </form>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card">
+            <h2>Activity Timeline</h2>
+            {% if activities %}
+            <div class="timeline">
+                {% for a in activities %}
+                <div class="timeline-item">
+                    <div class="timeline-dot
+                        {% if a.activity_type == 'email_sent' %}dot-blue
+                        {% elif a.activity_type == 'stage_change' %}dot-purple
+                        {% elif a.activity_type == 'call_logged' %}dot-green
+                        {% elif a.activity_type == 'meeting' %}dot-green
+                        {% else %}dot-gray{% endif %}">
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <span class="timeline-type">
+                                {% if a.activity_type == 'stage_change' %}
+                                    Stage: {{ (a.stage_from or '?') | replace('_', ' ') | title }} → {{ (a.stage_to or '?') | replace('_', ' ') | title }}
+                                {% elif a.activity_type == 'email_sent' %}
+                                    Email Sent{% if a.subject %}: {{ a.subject }}{% endif %}
+                                {% elif a.activity_type == 'call_logged' %}
+                                    Call Logged
+                                {% elif a.activity_type == 'meeting' %}
+                                    Meeting
+                                {% else %}
+                                    Note
+                                {% endif %}
+                            </span>
+                            <span class="timeline-date">{{ a.created_at[:16] | replace('T', ' ') }}</span>
+                        </div>
+                        {% if a.body %}
+                        <div class="timeline-body">{{ a.body[:500] }}</div>
+                        {% endif %}
+                        {% if a.created_by %}
+                        <div class="timeline-by">by {{ a.created_by }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color:var(--muted); font-size:0.85rem;">No activity yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline-item { display: flex; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.timeline-item:last-child { border-bottom: none; }
+.timeline-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 0.35rem; flex-shrink: 0; }
+.dot-blue { background: #2563eb; }
+.dot-purple { background: #7c3aed; }
+.dot-green { background: #16a34a; }
+.dot-gray { background: #9ca3af; }
+.timeline-content { flex: 1; min-width: 0; }
+.timeline-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.timeline-type { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.timeline-date { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+.timeline-body { font-size: 0.8rem; color: var(--text-light); margin-top: 0.25rem; white-space: pre-wrap; }
+.timeline-by { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+</style>
+
+<script>
+const TEMPLATES = {{ templates_json | safe }};
+
+function loadTemplate(templateKey) {
+    if (!templateKey || !TEMPLATES[templateKey]) return;
+    const t = TEMPLATES[templateKey];
+    document.getElementById('email-subject').value = t.subject;
+    document.getElementById('email-body').value = t.body;
+}
+
+function copyEmail() {
+    const subject = document.getElementById('email-subject').value;
+    const body = document.getElementById('email-body').value;
+    const full = 'Subject: ' + subject + '\n\n' + body;
+    navigator.clipboard.writeText(full).then(() => {
+        alert('Copied to clipboard!');
+    });
+}
+
+async function logEmail() {
+    const subject = document.getElementById('email-subject').value;
+    const body = document.getElementById('email-body').value;
+    if (!subject && !body) { alert('Write or load an email first.'); return; }
+    if (!confirm('Log this email as sent?')) return;
+
+    const resp = await fetch('/api/prospect/log-email', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            prospect_id: '{{ prospect.id }}',
+            subject: subject,
+            body: body,
+        }),
+    });
+    const data = await resp.json();
+    if (data.ok) location.reload();
+    else alert(data.error || 'Failed to log email');
+}
+
+async function changeStage(newStage) {
+    let lostReason = '';
+    if (newStage === 'lost') {
+        lostReason = prompt('Why was this prospect lost? (required)');
+        if (!lostReason) {
+            document.getElementById('stage-select').value = '{{ prospect.stage }}';
+            return;
+        }
+    }
+    const resp = await fetch('/api/prospect/stage', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({prospect_id: '{{ prospect.id }}', stage: newStage, lost_reason: lostReason}),
+    });
+    const data = await resp.json();
+    if (data.ok) location.reload();
+    else alert(data.error || 'Failed');
+}
+</script>
+
+{% endblock %}

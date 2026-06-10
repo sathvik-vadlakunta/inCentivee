@@ -50,3 +50,12 @@ audit_logs/
 # Generated reports (contain customer data)
 practicerank-report-*.pdf
 audit-*.json
+
+# Astro site builds
+sites/*/dist/
+sites/*/.astro/
+
+# Uploaded client images (large, not tracked in git)
+# Uncomment if images are stored externally:
+# sites/*/public/images/team/*.jpg
+# sites/*/public/images/team/*.png

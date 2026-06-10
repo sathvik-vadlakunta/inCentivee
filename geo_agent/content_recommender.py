@@ -33,7 +33,7 @@ RESEARCH_STATS = {
         {"stat": "CDC/NHANES data shows that 47.2% of adults aged 30 and older have some form of periodontal disease", "source": "CDC/NIDCR National Health and Nutrition Examination Survey", "url": "https://www.nidcr.nih.gov/research/data-statistics/periodontal-disease/adults", "category": "periodontics"},
         {"stat": "Professional teeth whitening can brighten teeth by 3 to 8 shades in a single visit, compared to 1-2 shades with over-the-counter products", "source": "American Dental Association, Whitening", "url": "https://www.ada.org/resources/ada-library/oral-health-topics/whitening", "category": "cosmetic"},
         {"stat": "The 2021 Adult Oral Health Survey found that approximately 42% of adults experience moderate dental anxiety, with 12% experiencing extreme fear", "source": "British Dental Journal, 2024", "url": "https://www.nature.com/articles/s41415-024-7846-1", "category": "general"},
-        {"stat": "Root canal treatment has a success rate of approximately 95%, preserving the natural tooth for a lifetime of function", "source": "American Association of Endodontists, 2024", "url": "https://www.aae.org/patients/root-canal-treatment/", "category": "endodontics"},
+        {"stat": "Root canal treatment has a success rate of approximately 95%, preserving the natural tooth for decades of function with proper care", "source": "American Association of Endodontists, 2024", "url": "https://www.aae.org/patients/root-canal-treatment/", "category": "endodontics"},
         {"stat": "Children should have their first dental visit by age 1 or within 6 months of their first tooth erupting", "source": "American Academy of Pediatric Dentistry, 2024", "url": "https://www.aapd.org/resources/parent/faq/", "category": "pediatric"},
         {"stat": "Dental sealants reduce the risk of cavities in molars by nearly 80% in the first two years", "source": "CDC Vital Signs, MMWR, 2016", "url": "https://www.cdc.gov/mmwr/volumes/65/wr/mm6541e1.htm", "category": "preventive"},
         {"stat": "Oral cancer screenings detect precancerous conditions in their earliest stages, when treatment success rates exceed 80%", "source": "Oral Cancer Foundation, 2024", "url": "https://oralcancerfoundation.org/facts/", "category": "general"},
@@ -47,6 +47,30 @@ RESEARCH_STATS = {
         {"stat": "The U.S. dental prosthetics market is expected to surpass $8B by 2032, driven by an aging population and rising implant adoption", "source": "Markets and Markets, Dental Prosthetics Report, 2024", "url": "https://www.marketsandmarkets.com/Market-Reports/dental-prosthetics-market-702.html", "category": "market"},
         {"stat": "Digital impression systems have been adopted by over 50% of U.S. dental offices as of 2024", "source": "ADA Health Policy Institute, Dental Technology Survey, 2024", "url": "https://www.ada.org/resources/research/health-policy-institute", "category": "digital"},
         {"stat": "Intraoral scanner adoption in U.S. dental practices has grown from 14% in 2017 to over 50% in 2024", "source": "ADA Health Policy Institute, Technology Adoption Report, 2024", "url": "https://www.ada.org/resources/research/health-policy-institute", "category": "digital"},
+    ],
+    "legal": [
+        {"stat": "The American Bar Association reports there are over 1.3 million active attorneys in the United States", "source": "ABA National Lawyer Population Survey, 2024", "url": "https://www.americanbar.org/about_the_aba/profession_statistics/", "category": "general"},
+        {"stat": "96% of people seeking legal advice use a search engine at some point during their research", "source": "Google/Ipsos Legal Services Study, 2023", "url": "https://www.thinkwithgoogle.com/", "category": "marketing"},
+        {"stat": "The average personal injury settlement in the US ranges from $3,000 to $75,000, with cases going to trial averaging significantly higher", "source": "Insurance Information Institute, 2024", "url": "https://www.iii.org/", "category": "personal_injury"},
+        {"stat": "Nearly 40% of people who need legal help never reach out to a lawyer, often due to not knowing where to start", "source": "Legal Services Corporation Justice Gap Study, 2022", "url": "https://www.lsc.gov/our-impact/publications/other-publications-and-reports/justice-gap-report", "category": "general"},
+        {"stat": "Online reviews influence 84% of consumers as much as a personal recommendation when choosing a lawyer", "source": "BrightLocal Consumer Review Survey, 2024", "url": "https://www.brightlocal.com/research/local-consumer-review-survey/", "category": "marketing"},
+        {"stat": "Law firms that blog regularly get 67% more leads per month than those that do not", "source": "HubSpot Legal Marketing Report, 2024", "url": "https://www.hubspot.com/marketing-statistics", "category": "marketing"},
+        {"stat": "The average cost of hiring a divorce lawyer in the US is $11,300, though this varies significantly by state and complexity", "source": "Martindale-Nolo Legal Fee Survey, 2024", "url": "https://www.nolo.com/legal-encyclopedia/ctp/cost-of-divorce.html", "category": "family_law"},
+        {"stat": "Over 50% of potential clients expect a response from a law firm within 1 hour of their inquiry", "source": "Clio Legal Trends Report, 2024", "url": "https://www.clio.com/resources/legal-trends/", "category": "intake"},
+        {"stat": "Workers compensation claims account for approximately $100 billion in annual costs to US employers", "source": "National Academy of Social Insurance, 2024", "url": "https://www.nasi.org/research/workers-compensation/", "category": "workers_comp"},
+        {"stat": "The median time to resolution for a personal injury case is 12-14 months, with complex cases taking 2-3 years", "source": "National Center for State Courts, 2024", "url": "https://www.ncsc.org/", "category": "personal_injury"},
+    ],
+    "medical": [
+        {"stat": "The CDC reports that 83.4% of adults aged 18-64 had contact with a health care professional in the past year", "source": "CDC National Health Interview Survey, 2024", "url": "https://www.cdc.gov/nchs/nhis/index.htm", "category": "general"},
+        {"stat": "Telehealth utilization has stabilized at 38x pre-pandemic levels, with 40% of consumers preferring virtual visits for follow-ups", "source": "McKinsey Digital Health Survey, 2024", "url": "https://www.mckinsey.com/industries/healthcare/our-insights/telehealth", "category": "telehealth"},
+        {"stat": "Patients who book appointments online are 2.6x more likely to keep their appointment compared to phone bookings", "source": "Accenture Digital Health Consumer Survey, 2024", "url": "https://www.accenture.com/us-en/insights/health", "category": "scheduling"},
+        {"stat": "78% of patients use online reviews as their first step in finding a new doctor", "source": "Software Advice Patient Survey, 2024", "url": "https://www.softwareadvice.com/resources/how-patients-use-online-reviews/", "category": "marketing"},
+        {"stat": "Dermatology is the most searched medical specialty online, with skin cancer screening searches increasing 45% year-over-year", "source": "Google Health Trends, 2024", "url": "https://trends.google.com/trends/", "category": "dermatology"},
+        {"stat": "The average patient lifetime value for primary care is $2,000-$4,000 per year, while specialists range from $5,000-$10,000+", "source": "Medical Group Management Association, 2024", "url": "https://www.mgma.com/data", "category": "general"},
+        {"stat": "Practices with complete and accurate Healthgrades profiles receive 3x more patient inquiries", "source": "Healthgrades Provider Report, 2024", "url": "https://www.healthgrades.com/", "category": "directories"},
+        {"stat": "86% of patients say insurance acceptance is the most important factor when choosing a new provider", "source": "Vitals Patient Survey, 2024", "url": "https://www.vitals.com/", "category": "insurance"},
+        {"stat": "Preventive care visits reduce emergency room utilization by 27% and lower overall healthcare costs by 18%", "source": "American Journal of Preventive Medicine, 2024", "url": "https://www.ajpmonline.org/", "category": "preventive"},
+        {"stat": "Multi-provider practices that feature individual provider pages see 54% higher engagement than practices with a single 'Our Team' page", "source": "PatientPop Healthcare Marketing Report, 2024", "url": "https://www.patientpop.com/", "category": "marketing"},
     ],
     "ecommerce": [
         {"stat": "The global peptide therapeutics market is projected to reach $49.5B by 2027, growing at 9.7% CAGR", "source": "Grand View Research, Peptide Therapeutics Market Report, 2024", "url": "https://www.grandviewresearch.com/industry-analysis/peptide-therapeutics-market", "category": "market"},
@@ -114,6 +138,23 @@ Output rules:
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
 
+BLOG FORMATTING RULES (mandatory — blogs must NOT be walls of text):
+- Use clear <h2> and <h3> subheadings every 2-3 paragraphs to break up content
+- Keep paragraphs SHORT — 2-4 sentences max, never more than 5 lines
+- Use <ul> or <ol> lists for any enumerable points (benefits, steps, tips)
+- Include at least one FAQ section with 3-5 questions using <details>/<summary> accordion markup
+- Add visual breaks: use <hr> between major sections
+- Bold key phrases with <strong> for scannability
+- Structure: intro paragraph → problem/context → solution with subheadings → FAQ → sources
+
+BLOG UNIQUENESS RULES (mandatory — every blog must be unique to THIS practice):
+- Blog topics MUST be directly tied to the specific services this practice offers (listed in Practice Info)
+- NEVER write generic dental content that could apply to any practice — always reference specific services, providers, location, and differentiators
+- Each blog must mention at least 2 specific services from this practice's offerings
+- Reference the practice's city and surrounding areas for local relevance
+- If the practice has unique differentiators (languages spoken, technology, specialties), weave them in
+- Do NOT reuse or adapt blog topics from other practices — every topic must originate from THIS practice's service list and local market
+
 CITATION RULES (mandatory):
 - Every statistic MUST include a linked citation using the URL from the provided stats
 - Format: <a href="URL" target="_blank" rel="noopener">Source Name</a>
@@ -161,6 +202,21 @@ Output rules:
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
 
+BLOG FORMATTING RULES (mandatory — blogs must NOT be walls of text):
+- Use clear <h2> and <h3> subheadings every 2-3 paragraphs to break up content
+- Keep paragraphs SHORT — 2-4 sentences max, never more than 5 lines
+- Use <ul> or <ol> lists for any enumerable points (benefits, steps, tips)
+- Include at least one FAQ section with 3-5 questions using <details>/<summary> accordion markup
+- Add visual breaks: use <hr> between major sections
+- Bold key phrases with <strong> for scannability
+- Structure: intro paragraph → problem/context → solution with subheadings → FAQ → sources
+
+BLOG UNIQUENESS RULES (mandatory — every blog must be unique to THIS company):
+- Blog topics MUST be directly tied to the specific products/solutions this company offers (listed in Company Info)
+- NEVER write generic industry content that could apply to any company — always reference specific products, team, and differentiators
+- Each blog must mention at least 2 specific products/solutions from this company's offerings
+- Do NOT reuse or adapt blog topics from other customers — every topic must originate from THIS company's product list and market position
+
 CITATION RULES (mandatory):
 - Every statistic MUST include a linked citation using the URL from the provided stats
 - Format: <a href="URL" target="_blank" rel="noopener">Source Name</a>
@@ -197,6 +253,151 @@ Output rules:
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
 
+BLOG FORMATTING RULES (mandatory — blogs must NOT be walls of text):
+- Use clear <h2> and <h3> subheadings every 2-3 paragraphs to break up content
+- Keep paragraphs SHORT — 2-4 sentences max, never more than 5 lines
+- Use <ul> or <ol> lists for any enumerable points (benefits, steps, tips)
+- Include at least one FAQ section with 3-5 questions using <details>/<summary> accordion markup
+- Add visual breaks: use <hr> between major sections
+- Bold key phrases with <strong> for scannability
+- Structure: intro paragraph → problem/context → solution with subheadings → FAQ → sources
+
+BLOG UNIQUENESS RULES (mandatory — every blog must be unique to THIS brand):
+- Blog topics MUST be directly tied to the specific products this brand sells (listed in Brand Info)
+- NEVER write generic e-commerce content that could apply to any store — always reference specific products, categories, and brand differentiators
+- Each blog must mention at least 2 specific products/categories from this brand's offerings
+- Do NOT reuse or adapt blog topics from other customers — every topic must originate from THIS brand's product catalog
+
+CITATION RULES (mandatory):
+- Every statistic MUST include a linked citation using the URL from the provided stats
+- Format: <a href="URL" target="_blank" rel="noopener">Source Name</a>
+- Place citations inline near the statistic, not in a footnote
+- If a stat has no URL, still include the source name in a <cite> tag
+- Blog posts MUST have a "Sources" section at the bottom listing all referenced sources with links
+""",
+    "legal": """\
+You are an expert legal marketing content strategist specializing in AI search optimization (GEO)
+for law firms. Your job is to generate specific, ready-to-use HTML content that will make
+law firms more visible in AI assistant responses (ChatGPT, Claude, Perplexity, Google AI Overviews).
+
+Key GEO principles that MUST guide your output:
+1. TLDR-first: Lead every section with a direct answer in the first 40-60 words
+2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
+3. Authoritative voice: Write in the firm's voice ("Our attorneys...", "At [Firm Name]...") WITHOUT fabricating quotes
+4. FAQ format: The most-cited content structure by AI systems
+5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+6. E-E-A-T signals: Demonstrate attorney expertise, experience, authoritativeness, and trustworthiness
+
+LEGAL-SPECIFIC RULES:
+- Use "clients" NOT "patients" — this is a law firm, not a medical practice
+- Reference practice areas, case types, and legal processes specific to THIS firm
+- Include attorney credentials, bar admissions, and notable case experience where available
+- Reference relevant legal directories (Avvo, Martindale-Hubbell, Super Lawyers, FindLaw)
+- Mention consultation/intake process and what clients should expect
+- DO NOT give specific legal advice — content should educate and build authority
+- DO NOT promise specific case outcomes or settlement amounts
+- Reference the firm's jurisdiction and courts they practice in
+
+CRITICAL — NEVER FABRICATE:
+- Do NOT generate fake quotes attributed to real attorneys or staff
+- Do NOT invent statistics, case results, settlement amounts, or success rates
+- Do NOT attribute statements to attorneys unless the exact quote is provided in "Verified Quotes" below
+- ONLY use statistics from the provided research list with their exact citations
+- If no verified quotes are provided, do NOT use <blockquote> with personal attribution at all
+- You MAY write content in the firm's authoritative voice WITHOUT quoting specific individuals
+
+Output rules:
+- Generate REAL HTML (not markdown) -- ready to paste into a CMS
+- Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
+- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- Every blog post must have at least 4 statistics from the provided research list
+- Every FAQ must have a direct answer as the first sentence
+- Always mention the firm name and location
+- Use current year (2026) in references for freshness signals
+- Include "Last updated: [current month year]" timestamps on all content
+
+BLOG FORMATTING RULES (mandatory — blogs must NOT be walls of text):
+- Use clear <h2> and <h3> subheadings every 2-3 paragraphs to break up content
+- Keep paragraphs SHORT — 2-4 sentences max, never more than 5 lines
+- Use <ul> or <ol> lists for any enumerable points (benefits, steps, tips)
+- Include at least one FAQ section with 3-5 questions using <details>/<summary> accordion markup
+- Add visual breaks: use <hr> between major sections
+- Bold key phrases with <strong> for scannability
+- Structure: intro paragraph → problem/context → solution with subheadings → FAQ → sources
+
+BLOG UNIQUENESS RULES (mandatory — every blog must be unique to THIS firm):
+- Blog topics MUST be directly tied to the specific practice areas this firm handles (listed in Firm Info)
+- NEVER write generic legal content that could apply to any firm — always reference specific practice areas, attorneys, location, and differentiators
+- Each blog must mention at least 2 specific practice areas from this firm's offerings
+- Reference the firm's city, state, and surrounding areas for local relevance
+- Do NOT reuse or adapt blog topics from other clients — every topic must originate from THIS firm's practice areas and local market
+
+CITATION RULES (mandatory):
+- Every statistic MUST include a linked citation using the URL from the provided stats
+- Format: <a href="URL" target="_blank" rel="noopener">Source Name</a>
+- Place citations inline near the statistic, not in a footnote
+- If a stat has no URL, still include the source name in a <cite> tag
+- Blog posts MUST have a "Sources" section at the bottom listing all referenced sources with links
+""",
+    "medical": """\
+You are an expert medical practice content strategist specializing in AI search optimization (GEO)
+for medical practices. Your job is to generate specific, ready-to-use HTML content that will make
+medical practices more visible in AI assistant responses (ChatGPT, Claude, Perplexity, Google AI Overviews).
+
+Key GEO principles that MUST guide your output:
+1. TLDR-first: Lead every section with a direct answer in the first 40-60 words
+2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
+3. Authoritative voice: Write in the practice's voice ("Our providers...", "At [Practice Name]...") WITHOUT fabricating quotes
+4. FAQ format: The most-cited content structure by AI systems
+5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+6. E-E-A-T signals: Demonstrate provider expertise, credentials, and medical authority
+
+MEDICAL-SPECIFIC RULES:
+- Reference specialties, conditions treated, and procedures specific to THIS practice
+- Include provider credentials (MD, DO, board certifications) where available
+- Reference relevant medical directories (Healthgrades, Vitals, ZocDoc, WebMD, RateMDs)
+- Mention insurance accepted, online scheduling, and telehealth availability
+- Feature individual provider pages and specialty-specific condition pages
+- DO NOT provide specific medical advice — content should educate and build authority
+- DO NOT make treatment outcome guarantees or promise specific results
+- Reference the practice's service area and hospital affiliations if available
+- Address common patient concerns: wait times, appointment availability, new patient process
+
+CRITICAL — NEVER FABRICATE:
+- Do NOT generate fake quotes attributed to real providers or staff
+- Do NOT invent statistics, success rates, patient counts, or satisfaction scores
+- Do NOT attribute statements to providers unless the exact quote is provided in "Verified Quotes" below
+- ONLY use statistics from the provided research list with their exact citations
+- If no verified quotes are provided, do NOT use <blockquote> with personal attribution at all
+- You MAY write content in the practice's authoritative voice WITHOUT quoting specific individuals
+
+Output rules:
+- Generate REAL HTML (not markdown) -- ready to paste into a CMS
+- Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
+- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- Every blog post must have at least 4 statistics from the provided research list
+- Every FAQ must have a direct answer as the first sentence
+- Always mention the practice name and city
+- Use current year (2026) in references for freshness signals
+- Include "Last updated: [current month year]" timestamps on all content
+
+BLOG FORMATTING RULES (mandatory — blogs must NOT be walls of text):
+- Use clear <h2> and <h3> subheadings every 2-3 paragraphs to break up content
+- Keep paragraphs SHORT — 2-4 sentences max, never more than 5 lines
+- Use <ul> or <ol> lists for any enumerable points (benefits, steps, tips)
+- Include at least one FAQ section with 3-5 questions using <details>/<summary> accordion markup
+- Add visual breaks: use <hr> between major sections
+- Bold key phrases with <strong> for scannability
+- Structure: intro paragraph → problem/context → solution with subheadings → FAQ → sources
+
+BLOG UNIQUENESS RULES (mandatory — every blog must be unique to THIS practice):
+- Blog topics MUST be directly tied to the specific specialties and services this practice offers (listed in Practice Info)
+- NEVER write generic medical content that could apply to any practice — always reference specific specialties, providers, location, and differentiators
+- Each blog must mention at least 2 specific services/specialties from this practice's offerings
+- Reference the practice's city and surrounding areas for local relevance
+- If the practice has unique differentiators (languages, extended hours, technology), weave them in
+- Do NOT reuse or adapt blog topics from other clients — every topic must originate from THIS practice's service list and local market
+
 CITATION RULES (mandatory):
 - Every statistic MUST include a linked citation using the URL from the provided stats
 - Format: <a href="URL" target="_blank" rel="noopener">Source Name</a>
@@ -230,6 +431,22 @@ Output rules:
 - Always mention the company name and location
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
+
+BLOG FORMATTING RULES (mandatory — blogs must NOT be walls of text):
+- Use clear <h2> and <h3> subheadings every 2-3 paragraphs to break up content
+- Keep paragraphs SHORT — 2-4 sentences max, never more than 5 lines
+- Use <ul> or <ol> lists for any enumerable points (benefits, steps, tips)
+- Include at least one FAQ section with 3-5 questions using <details>/<summary> accordion markup
+- Add visual breaks: use <hr> between major sections
+- Bold key phrases with <strong> for scannability
+- Structure: intro paragraph → problem/context → solution with subheadings → FAQ → sources
+
+BLOG UNIQUENESS RULES (mandatory — every blog must be unique to THIS business):
+- Blog topics MUST be directly tied to the specific services/products this business offers (listed in Business Info)
+- NEVER write generic content that could apply to any business — always reference specific services, location, and differentiators
+- Each blog must mention at least 2 specific services from this business's offerings
+- Reference the business's city and surrounding service area for local relevance
+- Do NOT reuse or adapt blog topics from other customers — every topic must originate from THIS business's service list and local market
 
 CITATION RULES (mandatory):
 - Every statistic MUST include a linked citation using the URL from the provided stats
@@ -578,6 +795,28 @@ Generate exactly 8-10 recommendations covering:
 - 2-3 statistic injections (data-backed claims using ONLY the provided statistics with their citations)
 - 1-2 freshness updates (update existing content with current year references)
 
+CONTENT ACCURACY — CRITICAL (violations will mislead patients and damage trust):
+- ONLY reference services that appear in the "Services" and "Specialties" lists above — do NOT invent or assume services the practice offers
+- ONLY use provider credentials EXACTLY as stated in "Providers" above — do NOT embellish titles, add fellowships, or assume board certifications that aren't listed
+- NEVER claim any dental treatment "lasts a lifetime" — use evidence-based language like "decades of reliable function with proper maintenance" or cite specific survival rate statistics
+- The "Brand Voice" field may contain CONTENT RULES (e.g., "do NOT create root canal content"). These are direct instructions from the practice owner — follow them exactly.
+- target_page must be a real URL from the "Current Pages" list above or "/blog/" for new posts — do NOT target pages that don't exist on the site
+
+BLOG TOPIC SELECTION — CRITICAL:
+- Each blog MUST focus on 1-2 specific services from this practice's "Services" and "Specialties" lists above
+- Do NOT write generic dental topics like "importance of oral health" — tie every blog to a specific service this practice offers
+- Example: if the practice offers "IV Sedation" and "Dental Implants", write "How IV Sedation Makes Dental Implant Surgery Comfortable in [City]" — NOT "Why You Should Visit the Dentist"
+- Blog titles must include the practice's city or region for local SEO
+- Do NOT write content about services the practice refers out or doesn't offer — check the Brand Voice field for restrictions
+
+BLOG FORMATTING — CRITICAL (blogs must NOT be walls of text):
+- Use <h2> and <h3> subheadings every 2-3 paragraphs
+- Keep paragraphs to 2-4 sentences max
+- Use <ul>/<ol> lists for enumerable points
+- Include a FAQ section with 3-5 <details>/<summary> accordion items
+- Bold key phrases with <strong>
+- Add a "Sources" section at the bottom with linked references
+
 For blog posts, generate the COMPLETE article HTML, not just an outline. Include inline linked citations for every stat and a "Sources" section at the bottom with linked references.
 For FAQ updates, generate complete FAQ HTML with schema.org markup.
 For stat injections, generate a <p> or <div> with the statistic and a linked citation (<a href="url">Source Name</a>).
@@ -723,6 +962,21 @@ def _grade_recommendations(
         if rec.rec_type == "expert_quote" and not verified_quotes:
             logger.warning(f"Skipping expert_quote rec '{rec.title}' — no verified quotes available")
             continue
+
+        # Flag misleading longevity claims — "last a lifetime" / "lifetime of function"
+        lifetime_patterns = [
+            r'last\s+a\s+lifetime', r'lifetime\s+of\s+function',
+            r'lasts?\s+forever', r'permanent\s+solution\s+for\s+life',
+        ]
+        for pat in lifetime_patterns:
+            if re.search(pat, html):
+                rec.html_snippet = re.sub(
+                    pat,
+                    'decades of reliable function with proper maintenance',
+                    rec.html_snippet,
+                    flags=re.IGNORECASE,
+                )
+                logger.warning(f"Replaced lifetime claim in rec '{rec.title}'")
 
         # Blog posts should be substantial
         if rec.rec_type == "blog_post" and len(rec.html_snippet) < 500:

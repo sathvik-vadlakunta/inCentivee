@@ -376,9 +376,11 @@ def process_customer(
                 "grading_issues": len(grading_issues),
             })
         except Exception as e:
-            logger.error(f"  Analysis failed for {customer.id}: {type(e).__name__}")
-            summary["errors"].append(f"Analysis failed: {type(e).__name__}")
-            audit.log(customer.id, "claude_analysis_failed", {"error": type(e).__name__})
+            import traceback
+            logger.error(f"  Analysis failed for {customer.id}: {type(e).__name__}: {e}")
+            logger.error(traceback.format_exc())
+            summary["errors"].append(f"Analysis failed: {type(e).__name__}: {e}")
+            audit.log(customer.id, "claude_analysis_failed", {"error": f"{type(e).__name__}: {e}"})
             _finish("analysis", status="failed", error_message=str(e))
             analysis = {}
 
@@ -708,6 +710,54 @@ def _publish_for_platform(customer: Customer, platform: str, schema_html: str, s
         except Exception as e:
             logger.error(f"  Squarespace publish failed: {type(e).__name__}")
             summary["errors"].append(f"Squarespace publish failed: {type(e).__name__}")
+
+    elif platform == "wordpress":
+        # WordPress: schema + files via PracticeRank plugin REST API
+        audit.log(customer.id, "publish_start", {"platform": "wordpress"})
+        try:
+            from geo_agent.publishers.wordpress import WordPressPublisher
+            from geo_agent.secrets import get_secrets
+            secrets = get_secrets()
+            wp_api_key = secrets.get_customer_secret(customer.id, "WP_API_KEY")
+            if wp_api_key:
+                publisher = WordPressPublisher(
+                    site_url=f"https://{customer.domain}",
+                    api_key=wp_api_key,
+                )
+                health = publisher.health_check()
+                if health:
+                    # Parse schema HTML back into JSON-LD dicts for the WP API
+                    import re
+                    import json as _json
+                    schema_blocks = re.findall(
+                        r'<script[^>]*application/ld\+json[^>]*>(.*?)</script>',
+                        schema_html, re.DOTALL,
+                    )
+                    global_schemas = []
+                    for block in schema_blocks:
+                        try:
+                            global_schemas.append(_json.loads(block.strip()))
+                        except _json.JSONDecodeError:
+                            pass
+
+                    if global_schemas:
+                        result = publisher.push_schema(global_schemas=global_schemas)
+                        if result:
+                            summary["changes"].append("Schema markup published to WordPress")
+                            audit.log(customer.id, "schema_injected", {"schema_blocks": len(global_schemas)})
+                        else:
+                            summary["errors"].append("Failed to push schema to WordPress")
+                    else:
+                        summary["changes"].append("No schema blocks to push")
+                else:
+                    summary["errors"].append("WordPress PracticeRank plugin unreachable")
+                publisher.close()
+            else:
+                summary["changes"].append("WordPress: no WP_API_KEY configured — manual publish needed")
+                logger.info("  No WP_API_KEY — schema needs manual injection")
+        except Exception as e:
+            logger.error(f"  WordPress publish failed: {type(e).__name__}: {e}")
+            summary["errors"].append(f"WordPress publish failed: {type(e).__name__}")
 
     else:
         # Generic platform: just stage files, manual publish needed

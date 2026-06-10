@@ -6,8 +6,11 @@ All secrets (API keys, tokens) stay in env vars / secrets manager — never in S
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import os
+import secrets
 import sqlite3
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -17,7 +20,7 @@ from geo_agent.config import Customer, Provider
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 8
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -118,7 +121,8 @@ CREATE TABLE IF NOT EXISTS runs (
     errors_json TEXT NOT NULL DEFAULT '[]',
     approved INTEGER NOT NULL DEFAULT 0,
     approved_at TEXT,
-    published_at TEXT
+    published_at TEXT,
+    pid INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS kpis (
@@ -239,6 +243,98 @@ CREATE TABLE IF NOT EXISTS webflow_collections (
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
     UNIQUE(customer_id, collection_type)
 );
+
+-- Competitor tracking (enhanced - domain-based)
+CREATE TABLE IF NOT EXISTS competitor_domains (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    competitor_domain TEXT NOT NULL,
+    competitor_name TEXT NOT NULL DEFAULT '',
+    discovered_via TEXT DEFAULT 'manual',
+    rating REAL DEFAULT 0,
+    review_count INTEGER DEFAULT 0,
+    address TEXT DEFAULT '',
+    place_id TEXT DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE(customer_id, competitor_domain)
+);
+
+-- Review tracking
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'google',
+    rating INTEGER NOT NULL,
+    review_text TEXT,
+    reviewer_name TEXT,
+    review_date TEXT,
+    sentiment TEXT,
+    themes_json TEXT DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+-- Citations
+CREATE TABLE IF NOT EXISTS citations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    directory TEXT NOT NULL,
+    listed INTEGER NOT NULL DEFAULT 0,
+    nap_match INTEGER NOT NULL DEFAULT 0,
+    url_correct INTEGER NOT NULL DEFAULT 0,
+    listing_url TEXT,
+    last_checked TEXT,
+    UNIQUE(customer_id, directory)
+);
+
+-- GBP audit
+CREATE TABLE IF NOT EXISTS gbp_audit (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    details_json TEXT NOT NULL DEFAULT '{}',
+    UNIQUE(customer_id, date)
+);
+
+-- Page content scores
+CREATE TABLE IF NOT EXISTS page_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    page_url TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    word_count INTEGER DEFAULT 0,
+    readability_grade REAL,
+    breakdown_json TEXT NOT NULL DEFAULT '{}',
+    date TEXT NOT NULL,
+    UNIQUE(customer_id, page_url, date)
+);
+
+-- Topic clusters
+CREATE TABLE IF NOT EXISTS topic_clusters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    cluster_name TEXT NOT NULL,
+    pillar_page_url TEXT,
+    keywords_json TEXT NOT NULL DEFAULT '[]',
+    gap_pages_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+    UNIQUE(customer_id, cluster_name)
+);
+
+-- AI readiness scores
+CREATE TABLE IF NOT EXISTS ai_readiness_scores (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    breakdown_json TEXT NOT NULL DEFAULT '{}',
+    UNIQUE(customer_id, date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_competitor_domains_customer ON competitor_domains(customer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_customer ON reviews(customer_id);
+CREATE INDEX IF NOT EXISTS idx_citations_customer ON citations(customer_id);
+CREATE INDEX IF NOT EXISTS idx_page_scores_customer ON page_scores(customer_id);
 """
 
 
@@ -275,6 +371,11 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE customers ADD COLUMN business_type TEXT NOT NULL DEFAULT 'practice'")
         if "verified_quotes" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN verified_quotes TEXT NOT NULL DEFAULT '[]'")
+
+        # Migration: store OS pid of the pipeline subprocess so runs can be truly cancelled / reaped
+        run_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(runs)").fetchall()]
+        if "pid" not in run_cols:
+            self.conn.execute("ALTER TABLE runs ADD COLUMN pid INTEGER")
 
         # Migration v1 → v2: platform-aware content publishing + squarespace credentials
         rec_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(content_recommendations)").fetchall()]
@@ -325,10 +426,260 @@ class CustomerDB:
             CREATE INDEX IF NOT EXISTS idx_ai_results_run ON ai_mention_results(run_id);
             CREATE INDEX IF NOT EXISTS idx_ai_results_customer ON ai_mention_results(customer_id, engine);
         """)
+        # Migration v3 → v4: GSC daily metrics table
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS gsc_daily_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                clicks INTEGER NOT NULL DEFAULT 0,
+                impressions INTEGER NOT NULL DEFAULT 0,
+                ctr REAL NOT NULL DEFAULT 0.0,
+                position REAL NOT NULL DEFAULT 0.0,
+                UNIQUE(customer_id, date)
+            );
+            CREATE INDEX IF NOT EXISTS idx_gsc_daily_customer ON gsc_daily_metrics(customer_id, date);
+        """)
+        # Migration v4 → v5: Add prompt_set to ai_mention_runs for benchmark tracking
+        try:
+            self.conn.execute("ALTER TABLE ai_mention_runs ADD COLUMN prompt_set TEXT NOT NULL DEFAULT 'comprehensive'")
+        except Exception:
+            pass  # Column already exists
+        self.conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_runs_prompt_set ON ai_mention_runs(customer_id, prompt_set, run_date)")
+
+        # Migration v5: Dashboard users table
+        self.conn.execute("""
+            CREATE TABLE IF NOT EXISTS dashboard_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                display_name TEXT NOT NULL DEFAULT '',
+                role TEXT NOT NULL DEFAULT 'admin',
+                active INTEGER NOT NULL DEFAULT 1,
+                last_login TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            )
+        """)
+
+        # Migration v5 → v6: SEO tools expansion tables
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS customer_integrations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                integration TEXT NOT NULL,
+                config_json TEXT NOT NULL DEFAULT '{}',
+                status TEXT NOT NULL DEFAULT 'not_configured',
+                last_checked TEXT,
+                last_error TEXT,
+                UNIQUE(customer_id, integration)
+            );
+            CREATE INDEX IF NOT EXISTS idx_integrations_customer ON customer_integrations(customer_id);
+
+            CREATE TABLE IF NOT EXISTS keyword_tracking (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                keyword TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT 'manual',
+                is_tracked INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                UNIQUE(customer_id, keyword)
+            );
+            CREATE INDEX IF NOT EXISTS idx_keywords_customer ON keyword_tracking(customer_id);
+
+            CREATE TABLE IF NOT EXISTS keyword_ranks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                keyword TEXT NOT NULL,
+                date TEXT NOT NULL,
+                position REAL,
+                clicks INTEGER DEFAULT 0,
+                impressions INTEGER DEFAULT 0,
+                ctr REAL DEFAULT 0.0,
+                UNIQUE(customer_id, keyword, date)
+            );
+            CREATE INDEX IF NOT EXISTS idx_keyword_ranks_lookup ON keyword_ranks(customer_id, keyword, date);
+
+            CREATE TABLE IF NOT EXISTS site_audits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                audit_date TEXT NOT NULL,
+                performance_score INTEGER,
+                accessibility_score INTEGER,
+                seo_score INTEGER,
+                best_practices_score INTEGER,
+                issues_json TEXT NOT NULL DEFAULT '[]',
+                raw_data_json TEXT NOT NULL DEFAULT '{}',
+                UNIQUE(customer_id, audit_date)
+            );
+            CREATE INDEX IF NOT EXISTS idx_site_audits_customer ON site_audits(customer_id, audit_date);
+
+            CREATE TABLE IF NOT EXISTS audit_issues (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                audit_id INTEGER REFERENCES site_audits(id),
+                category TEXT NOT NULL,
+                severity TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                fix_instruction TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'open',
+                fixed_date TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_issues_customer ON audit_issues(customer_id, status);
+
+            CREATE TABLE IF NOT EXISTS backlinks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                linking_domain TEXT NOT NULL,
+                link_count INTEGER NOT NULL DEFAULT 1,
+                first_seen TEXT NOT NULL,
+                last_seen TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'active',
+                UNIQUE(customer_id, linking_domain)
+            );
+            CREATE INDEX IF NOT EXISTS idx_backlinks_customer ON backlinks(customer_id, status);
+
+            CREATE TABLE IF NOT EXISTS content_topics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                topic TEXT NOT NULL,
+                target_keyword TEXT NOT NULL DEFAULT '',
+                source TEXT NOT NULL DEFAULT 'manual',
+                priority TEXT NOT NULL DEFAULT 'medium',
+                status TEXT NOT NULL DEFAULT 'suggested',
+                content_rec_id TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                notes TEXT NOT NULL DEFAULT ''
+            );
+            CREATE INDEX IF NOT EXISTS idx_content_topics_customer ON content_topics(customer_id, status);
+        """)
+
+        # Migration: add rating/review_count/address/place_id to competitor_domains
+        for col, default in [("rating", "0"), ("review_count", "0"), ("address", "''"), ("place_id", "''")]:
+            try:
+                self.conn.execute(f"ALTER TABLE competitor_domains ADD COLUMN {col} {'REAL' if col == 'rating' else 'INTEGER' if col == 'review_count' else 'TEXT'} DEFAULT {default}")
+            except Exception:
+                pass
+
         # Migration: map old onboarding_step values to new 9-column board
         self.conn.execute("UPDATE customers SET onboarding_step = 'outreach' WHERE onboarding_step = 'contacted'")
         self.conn.execute("UPDATE customers SET onboarding_step = 'setup' WHERE onboarding_step IN ('access_pending', 'access_granted')")
         self.conn.execute("UPDATE customers SET onboarding_step = 'review' WHERE onboarding_step IN ('audit_setup', 'review_approve')")
+
+        # Migration v6 → v7: AI response entity extraction table
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS ai_response_entities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                result_id INTEGER NOT NULL,
+                run_id TEXT NOT NULL,
+                customer_id TEXT NOT NULL,
+                entity_name TEXT NOT NULL,
+                entity_name_normalized TEXT NOT NULL,
+                entity_type TEXT NOT NULL DEFAULT 'business',
+                is_customer INTEGER NOT NULL DEFAULT 0,
+                position INTEGER,
+                engine TEXT NOT NULL,
+                prompt TEXT NOT NULL,
+                prompt_category TEXT NOT NULL DEFAULT 'general',
+                run_date TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                FOREIGN KEY (result_id) REFERENCES ai_mention_results(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_entities_customer ON ai_response_entities(customer_id, run_date);
+            CREATE INDEX IF NOT EXISTS idx_entities_name ON ai_response_entities(entity_name_normalized, customer_id);
+            CREATE INDEX IF NOT EXISTS idx_entities_run ON ai_response_entities(run_id);
+        """)
+
+        # Migration v7 → v8: PracticeRank score history table
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS practicerank_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                overall_score INTEGER NOT NULL,
+                ai_visibility INTEGER,
+                search_growth INTEGER,
+                technical_health INTEGER,
+                content_velocity INTEGER,
+                reputation INTEGER,
+                breakdown_json TEXT NOT NULL DEFAULT '{}',
+                UNIQUE(customer_id, date)
+            );
+            CREATE INDEX IF NOT EXISTS idx_pr_scores_customer ON practicerank_scores(customer_id, date);
+        """)
+
+        # Migration v8 → v9: Landing page report tracking
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS landing_page_reports (
+                id              TEXT PRIMARY KEY,
+                lead_id         TEXT NOT NULL,
+                customer_id     TEXT,
+                timestamp       TEXT NOT NULL,
+                practice_url    TEXT NOT NULL,
+                domain          TEXT NOT NULL,
+                vertical        TEXT DEFAULT 'dental',
+                email           TEXT,
+                contact_name    TEXT,
+                practice_name   TEXT,
+                city            TEXT,
+                state           TEXT,
+                overall_score   INTEGER,
+                grade           TEXT,
+                data_confidence TEXT,
+                revenue_lost    TEXT,
+                category_scores TEXT,
+                competitor_count INTEGER DEFAULT 0,
+                full_report     TEXT,
+                synced_at       TEXT NOT NULL,
+                FOREIGN KEY (customer_id) REFERENCES customers(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_lpr_domain ON landing_page_reports(domain);
+            CREATE INDEX IF NOT EXISTS idx_lpr_customer ON landing_page_reports(customer_id);
+            CREATE INDEX IF NOT EXISTS idx_lpr_timestamp ON landing_page_reports(timestamp DESC);
+            CREATE INDEX IF NOT EXISTS idx_lpr_email ON landing_page_reports(email);
+        """)
+
+        # Migration v9 → v10: Prospects / sales pipeline
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS prospects (
+                id TEXT PRIMARY KEY,
+                domain TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                email TEXT,
+                phone TEXT,
+                contact_name TEXT,
+                vertical TEXT DEFAULT 'dental',
+                stage TEXT NOT NULL DEFAULT 'new_lead',
+                lost_reason TEXT,
+                report_id TEXT,
+                overall_score INTEGER,
+                grade TEXT,
+                report_data TEXT,
+                stripe_checkout_id TEXT,
+                stripe_customer_id TEXT,
+                notes TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                FOREIGN KEY (report_id) REFERENCES landing_page_reports(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_prospects_stage ON prospects(stage);
+            CREATE INDEX IF NOT EXISTS idx_prospects_domain ON prospects(domain);
+
+            CREATE TABLE IF NOT EXISTS prospect_activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                prospect_id TEXT NOT NULL,
+                activity_type TEXT NOT NULL,
+                stage_from TEXT,
+                stage_to TEXT,
+                subject TEXT,
+                body TEXT,
+                created_by TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                FOREIGN KEY (prospect_id) REFERENCES prospects(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_activities_prospect ON prospect_activities(prospect_id);
+            CREATE INDEX IF NOT EXISTS idx_activities_type ON prospect_activities(activity_type);
+        """)
 
         self.conn.execute(
             "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
@@ -879,11 +1230,11 @@ class CustomerDB:
         """Save an AI mention check run summary."""
         self.conn.execute(
             """INSERT OR REPLACE INTO ai_mention_runs
-               (id, customer_id, run_date, total_mentions, total_queries, mention_rate, avg_position, engines_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+               (id, customer_id, run_date, total_mentions, total_queries, mention_rate, avg_position, engines_json, prompt_set)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (run["id"], run["customer_id"], run["run_date"], run["total_mentions"],
              run["total_queries"], run["mention_rate"], run.get("avg_position"),
-             json.dumps(run.get("engines", {}))),
+             json.dumps(run.get("engines", {})), run.get("prompt_set", "benchmark")),
         )
         self.conn.commit()
 
@@ -1018,13 +1369,16 @@ class CustomerDB:
             counts["total"] += r["cnt"]
         return counts
 
-    def get_latest_ai_run_summary(self, customer_id: str) -> dict | None:
-        """Return {mention_count, total_queries, mention_rate} from most recent run."""
+    def get_latest_ai_run_summary(self, customer_id: str, prompt_set: str = "benchmark") -> dict | None:
+        """Return {mention_count, total_queries, mention_rate} from most recent run.
+
+        Filters by prompt_set so dashboard shows benchmark-consistent data.
+        """
         cur = self.conn.execute(
             """SELECT total_mentions, total_queries, mention_rate
-               FROM ai_mention_runs WHERE customer_id = ?
+               FROM ai_mention_runs WHERE customer_id = ? AND prompt_set = ?
                ORDER BY run_date DESC LIMIT 1""",
-            (customer_id,),
+            (customer_id, prompt_set),
         )
         row = cur.fetchone()
         if not row:
@@ -1045,6 +1399,355 @@ class CustomerDB:
         )
         row = cur.fetchone()
         return row["published_at"] if row else None
+
+    # --- Rolling Averages ---
+
+    def get_rolling_mention_stats(self, customer_id: str, window: int = 12, prompt_set: str = "benchmark") -> dict | None:
+        """Compute rolling average mention rate over last N runs.
+
+        Only compares runs with the same prompt_set (default: "benchmark")
+        so trend data is apples-to-apples.
+
+        Returns dict with current_rate, prev_rate, trend, run_count, rates list.
+        Returns None if fewer than 3 runs exist.
+        """
+        cur = self.conn.execute(
+            """SELECT mention_rate, total_mentions, total_queries, run_date
+               FROM ai_mention_runs WHERE customer_id = ? AND total_queries > 0
+               AND prompt_set = ?
+               ORDER BY run_date DESC LIMIT ?""",
+            (customer_id, prompt_set, window * 2),
+        )
+        rows = [dict(r) for r in cur.fetchall()]
+        if len(rows) < 3:
+            return None
+
+        current_window = rows[:window]
+        prev_window = rows[window:window * 2]
+
+        current_rate = sum(r["mention_rate"] for r in current_window) / len(current_window)
+        prev_rate = (sum(r["mention_rate"] for r in prev_window) / len(prev_window)) if prev_window else None
+
+        if prev_rate is not None:
+            diff = current_rate - prev_rate
+            trend = "up" if diff > 0.02 else ("down" if diff < -0.02 else "flat")
+        else:
+            trend = "flat"
+
+        return {
+            "current_rate": round(current_rate, 4),
+            "prev_rate": round(prev_rate, 4) if prev_rate is not None else None,
+            "trend": trend,
+            "run_count": len(rows),
+            "rates": [r["mention_rate"] for r in reversed(current_window)],
+            "dates": [r["run_date"] for r in reversed(current_window)],
+        }
+
+    # --- AI Response Entities ---
+
+    def save_ai_response_entity(self, entity: dict):
+        """Save a single extracted entity from an AI response."""
+        self.conn.execute(
+            """INSERT INTO ai_response_entities
+               (result_id, run_id, customer_id, entity_name, entity_name_normalized,
+                is_customer, position, engine, prompt, prompt_category, run_date)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (entity["result_id"], entity["run_id"], entity["customer_id"],
+             entity["entity_name"], entity["entity_name_normalized"],
+             1 if entity.get("is_customer") else 0, entity.get("position"),
+             entity["engine"], entity["prompt"], entity.get("prompt_category", "general"),
+             entity["run_date"]),
+        )
+        self.conn.commit()
+
+    def save_ai_response_entities_batch(self, entities: list[dict]):
+        """Batch insert entities (faster than one-by-one for backfill)."""
+        self.conn.executemany(
+            """INSERT INTO ai_response_entities
+               (result_id, run_id, customer_id, entity_name, entity_name_normalized,
+                is_customer, position, engine, prompt, prompt_category, run_date)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            [(e["result_id"], e["run_id"], e["customer_id"],
+              e["entity_name"], e["entity_name_normalized"],
+              1 if e.get("is_customer") else 0, e.get("position"),
+              e["engine"], e["prompt"], e.get("prompt_category", "general"),
+              e["run_date"]) for e in entities],
+        )
+        self.conn.commit()
+
+    def has_entities_for_run(self, run_id: str) -> bool:
+        """Check if entities have already been extracted for a run."""
+        cur = self.conn.execute(
+            "SELECT 1 FROM ai_response_entities WHERE run_id = ? LIMIT 1", (run_id,)
+        )
+        return cur.fetchone() is not None
+
+    def get_share_of_voice(self, customer_id: str, last_n_runs: int = 3) -> dict:
+        """Compute share of voice: what % of AI mentions go to each business.
+
+        Uses the last N runs. Returns dict with customer_share, competitors list,
+        total counts, and per-entity stats.
+        """
+        # Get recent run IDs
+        run_cur = self.conn.execute(
+            """SELECT id FROM ai_mention_runs
+               WHERE customer_id = ? AND total_queries > 0
+               ORDER BY run_date DESC LIMIT ?""",
+            (customer_id, last_n_runs),
+        )
+        run_ids = [r["id"] for r in run_cur.fetchall()]
+        if not run_ids:
+            return {"customer_share": 0, "competitors": [], "total_entity_mentions": 0}
+
+        placeholders = ",".join("?" * len(run_ids))
+        cur = self.conn.execute(
+            f"""SELECT entity_name_normalized, entity_name, is_customer,
+                       COUNT(*) as mention_count,
+                       AVG(position) as avg_position,
+                       COUNT(DISTINCT prompt) as unique_queries
+                FROM ai_response_entities
+                WHERE customer_id = ? AND run_id IN ({placeholders})
+                GROUP BY entity_name_normalized
+                ORDER BY mention_count DESC""",
+            [customer_id] + run_ids,
+        )
+        rows = [dict(r) for r in cur.fetchall()]
+
+        total = sum(r["mention_count"] for r in rows)
+        customer_mentions = sum(r["mention_count"] for r in rows if r["is_customer"])
+        customer_share = customer_mentions / total if total > 0 else 0
+
+        competitors = []
+        for r in rows:
+            if not r["is_customer"]:
+                competitors.append({
+                    "name": r["entity_name"],
+                    "normalized_name": r["entity_name_normalized"],
+                    "mention_count": r["mention_count"],
+                    "share": r["mention_count"] / total if total > 0 else 0,
+                    "avg_position": round(r["avg_position"], 1) if r["avg_position"] else None,
+                    "unique_queries": r["unique_queries"],
+                })
+
+        return {
+            "customer_share": round(customer_share, 4),
+            "customer_mentions": customer_mentions,
+            "competitors": competitors[:15],
+            "total_entity_mentions": total,
+            "total_unique_entities": len(rows),
+            "runs_analyzed": len(run_ids),
+        }
+
+    def get_competitor_entity_trend(self, customer_id: str, limit_weeks: int = 8) -> list[dict]:
+        """Get weekly share of voice trend for customer + top competitors.
+
+        Returns list of weekly snapshots with per-entity mention counts.
+        """
+        cur = self.conn.execute(
+            """SELECT entity_name_normalized, entity_name, is_customer,
+                      strftime('%Y-W%W', run_date) as week,
+                      COUNT(*) as mention_count
+               FROM ai_response_entities
+               WHERE customer_id = ?
+               GROUP BY entity_name_normalized, week
+               ORDER BY week DESC""",
+            (customer_id,),
+        )
+        rows = [dict(r) for r in cur.fetchall()]
+
+        # Find top entities (most mentions overall)
+        entity_totals: dict[str, int] = {}
+        for r in rows:
+            entity_totals[r["entity_name_normalized"]] = entity_totals.get(r["entity_name_normalized"], 0) + r["mention_count"]
+
+        # Get top 5 competitors + the customer
+        top_competitors = sorted(
+            [(k, v) for k, v in entity_totals.items()],
+            key=lambda x: x[1], reverse=True,
+        )[:8]
+        top_names = {t[0] for t in top_competitors}
+
+        # Build weekly data
+        weeks: dict[str, dict] = {}
+        name_map: dict[str, str] = {}  # normalized → display name
+        for r in rows:
+            norm = r["entity_name_normalized"]
+            if norm not in top_names:
+                continue
+            name_map[norm] = r["entity_name"]
+            w = r["week"]
+            if w not in weeks:
+                weeks[w] = {"week": w, "entities": {}}
+            weeks[w]["entities"][norm] = r["mention_count"]
+
+        sorted_weeks = sorted(weeks.values(), key=lambda x: x["week"], reverse=True)[:limit_weeks]
+        sorted_weeks.reverse()  # chronological
+
+        return {
+            "weeks": sorted_weeks,
+            "entities": [{"normalized_name": k, "name": name_map.get(k, k), "total": v}
+                         for k, v in sorted(top_competitors, key=lambda x: x[1], reverse=True)],
+        }
+
+    def auto_discover_competitors_from_entities(self, customer_id: str, min_mentions: int = 5) -> list[str]:
+        """Promote frequently-mentioned entities to competitor_domains.
+
+        Returns list of newly added competitor names.
+        """
+        cur = self.conn.execute(
+            """SELECT entity_name_normalized, entity_name, COUNT(*) as cnt
+               FROM ai_response_entities
+               WHERE customer_id = ? AND is_customer = 0
+               GROUP BY entity_name_normalized
+               HAVING cnt >= ?
+               ORDER BY cnt DESC LIMIT 20""",
+            (customer_id, min_mentions),
+        )
+        candidates = [dict(r) for r in cur.fetchall()]
+
+        # Get existing competitor names
+        existing = self.get_competitor_domains(customer_id)
+        existing_names = {c["competitor_name"].lower().strip() for c in existing if c.get("competitor_name")}
+
+        added = []
+        for c in candidates:
+            if c["entity_name_normalized"] in existing_names:
+                continue
+            try:
+                self.conn.execute(
+                    """INSERT INTO competitor_domains
+                       (customer_id, competitor_domain, competitor_name, discovered_via)
+                       VALUES (?, ?, ?, ?)""",
+                    (customer_id, "", c["entity_name"], "ai_response"),
+                )
+                added.append(c["entity_name"])
+            except Exception:
+                pass  # duplicate or constraint
+        if added:
+            self.conn.commit()
+        return added
+
+    # --- Weekly AI Summaries ---
+
+    def get_weekly_ai_summaries(self, customer_id: str, weeks: int = 12, prompt_set: str = "benchmark") -> list[dict]:
+        """Aggregate AI mention runs into weekly summaries.
+
+        Groups runs by ISO week, computes average mention rate, total mentions,
+        and week-over-week delta. Returns most recent weeks first.
+        """
+        cur = self.conn.execute(
+            """SELECT id, run_date, mention_rate, total_mentions, total_queries,
+                      avg_position, engines_json,
+                      strftime('%Y-W%W', run_date) as week
+               FROM ai_mention_runs
+               WHERE customer_id = ? AND total_queries > 0 AND prompt_set = ?
+               ORDER BY run_date DESC""",
+            (customer_id, prompt_set),
+        )
+        rows = [dict(r) for r in cur.fetchall()]
+        if not rows:
+            return []
+
+        # Group by week
+        weeks_data: dict[str, list[dict]] = {}
+        for row in rows:
+            w = row["week"]
+            weeks_data.setdefault(w, []).append(row)
+
+        # Compute per-week aggregates
+        summaries = []
+        sorted_weeks = sorted(weeks_data.keys(), reverse=True)[:weeks]
+
+        for i, w in enumerate(sorted_weeks):
+            runs = weeks_data[w]
+            avg_rate = sum(r["mention_rate"] for r in runs) / len(runs)
+            total_m = sum(r["total_mentions"] for r in runs)
+            total_q = sum(r["total_queries"] for r in runs)
+            positions = [r["avg_position"] for r in runs if r["avg_position"]]
+            avg_pos = sum(positions) / len(positions) if positions else None
+
+            # Week-over-week delta
+            prev_week = sorted_weeks[i + 1] if i + 1 < len(sorted_weeks) else None
+            delta_rate = None
+            delta_pct = None
+            if prev_week and prev_week in weeks_data:
+                prev_runs = weeks_data[prev_week]
+                prev_avg = sum(r["mention_rate"] for r in prev_runs) / len(prev_runs)
+                delta_rate = round(avg_rate - prev_avg, 4)
+                if prev_avg > 0:
+                    delta_pct = f"{delta_rate / prev_avg * 100:+.1f}%"
+
+            # Per-engine aggregates
+            engine_agg: dict[str, dict] = {}
+            for run in runs:
+                engines = json.loads(run["engines_json"]) if isinstance(run.get("engines_json"), str) else run.get("engines_json", {})
+                for eng, stats in engines.items():
+                    if eng not in engine_agg:
+                        engine_agg[eng] = {"mentions": 0, "total": 0}
+                    engine_agg[eng]["mentions"] += stats.get("mentions", 0)
+                    engine_agg[eng]["total"] += stats.get("total", 0)
+            for eng in engine_agg:
+                t = engine_agg[eng]["total"]
+                engine_agg[eng]["rate"] = round(engine_agg[eng]["mentions"] / t, 4) if t > 0 else 0
+
+            dates = sorted(r["run_date"] for r in runs)
+            summaries.append({
+                "week": w,
+                "week_start": dates[0],
+                "week_end": dates[-1],
+                "run_count": len(runs),
+                "avg_mention_rate": round(avg_rate, 4),
+                "total_mentions": total_m,
+                "total_queries": total_q,
+                "avg_position": round(avg_pos, 1) if avg_pos else None,
+                "delta_rate": delta_rate,
+                "delta_pct": delta_pct,
+                "best_run_rate": round(max(r["mention_rate"] for r in runs), 4),
+                "worst_run_rate": round(min(r["mention_rate"] for r in runs), 4),
+                "engines": engine_agg,
+                "runs": [{
+                    "id": r["id"],
+                    "date": r["run_date"],
+                    "mentions": r["total_mentions"],
+                    "total": r["total_queries"],
+                    "rate": r["mention_rate"],
+                    "avg_position": r["avg_position"],
+                } for r in sorted(runs, key=lambda x: x["run_date"])],
+            })
+
+        return summaries
+
+    # --- GSC Metrics ---
+
+    def save_gsc_daily(self, customer_id: str, date: str, clicks: int, impressions: int, ctr: float, position: float):
+        """Save a single day of GSC metrics (upsert)."""
+        self.conn.execute(
+            """INSERT OR REPLACE INTO gsc_daily_metrics (customer_id, date, clicks, impressions, ctr, position)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (customer_id, date, clicks, impressions, ctr, position),
+        )
+        self.conn.commit()
+
+    def get_gsc_daily(self, customer_id: str, limit: int = 90) -> list[dict]:
+        """Get daily GSC metrics, most recent first."""
+        cur = self.conn.execute(
+            "SELECT * FROM gsc_daily_metrics WHERE customer_id = ? ORDER BY date DESC LIMIT ?",
+            (customer_id, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_gsc_weekly_summary(self, customer_id: str, weeks: int = 12) -> list[dict]:
+        """Get weekly GSC summaries (clicks, impressions, avg position) for trending."""
+        cur = self.conn.execute(
+            """SELECT strftime('%Y-W%W', date) as week,
+                      SUM(clicks) as clicks, SUM(impressions) as impressions,
+                      AVG(ctr) as ctr, AVG(position) as position,
+                      MIN(date) as week_start
+               FROM gsc_daily_metrics WHERE customer_id = ?
+               GROUP BY week ORDER BY week DESC LIMIT ?""",
+            (customer_id, weeks),
+        )
+        return [dict(r) for r in cur.fetchall()]
 
     # --- Content Recommendations ---
 
@@ -1378,6 +2081,535 @@ class CustomerDB:
         self.conn.execute("DELETE FROM webflow_oauth_apps WHERE customer_id = ?", (customer_id,))
         self.conn.commit()
 
+    # --- Dashboard Users ---
+
+    @staticmethod
+    def _hash_password(password: str) -> str:
+        """Hash a password with scrypt + random salt."""
+        salt = secrets.token_hex(16)
+        h = hashlib.scrypt(password.encode(), salt=salt.encode(), n=16384, r=8, p=1, dklen=32)
+        return f"{salt}${h.hex()}"
+
+    @staticmethod
+    def _verify_password(password: str, password_hash: str) -> bool:
+        """Verify a password against a stored hash."""
+        try:
+            salt, h_hex = password_hash.split("$", 1)
+            h = hashlib.scrypt(password.encode(), salt=salt.encode(), n=16384, r=8, p=1, dklen=32)
+            return secrets.compare_digest(h.hex(), h_hex)
+        except (ValueError, KeyError):
+            return False
+
+    def create_user(self, username: str, password: str, display_name: str = "", role: str = "admin") -> bool:
+        """Create a dashboard user. Returns True on success, False if username exists."""
+        try:
+            self.conn.execute(
+                """INSERT INTO dashboard_users (username, password_hash, display_name, role)
+                   VALUES (?, ?, ?, ?)""",
+                (username.lower().strip(), self._hash_password(password), display_name, role),
+            )
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def authenticate_user(self, username: str, password: str) -> dict | None:
+        """Authenticate a user. Returns user dict on success, None on failure."""
+        cur = self.conn.execute(
+            "SELECT * FROM dashboard_users WHERE username = ? AND active = 1",
+            (username.lower().strip(),),
+        )
+        user = cur.fetchone()
+        if not user:
+            return None
+        if not self._verify_password(password, user["password_hash"]):
+            return None
+        # Update last_login
+        self.conn.execute(
+            "UPDATE dashboard_users SET last_login = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), user["id"]),
+        )
+        self.conn.commit()
+        return dict(user)
+
+    def list_users(self) -> list[dict]:
+        """List all dashboard users (without password hashes)."""
+        cur = self.conn.execute(
+            "SELECT id, username, display_name, role, active, last_login, created_at FROM dashboard_users"
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def update_user_password(self, username: str, new_password: str) -> bool:
+        """Update a user's password. Returns True if user found."""
+        cur = self.conn.execute(
+            "UPDATE dashboard_users SET password_hash = ? WHERE username = ?",
+            (self._hash_password(new_password), username.lower().strip()),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def delete_user(self, username: str) -> bool:
+        """Deactivate a user. Returns True if user found."""
+        cur = self.conn.execute(
+            "UPDATE dashboard_users SET active = 0 WHERE username = ?",
+            (username.lower().strip(),),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    # --- Customer Integrations ---
+
+    def save_integration(self, customer_id: str, integration: str, config: dict,
+                         status: str = "configured") -> None:
+        """Save or update a customer integration config."""
+        self.conn.execute(
+            """INSERT INTO customer_integrations (customer_id, integration, config_json, status)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(customer_id, integration) DO UPDATE SET
+                   config_json = excluded.config_json, status = excluded.status""",
+            (customer_id, integration, json.dumps(config), status),
+        )
+        self.conn.commit()
+
+    def get_integration(self, customer_id: str, integration: str) -> dict | None:
+        """Get a specific integration config for a customer."""
+        cur = self.conn.execute(
+            "SELECT * FROM customer_integrations WHERE customer_id = ? AND integration = ?",
+            (customer_id, integration),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["config"] = json.loads(d.pop("config_json", "{}"))
+        return d
+
+    def get_integrations(self, customer_id: str) -> list[dict]:
+        """Get all integrations for a customer."""
+        cur = self.conn.execute(
+            "SELECT * FROM customer_integrations WHERE customer_id = ? ORDER BY integration",
+            (customer_id,),
+        )
+        results = []
+        for row in cur.fetchall():
+            d = dict(row)
+            d["config"] = json.loads(d.pop("config_json", "{}"))
+            results.append(d)
+        return results
+
+    def update_integration_status(self, customer_id: str, integration: str,
+                                  status: str, last_error: str = "") -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            """UPDATE customer_integrations SET status = ?, last_checked = ?, last_error = ?
+               WHERE customer_id = ? AND integration = ?""",
+            (status, now, last_error, customer_id, integration),
+        )
+        self.conn.commit()
+
+    # --- Keyword Tracking ---
+
+    def add_tracked_keyword(self, customer_id: str, keyword: str,
+                            source: str = "manual") -> bool:
+        """Add a keyword to track. Returns True on success, False if exists."""
+        try:
+            self.conn.execute(
+                "INSERT INTO keyword_tracking (customer_id, keyword, source) VALUES (?, ?, ?)",
+                (customer_id, keyword.lower().strip(), source),
+            )
+            self.conn.commit()
+            return True
+        except sqlite3.IntegrityError:
+            return False
+
+    def remove_tracked_keyword(self, customer_id: str, keyword: str) -> bool:
+        cur = self.conn.execute(
+            "DELETE FROM keyword_tracking WHERE customer_id = ? AND keyword = ?",
+            (customer_id, keyword.lower().strip()),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def get_tracked_keywords(self, customer_id: str) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT * FROM keyword_tracking WHERE customer_id = ? AND is_tracked = 1 ORDER BY keyword",
+            (customer_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def save_keyword_rank(self, customer_id: str, keyword: str, date: str,
+                          position: float | None, clicks: int = 0,
+                          impressions: int = 0, ctr: float = 0.0) -> None:
+        self.conn.execute(
+            """INSERT OR REPLACE INTO keyword_ranks
+               (customer_id, keyword, date, position, clicks, impressions, ctr)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (customer_id, keyword.lower().strip(), date, position, clicks, impressions, ctr),
+        )
+        self.conn.commit()
+
+    def get_keyword_rank_history(self, customer_id: str, keyword: str,
+                                 days: int = 90) -> list[dict]:
+        cur = self.conn.execute(
+            """SELECT * FROM keyword_ranks
+               WHERE customer_id = ? AND keyword = ?
+               ORDER BY date DESC LIMIT ?""",
+            (customer_id, keyword.lower().strip(), days),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_keyword_summary(self, customer_id: str) -> list[dict]:
+        """Get latest rank + 4-week-ago rank for each tracked keyword."""
+        cur = self.conn.execute(
+            """SELECT kt.keyword, kt.source,
+                      kr_latest.position AS current_position,
+                      kr_latest.clicks AS current_clicks,
+                      kr_latest.impressions AS current_impressions,
+                      kr_prev.position AS prev_position
+               FROM keyword_tracking kt
+               LEFT JOIN (
+                   SELECT keyword, position, clicks, impressions,
+                          ROW_NUMBER() OVER (PARTITION BY keyword ORDER BY date DESC) as rn
+                   FROM keyword_ranks WHERE customer_id = ?
+               ) kr_latest ON kt.keyword = kr_latest.keyword AND kr_latest.rn = 1
+               LEFT JOIN (
+                   SELECT keyword, position,
+                          ROW_NUMBER() OVER (PARTITION BY keyword ORDER BY date DESC) as rn
+                   FROM keyword_ranks WHERE customer_id = ? AND date <= date('now', '-28 days')
+               ) kr_prev ON kt.keyword = kr_prev.keyword AND kr_prev.rn = 1
+               WHERE kt.customer_id = ? AND kt.is_tracked = 1
+               ORDER BY kr_latest.clicks DESC NULLS LAST, kt.keyword""",
+            (customer_id, customer_id, customer_id),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Site Audits ---
+
+    def save_site_audit(self, customer_id: str, audit_date: str,
+                        scores: dict, issues: list[dict],
+                        raw_data: dict | None = None) -> int:
+        """Save a site audit and its issues. Returns audit ID."""
+        cur = self.conn.execute(
+            """INSERT OR REPLACE INTO site_audits
+               (customer_id, audit_date, performance_score, accessibility_score,
+                seo_score, best_practices_score, issues_json, raw_data_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (customer_id, audit_date,
+             scores.get("performance"), scores.get("accessibility"),
+             scores.get("seo"), scores.get("best_practices"),
+             json.dumps(issues), json.dumps(raw_data or {})),
+        )
+        audit_id = cur.lastrowid
+        # Save individual issues
+        self.conn.execute(
+            "DELETE FROM audit_issues WHERE customer_id = ? AND audit_id = ?",
+            (customer_id, audit_id),
+        )
+        for issue in issues:
+            self.conn.execute(
+                """INSERT INTO audit_issues
+                   (customer_id, audit_id, category, severity, title, description, fix_instruction)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (customer_id, audit_id, issue["category"], issue["severity"],
+                 issue["title"], issue["description"], issue.get("fix_instruction", "")),
+            )
+        self.conn.commit()
+        return audit_id
+
+    def get_latest_audit(self, customer_id: str) -> dict | None:
+        cur = self.conn.execute(
+            "SELECT * FROM site_audits WHERE customer_id = ? ORDER BY audit_date DESC LIMIT 1",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["issues"] = json.loads(d.pop("issues_json", "[]"))
+        return d
+
+    def get_audit_issues(self, customer_id: str, status: str | None = None) -> list[dict]:
+        if status:
+            cur = self.conn.execute(
+                "SELECT * FROM audit_issues WHERE customer_id = ? AND status = ? ORDER BY severity, id",
+                (customer_id, status),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM audit_issues WHERE customer_id = ? ORDER BY severity, id",
+                (customer_id,),
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+    def update_audit_issue_status(self, issue_id: int, status: str) -> bool:
+        fixed_date = datetime.now(timezone.utc).isoformat() if status == "fixed" else None
+        cur = self.conn.execute(
+            "UPDATE audit_issues SET status = ?, fixed_date = ? WHERE id = ?",
+            (status, fixed_date, issue_id),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    # --- Backlinks ---
+
+    def save_backlinks(self, customer_id: str, links: list[dict]) -> dict:
+        """Update backlinks snapshot. Returns summary with new/lost counts."""
+        now = datetime.now(timezone.utc).isoformat()
+        # Get existing
+        cur = self.conn.execute(
+            "SELECT linking_domain, status FROM backlinks WHERE customer_id = ?",
+            (customer_id,),
+        )
+        existing = {r["linking_domain"]: r["status"] for r in cur.fetchall()}
+        incoming = {l["domain"]: l.get("count", 1) for l in links}
+
+        new_count = 0
+        for domain, count in incoming.items():
+            if domain not in existing:
+                self.conn.execute(
+                    """INSERT INTO backlinks (customer_id, linking_domain, link_count, first_seen, last_seen)
+                       VALUES (?, ?, ?, ?, ?)""",
+                    (customer_id, domain, count, now, now),
+                )
+                new_count += 1
+            else:
+                self.conn.execute(
+                    "UPDATE backlinks SET link_count = ?, last_seen = ?, status = 'active' WHERE customer_id = ? AND linking_domain = ?",
+                    (count, now, customer_id, domain),
+                )
+
+        # Mark lost
+        lost_count = 0
+        for domain in existing:
+            if domain not in incoming and existing[domain] == "active":
+                self.conn.execute(
+                    "UPDATE backlinks SET status = 'lost' WHERE customer_id = ? AND linking_domain = ?",
+                    (customer_id, domain),
+                )
+                lost_count += 1
+
+        self.conn.commit()
+        return {"new": new_count, "lost": lost_count, "total": len(incoming)}
+
+    def get_backlinks(self, customer_id: str, status: str | None = None) -> list[dict]:
+        if status:
+            cur = self.conn.execute(
+                "SELECT * FROM backlinks WHERE customer_id = ? AND status = ? ORDER BY link_count DESC",
+                (customer_id, status),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM backlinks WHERE customer_id = ? ORDER BY status, link_count DESC",
+                (customer_id,),
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Content Topics ---
+
+    def add_content_topic(self, customer_id: str, topic: str, target_keyword: str = "",
+                          source: str = "manual", priority: str = "medium",
+                          notes: str = "") -> int:
+        cur = self.conn.execute(
+            """INSERT INTO content_topics (customer_id, topic, target_keyword, source, priority, notes)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (customer_id, topic, target_keyword, source, priority, notes),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_content_topics(self, customer_id: str, status: str | None = None) -> list[dict]:
+        if status:
+            cur = self.conn.execute(
+                "SELECT * FROM content_topics WHERE customer_id = ? AND status = ? ORDER BY priority, created_at DESC",
+                (customer_id, status),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM content_topics WHERE customer_id = ? ORDER BY status, priority, created_at DESC",
+                (customer_id,),
+            )
+        return [dict(r) for r in cur.fetchall()]
+
+    def update_content_topic_status(self, topic_id: int, status: str,
+                                    content_rec_id: str | None = None) -> bool:
+        if content_rec_id:
+            cur = self.conn.execute(
+                "UPDATE content_topics SET status = ?, content_rec_id = ? WHERE id = ?",
+                (status, content_rec_id, topic_id),
+            )
+        else:
+            cur = self.conn.execute(
+                "UPDATE content_topics SET status = ? WHERE id = ?",
+                (status, topic_id),
+            )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    # --- Competitor Domains ---
+
+    def add_competitor_domain(self, customer_id, domain, name="", discovered_via="manual",
+                             rating=0.0, review_count=0, address="", place_id=""):
+        self.conn.execute(
+            """INSERT OR IGNORE INTO competitor_domains
+               (customer_id, competitor_domain, competitor_name, discovered_via, rating, review_count, address, place_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (customer_id, domain, name, discovered_via, rating, review_count, address, place_id),
+        )
+        self.conn.commit()
+
+    def get_competitor_domains(self, customer_id):
+        rows = self.conn.execute(
+            "SELECT * FROM competitor_domains WHERE customer_id = ? ORDER BY created_at DESC",
+            (customer_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def remove_competitor_domain(self, customer_id, domain):
+        self.conn.execute(
+            "DELETE FROM competitor_domains WHERE customer_id = ? AND competitor_domain = ?",
+            (customer_id, domain),
+        )
+        self.conn.commit()
+
+    # --- Reviews ---
+
+    def add_review(
+        self,
+        customer_id,
+        rating,
+        review_text="",
+        reviewer_name="",
+        review_date="",
+        source="google",
+        sentiment="",
+        themes=None,
+    ):
+        self.conn.execute(
+            "INSERT INTO reviews (customer_id, source, rating, review_text, reviewer_name, review_date, sentiment, themes_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (customer_id, source, rating, review_text, reviewer_name, review_date, sentiment, json.dumps(themes or [])),
+        )
+        self.conn.commit()
+
+    def get_reviews(self, customer_id, limit=50):
+        rows = self.conn.execute(
+            "SELECT * FROM reviews WHERE customer_id = ? ORDER BY review_date DESC LIMIT ?",
+            (customer_id, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_review_stats(self, customer_id):
+        row = self.conn.execute(
+            "SELECT COUNT(*) as total, AVG(rating) as avg_rating, "
+            "SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) as five_star, "
+            "SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as four_star, "
+            "SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as three_star, "
+            "SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as two_star, "
+            "SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as one_star "
+            "FROM reviews WHERE customer_id = ?",
+            (customer_id,),
+        ).fetchone()
+        return dict(row) if row else {}
+
+    # --- Citations ---
+
+    def save_citation(self, customer_id, directory, listed=False, nap_match=False, url_correct=False, listing_url=""):
+        self.conn.execute(
+            "INSERT OR REPLACE INTO citations (customer_id, directory, listed, nap_match, url_correct, listing_url, last_checked) "
+            "VALUES (?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
+            (customer_id, directory, int(listed), int(nap_match), int(url_correct), listing_url),
+        )
+        self.conn.commit()
+
+    def get_citations(self, customer_id):
+        rows = self.conn.execute(
+            "SELECT * FROM citations WHERE customer_id = ? ORDER BY directory",
+            (customer_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    # --- GBP Audit ---
+
+    def save_gbp_audit(self, customer_id, score, details):
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        self.conn.execute(
+            "INSERT OR REPLACE INTO gbp_audit (customer_id, date, score, details_json) VALUES (?, ?, ?, ?)",
+            (customer_id, today, score, json.dumps(details)),
+        )
+        self.conn.commit()
+
+    def get_latest_gbp_audit(self, customer_id):
+        row = self.conn.execute(
+            "SELECT * FROM gbp_audit WHERE customer_id = ? ORDER BY date DESC LIMIT 1",
+            (customer_id,),
+        ).fetchone()
+        if row:
+            d = dict(row)
+            d["details"] = json.loads(d.get("details_json", "{}"))
+            return d
+        return None
+
+    # --- Page Scores ---
+
+    def save_page_score(self, customer_id, page_url, score, word_count=0, readability_grade=0, breakdown=None):
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        self.conn.execute(
+            "INSERT OR REPLACE INTO page_scores (customer_id, page_url, score, word_count, readability_grade, breakdown_json, date) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (customer_id, page_url, score, word_count, readability_grade, json.dumps(breakdown or {}), today),
+        )
+        self.conn.commit()
+
+    def get_page_scores(self, customer_id):
+        rows = self.conn.execute(
+            "SELECT * FROM page_scores WHERE customer_id = ? ORDER BY score DESC",
+            (customer_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    # --- Topic Clusters ---
+
+    def save_topic_cluster(self, customer_id, cluster_name, pillar_page_url="", keywords=None, gap_pages=None):
+        self.conn.execute(
+            "INSERT OR REPLACE INTO topic_clusters (customer_id, cluster_name, pillar_page_url, keywords_json, gap_pages_json) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (customer_id, cluster_name, pillar_page_url, json.dumps(keywords or []), json.dumps(gap_pages or [])),
+        )
+        self.conn.commit()
+
+    def get_topic_clusters(self, customer_id):
+        rows = self.conn.execute(
+            "SELECT * FROM topic_clusters WHERE customer_id = ? ORDER BY cluster_name",
+            (customer_id,),
+        ).fetchall()
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["keywords"] = json.loads(d.get("keywords_json", "[]"))
+            d["gap_pages"] = json.loads(d.get("gap_pages_json", "[]"))
+            result.append(d)
+        return result
+
+    # --- AI Readiness ---
+
+    def save_ai_readiness(self, customer_id, score, breakdown):
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        self.conn.execute(
+            "INSERT OR REPLACE INTO ai_readiness_scores (customer_id, date, score, breakdown_json) VALUES (?, ?, ?, ?)",
+            (customer_id, today, score, json.dumps(breakdown)),
+        )
+        self.conn.commit()
+
+    def get_latest_ai_readiness(self, customer_id):
+        row = self.conn.execute(
+            "SELECT * FROM ai_readiness_scores WHERE customer_id = ? ORDER BY date DESC LIMIT 1",
+            (customer_id,),
+        ).fetchone()
+        if row:
+            d = dict(row)
+            d["breakdown"] = json.loads(d.get("breakdown_json", "{}"))
+            return d
+        return None
+
     # --- Migration helper: import from customers.json ---
 
     def import_from_json(self, json_path: str):
@@ -1431,3 +2663,202 @@ class CustomerDB:
                 self.add_platform_access(customer_id, ap)
 
             logger.info(f"Imported customer: {customer_id}")
+
+    # ------------------------------------------------------------------
+    # PracticeRank Score history
+    # ------------------------------------------------------------------
+
+    def save_practicerank_score(
+        self,
+        customer_id: str,
+        date: str,
+        overall: int,
+        ai_visibility: int | None,
+        search_growth: int | None,
+        technical_health: int | None,
+        content_velocity: int | None,
+        reputation: int | None,
+        breakdown_json: str = "{}",
+    ) -> None:
+        """Save or update a daily PracticeRank score."""
+        self.conn.execute(
+            """INSERT INTO practicerank_scores
+               (customer_id, date, overall_score, ai_visibility, search_growth,
+                technical_health, content_velocity, reputation, breakdown_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(customer_id, date) DO UPDATE SET
+                 overall_score=excluded.overall_score,
+                 ai_visibility=excluded.ai_visibility,
+                 search_growth=excluded.search_growth,
+                 technical_health=excluded.technical_health,
+                 content_velocity=excluded.content_velocity,
+                 reputation=excluded.reputation,
+                 breakdown_json=excluded.breakdown_json""",
+            (customer_id, date, overall, ai_visibility, search_growth,
+             technical_health, content_velocity, reputation, breakdown_json),
+        )
+        self.conn.commit()
+
+    def get_practicerank_scores(
+        self, customer_id: str, limit: int = 90
+    ) -> list[dict]:
+        """Get score history, most recent first."""
+        cur = self.conn.execute(
+            "SELECT * FROM practicerank_scores WHERE customer_id = ? ORDER BY date DESC LIMIT ?",
+            (customer_id, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_latest_practicerank_score(self, customer_id: str) -> dict | None:
+        """Get the most recent score for a customer."""
+        cur = self.conn.execute(
+            "SELECT * FROM practicerank_scores WHERE customer_id = ? ORDER BY date DESC LIMIT 1",
+            (customer_id,),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def get_all_latest_scores(self) -> list[dict]:
+        """Get latest score for every customer (for analytics leaderboard)."""
+        cur = self.conn.execute("""
+            SELECT ps.* FROM practicerank_scores ps
+            INNER JOIN (
+                SELECT customer_id, MAX(date) as max_date
+                FROM practicerank_scores GROUP BY customer_id
+            ) latest ON ps.customer_id = latest.customer_id AND ps.date = latest.max_date
+            ORDER BY ps.overall_score DESC
+        """)
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- Prospects / Sales Pipeline ---
+
+    _PROSPECT_COLUMNS = frozenset({
+        "name", "email", "phone", "contact_name", "vertical", "stage",
+        "lost_reason", "report_id", "overall_score", "grade", "report_data",
+        "stripe_checkout_id", "stripe_customer_id", "notes",
+    })
+
+    def upsert_prospect(self, prospect_id: str, domain: str, name: str, **kwargs) -> str:
+        """Create or update a prospect. Returns the prospect ID."""
+        existing = self.conn.execute(
+            "SELECT id FROM prospects WHERE domain = ?", (domain,)
+        ).fetchone()
+        if existing:
+            safe = {k: v for k, v in kwargs.items() if k in self._PROSPECT_COLUMNS and v is not None}
+            sets = ", ".join(f"{k} = ?" for k in safe)
+            vals = list(safe.values())
+            if sets:
+                sets += ", updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')"
+                self.conn.execute(
+                    f"UPDATE prospects SET {sets} WHERE domain = ?",
+                    vals + [domain],
+                )
+                self.conn.commit()
+            return existing["id"]
+        self.conn.execute(
+            """INSERT INTO prospects (id, domain, name, email, phone, contact_name,
+               vertical, stage, report_id, overall_score, grade, report_data)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 'new_lead', ?, ?, ?, ?)""",
+            (
+                prospect_id, domain, name,
+                kwargs.get("email"), kwargs.get("phone"), kwargs.get("contact_name"),
+                kwargs.get("vertical", "dental"),
+                kwargs.get("report_id"), kwargs.get("overall_score"),
+                kwargs.get("grade"), kwargs.get("report_data"),
+            ),
+        )
+        self.conn.commit()
+        return prospect_id
+
+    def get_prospect(self, prospect_id: str) -> dict | None:
+        cur = self.conn.execute("SELECT * FROM prospects WHERE id = ?", (prospect_id,))
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def get_prospect_by_domain(self, domain: str) -> dict | None:
+        cur = self.conn.execute("SELECT * FROM prospects WHERE domain = ?", (domain,))
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def get_prospects_by_stage(self, stage: str | None = None) -> list[dict]:
+        if stage:
+            cur = self.conn.execute(
+                "SELECT * FROM prospects WHERE stage = ? ORDER BY updated_at DESC", (stage,)
+            )
+        else:
+            cur = self.conn.execute("SELECT * FROM prospects ORDER BY updated_at DESC")
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_all_prospects_grouped(self) -> dict[str, list[dict]]:
+        """Get all prospects grouped by stage for the kanban board."""
+        stages = ["new_lead", "outreach_sent", "follow_up", "interested",
+                   "proposal_sent", "signing_up", "customer", "lost"]
+        result = {s: [] for s in stages}
+        cur = self.conn.execute("SELECT * FROM prospects ORDER BY updated_at DESC")
+        for row in cur.fetchall():
+            r = dict(row)
+            stage = r.get("stage", "new_lead")
+            if stage in result:
+                result[stage].append(r)
+            else:
+                result["new_lead"].append(r)
+        return result
+
+    def update_prospect_stage(self, prospect_id: str, new_stage: str,
+                               created_by: str = "", lost_reason: str = "") -> bool:
+        cur = self.conn.execute("SELECT stage FROM prospects WHERE id = ?", (prospect_id,))
+        row = cur.fetchone()
+        if not row:
+            return False
+        old_stage = row["stage"]
+        updates = "stage = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')"
+        params: list = [new_stage]
+        if new_stage == "lost" and lost_reason:
+            updates += ", lost_reason = ?"
+            params.append(lost_reason)
+        params.append(prospect_id)
+        self.conn.execute(f"UPDATE prospects SET {updates} WHERE id = ?", params)
+        self.conn.execute(
+            """INSERT INTO prospect_activities (prospect_id, activity_type, stage_from, stage_to, created_by)
+               VALUES (?, 'stage_change', ?, ?, ?)""",
+            (prospect_id, old_stage, new_stage, created_by),
+        )
+        self.conn.commit()
+        return True
+
+    def update_prospect(self, prospect_id: str, **kwargs) -> bool:
+        safe = {k: v for k, v in kwargs.items() if k in self._PROSPECT_COLUMNS}
+        if not safe:
+            return False
+        sets = ", ".join(f"{k} = ?" for k in safe)
+        sets += ", updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')"
+        vals = list(safe.values()) + [prospect_id]
+        self.conn.execute(f"UPDATE prospects SET {sets} WHERE id = ?", vals)
+        self.conn.commit()
+        return True
+
+    def add_prospect_activity(self, prospect_id: str, activity_type: str,
+                               subject: str = "", body: str = "",
+                               created_by: str = "") -> int:
+        cur = self.conn.execute(
+            """INSERT INTO prospect_activities (prospect_id, activity_type, subject, body, created_by)
+               VALUES (?, ?, ?, ?, ?)""",
+            (prospect_id, activity_type, subject, body, created_by),
+        )
+        self.conn.commit()
+        return cur.lastrowid or 0
+
+    def get_prospect_activities(self, prospect_id: str, limit: int = 50) -> list[dict]:
+        cur = self.conn.execute(
+            """SELECT * FROM prospect_activities WHERE prospect_id = ?
+               ORDER BY id DESC LIMIT ?""",
+            (prospect_id, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_prospect_counts(self) -> dict[str, int]:
+        """Get count of prospects per stage."""
+        cur = self.conn.execute(
+            "SELECT stage, COUNT(*) as cnt FROM prospects GROUP BY stage"
+        )
+        return {r["stage"]: r["cnt"] for r in cur.fetchall()}

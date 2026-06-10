@@ -1,0 +1,30 @@
+---
+interface Props {
+  title: string
+  description: string
+  href: string
+  image?: string
+}
+
+const { title, description, href, image } = Astro.props
+---
+
+<a href={href} class="group block rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+  {image && (
+    <div class="aspect-[16/9] overflow-hidden bg-gray-100">
+      <img src={image} alt={title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+    </div>
+  )}
+  <div class="p-6">
+    <h3 class="text-lg font-semibold font-heading text-dark group-hover:text-primary transition-colors">
+      {title}
+    </h3>
+    <p class="mt-2 text-sm text-gray-600 line-clamp-2">{description}</p>
+    <span class="mt-3 inline-flex items-center text-sm font-medium text-primary">
+      Learn more
+      <svg class="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </span>
+  </div>
+</a>

@@ -2,7 +2,7 @@
 
 ## What This Is
 
-An AI-powered dental marketing agency/platform built for **Jon Lucas** (jonlucas@lostrelic.com) at **Lost Relic**. The core product is **PracticeRank** (practicerank.ai) — a platform that automates SEO, AEO (AI Engine Optimization), local visibility, and content publishing for dental practices.
+An AI-powered dental marketing agency/platform by **Lost Relic**. The core product is **PracticeRank** (practicerank.ai) — a platform that automates SEO, AEO (AI Engine Optimization), local visibility, and content publishing for dental practices.
 
 The business model: charge ~$3,000/month per dental practice, automate 85%+ of the work, and scale with minimal staff.
 
@@ -49,11 +49,12 @@ Based on the email thread with Dr. David Gallup / Adam Milmont (Hilltop Dental):
 
 ## Key People
 
-- **Jon Lucas** — Founder, jonlucas@lostrelic.com, runs PracticeRank
+- **Kody** — Co-founder
+- **Matt Toone** — Co-founder (matt@vcsmedical.com)
+- **Ethan Mandelup** — Co-founder (ethan@vcsmedical.com)
+- **Jon Lucas** — Team member, jonlucas@lostrelic.com, runs PracticeRank operations
 - **Dr. David Gallup** — Client (gallupster@gmail.com), Hilltop Dental
 - **Adam Milmont** — Client partner (amilmont@gmail.com), handles tech access
-- **Matt Toone** — CC'd (matt@vcsmedical.com)
-- **Ethan Mandelup** — CC'd (ethan@vcsmedical.com)
 
 ## Current Status
 
@@ -77,9 +78,56 @@ Full requirements: `docs/requirements.md`
 
 ```
 geo_agent/          # The monthly agent (Python package)
+dashboard/          # Flask dashboard (deployed on droplet via scripts/deploy.sh)
+deploy/             # CANONICAL marketing site — deployed to Cloudflare Pages (practicerank.ai)
+content/blog/       # Blog post markdown sources -> built into deploy/blog/ by scripts/build_blog.py
+worker/             # practicerank-api Cloudflare Worker (free audit lead magnet)
+scripts/            # Deploy + ops scripts (deploy.sh, deploy-site.sh, deploy-worker.sh, build_blog.py)
 docs/               # Project documentation
 templates/          # Jinja2 templates for llms.txt and schema
 data/               # Volume-mounted runtime data (gitignored)
+sites/              # Customer Astro sites (sojo-dental, etc.)
+specs/              # Task specs and decision documentation
+  active/           # Current task context (one at a time)
+  content-system/   # Content generation logic and rules
+  customers/        # Per-customer specs and decisions
+  platform/         # Dashboard, DB, deployment specs
+  pricing/          # Service tiers and pricing models
 ```
 
 See `docs/` for detailed documentation on each subsystem.
+
+## Deployment
+
+There are **three independently deployed targets**. Each has a script in `scripts/`. Always run the relevant tests first (`pytest -m "not docker"` for Python, `npm test` in `worker/`).
+
+| Target | What | Host | Deploy command |
+|---|---|---|---|
+| **Dashboard** | Flask admin app (`dashboard/`) + the geo_agent pipeline that runs inside the same container | DigitalOcean droplet `129.212.138.145` (`/home/kody/dental-marketing`), behind Caddy | `./scripts/deploy.sh` |
+| **Marketing site** | practicerank.ai static site (landing pages, blog, service pages, llms.txt) | Cloudflare Pages project **`practicerank`** | `./scripts/deploy-site.sh` |
+| **Audit API** | `practicerank-api` Worker (the free audit lead magnet) | Cloudflare Workers | `./scripts/deploy-worker.sh` |
+
+### Marketing site — IMPORTANT canonical-source rule
+
+- **`deploy/` is the ONE canonical source** uploaded to Cloudflare Pages. Edit marketing HTML **here**.
+- `scripts/build_blog.py` renders `content/blog/*.md` → `deploy/blog/`. Edit blog posts as markdown in `content/blog/`, never the generated HTML.
+- `scripts/deploy-site.sh` rebuilds the blog, sanity-checks the bundle (index/llms/sitemap/robots/_redirects present, sitemap valid XML), then runs `wrangler pages deploy deploy/ --project-name=practicerank`. Each Pages deploy is a **full snapshot replacement** — any file not in `deploy/` 404s, so use `deploy/_redirects` to preserve retired URLs.
+- **`deploy/` is the ONLY marketing source.** The old diverged copies (root `practicerank-*.html` and `public/`) were removed on 2026-06-10 after they caused an incident (fixes landed in the root copies but the live site serves `deploy/`). Do not recreate them — edit `deploy/` directly.
+
+### Dashboard specifics
+
+- `scripts/deploy.sh` rsyncs the repo (excluding `data/`, `.env`, `.git`) to the droplet and runs `docker compose up -d --build dashboard`. Use `--sync` for files-only, `--logs` to tail after.
+- The container runs **gunicorn** (`--workers 1 --threads 8`); a single worker keeps in-process state (`_ai_check_progress`, `_seo_cache`) shared. `reap_stale_runs()` runs at startup to fail orphaned runs.
+- After deploy, verify: `ssh -i ~/.ssh/id_ed25519_do kody@129.212.138.145 "docker logs practicerank-dashboard --tail 20"` and `curl -s -o /dev/null -w '%{http_code}' localhost:5099/login` should be `200`.
+- `FLASK_SECRET_KEY` must be set in `.env` on the droplet, otherwise sessions reset on every restart.
+
+## Specs Workflow
+
+Use `specs/` to track task context and document decisions:
+
+1. **Starting a task**: Create `specs/active/<task-name>.md` with goals, context, and decisions as you go
+2. **During work**: Update the active spec with key decisions, gotchas, and implementation notes
+3. **Task complete**: Move the spec from `active/` to the appropriate category subfolder (e.g., `specs/customers/downtown-dental-content-rules.md`)
+4. **Reference**: Completed specs serve as permanent documentation of what was built and why
+
+Categories: `content-system/` (recommender, blog rules), `customers/` (per-client decisions), `platform/` (dashboard, infra), `pricing/` (tiers, proposals)

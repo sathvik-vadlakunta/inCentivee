@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Pipeline &amp; Prospecting System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --success: #16a34a;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--gray-800);
+            line-height: 1.6;
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #fff;
+        }
+        header { border-bottom: 3px solid var(--primary); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+        header h1 { font-size: 1.75rem; color: var(--gray-900); }
+        .meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem 2rem; margin-top: 1rem; font-size: 0.875rem; color: var(--gray-600); }
+        .meta dt { font-weight: 600; display: inline; }
+        .meta dd { display: inline; margin-left: 0.25rem; }
+        .status-badge { display: inline-block; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+        .status-active { background: var(--primary-light); color: var(--primary); }
+        section { margin-bottom: 2rem; }
+        section > h2 { font-size: 1.25rem; color: var(--primary); border-bottom: 1px solid var(--gray-200); padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        section > h3 { font-size: 1rem; margin: 1rem 0 0.5rem; color: var(--gray-900); }
+        ul, ol { padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        li { margin-bottom: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.875rem; }
+        th, td { text-align: left; padding: 0.5rem 0.75rem; border: 1px solid var(--gray-200); }
+        th { background: var(--gray-50); font-weight: 600; }
+        pre { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: 0.375rem; padding: 1rem; overflow-x: auto; font-size: 0.8125rem; line-height: 1.5; margin-bottom: 1rem; }
+        code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.8125rem; }
+        .callout { padding: 0.75rem 1rem; border-left: 4px solid var(--primary); background: var(--primary-light); border-radius: 0 0.375rem 0.375rem 0; margin-bottom: 1rem; font-size: 0.875rem; }
+        .callout.warning { border-left-color: var(--warning); background: #fffbeb; }
+        .callout.danger { border-left-color: var(--danger); background: #fef2f2; }
+        .changelog { font-size: 0.875rem; }
+        .changelog dt { font-weight: 600; margin-top: 0.5rem; }
+        .changelog dd { margin-left: 1rem; color: var(--gray-600); }
+        footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--gray-200); font-size: 0.75rem; color: var(--gray-600); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Sales Pipeline &amp; Prospecting System</h1>
+    <div class="meta">
+        <div><dt>Spec ID:</dt><dd>sales-pipeline-prospecting</dd></div>
+        <div><dt>Status:</dt><dd><span class="status-badge status-active">Active</span></dd></div>
+        <div><dt>Project:</dt><dd>PracticeRank</dd></div>
+        <div><dt>Category:</dt><dd>features</dd></div>
+        <div><dt>Created:</dt><dd>2026-06-09</dd></div>
+        <div><dt>Updated:</dt><dd>2026-06-09</dd></div>
+        <div><dt>Version:</dt><dd>v1</dd></div>
+        <div><dt>Author:</dt><dd>Kody + Claude</dd></div>
+    </div>
+</header>
+
+<section>
+    <h2>1. Overview</h2>
+    <p>Build a full sales pipeline into the PracticeRank admin dashboard. When a prospect runs a report on the landing page (or is manually added), they enter a kanban pipeline that tracks them from first outreach through signed contract and payment. The system auto-generates outreach emails from report data, tracks follow-ups, and closes deals through Stripe checkout.</p>
+</section>
+
+<section>
+    <h2>2. Problem Statement</h2>
+    <p>Right now, outreach is entirely manual. Jon or Ethan sees a report, manually writes an email, manually tracks who they've contacted, and has no system for follow-ups. Prospects fall through cracks. There's no visibility into the pipeline, no templates that pull real data, and no way to move someone from "interested" to "paying" without switching between multiple tools.</p>
+</section>
+
+<section>
+    <h2>3. Goals &amp; Success Criteria</h2>
+    <ul>
+        <li>Every landing page report automatically creates a prospect in the pipeline</li>
+        <li>Outreach emails auto-populate with real report data (scores, findings, competitor gaps)</li>
+        <li>Kanban board with drag-and-drop stages visible on the dashboard</li>
+        <li>Email templates follow Hormozi-style best practices (lead with pain, specific data, risk-free CTA)</li>
+        <li>Stripe integration for prospect self-checkout when they're ready to sign up</li>
+        <li>Activity log per prospect (emails sent, calls logged, notes)</li>
+        <li>Follow-up reminders so nobody falls through the cracks</li>
+    </ul>
+</section>
+
+<section>
+    <h2>4. Business Logic</h2>
+
+    <h3>4.1 Pipeline Stages (Kanban Columns)</h3>
+    <table>
+        <thead><tr><th>Stage</th><th>Description</th><th>Auto-triggers</th></tr></thead>
+        <tbody>
+            <tr><td><strong>New Lead</strong></td><td>Report was run on landing page, or prospect added manually</td><td>Auto-created when someone submits a report on practicerank.ai</td></tr>
+            <tr><td><strong>Outreach Sent</strong></td><td>First email sent (from template, with report data)</td><td>Moves here when outreach email is marked "sent"</td></tr>
+            <tr><td><strong>Follow-up</strong></td><td>No response after X days, follow-up email queued</td><td>Auto-flag after 3 days with no response. Second follow-up at 7 days</td></tr>
+            <tr><td><strong>Interested</strong></td><td>Prospect responded positively, call booked or in discussion</td><td>Manual move (or auto if they reply/click)</td></tr>
+            <tr><td><strong>Proposal Sent</strong></td><td>Pricing/proposal shared, waiting for decision</td><td>Manual move after sending pricing tier info</td></tr>
+            <tr><td><strong>Signing Up</strong></td><td>Prospect is going through onboarding/Stripe checkout</td><td>Stripe checkout link generated and shared</td></tr>
+            <tr><td><strong>Customer</strong></td><td>Payment received, convert to full customer record</td><td>Auto-move on Stripe payment_intent.succeeded webhook</td></tr>
+            <tr><td><strong>Lost</strong></td><td>Declined, went dark, or chose competitor</td><td>Manual move with required "lost reason"</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 Outreach Email Best Practices (Hormozi Framework)</h3>
+    <p>All email templates follow these rules:</p>
+    <ul>
+        <li><strong>Open with their data, not a compliment.</strong> Lead with a specific finding from their report (score, competitor gap, missing AI visibility)</li>
+        <li><strong>Quantify the gap.</strong> Use real scores and competitor comparisons from the audit. Never fabricate numbers we don't have</li>
+        <li><strong>Name the problem they didn't know they had.</strong> AI search visibility is new enough that most firms don't know they're invisible</li>
+        <li><strong>Show what we do in one paragraph.</strong> AI discoverability, SEO, review automation, schema markup. Concrete, not vague</li>
+        <li><strong>Risk-free CTA.</strong> Ask for a 15-minute call, not a commitment. "What does your calendar look like this week?"</li>
+        <li><strong>No fabricated metrics.</strong> Only use data from the actual report. No "estimated inquiries/mo" or revenue projections</li>
+        <li><strong>Short.</strong> Under 250 words for initial outreach. Every sentence earns its place</li>
+        <li><strong>No dashes.</strong> Rewrite sentences that rely on em dashes</li>
+        <li><strong>Vertical-aware language.</strong> "Firm" for legal, "practice" for dental/medical, "company" for tech. Never cross terminology</li>
+    </ul>
+
+    <h3>4.3 Email Template Sequence</h3>
+    <table>
+        <thead><tr><th>Email</th><th>When</th><th>Template Style</th></tr></thead>
+        <tbody>
+            <tr><td><strong>Initial Outreach</strong></td><td>Immediately after report runs or prospect added</td><td>Lead with weakest score + competitor gap. Color-coded score bullets. CTA: book a call</td></tr>
+            <tr><td><strong>Follow-up #1</strong></td><td>3 days after initial, no response</td><td>Shorter. Reference one key finding. "Did you get a chance to look at this?"</td></tr>
+            <tr><td><strong>Follow-up #2</strong></td><td>7 days after initial, no response</td><td>Breakup email. "I'll assume the timing isn't right. If anything changes, here's how to reach us."</td></tr>
+            <tr><td><strong>Proposal</strong></td><td>After call/interest confirmed</td><td>Recap call findings. Recommended tier. Stripe checkout link. Onboarding timeline</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.4 Template Variables (auto-populated from report)</h3>
+    <pre><code>{{prospect_name}}        - Business name from report
+{{domain}}               - Website domain
+{{vertical}}             - dental | legal | medical
+{{vertical_label}}       - "firm" | "practice" | "company"
+{{overall_score}}        - Overall audit score (e.g., 52)
+{{grade}}                - Letter grade (A-F)
+{{weakest_category}}     - Lowest scoring category name
+{{weakest_score}}        - Lowest category score
+{{strongest_category}}   - Highest scoring category name
+{{strongest_score}}      - Highest category score
+{{ai_score}}             - AI readiness score
+{{review_count}}         - Google review count
+{{review_rating}}        - Google star rating
+{{competitor_name}}      - Top competitor name
+{{competitor_reviews}}   - Top competitor review count
+{{categories_bullets}}   - Pre-formatted score bullets (color-coded)
+{{city}}                 - Business city
+{{state}}                - Business state
+{{stripe_checkout_url}}  - Generated Stripe checkout link (proposal stage only)</code></pre>
+
+    <h3>4.5 Rules &amp; Constraints</h3>
+    <ul>
+        <li>Prospects with <code>email</code> = null cannot have outreach sent (show warning)</li>
+        <li>Never auto-send emails. Always preview first, human clicks "Send"</li>
+        <li>Landing page reports auto-create prospects ONLY if the user provided an email</li>
+        <li>Lost prospects can be re-opened (moved back to Follow-up) with a note</li>
+        <li>When a prospect reaches "Customer" stage, auto-create a customer record in the existing customers table</li>
+        <li>All email content is stored in the activity log for audit trail</li>
+    </ul>
+
+    <h3>4.6 Edge Cases</h3>
+    <ul>
+        <li>Same domain runs multiple reports: update existing prospect, don't create duplicate</li>
+        <li>Prospect already exists as customer: show "Already a customer" badge, skip pipeline</li>
+        <li>Report has no Google data (blocked site): still create prospect but flag "Limited data" on outreach template</li>
+        <li>Multiple people at same firm submit reports: merge by domain, keep all contact emails</li>
+    </ul>
+</section>
+
+<section>
+    <h2>5. Technical Design</h2>
+
+    <h3>5.1 Architecture</h3>
+    <p>Everything lives in the existing Flask dashboard. New <code>prospects</code> and <code>prospect_activities</code> tables in SQLite. Kanban board as a new top-level tab. Email templates stored as Jinja2 files in <code>templates/emails/outreach/</code>. Stripe integration via Checkout Sessions API (server-side, no Stripe.js needed).</p>
+
+    <h3>5.2 Files to Modify</h3>
+    <table>
+        <thead><tr><th>File</th><th>Change</th><th>Why</th></tr></thead>
+        <tbody>
+            <tr><td><code>dashboard/app.py</code></td><td>Add prospect routes: kanban view, stage transitions, email preview/send, Stripe checkout, webhook</td><td>Core pipeline logic</td></tr>
+            <tr><td><code>dashboard/database.py</code></td><td>Add prospect CRUD methods, activity logging, stage transitions</td><td>Data layer for prospects</td></tr>
+            <tr><td><code>dashboard/templates/base.html</code></td><td>Add "Pipeline" nav link</td><td>Navigation</td></tr>
+            <tr><td><code>worker/src/index.js</code></td><td>After report generation, POST prospect data to dashboard API (or store in KV for sync)</td><td>Auto-create prospects from landing page reports</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.3 Files to Create</h3>
+    <table>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td><code>dashboard/templates/pipeline.html</code></td><td>Kanban board view with drag-and-drop columns</td></tr>
+            <tr><td><code>dashboard/templates/prospect_detail.html</code></td><td>Individual prospect view: report data, activity timeline, email composer</td></tr>
+            <tr><td><code>templates/emails/outreach/initial.html</code></td><td>Initial outreach email template (Jinja2)</td></tr>
+            <tr><td><code>templates/emails/outreach/followup1.html</code></td><td>Follow-up #1 template</td></tr>
+            <tr><td><code>templates/emails/outreach/followup2.html</code></td><td>Breakup email template</td></tr>
+            <tr><td><code>templates/emails/outreach/proposal.html</code></td><td>Proposal with pricing and Stripe link</td></tr>
+        </tbody>
+    </table>
+
+    <h3>5.4 Database Changes</h3>
+    <pre><code>CREATE TABLE prospects (
+    id TEXT PRIMARY KEY,
+    domain TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    email TEXT,
+    phone TEXT,
+    contact_name TEXT,
+    vertical TEXT DEFAULT 'dental',
+    stage TEXT DEFAULT 'new_lead',
+    lost_reason TEXT,
+    report_id TEXT,
+    overall_score INTEGER,
+    grade TEXT,
+    report_data TEXT,              -- full report JSON for template rendering
+    stripe_checkout_id TEXT,
+    stripe_customer_id TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (report_id) REFERENCES landing_page_reports(id)
+);
+
+CREATE INDEX idx_prospects_stage ON prospects(stage);
+CREATE INDEX idx_prospects_domain ON prospects(domain);
+
+CREATE TABLE prospect_activities (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prospect_id TEXT NOT NULL,
+    activity_type TEXT NOT NULL,   -- 'email_sent', 'call_logged', 'note', 'stage_change', 'stripe_event'
+    stage_from TEXT,
+    stage_to TEXT,
+    subject TEXT,                  -- email subject or activity title
+    body TEXT,                     -- email body or note content
+    created_by TEXT,               -- dashboard user who performed action
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (prospect_id) REFERENCES prospects(id)
+);
+
+CREATE INDEX idx_activities_prospect ON prospect_activities(prospect_id);
+CREATE INDEX idx_activities_type ON prospect_activities(activity_type);</code></pre>
+
+    <h3>5.5 Stripe Integration</h3>
+    <ul>
+        <li>Use Stripe Checkout Sessions (server-side) to generate payment links per prospect</li>
+        <li>Products/prices pre-created in Stripe dashboard for each tier (Starter, Growth, Premium)</li>
+        <li>Webhook endpoint at <code>/api/stripe/webhook</code> listens for <code>checkout.session.completed</code></li>
+        <li>On payment success: move prospect to "Customer" stage, auto-create customer record, log activity</li>
+        <li>Env vars: <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, <code>STRIPE_PRICE_STARTER</code>, <code>STRIPE_PRICE_GROWTH</code>, <code>STRIPE_PRICE_PREMIUM</code></li>
+    </ul>
+</section>
+
+<section>
+    <h2>6. Security Considerations</h2>
+    <ul>
+        <li>Stripe webhook signature verification (<code>stripe.Webhook.construct_event</code>) on every webhook call</li>
+        <li>All prospect routes require <code>@login_required</code></li>
+        <li>Email body sanitized before storage (no raw HTML injection)</li>
+        <li>Stripe secret key and webhook secret in env vars only, never in code or templates</li>
+        <li>Rate limit prospect creation from landing page (already handled by worker rate limiting)</li>
+        <li>Prospect email addresses not exposed in client-side JavaScript</li>
+    </ul>
+    <div class="callout danger">
+        <strong>Security checklist:</strong> Input validation on all prospect fields, auth on all routes, SQL parameterization (already using sqlite3 params), no Stripe keys in frontend, webhook signature verification.
+    </div>
+</section>
+
+<section>
+    <h2>7. Implementation Plan</h2>
+    <table>
+        <thead><tr><th>#</th><th>Task</th><th>Effort</th><th>Status</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td>Database migration: create prospects + prospect_activities tables</td><td>S</td><td>Todo</td></tr>
+            <tr><td>2</td><td>Prospect CRUD in database.py</td><td>M</td><td>Todo</td></tr>
+            <tr><td>3</td><td>Kanban board template (pipeline.html) with drag-and-drop</td><td>L</td><td>Todo</td></tr>
+            <tr><td>4</td><td>Prospect detail page with activity timeline</td><td>M</td><td>Todo</td></tr>
+            <tr><td>5</td><td>Email templates (initial, followup1, followup2, proposal)</td><td>M</td><td>Todo</td></tr>
+            <tr><td>6</td><td>Email preview/compose UI with template variable injection</td><td>M</td><td>Todo</td></tr>
+            <tr><td>7</td><td>Auto-create prospects from landing page reports (worker integration)</td><td>M</td><td>Todo</td></tr>
+            <tr><td>8</td><td>Stripe Checkout integration (create session, webhook handler)</td><td>M</td><td>Todo</td></tr>
+            <tr><td>9</td><td>Follow-up reminder system (flag overdue prospects)</td><td>S</td><td>Todo</td></tr>
+            <tr><td>10</td><td>Nav link + pipeline stats on dashboard home</td><td>S</td><td>Todo</td></tr>
+            <tr><td>11</td><td>Deploy and test end-to-end</td><td>S</td><td>Todo</td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section>
+    <h2>8. Testing Plan</h2>
+
+    <h3>8.1 Manual Verification</h3>
+    <ul>
+        <li>Run a report on the landing page with an email, verify prospect auto-created in pipeline</li>
+        <li>Open prospect detail, verify report data populates email template correctly</li>
+        <li>Drag prospect between kanban stages, verify activity log records the transition</li>
+        <li>Preview outreach email, verify all template variables are filled with real data (no {{placeholders}} visible)</li>
+        <li>Generate Stripe checkout link, complete test payment, verify prospect moves to Customer stage</li>
+        <li>Verify legal prospects get "firm" language, dental get "practice" language in templates</li>
+        <li>Test duplicate domain handling: second report for same domain updates existing prospect</li>
+        <li>Test lost prospect re-open flow</li>
+    </ul>
+</section>
+
+<section>
+    <h2>9. Risks &amp; Rollback</h2>
+    <ul>
+        <li>Stripe webhook reliability: use idempotency keys and retry logic. Log all webhook events</li>
+        <li>Email deliverability: initially emails are generated in the dashboard for manual copy/paste send (not SMTP). Phase 2 can add SendGrid/Resend for actual sending</li>
+        <li>Large prospect volume: SQLite handles this fine at current scale. If 10K+ prospects, consider pagination</li>
+    </ul>
+    <h3>Rollback Plan</h3>
+    <p>New tables and routes only. No existing tables modified. Remove nav link and routes to fully rollback. Stripe products can stay in dashboard without harm.</p>
+</section>
+
+<section>
+    <h2>10. Dependencies</h2>
+    <ul>
+        <li><code>stripe</code> Python package (add to <code>dashboard/requirements.txt</code>)</li>
+        <li>Stripe account with products/prices created for each tier</li>
+        <li>Env vars: <code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code>, price IDs per tier</li>
+        <li>Existing landing page report data in <code>landing_page_reports</code> table</li>
+    </ul>
+</section>
+
+<section>
+    <h2>11. Changelog</h2>
+    <dl class="changelog">
+        <dt>v1 — 2026-06-09</dt>
+        <dd>Initial spec created. Pipeline stages, email templates, Stripe integration, database schema.</dd>
+    </dl>
+</section>
+
+<footer>
+    PracticeRank — Business Logic Specification | 2026-06-09
+</footer>
+
+</body>
+</html>

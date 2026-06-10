@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Run #{{ run.id }} - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<a href="{{ url_for('runs') }}">Runs</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">Run #{{ run.id }}{% if run.run_date %} ({{ run.run_date[:10] }}){% endif %}</span>
+{% endblock %}
 {% block content %}
 
 <div class="section-header">

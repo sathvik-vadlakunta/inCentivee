@@ -243,15 +243,30 @@ def _parse_json_response(response_text: str) -> dict | None:
     """Parse a JSON response, handling code fences and common issues."""
     text = response_text.strip()
 
-    # Strip code fences
+    # Strip markdown code fences (```json ... ``` or ``` ... ```)
     if text.startswith("```"):
-        text = text.split("\n", 1)[1]
-        text = text.rsplit("```", 1)[0]
+        # Remove opening fence line (e.g. "```json")
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    # Also handle case where closing fence is on its own line
+    text = text.strip()
+    if text.endswith("```"):
+        text = text[:-3].strip()
 
     try:
         return json.loads(text)
     except json.JSONDecodeError:
         pass
+
+    # Try to extract JSON object from surrounding text
+    brace_start = text.find("{")
+    if brace_start > 0:
+        text = text[brace_start:]
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            pass
 
     # Try to repair truncated JSON by closing open structures
     # Common case: response cut off mid-string or mid-object
@@ -260,7 +275,7 @@ def _parse_json_response(response_text: str) -> dict | None:
     if repaired.count('"') % 2 != 0:
         repaired += '"'
     # Try progressively closing structures
-    for suffix in ['"}]}', '"}]', '"}', '}]', '}', ']']:
+    for suffix in ['"}]}]}', '"}]}', '"}]', '"}', '}]}', '}]', '}', ']']:
         try:
             return json.loads(repaired + suffix)
         except json.JSONDecodeError:
@@ -300,6 +315,11 @@ def _merge_results(results: list[dict]) -> dict:
     seen_actions: set[str] = set()
     unique_actions = []
     for action in merged["priority_actions"]:
+        # Handle Claude sometimes returning dicts instead of strings
+        if isinstance(action, dict):
+            action = action.get("action") or action.get("description") or str(action)
+        if not isinstance(action, str):
+            action = str(action)
         action_key = action.lower().strip()[:60]
         if action_key not in seen_actions:
             seen_actions.add(action_key)
