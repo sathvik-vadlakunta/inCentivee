@@ -20,7 +20,7 @@ import os
 import anthropic
 
 from geo_agent.config import Customer
-from geo_agent.llm import MODEL_FACTCHECK, complete
+from geo_agent.llm import MODEL_FACTCHECK, TruncatedResponseError, complete
 
 logger = logging.getLogger(__name__)
 
@@ -90,10 +90,15 @@ def fact_check_html(
             model=MODEL_FACTCHECK,
             system=FACTCHECK_SYSTEM,
             user=user,
-            max_tokens=2000,
+            max_tokens=4000,
             label="factcheck",
         )
-    except Exception as e:  # fail open — human approval already happened
+    except TruncatedResponseError:
+        # So many findings they overflowed the cap → fail CLOSED (block publish);
+        # a content snippet with that many unsupported claims must not ship.
+        logger.warning("fact_check truncated (too many findings) — blocking publish")
+        return [{"claim": "(many)", "reason": "fact-check found too many unsupported claims to list"}]
+    except Exception as e:  # other infra errors: fail open (human approval already happened)
         logger.warning(f"fact_check call failed (allowing publish): {e}")
         return []
 

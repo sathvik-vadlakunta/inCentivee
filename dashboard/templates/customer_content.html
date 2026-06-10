@@ -289,7 +289,12 @@ function publishToWebflow(recId, btn) {
             setTimeout(() => location.reload(), 1500);
         } else {
             btn.textContent = 'Failed';
-            alert(data.error || data.results?.[0]?.error || 'Publish failed');
+            const blk = (data.results || []).find(x => x && x.findings);
+            if (blk) {
+                alert('Blocked by fact-check — unsupported claims:\n\n' + (blk.findings || []).map(f => '• ' + f.claim + ' (' + f.reason + ')').join('\n'));
+            } else {
+                alert(data.error || data.results?.[0]?.error || 'Publish failed');
+            }
             btn.disabled = false;
             setTimeout(() => { btn.textContent = 'Publish to Webflow'; }, 3000);
         }
@@ -328,12 +333,17 @@ function publishAllToWebflow(customerId) {
     })
     .then(r => r.json())
     .then(data => {
+        const blocked = (data.results || []).filter(x => x && x.ok === false && x.findings);
+        if (blocked.length) {
+            const lines = blocked.map(b => '• ' + (b.findings || []).map(f => f.claim).join('; ')).join('\n');
+            alert(blocked.length + ' recommendation(s) were blocked by the fact-check:\n\n' + lines);
+        }
         if (data.ok) {
-            btn.textContent = 'Published ' + data.published + '/' + data.total + '!';
-            setTimeout(() => location.reload(), 2000);
+            btn.textContent = 'Published ' + data.published + '/' + data.total + (data.blocked ? ' (' + data.blocked + ' blocked)' : '') + '!';
+            setTimeout(() => location.reload(), 2500);
         } else {
             btn.textContent = 'Failed';
-            alert(data.error || 'Batch publish failed');
+            if (!blocked.length) alert(data.error || 'Batch publish failed');
             btn.disabled = false;
             setTimeout(() => { btn.textContent = 'Publish All to Webflow'; }, 3000);
         }

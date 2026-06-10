@@ -5446,38 +5446,39 @@ def api_content_publish():
 
         platform = customer.get("platform", "webflow")
 
-        # Gate: only publish recommendations that have been explicitly approved.
-        # (The endpoint previously published whatever rec_ids were POSTed,
-        # regardless of review status.)
-        skipped_unapproved = []
-        approved_ids = []
+        # Gate: only publish recs that are (a) the same customer, and (b) explicitly
+        # approved. Fetch each rec once and reuse the row downstream.
+        requested_count = len(rec_ids)
+        skipped = []
+        candidates = []  # (rid, rec_row)
         for rid in rec_ids:
             r = db.get_content_recommendation(rid)
-            status = r.get("status") if r else "missing"
-            if status == "approved":
-                approved_ids.append(rid)
+            if not r:
+                skipped.append({"rec_id": rid, "ok": False, "error": "Recommendation not found"})
+            elif r.get("customer_id") != customer_id:
+                skipped.append({"rec_id": rid, "ok": False, "error": "Belongs to a different customer"})
+            elif r.get("status") != "approved":
+                skipped.append({"rec_id": rid, "ok": False, "error": f"Not approved (status={r.get('status')})"})
             else:
-                skipped_unapproved.append(
-                    {"rec_id": rid, "ok": False, "error": f"Not approved (status={status})"}
-                )
-        if not approved_ids:
+                candidates.append((rid, r))
+        if not candidates:
             return jsonify({
                 "error": "No approved recommendations to publish. Approve them first.",
-                "results": skipped_unapproved,
+                "results": skipped, "blocked": 0, "skipped": len(skipped),
             }), 400
-        rec_ids = approved_ids
 
         # YMYL backstop: fact-check each rec against the verified business profile
         # and block any with claims it can't ground (invented services/credentials,
         # uncited stats, fabricated reviews) before it reaches the live site.
         from geo_agent.fact_check import fact_check_html
         customer_obj = db.to_config_customer(customer_id)
+        if customer_obj is None:
+            logger.warning(f"No config customer for {customer_id}; skipping fact-check")
         fact_blocked = []
         fact_clean = []
-        for rid in rec_ids:
-            r = db.get_content_recommendation(rid)
+        for rid, r in candidates:
             findings = (
-                fact_check_html(customer_obj, (r or {}).get("html_snippet", ""))
+                fact_check_html(customer_obj, r.get("html_snippet", ""))
                 if customer_obj else []
             )
             if findings:
@@ -5491,10 +5492,11 @@ def api_content_publish():
         if not fact_clean:
             return jsonify({
                 "error": "All recommendations were blocked by the fact-check. Review the findings.",
-                "results": skipped_unapproved + fact_blocked,
+                "results": skipped + fact_blocked,
+                "blocked": len(fact_blocked), "skipped": len(skipped),
             }), 400
         rec_ids = fact_clean
-        prefilter_results = skipped_unapproved + fact_blocked
+        prefilter_results = skipped + fact_blocked
 
         # WordPress publishing via PracticeRank plugin
         if platform == "wordpress":
@@ -5539,11 +5541,13 @@ def api_content_publish():
                         results.append({"rec_id": rid, "ok": False, "error": "Push failed"})
 
                 success_count = sum(1 for r in results if r["ok"])
-                audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{len(rec_ids)} published to WordPress")
+                audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{requested_count} published to WordPress ({len(fact_blocked)} fact-blocked)")
                 return jsonify({
                     "ok": success_count > 0,
                     "published": success_count,
-                    "total": len(rec_ids),
+                    "total": requested_count,
+                    "blocked": len(fact_blocked),
+                    "skipped": len(skipped),
                     "results": results,
                 })
             finally:
@@ -5566,11 +5570,13 @@ def api_content_publish():
             content_pub = WebflowContentPublisher(publisher, db, customer_id)
             results = list(prefilter_results) + content_pub.publish_batch(rec_ids)
             success_count = sum(1 for r in results if r["ok"])
-            audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{len(rec_ids)} published to Webflow")
+            audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{requested_count} published to Webflow ({len(fact_blocked)} fact-blocked)")
             return jsonify({
                 "ok": success_count > 0,
                 "published": success_count,
-                "total": len(rec_ids),
+                "total": requested_count,
+                "blocked": len(fact_blocked),
+                "skipped": len(skipped),
                 "results": results,
             })
         finally:

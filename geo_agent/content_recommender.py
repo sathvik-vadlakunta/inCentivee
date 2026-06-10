@@ -699,7 +699,7 @@ industry professionals and enterprise clients, NOT consumers.
 
 ## What I Need
 
-Return a JSON array of content recommendations. Each item must have:
+Each recommendation object must have these fields:
 
 1. **rec_type**: One of: "blog_post", "faq_update", "stat_injection", "freshness_update", "new_page"
 2. **target_page**: The URL of the page to update, or "new" for new pages
@@ -730,7 +730,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
+Return a JSON object of the form {{"recommendations": [ ...one object per recommendation... ]}}.
 """
     elif business_type == "ecommerce":
         services_str = ', '.join(customer.services[:20]) if customer.services else specialties_str
@@ -756,7 +756,7 @@ content should help buyers find, trust, and choose this brand.
 
 ## What I Need
 
-Return a JSON array of content recommendations. Each item must have:
+Each recommendation object must have these fields:
 
 1. **rec_type**: One of: "blog_post", "faq_update", "stat_injection", "freshness_update", "new_page"
 2. **target_page**: The URL of the page to update, or "new" for new pages
@@ -785,7 +785,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
+Return a JSON object of the form {{"recommendations": [ ...one object per recommendation... ]}}.
 """
     elif business_type == "practice":
         return f"""\
@@ -810,7 +810,7 @@ that will boost their visibility in AI search results.
 
 ## What I Need
 
-Return a JSON array of content recommendations. Each item must have:
+Each recommendation object must have these fields:
 
 1. **rec_type**: One of: "blog_post", "faq_update", "stat_injection", "freshness_update", "new_page"
 2. **target_page**: The URL of the page to update, or "new" for new pages
@@ -861,7 +861,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
+Return a JSON object of the form {{"recommendations": [ ...one object per recommendation... ]}}.
 """
     else:
         # Generic fallback — adapts to any business type using services
@@ -890,7 +890,7 @@ business and its actual offerings — do NOT use generic or dental-focused conte
 
 ## What I Need
 
-Return a JSON array of content recommendations. Each item must have:
+Each recommendation object must have these fields:
 
 1. **rec_type**: One of: "blog_post", "faq_update", "stat_injection", "freshness_update", "new_page"
 2. **target_page**: The URL of the page to update, or "new" for new pages
@@ -918,7 +918,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
+Return a JSON object of the form {{"recommendations": [ ...one object per recommendation... ]}}.
 """
 
 

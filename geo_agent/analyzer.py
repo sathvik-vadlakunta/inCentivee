@@ -22,7 +22,7 @@ from geo_agent.google_places import (
     VerifiedBusinessData,
     is_trusted,
 )
-from geo_agent.llm import MODEL_ANALYSIS, complete
+from geo_agent.llm import MODEL_ANALYSIS, TruncatedResponseError, complete
 
 logger = logging.getLogger(__name__)
 
@@ -448,16 +448,27 @@ def analyze_and_recommend(
     if len(chunks) > 1:
         logger.info(f"  Splitting {len(pages)} pages into {len(chunks)} analysis chunks")
 
-    # Analyze each chunk
+    # Analyze each chunk. A truncated chunk shouldn't discard the work of the
+    # others: with multiple chunks, skip the bad one and merge the survivors;
+    # with a single chunk there's nothing to salvage, so let it fail loudly.
     chunk_results = []
     for i, chunk in enumerate(chunks):
         if len(chunks) > 1:
             logger.info(f"  Analyzing chunk {i + 1}/{len(chunks)} ({len(chunk)} pages)")
-        result = _analyze_chunk(
-            client, customer, chunk, i, len(chunks),
-            business_context, profile, all_page_titles,
-        )
+        try:
+            result = _analyze_chunk(
+                client, customer, chunk, i, len(chunks),
+                business_context, profile, all_page_titles,
+            )
+        except TruncatedResponseError as e:
+            if len(chunks) == 1:
+                raise
+            logger.error(f"  Chunk {i + 1}/{len(chunks)} truncated — skipping: {e}")
+            continue
         chunk_results.append(result)
+
+    if not chunk_results:
+        raise TruncatedResponseError("All analysis chunks truncated; no usable output")
 
     # Merge results from all chunks
     if len(chunk_results) == 1:
