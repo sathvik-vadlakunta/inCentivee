@@ -246,8 +246,10 @@ class TestGenerateAllSchemas:
         html = generate_all_schemas(sample_customer, webflow_safe=True)
         assert "document.head.appendChild" in html
         assert "\n" not in html.split("\n")[0]  # First tag is single-line
-        # Should NOT contain raw JSON-LD script tags
-        assert 'type="application/ld+json"' not in html
+        # Should NOT contain a RAW JSON-LD <script> tag (Webflow strips those).
+        # The JS injection legitimately sets s.type="application/ld+json", so check
+        # for the raw opening-tag form, not the bare attribute substring.
+        assert '<script type="application/ld+json"' not in html
 
     def test_webflow_safe_contains_valid_json(self, sample_customer):
         import re
