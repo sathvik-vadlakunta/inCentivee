@@ -244,6 +244,95 @@ def _chunk_pages(pages: list[PageData], max_chars: int = 20000) -> list[list[Pag
     return chunks
 
 
+# Structured-output schema for the analysis. JSON Schema strict mode can't express
+# dynamic-key maps (faq_entries/service_descriptions are keyed by URL), so the model
+# returns ARRAYS here; _coerce_analysis_shape() converts them back to the dict maps
+# the rest of the pipeline already expects, so nothing downstream changes.
+ANALYSIS_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "faq_entries": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "page_url": {"type": "string"},
+                    "faqs": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "question": {"type": "string"},
+                                "answer": {"type": "string"},
+                            },
+                            "required": ["question", "answer"],
+                        },
+                    },
+                },
+                "required": ["page_url", "faqs"],
+            },
+        },
+        "content_gaps": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "title": {"type": "string"},
+                    "slug": {"type": "string"},
+                    "description": {"type": "string"},
+                },
+                "required": ["title", "slug", "description"],
+            },
+        },
+        "service_descriptions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "page_url": {"type": "string"},
+                    "description": {"type": "string"},
+                },
+                "required": ["page_url", "description"],
+            },
+        },
+        "priority_actions": {"type": "array", "items": {"type": "string"}},
+    },
+    "required": ["faq_entries", "content_gaps", "service_descriptions", "priority_actions"],
+}
+
+
+def _coerce_analysis_shape(data: dict) -> dict:
+    """Normalize the parsed analysis into the internal dict-map representation.
+
+    The structured-output model returns faq_entries/service_descriptions as
+    arrays; convert them to {page_url: ...} dicts. Tolerates the legacy dict
+    shape too (passes it through) so older callers/fixtures still work.
+    """
+    faq = data.get("faq_entries", [])
+    if isinstance(faq, list):
+        faq = {
+            e["page_url"]: e.get("faqs", [])
+            for e in faq if isinstance(e, dict) and e.get("page_url")
+        }
+    svc = data.get("service_descriptions", [])
+    if isinstance(svc, list):
+        svc = {
+            e["page_url"]: e.get("description", "")
+            for e in svc if isinstance(e, dict) and e.get("page_url")
+        }
+    return {
+        "faq_entries": faq if isinstance(faq, dict) else {},
+        "content_gaps": data.get("content_gaps", []) or [],
+        "service_descriptions": svc if isinstance(svc, dict) else {},
+        "priority_actions": data.get("priority_actions", []) or [],
+    }
+
+
 def _parse_json_response(response_text: str) -> dict | None:
     """Parse a JSON response, handling code fences and common issues."""
     text = response_text.strip()
@@ -368,27 +457,28 @@ Analyze this {profile.industry_label.lower()}'s website and generate specific, a
 
 ## What I Need From You
 
-Return a JSON object with these keys:
+Return a JSON object with these keys (the response format is schema-enforced):
 
-1. **faq_entries**: For each service page below, generate 4-6 FAQ Q&A pairs that a potential
-   {singular_term} would actually search for. Format: {{"page_url": [{{"question": "...", "answer": "..."}}]}}
-   Make answers direct (start with the answer, not fluff), include the city name,
-   and mention the provider/team by name where relevant.
+1. **faq_entries**: An ARRAY of objects, one per service page below, each
+   {{"page_url": "...", "faqs": [{{"question": "...", "answer": "..."}}]}} with 4-6 FAQ
+   pairs a potential {singular_term} would actually search for. Make answers direct
+   (start with the answer, not fluff), include the city name, and mention the
+   provider/team by name where relevant.
 
-2. **content_gaps**: List of pages that should exist but don't. For each, include
-   the suggested title, URL slug, and a 2-sentence description of what it should cover.
-   Focus on high-search-volume {profile.industry} queries for {customer.city}.
+2. **content_gaps**: An ARRAY of objects, each {{"title": "...", "slug": "...",
+   "description": "..."}}, for pages that should exist but don't. Focus on
+   high-search-volume {profile.industry} queries for {customer.city}.
 
-3. **service_descriptions**: For each service page below, write an improved 1-2 sentence
-   description optimized for llms.txt (concise, factual, includes location and provider).
+3. **service_descriptions**: An ARRAY of objects, one per service page below, each
+   {{"page_url": "...", "description": "..."}} — an improved 1-2 sentence description
+   optimized for llms.txt (concise, factual, includes location and provider).
 
-4. **priority_actions**: Top 5 ranked actions this business should take to get more
-   new {customer_term} finding them online. Be specific and tailored to this {profile.industry} business.
+4. **priority_actions**: An ARRAY of strings — the top 5 ranked actions this business
+   should take to get more new {customer_term} finding them online. Be specific and
+   tailored to this {profile.industry} business.
 
 IMPORTANT: All content must be specific to this {profile.industry_label} business.
 Do NOT use generic dental or medical terminology unless this IS a dental/medical practice.
-
-Return ONLY valid JSON, no markdown code fences.
 """
 
     # Stream with a generous cap and FAIL LOUDLY on truncation (raises
@@ -400,6 +490,7 @@ Return ONLY valid JSON, no markdown code fences.
         system=_build_system_prompt(profile),
         user=user_prompt,
         max_tokens=32000,
+        output_schema=ANALYSIS_SCHEMA,
         label=f"analysis:chunk{chunk_idx + 1}",
     )
     result = _parse_json_response(response_text)
@@ -413,7 +504,8 @@ Return ONLY valid JSON, no markdown code fences.
             "priority_actions": [],
         }
 
-    return result
+    # Convert the schema's arrays into the internal {page_url: ...} dict maps.
+    return _coerce_analysis_shape(result)
 
 
 def analyze_and_recommend(

@@ -75,6 +75,32 @@ class TestAnalyzeAndRecommend:
         call_kwargs = mock_client.messages.stream.call_args.kwargs
         assert call_kwargs["model"] == "claude-opus-4-8"
         assert call_kwargs["max_tokens"] == 32000
+        # Structured outputs: a JSON schema is enforced
+        assert call_kwargs["output_config"]["format"]["type"] == "json_schema"
+
+    @patch("geo_agent.analyzer.get_client")
+    def test_coerces_array_shape_to_dict_maps(self, mock_get_client, sample_customer, sample_pages):
+        """The schema returns arrays; result must be the internal dict-map shape."""
+        raw = {
+            "faq_entries": [
+                {"page_url": "https://x.com/implants", "faqs": [{"question": "Q?", "answer": "A."}]},
+            ],
+            "content_gaps": [{"title": "T", "slug": "t", "description": "d"}],
+            "service_descriptions": [{"page_url": "https://x.com/implants", "description": "desc"}],
+            "priority_actions": ["do this", "then that"],
+        }
+        mock_client = MagicMock()
+        _wire_stream(mock_client, json.dumps(raw))
+        mock_get_client.return_value = mock_client
+
+        result = analyze_and_recommend(sample_customer, sample_pages)
+
+        assert isinstance(result["faq_entries"], dict)
+        assert result["faq_entries"]["https://x.com/implants"][0]["answer"] == "A."
+        assert isinstance(result["service_descriptions"], dict)
+        assert result["service_descriptions"]["https://x.com/implants"] == "desc"
+        assert result["priority_actions"] == ["do this", "then that"]
+        assert len(result["content_gaps"]) == 1
 
     @patch("geo_agent.analyzer.get_client")
     def test_truncates_page_content(self, mock_get_client, sample_customer, fake_analysis_response):

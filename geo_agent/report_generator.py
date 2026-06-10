@@ -17,6 +17,8 @@ from textwrap import dedent
 
 import httpx
 
+from geo_agent.schema_validator import extract_jsonld
+
 logger = logging.getLogger("practicerank.report")
 
 # ---------------------------------------------------------------------------
@@ -55,29 +57,118 @@ def _check_file_exists(domain: str, path: str) -> bool:
 
 
 def _extract_schema_types(html: str) -> list[str]:
-    """Extract @type values from JSON-LD blocks."""
-    types = []
-    for m in re.finditer(r'"@type"\s*:\s*"([^"]+)"', html):
-        types.append(m.group(1))
+    """Extract @type values from <script type="application/ld+json"> blocks only.
+
+    Uses schema_validator.extract_jsonld so @type strings inside inline JS or
+    other page content are never counted as structured data.
+    """
+    types: list[str] = []
+
+    def _collect(node):
+        if isinstance(node, dict):
+            t = node.get('@type')
+            if isinstance(t, str):
+                types.append(t)
+            elif isinstance(t, list):
+                types.extend(x for x in t if isinstance(x, str))
+            for v in node.values():
+                _collect(v)
+        elif isinstance(node, list):
+            for item in node:
+                _collect(item)
+
+    for schema in extract_jsonld(html):
+        _collect(schema)
     return types
+
+
+def _parse_ai_robots(robots: str) -> tuple[list[str], list[str]]:
+    """Determine which AI bots robots.txt explicitly ALLOWS vs DISALLOWS.
+
+    A bot mentioned only with 'Disallow: /' is blocked — mere presence of the
+    bot name in the file is NOT permission. Returns (allowed, blocked).
+    """
+    ai_bots = ['ChatGPT-User', 'Claude-SearchBot', 'PerplexityBot', 'GPTBot',
+               'ClaudeBot', 'Google-Extended']
+    # Parse into user-agent groups: ([agents], [(directive, value), ...])
+    groups: list[tuple[list[str], list[tuple[str, str]]]] = []
+    agents: list[str] = []
+    rules: list[tuple[str, str]] = []
+    for raw in robots.splitlines():
+        line = raw.split('#', 1)[0].strip()
+        if not line or ':' not in line:
+            continue
+        field, _, value = line.partition(':')
+        field = field.strip().lower()
+        value = value.strip()
+        if field == 'user-agent':
+            if rules:
+                groups.append((agents, rules))
+                agents, rules = [], []
+            agents.append(value.lower())
+        elif field in ('allow', 'disallow') and agents:
+            rules.append((field, value))
+    if agents:
+        groups.append((agents, rules))
+
+    def _group_blocks_all(group_rules: list[tuple[str, str]]) -> bool:
+        return any(f == 'disallow' and v == '/' for f, v in group_rules)
+
+    allowed: list[str] = []
+    blocked: list[str] = []
+    for bot in ai_bots:
+        bot_l = bot.lower()
+        verdict = None
+        for grp_agents, grp_rules in groups:
+            if bot_l in grp_agents:
+                verdict = 'blocked' if _group_blocks_all(grp_rules) else 'allowed'
+                break
+        if verdict is None:
+            # Not explicitly mentioned — blocked only if wildcard disallows all
+            for grp_agents, grp_rules in groups:
+                if '*' in grp_agents and _group_blocks_all(grp_rules):
+                    verdict = 'blocked'
+                    break
+        if verdict == 'allowed':
+            allowed.append(bot)
+        elif verdict == 'blocked':
+            blocked.append(bot)
+    return allowed, blocked
+
+
+def _extract_page_locs(xml: str) -> list[str]:
+    """Extract <loc> values from <url> entries only.
+
+    Skips <sitemap> index locs and namespaced image:/video: locs so the
+    page count is not inflated by media entries or nested sitemaps.
+    """
+    locs: list[str] = []
+    for block in re.findall(r'<url\b[^>]*>(.*?)</url>', xml, re.S | re.I):
+        m = re.search(r'<loc>\s*([^<]+?)\s*</loc>', block)
+        if m:
+            locs.append(m.group(1))
+    return locs
 
 
 def _get_sitemap_page_urls(domain: str) -> list[str]:
     """Collect page URLs across all sitemaps."""
-    urls: list[str] = []
     idx = _fetch(f"https://{domain}/sitemap.xml") or _fetch(f"https://www.{domain}/sitemap.xml")
     if not idx:
         return []
-    # sitemap index → sub-sitemaps
-    sub_urls = re.findall(r'<loc>([^<]+)</loc>', idx)
-    for url in sub_urls:
-        if url.endswith('.xml'):
-            sub = _fetch(url)
-            if sub:
-                urls.extend(re.findall(r'<loc>([^<]+)</loc>', sub))
-        else:
-            urls.append(url)
-    return urls or sub_urls
+    urls = _extract_page_locs(idx)
+    # sitemap index → sub-sitemaps (<sitemap> entries only)
+    sub_sitemaps = re.findall(
+        r'<sitemap\b[^>]*>.*?<loc>\s*([^<]+?)\s*</loc>.*?</sitemap>', idx, re.S | re.I)
+    for sm_url in sub_sitemaps:
+        sub = _fetch(sm_url)
+        if sub:
+            urls.extend(_extract_page_locs(sub))
+    if not urls and not sub_sitemaps:
+        # Malformed sitemap without <url> wrappers — fall back to bare <loc>
+        # values, excluding anything that looks like a nested sitemap
+        urls = [u for u in re.findall(r'<loc>([^<]+)</loc>', idx)
+                if not u.strip().endswith('.xml')]
+    return urls
 
 
 def _extract_text_content(html: str, after: str | None = None) -> str:
@@ -572,9 +663,12 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     if not site_data.get('has_llms_txt'):
         findings.append('No llms.txt file — completely invisible to AI assistants')
     if not site_data.get('has_ai_robots'):
-        findings.append('No AI bot permissions in robots.txt')
+        if site_data.get('ai_bots_blocked'):
+            findings.append(f'robots.txt blocks AI bots ({", ".join(site_data["ai_bots_blocked"])})')
+        else:
+            findings.append('No AI bot permissions in robots.txt')
     if not schema_types:
-        findings.append('No schema markup found')
+        findings.append('No schema markup detected on crawled pages')
     elif 'Dentist' not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types:
         findings.append(f'Schema incomplete — found {", ".join(schema_types)} but no {profile.schema_type}')
     if 'FAQPage' not in schema_types:
@@ -582,7 +676,7 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     if 'Person' not in schema_types:
         findings.append(f'No Person schema — {profile.provider_term} invisible to AI')
     if not site_data.get('has_analytics'):
-        findings.append('No analytics tracking detected')
+        findings.append('Analytics tracking not detected on crawled pages')
     if not findings:
         findings.append('Good foundation — see recommendations for optimization')
     for f in findings:
@@ -689,9 +783,10 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
 
     doc.add_heading('Issues Found', level=2)
     if not schema_types:
-        doc.add_heading('No Schema Markup', level=3)
+        doc.add_heading('No Schema Markup Detected', level=3)
         doc.add_paragraph(
-            'The site has zero JSON-LD structured data. Search engines and AI models rely on schema '
+            'No JSON-LD structured data was detected on the homepage or key interior pages crawled. '
+            'Search engines and AI models rely on schema '
             f'to understand entities, services, and relationships. Missing: {profile.schema_type}, FAQPage, Person, '
             'BreadcrumbList, AggregateRating.')
     elif profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types:
@@ -700,10 +795,12 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
             f'Found: {", ".join(schema_types)}. Missing critical types: {profile.schema_type}, '
             'FAQPage, Person, BreadcrumbList.')
     if not site_data.get('has_analytics'):
-        doc.add_heading('No Analytics Tracking', level=3)
+        doc.add_heading('Analytics Tracking Not Detected', level=3)
         doc.add_paragraph(
-            'No Google Analytics 4, Google Tag Manager, or other analytics platform detected. '
-            'Without analytics there is no visibility into traffic, conversions, or user behavior.')
+            'No Google Analytics 4 or Google Tag Manager tags were detected on the crawled pages. '
+            'Note: analytics loaded via a consent manager or server-side tagging may not be visible '
+            'in page HTML — verify in your tag configuration. Without working analytics there is no '
+            'visibility into traffic, conversions, or user behavior.')
     if site_data.get('pages_indexed', 0) < 15:
         doc.add_heading('Low Page Count', level=3)
         doc.add_paragraph(
@@ -717,7 +814,9 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
 
     aeo_checks = [
         ('llms.txt', site_data.get('has_llms_txt'), 'Found', 'NOT FOUND — AI assistants cannot discover this business'),
-        ('AI bot permissions', site_data.get('has_ai_robots'), 'Configured', 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'),
+        ('AI bot permissions', site_data.get('has_ai_robots'),
+         site_data.get('ai_robots_status', 'Configured'),
+         site_data.get('ai_robots_status', 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot')),
         ('FAQPage schema', 'FAQPage' in schema_types, 'Present', 'Missing — cannot appear in AI FAQ answers'),
         ('Person schema', 'Person' in schema_types, 'Present', f'Missing — {profile.provider_term} invisible to AI'),
         (f'{profile.schema_type} schema', any(t in schema_types for t in [profile.schema_type, 'LocalBusiness', 'Organization']), 'Present', 'Missing — business not typed for AI'),
@@ -744,11 +843,18 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
             'Without it, when someone asks ChatGPT about your ' + profile.service_category + ' in ' + (city or 'your area') + ', '
             'your business is invisible to the AI\'s knowledge base.')
     if not site_data.get('has_ai_robots'):
-        doc.add_heading('No AI Bot Permissions', level=3)
-        doc.add_paragraph(
-            'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
-            'Google-Extended, PerplexityBot, Applebot-Extended). Explicit Allow directives signal intent '
-            'and improve crawl priority for AI-powered search engines.')
+        if site_data.get('ai_bots_blocked'):
+            doc.add_heading('robots.txt Blocks AI Bots', level=3)
+            doc.add_paragraph(
+                f'The robots.txt explicitly disallows {", ".join(site_data["ai_bots_blocked"])}. '
+                'Blocked AI search bots cannot crawl the site, which keeps the business out of '
+                'AI-powered search results.')
+        else:
+            doc.add_heading('No AI Bot Permissions', level=3)
+            doc.add_paragraph(
+                'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
+                'Google-Extended, PerplexityBot, Applebot-Extended). Explicit Allow directives signal intent '
+                'and improve crawl priority for AI-powered search engines.')
 
     doc.add_page_break()
 
@@ -758,7 +864,10 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     if not site_data.get('has_llms_txt'):
         fix_data.append(('CRITICAL', 'No llms.txt', 'Invisible to AI assistants', 'Deploy llms.txt to site root'))
     if not site_data.get('has_ai_robots'):
-        fix_data.append(('CRITICAL', 'No AI crawler permissions', 'AI bots may not prioritize crawling', 'Update robots.txt'))
+        if site_data.get('ai_bots_blocked'):
+            fix_data.append(('CRITICAL', 'robots.txt blocks AI bots', 'AI search engines cannot crawl the site', 'Update robots.txt'))
+        else:
+            fix_data.append(('CRITICAL', 'No AI crawler permissions', 'AI bots may not prioritize crawling', 'Update robots.txt'))
     if not schema_types or (profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types):
         fix_data.append(('CRITICAL', f'Missing {profile.schema_type} schema', 'Business not typed for search engines', f'Add {profile.schema_type} JSON-LD'))
     if 'FAQPage' not in schema_types:
@@ -766,7 +875,7 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     if 'Person' not in schema_types:
         fix_data.append(('HIGH', 'No Person schema', f'{profile.provider_term.title()} not in AI results', f'Add Person JSON-LD per {profile.provider_term[:-1] if profile.provider_term.endswith("s") else profile.provider_term}'))
     if not site_data.get('has_analytics'):
-        fix_data.append(('HIGH', 'No analytics', 'No traffic/conversion data', 'Install Google Analytics 4'))
+        fix_data.append(('HIGH', 'Analytics not detected on crawled pages', 'No traffic/conversion data', 'Install/verify Google Analytics 4'))
     if not site_data.get('has_sitemap'):
         fix_data.append(('HIGH', 'No sitemap.xml', 'Pages may not be indexed', 'Generate and submit sitemap'))
     # Content findings — only asserted when the crawl data actually supports them
@@ -938,12 +1047,26 @@ def generate_report(customer: dict, providers: list, services: list,
         _check_file_exists(www_domain, '/llms.txt')
     )
 
-    # Check robots.txt for AI bot mentions
+    # Check robots.txt AI bot POLICY (allowed vs disallowed — presence of a
+    # bot name is not permission; a Disallow rule is the opposite)
     robots = _fetch(f"https://{domain}/robots.txt") or _fetch(f"https://{www_domain}/robots.txt")
     site_data['robots_txt'] = robots or ''
+    site_data['ai_bots_allowed'] = []
+    site_data['ai_bots_blocked'] = []
     if robots:
-        ai_bots = ['ChatGPT-User', 'Claude-SearchBot', 'PerplexityBot', 'GPTBot']
-        site_data['has_ai_robots'] = any(bot in robots for bot in ai_bots)
+        ai_allowed, ai_blocked = _parse_ai_robots(robots)
+        site_data['ai_bots_allowed'] = ai_allowed
+        site_data['ai_bots_blocked'] = ai_blocked
+        site_data['has_ai_robots'] = bool(ai_allowed)
+        if ai_allowed:
+            site_data['ai_robots_status'] = ('Configured — allows ' + ', '.join(ai_allowed)
+                                             + (f"; blocks {', '.join(ai_blocked)}" if ai_blocked else ''))
+        elif ai_blocked:
+            site_data['ai_robots_status'] = f"BLOCKED — robots.txt disallows {', '.join(ai_blocked)}"
+        else:
+            site_data['ai_robots_status'] = 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'
+    else:
+        site_data['ai_robots_status'] = 'NOT configured — no robots.txt found'
 
     # Check sitemap
     site_data['has_sitemap'] = (
@@ -961,11 +1084,36 @@ def generate_report(customer: dict, providers: list, services: list,
     # HTTPS verified iff the homepage actually loaded over https
     site_data['https_ok'] = bool(homepage)
     site_data['has_blockquote'] = bool(homepage) and '<blockquote' in homepage.lower()
+
+    def _has_analytics_tags(html: str) -> bool:
+        lower = html.lower()
+        return ('google-analytics' in lower or 'gtag' in lower or
+                'googletagmanager' in lower)
+
+    # Schema and analytics often live on interior pages (WP SEO plugins,
+    # consent managers) — check key crawled pages, not just the homepage.
+    schema_types_found: set[str] = set()
+    analytics_found = False
+    pages_checked = 0
     if homepage:
-        site_data['schema_types'] = _extract_schema_types(homepage)
-        site_data['has_analytics'] = ('google-analytics' in homepage.lower() or
-                                       'gtag' in homepage.lower() or
-                                       'googletagmanager' in homepage.lower())
+        pages_checked += 1
+        schema_types_found.update(_extract_schema_types(homepage))
+        analytics_found = _has_analytics_tags(homepage)
+    interior_markers = ('service', 'about', 'contact', 'team', 'faq',
+                        'doctor', 'location')
+    interior_urls = [u for u in sitemap_urls
+                     if any(m in u.lower() for m in interior_markers)][:6]
+    for page_url in interior_urls:
+        page_html = _fetch(page_url)
+        if not page_html:
+            continue
+        pages_checked += 1
+        schema_types_found.update(_extract_schema_types(page_html))
+        if not analytics_found:
+            analytics_found = _has_analytics_tags(page_html)
+    site_data['schema_types'] = sorted(schema_types_found)
+    site_data['has_analytics'] = analytics_found
+    site_data['pages_checked'] = pages_checked
 
     # Places data
     if places:
@@ -1052,10 +1200,16 @@ def generate_report(customer: dict, providers: list, services: list,
             f'summary of what your business offers. When someone asks AI about {profile.service_category} in '
             f'{city}, your business is invisible.'))
     if not site_data.get('has_ai_robots'):
-        issues_critical.append(('No AI bot permissions in robots.txt',
-            'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
-            'Google-Extended, PerplexityBot, Applebot-Extended). Explicit Allow directives signal intent '
-            'and improve crawl priority for AI-powered search engines.'))
+        if site_data.get('ai_bots_blocked'):
+            issues_critical.append(('robots.txt blocks AI bots',
+                f'The robots.txt explicitly disallows {", ".join(site_data["ai_bots_blocked"])}. '
+                'Blocked AI search bots cannot crawl the site, which keeps the business out of '
+                'AI-powered search results.'))
+        else:
+            issues_critical.append(('No AI bot permissions in robots.txt',
+                'The robots.txt has no specific rules for AI search bots (ChatGPT-User, GPTBot, ClaudeBot, '
+                'Google-Extended, PerplexityBot, Applebot-Extended). Explicit Allow directives signal intent '
+                'and improve crawl priority for AI-powered search engines.'))
     if 'FAQPage' not in site_data.get('schema_types', []):
         issues_high.append(('No FAQPage schema markup',
             'FAQ schema enables rich results in Google and provides structured answers that AI assistants '
@@ -1065,13 +1219,16 @@ def generate_report(customer: dict, providers: list, services: list,
             f'Without Person schema, AI assistants cannot reliably identify your {profile.provider_term}, their credentials, '
             f'or specialties. This data is critical for queries about your {profile.provider_term}.'))
     if not site_data.get('has_analytics'):
-        issues_high.append(('No analytics tracking detected',
-            'No Google Analytics 4, Google Tag Manager, or other analytics platform was detected. '
-            'Without analytics there is no visibility into traffic, conversions, or user behavior.'))
+        issues_high.append(('Analytics tracking not detected on crawled pages',
+            'No Google Analytics 4 or Google Tag Manager tags were detected on the crawled pages. '
+            'Analytics loaded via a consent manager or server-side tagging may not be visible in '
+            'page HTML — verify in your tag configuration. Without working analytics there is no '
+            'visibility into traffic, conversions, or user behavior.'))
     schema_types = site_data.get('schema_types', [])
     if not schema_types:
-        issues_high.append(('No schema markup found',
-            'The site has zero JSON-LD structured data. Search engines and AI models rely on schema '
+        issues_high.append(('No schema markup detected',
+            'No JSON-LD structured data was detected on the homepage or key interior pages crawled. '
+            'Search engines and AI models rely on schema '
             'to understand entities, services, and relationships.'))
     elif profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types:
         issues_medium.append((f'Missing {profile.schema_type}/LocalBusiness schema',
@@ -1149,8 +1306,8 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 - {'HTTPS active with SSL certificate' if site_data.get('https_ok') else 'HTTPS could not be verified during crawl'}
 - {'Sitemap.xml present' if site_data.get('has_sitemap') else 'Sitemap.xml NOT found (critical)'}
 - {str(site_data['pages_indexed']) + ' pages indexed in sitemap' if site_data['pages_indexed'] else 'Could not determine page count'}
-- Schema types found: {', '.join(schema_types) if schema_types else 'None'}
-- Analytics: {'Installed' if site_data.get('has_analytics') else 'NOT detected'}
+- Schema types found: {', '.join(schema_types) if schema_types else 'None detected on crawled pages'}
+- Analytics: {'Installed' if site_data.get('has_analytics') else 'Not detected on crawled pages'}
 
 ### Issues Found
 """
@@ -1170,7 +1327,7 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 | Check | Status |
 |-------|--------|
 | llms.txt | {'Found' if site_data['has_llms_txt'] else 'NOT FOUND — AI assistants cannot discover this business'} |
-| AI bot permissions (robots.txt) | {'Configured' if site_data['has_ai_robots'] else 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot'} |
+| AI bot permissions (robots.txt) | {site_data.get('ai_robots_status', 'Configured' if site_data['has_ai_robots'] else 'NOT configured — no rules for ChatGPT-User, GPTBot, ClaudeBot')} |
 | FAQPage schema | {'Present' if 'FAQPage' in schema_types else 'Missing — cannot appear in AI FAQ answers'} |
 | Person schema ({profile.provider_term}) | {'Present' if 'Person' in schema_types else 'Missing — ' + profile.provider_term + ' invisible to AI'} |
 | {profile.schema_type}/LocalBusiness schema | {'Present' if any(t in schema_types for t in [profile.schema_type, 'LocalBusiness', 'Organization']) else 'Missing — business not typed for AI'} |
