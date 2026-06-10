@@ -5429,6 +5429,56 @@ def api_content_publish():
 
         platform = customer.get("platform", "webflow")
 
+        # Gate: only publish recommendations that have been explicitly approved.
+        # (The endpoint previously published whatever rec_ids were POSTed,
+        # regardless of review status.)
+        skipped_unapproved = []
+        approved_ids = []
+        for rid in rec_ids:
+            r = db.get_content_recommendation(rid)
+            status = r.get("status") if r else "missing"
+            if status == "approved":
+                approved_ids.append(rid)
+            else:
+                skipped_unapproved.append(
+                    {"rec_id": rid, "ok": False, "error": f"Not approved (status={status})"}
+                )
+        if not approved_ids:
+            return jsonify({
+                "error": "No approved recommendations to publish. Approve them first.",
+                "results": skipped_unapproved,
+            }), 400
+        rec_ids = approved_ids
+
+        # YMYL backstop: fact-check each rec against the verified business profile
+        # and block any with claims it can't ground (invented services/credentials,
+        # uncited stats, fabricated reviews) before it reaches the live site.
+        from geo_agent.fact_check import fact_check_html
+        customer_obj = db.to_config_customer(customer_id)
+        fact_blocked = []
+        fact_clean = []
+        for rid in rec_ids:
+            r = db.get_content_recommendation(rid)
+            findings = (
+                fact_check_html(customer_obj, (r or {}).get("html_snippet", ""))
+                if customer_obj else []
+            )
+            if findings:
+                fact_blocked.append({
+                    "rec_id": rid, "ok": False,
+                    "error": "Blocked by fact-check — unsupported claims", "findings": findings,
+                })
+                logger.warning(f"Fact-check blocked rec {rid}: {findings}")
+            else:
+                fact_clean.append(rid)
+        if not fact_clean:
+            return jsonify({
+                "error": "All recommendations were blocked by the fact-check. Review the findings.",
+                "results": skipped_unapproved + fact_blocked,
+            }), 400
+        rec_ids = fact_clean
+        prefilter_results = skipped_unapproved + fact_blocked
+
         # WordPress publishing via PracticeRank plugin
         if platform == "wordpress":
             from geo_agent.secrets import get_secrets
@@ -5446,16 +5496,16 @@ def api_content_publish():
                 if not health:
                     return jsonify({"error": "Cannot reach WordPress PracticeRank plugin. Check the plugin is installed and active."}), 502
 
-                results = []
+                results = list(prefilter_results)
                 for rid in rec_ids:
                     r = db.get_content_recommendation(rid)
-                    if not r or not r.get("generated_content"):
+                    if not r or not r.get("html_snippet"):
                         results.append({"rec_id": rid, "ok": False, "error": "No generated content"})
                         continue
                     wp_type = "page" if r.get("rec_type") == "new_page" else "post"
                     result = publisher.push_content(
                         title=r.get("title", r.get("rec_title", "Untitled")),
-                        content_html=r["generated_content"],
+                        content_html=r["html_snippet"],
                         content_type=wp_type,
                         slug=r.get("slug"),
                         category=r.get("category", ""),
@@ -5497,7 +5547,7 @@ def api_content_publish():
         publisher = WebflowPublisher(api_key=oauth_token, site_id=site_id)
         try:
             content_pub = WebflowContentPublisher(publisher, db, customer_id)
-            results = content_pub.publish_batch(rec_ids)
+            results = list(prefilter_results) + content_pub.publish_batch(rec_ids)
             success_count = sum(1 for r in results if r["ok"])
             audit_log("content_published", customer_id=customer_id, details=f"{success_count}/{len(rec_ids)} published to Webflow")
             return jsonify({

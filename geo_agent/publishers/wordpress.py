@@ -301,7 +301,7 @@ class WordPressPublisher:
                 logger.info(f"Skipping non-publishable rec type: {rec_type}")
                 continue
 
-            content_html = rec.get("generated_content", "")
+            content_html = rec.get("html_snippet", "") or rec.get("generated_content", "")
             if not content_html:
                 logger.warning(f"Rec {rec['id']} has no generated content, skipping")
                 continue

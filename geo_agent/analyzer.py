@@ -22,6 +22,7 @@ from geo_agent.google_places import (
     VerifiedBusinessData,
     is_trusted,
 )
+from geo_agent.llm import MODEL_ANALYSIS, complete
 
 logger = logging.getLogger(__name__)
 
@@ -110,11 +111,15 @@ def grade_analysis(
 
 
 def _scrub_competitor(answer: str, competitors: list[str]) -> str:
-    """Remove competitor names from an FAQ answer."""
+    """Replace competitor names in an FAQ answer with a neutral term.
+
+    Uses natural language ("another local practice") rather than a bracketed
+    placeholder like "[practice]" (which reads as broken if it ships) or the
+    client's own name (which turns a competitor claim into a false claim).
+    """
     import re
     for comp in competitors:
-        # Case-insensitive replacement
-        answer = re.sub(re.escape(comp), "[practice]", answer, flags=re.IGNORECASE)
+        answer = re.sub(re.escape(comp), "another local practice", answer, flags=re.IGNORECASE)
     return answer
 
 
@@ -259,28 +264,19 @@ def _parse_json_response(response_text: str) -> dict | None:
     except json.JSONDecodeError:
         pass
 
-    # Try to extract JSON object from surrounding text
+    # Try to extract a JSON object from surrounding prose.
     brace_start = text.find("{")
     if brace_start > 0:
-        text = text[brace_start:]
         try:
-            return json.loads(text)
+            return json.loads(text[brace_start:])
         except json.JSONDecodeError:
             pass
 
-    # Try to repair truncated JSON by closing open structures
-    # Common case: response cut off mid-string or mid-object
-    repaired = text.rstrip()
-    # Close any open strings
-    if repaired.count('"') % 2 != 0:
-        repaired += '"'
-    # Try progressively closing structures
-    for suffix in ['"}]}]}', '"}]}', '"}]', '"}', '}]}', '}]', '}', ']']:
-        try:
-            return json.loads(repaired + suffix)
-        except json.JSONDecodeError:
-            continue
-
+    # NOTE: we deliberately do NOT "repair" truncated JSON by closing braces.
+    # Truncation is caught upstream (complete() raises TruncatedResponseError on
+    # stop_reason == "max_tokens"), so reaching here means a genuinely malformed
+    # but complete response — return None and let the caller log/skip rather than
+    # silently accepting a guessed-at structure.
     return None
 
 
@@ -395,14 +391,17 @@ Do NOT use generic dental or medical terminology unless this IS a dental/medical
 Return ONLY valid JSON, no markdown code fences.
 """
 
-    response = client.messages.create(
-        model="claude-opus-4-6",
-        max_tokens=8192,
+    # Stream with a generous cap and FAIL LOUDLY on truncation (raises
+    # TruncatedResponseError) instead of "repairing" a cut-off response — a
+    # half-finished FAQ answer must never reach a client's site.
+    response_text = complete(
+        client,
+        model=MODEL_ANALYSIS,
         system=_build_system_prompt(profile),
-        messages=[{"role": "user", "content": user_prompt}],
+        user=user_prompt,
+        max_tokens=32000,
+        label=f"analysis:chunk{chunk_idx + 1}",
     )
-
-    response_text = response.content[0].text.strip()
     result = _parse_json_response(response_text)
 
     if result is None:

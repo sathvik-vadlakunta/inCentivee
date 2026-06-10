@@ -62,22 +62,22 @@ def _extract_schema_types(html: str) -> list[str]:
     return types
 
 
-def _count_pages_in_sitemap(domain: str) -> int:
-    """Count total pages across all sitemaps."""
-    count = 0
+def _get_sitemap_page_urls(domain: str) -> list[str]:
+    """Collect page URLs across all sitemaps."""
+    urls: list[str] = []
     idx = _fetch(f"https://{domain}/sitemap.xml") or _fetch(f"https://www.{domain}/sitemap.xml")
     if not idx:
-        return 0
+        return []
     # sitemap index → sub-sitemaps
     sub_urls = re.findall(r'<loc>([^<]+)</loc>', idx)
     for url in sub_urls:
         if url.endswith('.xml'):
             sub = _fetch(url)
             if sub:
-                count += len(re.findall(r'<loc>', sub))
+                urls.extend(re.findall(r'<loc>([^<]+)</loc>', sub))
         else:
-            count += 1
-    return count or len(sub_urls)
+            urls.append(url)
+    return urls or sub_urls
 
 
 def _extract_text_content(html: str, after: str | None = None) -> str:
@@ -554,7 +554,9 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         f'recommendations with deploy-ready files.'
     )
     overall = scores['overall']
-    projected = min(overall + 40, 95)
+    # Recomputed by generate_report using the same scoring model with the
+    # deployed fixes applied — not an invented delta.
+    projected = scores.get('projected', overall)
     summary_p = doc.add_paragraph()
     summary_p.add_run(f'The site scores {overall}/100 overall').bold = True
     gap_text = f' with {"critical gaps" if overall < 50 else "notable opportunities"} in AI search readiness ({scores["aeo"]}/100)'
@@ -610,7 +612,7 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         score_table.rows[i + 1].cells[2].text = _grade(s)
 
     p = doc.add_paragraph()
-    run = p.add_run(f'\nProjected Improvement: {overall} -> {projected}/100 after implementation')
+    run = p.add_run(f'\nProjected Score: {overall} -> {projected}/100 after deploying the included fixes (same scoring model, fixes applied)')
     run.bold = True
     run.font.color.rgb = RGBColor(0x05, 0x6F, 0x46)
 
@@ -627,7 +629,7 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
         ('A Record', hosting_info.get('a_record', 'Unknown')),
         ('CNAME (www)', hosting_info.get('cname', 'None')),
         ('Web Server', hosting_info.get('web_server', 'Unknown')),
-        ('SSL', 'Active'),
+        ('SSL', 'Active (HTTPS verified)' if site_data.get('https_ok') else 'Not verified'),
         ('Domain Expiry', hosting_info.get('domain_expiry', 'Unknown')),
     ]
     infra_table = doc.add_table(rows=len(infra_data), cols=2)
@@ -673,7 +675,9 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     doc.add_heading(f'1. Technical SEO Audit ({scores["technical_seo"]}/100 — {_grade(scores["technical_seo"])})', level=1)
 
     doc.add_heading("What's Working", level=2)
-    working = ['HTTPS active with SSL certificate']
+    working = []
+    if site_data.get('https_ok'):
+        working.append('HTTPS active with SSL certificate')
     if site_data.get('has_sitemap'):
         working.append(f'Sitemap.xml present ({site_data["pages_indexed"]} pages indexed)')
     if schema_types:
@@ -758,16 +762,27 @@ def _generate_docx(report_md: str, customer: dict, scores: dict, site_data: dict
     if not schema_types or (profile.schema_type not in schema_types and 'LocalBusiness' not in schema_types and 'Organization' not in schema_types):
         fix_data.append(('CRITICAL', f'Missing {profile.schema_type} schema', 'Business not typed for search engines', f'Add {profile.schema_type} JSON-LD'))
     if 'FAQPage' not in schema_types:
-        fix_data.append(('HIGH', 'No FAQPage schema', '37-40% fewer AI citations', 'Add FAQ schema'))
+        fix_data.append(('HIGH', 'No FAQPage schema', 'Missing a schema type AI engines cite most often', 'Add FAQ schema'))
     if 'Person' not in schema_types:
         fix_data.append(('HIGH', 'No Person schema', f'{profile.provider_term.title()} not in AI results', f'Add Person JSON-LD per {profile.provider_term[:-1] if profile.provider_term.endswith("s") else profile.provider_term}'))
     if not site_data.get('has_analytics'):
         fix_data.append(('HIGH', 'No analytics', 'No traffic/conversion data', 'Install Google Analytics 4'))
     if not site_data.get('has_sitemap'):
         fix_data.append(('HIGH', 'No sitemap.xml', 'Pages may not be indexed', 'Generate and submit sitemap'))
-    fix_data.append(('HIGH', 'Service pages lack expert quotes', 'Reduces AI trust signals', 'Add expert quotes to top pages'))
-    fix_data.append(('MEDIUM', 'No neighborhood pages', 'Missing local search queries', 'Create area-specific pages'))
-    fix_data.append(('MEDIUM', 'No blog/content cadence', 'No freshness signals', 'Start 2-4 posts/month'))
+    # Content findings — only asserted when the crawl data actually supports them
+    page_paths = []
+    for u in site_data.get('sitemap_urls', []):
+        rest = u.split('//', 1)[-1]
+        page_paths.append('/' + rest.split('/', 1)[1].lower() if '/' in rest else '/')
+    if not site_data.get('has_blockquote'):
+        fix_data.append(('HIGH', 'Expert quotes not detected on crawled pages', 'Reduces AI trust signals', 'Add expert quotes to top pages'))
+    city_slug = re.sub(r'[^a-z0-9]+', '-', city.lower()).strip('-') if city else ''
+    area_markers = ('neighborhood', 'service-area', '/areas', '/locations', '/communities', 'serving-')
+    if not any(any(m in p for m in area_markers) or (city_slug and city_slug in p) for p in page_paths):
+        fix_data.append(('MEDIUM', 'No neighborhood/area pages detected in sitemap', 'Missing local search queries', 'Create area-specific pages'))
+    blog_markers = ('/blog', '/post', '/news', '/article')
+    if not any(m in p for p in page_paths for m in blog_markers):
+        fix_data.append(('MEDIUM', 'No blog/content cadence detected', 'No freshness signals', 'Start 2-4 posts/month'))
 
     if fix_data:
         fix_table = doc.add_table(rows=len(fix_data) + 1, cols=4)
@@ -936,11 +951,16 @@ def generate_report(customer: dict, providers: list, services: list,
         _check_file_exists(www_domain, '/sitemap.xml')
     )
 
-    # Count pages
-    site_data['pages_indexed'] = _count_pages_in_sitemap(domain) or _count_pages_in_sitemap(www_domain)
+    # Count pages (keep URLs so content findings can be verified, not assumed)
+    sitemap_urls = _get_sitemap_page_urls(domain) or _get_sitemap_page_urls(www_domain)
+    site_data['sitemap_urls'] = sitemap_urls
+    site_data['pages_indexed'] = len(sitemap_urls)
 
     # Fetch homepage for schema + analytics check
     homepage = _fetch(f"https://{domain}") or _fetch(f"https://{www_domain}")
+    # HTTPS verified iff the homepage actually loaded over https
+    site_data['https_ok'] = bool(homepage)
+    site_data['has_blockquote'] = bool(homepage) and '<blockquote' in homepage.lower()
     if homepage:
         site_data['schema_types'] = _extract_schema_types(homepage)
         site_data['has_analytics'] = ('google-analytics' in homepage.lower() or
@@ -991,7 +1011,19 @@ def generate_report(customer: dict, providers: list, services: list,
             files.append(str(schema_docs_path))
 
     # ---- Build report context ----
-    projected = min(scores['overall'] + 40, 95)
+    # Projected score: re-run the same scoring model with the fixes this report
+    # actually deploys applied (llms.txt, AI robots rules, AEO schema types).
+    projected_site = dict(site_data)
+    projected_site['has_llms_txt'] = True
+    projected_site['has_ai_robots'] = True
+    installed_schema = {profile.schema_type, 'FAQPage'}
+    if providers:
+        installed_schema.add('Person')
+    if services:
+        installed_schema.add('MedicalProcedure' if profile.is_practice else 'Service')
+    projected_site['schema_types'] = sorted(set(site_data.get('schema_types', [])) | installed_schema)
+    projected = _calculate_scores(projected_site)['overall']
+    scores['projected'] = projected
     hosting_info = customer.get('hosting_info') or {}
     platform = customer.get('platform', 'unknown').title()
     address = customer.get('address', '')
@@ -1027,7 +1059,7 @@ def generate_report(customer: dict, providers: list, services: list,
     if 'FAQPage' not in site_data.get('schema_types', []):
         issues_high.append(('No FAQPage schema markup',
             'FAQ schema enables rich results in Google and provides structured answers that AI assistants '
-            'can cite directly. Businesses with FAQ schema see 37-40% more AI search citations.'))
+            'can cite directly. FAQ schema is among the structured data types AI engines cite most often.'))
     if 'Person' not in site_data.get('schema_types', []):
         issues_high.append((f'No Person schema for {profile.provider_term}',
             f'Without Person schema, AI assistants cannot reliably identify your {profile.provider_term}, their credentials, '
@@ -1090,7 +1122,7 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 | Local Visibility | {scores['local_visibility']}/100 | {_grade(scores['local_visibility'])} |
 | Review Presence | {scores['review_presence']}/100 | {_grade(scores['review_presence'])} |
 
-**Projected Improvement: {scores['overall']} -> {projected}/100 after implementation**
+**Projected Score: {scores['overall']} -> {projected}/100 after deploying the included fixes (same scoring model, fixes applied)**
 
 ---
 
@@ -1106,7 +1138,7 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 | A Record | {hosting_info.get('a_record', 'Unknown')} |
 | CNAME (www) | {hosting_info.get('cname', 'None')} |
 | Web Server | {hosting_info.get('web_server', 'Unknown')} |
-| SSL | Active |
+| SSL | {'Active (HTTPS verified)' if site_data.get('https_ok') else 'Not verified'} |
 | Domain Expiry | {hosting_info.get('domain_expiry', 'Unknown')} |
 
 ---
@@ -1114,7 +1146,7 @@ The site scores **{scores['overall']}/100 overall** with {'critical gaps' if sco
 ## 1. Technical SEO Audit (Score: {scores['technical_seo']}/100 — {_grade(scores['technical_seo'])})
 
 ### What's Working
-- {'HTTPS active with SSL certificate' if True else ''}
+- {'HTTPS active with SSL certificate' if site_data.get('https_ok') else 'HTTPS could not be verified during crawl'}
 - {'Sitemap.xml present' if site_data.get('has_sitemap') else 'Sitemap.xml NOT found (critical)'}
 - {str(site_data['pages_indexed']) + ' pages indexed in sitemap' if site_data['pages_indexed'] else 'Could not determine page count'}
 - Schema types found: {', '.join(schema_types) if schema_types else 'None'}

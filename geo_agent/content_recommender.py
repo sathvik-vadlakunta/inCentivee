@@ -19,6 +19,7 @@ import anthropic
 
 from geo_agent.config import Customer
 from geo_agent.crawler import PageData
+from geo_agent.llm import MODEL_CONTENT, complete
 
 logger = logging.getLogger(__name__)
 
@@ -514,23 +515,29 @@ def generate_content_recommendations(
     system_prompt = SYSTEM_PROMPTS.get(business_type, SYSTEM_PROMPTS.get("service", SYSTEM_PROMPTS["practice"]))
     logger.info(f"Generating content recommendations for {customer.name} (type={business_type})")
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=16000,
+    # Stream with a generous cap (these are full HTML articles) and FAIL LOUDLY on
+    # truncation/parse errors — never silently return [] and lose a month of content.
+    response_text = complete(
+        client,
+        model=MODEL_CONTENT,
         system=system_prompt,
-        messages=[{"role": "user", "content": user_prompt}],
+        user=user_prompt,
+        max_tokens=64000,
+        label=f"content:{customer.name}",
     )
-
-    response_text = response.content[0].text.strip()
     if response_text.startswith("```"):
         response_text = response_text.split("\n", 1)[1]
         response_text = response_text.rsplit("```", 1)[0]
 
     try:
         raw_recs = json.loads(response_text)
-    except json.JSONDecodeError:
-        logger.error(f"Failed to parse content recommendations: {response_text[:200]}")
-        return []
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Unparseable content JSON for {customer.name}: {e}; head={response_text[:200]}"
+        )
+        raise RuntimeError(
+            f"Content generation returned unparseable JSON for {customer.name}"
+        ) from e
 
     if not isinstance(raw_recs, list):
         logger.error("Content recommendations response is not a list")
@@ -940,11 +947,17 @@ def _grade_recommendations(
     for rec in recs:
         html = rec.html_snippet.lower()
 
-        # Check for competitor mentions
+        # Check for competitor mentions. Replace with a NEUTRAL term — never the
+        # client's own name (that turns a competitor claim into a false claim about
+        # the client on the client's own site).
         for comp in competitor_names:
             if comp in html:
                 rec.html_snippet = re.sub(
-                    re.escape(comp), customer.name, rec.html_snippet, flags=re.IGNORECASE
+                    re.escape(comp), "another local practice", rec.html_snippet,
+                    flags=re.IGNORECASE,
+                )
+                logger.warning(
+                    f"Neutralized competitor mention '{comp}' in rec '{rec.title}'"
                 )
 
         # Strip fabricated quotes if no verified quotes are provided

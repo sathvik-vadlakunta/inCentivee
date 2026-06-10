@@ -228,14 +228,16 @@ Required JSON structure:
 
 Return ONLY the JSON object, no other text."""
 
+    from geo_agent.llm import MODEL_CONTENT, extract_text
+
     client = anthropic.Anthropic(api_key=api_key)
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model=MODEL_CONTENT,
         max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
 
-    text = response.content[0].text.strip()
+    text = extract_text(response)
     # Extract JSON from response (handle markdown code blocks)
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\n?", "", text)
