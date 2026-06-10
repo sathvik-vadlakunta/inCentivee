@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Parian Lawyers - AI Visibility Analysis</title>
+<style>
+  @page {
+    size: letter;
+    margin: 0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #1a1a2e; }
+
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #fff;
+    padding: 40px 50px 35px;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-dot { width: 12px; height: 12px; background: #4ade80; border-radius: 50%; }
+  .brand-name { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+  .brand-url { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.05em; }
+  .header h1 { font-size: 26px; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+  .header .subtitle { font-size: 14px; color: rgba(255,255,255,0.6); }
+  .header .firm-name { color: #4ade80; }
+
+  .score-banner {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 20px 50px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+  }
+  .score-circle {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #dc2626; color: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .score-circle .number { font-size: 26px; font-weight: 800; line-height: 1; }
+  .score-circle .of { font-size: 10px; opacity: 0.8; }
+  .score-meta h2 { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .score-meta p { font-size: 12px; color: #64748b; }
+  .grade-badge {
+    background: #fef2f2; color: #dc2626; font-weight: 800; font-size: 14px;
+    padding: 4px 14px; border-radius: 6px; border: 1px solid #fecaca; margin-left: auto;
+  }
+
+  .content { padding: 30px 50px; }
+  .content p { margin-bottom: 12px; font-size: 13px; }
+  .content strong { color: #0f172a; }
+
+  .section-title {
+    font-size: 15px; font-weight: 700; color: #0f172a;
+    margin: 24px 0 12px; padding-bottom: 6px;
+    border-bottom: 2px solid #4ade80; display: inline-block;
+  }
+
+  .score-grid { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 24px; }
+  .score-card {
+    flex: 1 1 calc(50% - 10px);
+    border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; background: #fff;
+  }
+  .score-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .score-card-title { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+  .score-card-value { font-size: 18px; font-weight: 800; }
+  .score-red { color: #dc2626; }
+  .score-yellow { color: #d97706; }
+  .score-green { color: #16a34a; }
+  .score-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-bottom: 6px; }
+  .score-bar-fill { height: 100%; border-radius: 2px; }
+  .score-card-detail { font-size: 11px; color: #64748b; line-height: 1.4; }
+
+  .longterm {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+    padding: 20px 24px; margin: 20px 0;
+  }
+  .longterm h3 { font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 12px; }
+  .longterm ul { padding-left: 18px; margin: 0; }
+  .longterm li { font-size: 12px; margin-bottom: 8px; color: #1a1a2e; }
+  .longterm li strong { color: #166534; }
+
+  .deliverables {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 20px 24px; margin: 16px 0;
+  }
+  .deliverables h3 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
+  .deliverables ul { padding-left: 18px; margin: 0; }
+  .deliverables li { font-size: 12px; margin-bottom: 6px; color: #334155; }
+
+  .cta {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #fff; border-radius: 10px; padding: 24px 28px; margin: 24px 0 0; text-align: center;
+  }
+  .cta p { color: rgba(255,255,255,0.85); font-size: 13px; margin-bottom: 6px; }
+  .cta .cta-action { font-size: 15px; font-weight: 700; color: #4ade80; }
+
+  .footer {
+    padding: 20px 50px; text-align: center; font-size: 10px;
+    color: #94a3b8; border-top: 1px solid #e2e8f0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-name">PracticeRank</div>
+        <div class="brand-url">practicerank.ai</div>
+      </div>
+    </div>
+  </div>
+  <h1>AI Visibility Analysis</h1>
+  <div class="subtitle">Prepared for <span class="firm-name">Parian Law Firm</span> &mdash; westgalawyer.com</div>
+</div>
+
+<div class="score-banner">
+  <div class="score-circle">
+    <div class="number">49</div>
+    <div class="of">/ 100</div>
+  </div>
+  <div class="score-meta">
+    <h2>Overall AI Visibility Score</h2>
+    <p>Your 4.9-star reputation is exceptional, but your digital infrastructure isn't keeping up. AI platforms can't find or recommend your firm.</p>
+  </div>
+  <div class="grade-badge">F</div>
+</div>
+
+<div class="content">
+
+  <p>You have a <strong>4.9-star rating with 162 reviews</strong>. That puts you in the top 1% of injury firms in Georgia for client satisfaction.</p>
+
+  <p>But here's the problem: none of that matters if people can't find you. When someone asks ChatGPT or Google AI "best car accident lawyer near Carrollton GA," your firm doesn't show up.</p>
+
+  <p>That means <strong>lawyers with worse reviews and worse outcomes are getting the calls that should be going to you</strong>.</p>
+
+  <div class="section-title">Category Breakdown</div>
+
+  <div class="score-grid">
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">AI Visibility</div>
+        <div class="score-card-value score-red">15/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:15%; background:#dc2626;"></div></div>
+      <div class="score-card-detail">No AI discoverability file, no structured FAQ data. AI search engines have zero way to learn about your firm or recommend you.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Local SEO</div>
+        <div class="score-card-value score-red">35/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:35%; background:#dc2626;"></div></div>
+      <div class="score-card-detail">No Avvo, Martindale-Hubbell, or Super Lawyers presence. These are the trust signals Google and clients use to compare firms.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Content</div>
+        <div class="score-card-value score-red">40/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:40%; background:#dc2626;"></div></div>
+      <div class="score-card-detail">No dedicated pages for "car accident lawyer Carrollton GA" or "truck accident attorney west Georgia." These are the exact searches clients make.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Technical</div>
+        <div class="score-card-value score-red">45/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:45%; background:#dc2626;"></div></div>
+      <div class="score-card-detail">No schema markup for legal services. Search engines can't tell what you do, where you do it, or what case types you handle.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Reviews</div>
+        <div class="score-card-value score-green">78/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:78%; background:#16a34a;"></div></div>
+      <div class="score-card-detail">4.9 stars with 162 reviews is exceptional. But no review showcase on your site and no structured markup showing that rating in search results.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Google Business</div>
+        <div class="score-card-value score-green">75/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:75%; background:#16a34a;"></div></div>
+      <div class="score-card-detail">Strong rating, but website address doesn't match Google's verified location. This inconsistency hurts local rankings.</div>
+    </div>
+  </div>
+
+  <p><strong>Your reputation is strong. Your digital infrastructure isn't keeping up with it.</strong></p>
+
+  <div class="longterm">
+    <h3>How We Support You Long Term</h3>
+    <ul>
+      <li><strong>Monthly AI file updates.</strong> We keep your AI discoverability files current so platforms always recommend you accurately as case types, verdicts, attorneys, or service areas change.</li>
+      <li><strong>Fresh content every month.</strong> Google pushes down pages untouched for 6+ months. We publish search-optimized content targeting the specific case types and locations where injury clients search.</li>
+      <li><strong>Ongoing competitor monitoring.</strong> Right now nobody in your market is optimized for AI search. That won't last. We keep you ahead by continuously updating your data and content.</li>
+      <li><strong>Continuous schema and structured data tuning.</strong> New reviews, case types, and team changes are reflected in your structured data so search engines always work from current information.</li>
+      <li><strong>Legal directory management.</strong> Avvo, Martindale-Hubbell, Super Lawyers, and other directories need active attention. We keep all profiles current and consistent.</li>
+    </ul>
+  </div>
+
+  <div class="deliverables">
+    <h3>Each Month You Get</h3>
+    <ul>
+      <li>Updated AI discoverability files reflecting new case results, attorneys, and services</li>
+      <li>Fresh, search-optimized content targeting your highest value injury case types</li>
+      <li>Review showcase updates and structured markup so your 4.9 stars appear in every search result</li>
+      <li>Legal directory monitoring and profile optimization</li>
+      <li>Competitor tracking with a monthly performance report</li>
+    </ul>
+  </div>
+
+  <div class="cta">
+    <p>I'd love to jump on a quick 15-minute call to walk through these findings and show you how we'd tackle each one. No commitment, just a straightforward conversation.</p>
+    <div class="cta-action">What does your calendar look like this week?</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  PracticeRank &mdash; practicerank.ai &mdash; AI-Powered Search Visibility for Professional Services
+</div>
+
+</body>
+</html>

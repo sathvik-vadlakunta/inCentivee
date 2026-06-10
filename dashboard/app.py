@@ -467,6 +467,14 @@ def customer_detail(customer_id):
         report_zip = Path(DATA_DIR) / "customers" / slug / f"{slug}-ai-optimization.zip"
         report_exists = report_zip.exists()
 
+        # Landing page reports linked to this customer
+        landing_reports = [
+            dict(r) for r in db.conn.execute(
+                "SELECT id, timestamp, overall_score, grade FROM landing_page_reports WHERE customer_id = ? ORDER BY timestamp DESC",
+                (customer_id,),
+            ).fetchall()
+        ]
+
         return render_template(
             "customer_detail.html",
             customer=customer, providers=providers, contacts=contacts,
@@ -506,6 +514,7 @@ def customer_detail(customer_id):
             page_scores=page_scores,
             topic_clusters=topic_clusters,
             ai_readiness=ai_readiness,
+            landing_reports=landing_reports,
         )
     finally:
         db.close()
@@ -599,7 +608,7 @@ def add_customer():
             if api_key:
                 try:
                     from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors, get_place_types, validate_competitors
-                    verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key)
+                    verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key, business_type=business_type)
                     if verified:
                         db.update_customer(customer_id,
                             address=verified.address, city=verified.city,
@@ -704,7 +713,7 @@ def api_discover():
     if api_key:
         try:
             from geo_agent.google_places import fetch_place_data, fetch_nearby_competitors, get_place_types, validate_competitors
-            verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key)
+            verified = fetch_place_data(name=name, city="", state="", domain=domain, api_key=api_key, business_type=business_type)
             if verified:
                 result["places"] = {
                     "name": verified.name, "address": verified.address,
@@ -1385,7 +1394,7 @@ def edit_customer(customer_id):
     db = get_db()
     try:
         fields = {}
-        for key in ("name", "domain", "platform", "city", "state", "zip", "address",
+        for key in ("name", "domain", "platform", "business_type", "city", "state", "zip", "address",
                      "phone", "email", "brand_voice", "hours"):
             val = request.form.get(key)
             if val is not None:
@@ -1555,8 +1564,8 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
     # Business type for dynamic language
     business_type = customer.get("business_type", "practice")
     btype_label = {
-        "practice": "practice", "technology": "company",
-        "product": "brand", "service": "business",
+        "practice": "practice", "legal": "firm", "medical": "practice",
+        "technology": "company", "product": "brand", "service": "business",
     }.get(business_type, "business")
 
     # Google snapshot section (what we already know)
@@ -1820,6 +1829,49 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{practicerank_grade}": practicerank_grade_str,
         "{practicerank_delta}": practicerank_delta_str,
         "{quick_wins_summary}": quick_wins_summary_str,
+        # Pricing quote
+        "{recommended_tier}": "Growth" if platform.lower() in ("wordpress", "squarespace", "wix", "shopify") else "Starter",
+        # Industry-aware labels
+        "{industry_schema_types}": {
+            "practice": "FAQ, HowTo, MedicalProcedure, Dentist, LocalBusiness",
+            "medical": "FAQ, HowTo, MedicalProcedure, Physician, MedicalClinic",
+            "legal": "FAQ, HowTo, LegalService, Attorney, LocalBusiness",
+            "technology": "FAQ, HowTo, SoftwareApplication, Organization",
+            "product": "FAQ, HowTo, Product, Organization",
+            "service": "FAQ, HowTo, Service, LocalBusiness",
+        }.get(business_type, "FAQ, HowTo, Service, LocalBusiness"),
+        "{industry_conversion_flow}": {
+            "practice": "Conversion-optimized patient journey (booking flow, contact forms, service pages)",
+            "medical": "Conversion-optimized patient journey (appointment scheduling, intake forms, provider pages)",
+            "legal": "Conversion-optimized client journey (consultation booking, case evaluation forms, practice area pages)",
+            "technology": "Conversion-optimized user journey (demo requests, pricing pages, feature showcases)",
+            "product": "Conversion-optimized buyer journey (product pages, comparison tools, purchase flow)",
+            "service": "Conversion-optimized client journey (booking flow, contact forms, service pages)",
+        }.get(business_type, "Conversion-optimized client journey (booking flow, contact forms, service pages)"),
+        "{industry_best_for_starter}": {
+            "practice": "Practices happy with their current website design who want better search visibility and AI discoverability",
+            "medical": "Medical practices happy with their current website who want better search visibility and AI discoverability",
+            "legal": "Law firms happy with their current website who want better search visibility and AI discoverability",
+            "technology": "Companies happy with their current website who want better search visibility and AI discoverability",
+            "product": "Brands happy with their current website who want better search visibility and AI discoverability",
+            "service": "Businesses happy with their current website who want better search visibility and AI discoverability",
+        }.get(business_type, "Businesses happy with their current website who want better search visibility and AI discoverability"),
+        "{industry_best_for_growth}": {
+            "practice": "Practices on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth",
+            "medical": "Medical practices on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth",
+            "legal": "Law firms on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth",
+            "technology": "Companies on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth",
+            "product": "Brands on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth",
+            "service": "Businesses on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth",
+        }.get(business_type, "Businesses on WordPress or outdated platforms who want a faster, more secure site with aggressive SEO growth"),
+        "{industry_best_for_premium}": {
+            "practice": "Practices ready for a ground-up website redesign and best-in-class online presence",
+            "medical": "Medical practices ready for a ground-up website redesign and best-in-class online presence",
+            "legal": "Law firms ready for a ground-up website redesign and best-in-class online presence",
+            "technology": "Companies ready for a ground-up website redesign and best-in-class online presence",
+            "product": "Brands ready for a ground-up website redesign and best-in-class online presence",
+            "service": "Businesses ready for a ground-up website redesign and best-in-class online presence",
+        }.get(business_type, "Businesses ready for a ground-up website redesign and best-in-class online presence"),
     }
     for k, v in replacements.items():
         content = content.replace(k, v)
@@ -2748,7 +2800,7 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
     Auto-detected status overrides manual checklist for verifiable tasks.
     Resolves guide text for the current platform and domain.
     """
-    is_practice = business_type == "practice"
+    is_practice = business_type in ("practice", "legal", "medical")
     ad = auto_detected or {}
     tasks = []
     for t in SEO_GEO_TASKS:
@@ -2922,6 +2974,351 @@ def recompute_board_step(db, customer: dict) -> str:
         return "monitoring"
 
     return current
+
+
+# --- Sales Pipeline / Outreach ---
+
+PIPELINE_STAGES = [
+    {"value": "new_lead", "label": "New Lead", "color": "#6b7280", "desc": "Report run or manually added"},
+    {"value": "outreach_sent", "label": "Outreach Sent", "color": "#2563eb", "desc": "First email sent"},
+    {"value": "follow_up", "label": "Follow-up", "color": "#f59e0b", "desc": "Awaiting response"},
+    {"value": "interested", "label": "Interested", "color": "#8b5cf6", "desc": "Responded positively"},
+    {"value": "proposal_sent", "label": "Proposal", "color": "#0891b2", "desc": "Pricing shared"},
+    {"value": "signing_up", "label": "Signing Up", "color": "#16a34a", "desc": "Checkout in progress"},
+    {"value": "customer", "label": "Customer", "color": "#059669", "desc": "Payment received"},
+    {"value": "lost", "label": "Lost", "color": "#dc2626", "desc": "Declined or unresponsive"},
+]
+
+VERTICAL_LABELS = {
+    "dental": {"business": "practice", "client": "patient"},
+    "legal": {"business": "firm", "client": "client"},
+    "medical": {"business": "practice", "client": "patient"},
+}
+
+
+def _render_prospect_email(template_key: str, prospect: dict, report_data: dict | None = None) -> dict:
+    """Render an outreach email template with prospect + report data."""
+    import json as _json
+
+    name = prospect.get("name", "")
+    domain = prospect.get("domain", "")
+    vertical = prospect.get("vertical", "dental")
+    vl = VERTICAL_LABELS.get(vertical, {"business": "business", "client": "client"})
+    score = prospect.get("overall_score", "")
+    grade = prospect.get("grade", "")
+
+    # Parse report data for category scores
+    categories = {}
+    if report_data:
+        categories = report_data.get("categories", {})
+    elif prospect.get("report_data"):
+        try:
+            categories = _json.loads(prospect["report_data"]).get("categories", {})
+        except Exception:
+            pass
+
+    # Find weakest and strongest categories
+    scored_cats = []
+    for cat_name, cat_data in categories.items():
+        if isinstance(cat_data, dict) and "score" in cat_data:
+            scored_cats.append((cat_name, cat_data["score"]))
+    scored_cats.sort(key=lambda x: x[1])
+    weakest = scored_cats[0] if scored_cats else ("", 0)
+    strongest = scored_cats[-1] if scored_cats else ("", 0)
+
+    # Build score bullets
+    bullets = []
+    for cat_name, cat_data in categories.items():
+        if isinstance(cat_data, dict) and "score" in cat_data:
+            s = cat_data["score"]
+            findings = cat_data.get("findings", [])
+            finding = findings[0][:150] if findings else ""
+            bullets.append(f"- {cat_name.replace('_', ' ').title()}: {s}/100 — {finding}")
+    bullets_text = "\n".join(bullets)
+
+    # Review data
+    review_data = categories.get("reviews", {})
+    review_count = review_data.get("count", "") if isinstance(review_data, dict) else ""
+    review_rating = review_data.get("rating", "") if isinstance(review_data, dict) else ""
+    comp_name = review_data.get("competitor_name", "") if isinstance(review_data, dict) else ""
+    comp_reviews = review_data.get("competitor_reviews", "") if isinstance(review_data, dict) else ""
+
+    city = prospect.get("city", "") or ""
+    state = prospect.get("state", "") or ""
+    if not city and report_data:
+        city = report_data.get("city", "")
+        state = report_data.get("state", "")
+
+    vars = {
+        "{{prospect_name}}": name,
+        "{{domain}}": domain,
+        "{{vertical}}": vertical,
+        "{{vertical_label}}": vl["business"],
+        "{{client_term}}": vl["client"],
+        "{{overall_score}}": str(score),
+        "{{grade}}": str(grade),
+        "{{weakest_category}}": weakest[0].replace("_", " ").title(),
+        "{{weakest_score}}": str(weakest[1]),
+        "{{strongest_category}}": strongest[0].replace("_", " ").title(),
+        "{{strongest_score}}": str(strongest[1]),
+        "{{ai_score}}": str(categories.get("ai_readiness", {}).get("score", "")) if isinstance(categories.get("ai_readiness"), dict) else "",
+        "{{review_count}}": str(review_count),
+        "{{review_rating}}": str(review_rating),
+        "{{competitor_name}}": str(comp_name),
+        "{{competitor_reviews}}": str(comp_reviews),
+        "{{categories_bullets}}": bullets_text,
+        "{{city}}": city,
+        "{{state}}": state,
+    }
+
+    templates = {
+        "initial": {
+            "subject": "Your {{vertical_label}} scores {{overall_score}}/100 on AI visibility (here's why that matters)",
+            "body": """Hi there,
+
+We ran a quick analysis on {{prospect_name}} and found some things worth looking at.
+
+Your {{vertical_label}} scored {{overall_score}}/100 overall, with AI visibility at {{ai_score}}/100. That means when someone asks ChatGPT or Google AI for a {{vertical}} recommendation in {{city}}, your {{vertical_label}} isn't showing up.
+
+Here's the breakdown:
+
+{{categories_bullets}}
+
+Every one of these gaps is a place where potential {{client_term}}s are finding your competitors instead of you.
+
+We fix all of this at PracticeRank. AI discoverability, search optimization, review automation, and structured data markup so that Google, ChatGPT, and Perplexity all point to your {{vertical_label}}.
+
+I'd love to jump on a quick 15-minute call to walk through these findings. No commitment, just a conversation about what's possible.
+
+What does your calendar look like this week?""",
+        },
+        "followup1": {
+            "subject": "Quick follow-up on {{prospect_name}}'s digital visibility",
+            "body": """Hi there,
+
+I sent over some findings from our analysis of {{prospect_name}} a few days ago. Not sure if you had a chance to look at it.
+
+The short version: your {{vertical_label}} has a {{weakest_score}}/100 in {{weakest_category}}, which is the biggest gap holding you back from new {{client_term}} inquiries right now.
+
+Happy to walk through the specifics in a quick call if that's easier. Would 15 minutes this week work?""",
+        },
+        "followup2": {
+            "subject": "Closing the loop on {{prospect_name}}",
+            "body": """Hi there,
+
+I reached out a couple times about some opportunities we found for {{prospect_name}}'s online presence. I'll assume the timing isn't right.
+
+If anything changes or you'd like to revisit the analysis, you can reach us at practicerank.ai or just reply to this email.
+
+All the best.""",
+        },
+        "proposal": {
+            "subject": "PracticeRank proposal for {{prospect_name}}",
+            "body": """Hi there,
+
+Great speaking with you. As discussed, here's a summary of what we'd tackle for {{prospect_name}}:
+
+{{categories_bullets}}
+
+We'd start with the highest-impact items first (AI visibility and {{weakest_category}}) and work through the full roadmap over the first 90 days.
+
+Here's the link to get started: [Stripe checkout link]
+
+Looking forward to working together.""",
+        },
+    }
+
+    if template_key not in templates:
+        return {"subject": "", "body": ""}
+
+    t = templates[template_key]
+    subject = t["subject"]
+    body = t["body"]
+    for k, v in vars.items():
+        subject = subject.replace(k, v)
+        body = body.replace(k, v)
+
+    return {"subject": subject, "body": body}
+
+
+@app.route("/pipeline")
+@login_required
+def pipeline():
+    db = get_db()
+    try:
+        grouped = db.get_all_prospects_grouped()
+        columns = []
+        for stage_info in PIPELINE_STAGES:
+            stage_key = stage_info["value"]
+            columns.append({
+                "stage": stage_key,
+                "label": stage_info["label"],
+                "color": stage_info["color"],
+                "desc": stage_info["desc"],
+                "cards": grouped.get(stage_key, []),
+            })
+        return render_template("pipeline.html", columns=columns)
+    finally:
+        db.close()
+
+
+@app.route("/prospect/<prospect_id>")
+@login_required
+def prospect_detail(prospect_id):
+    import json as _json
+    db = get_db()
+    try:
+        prospect = db.get_prospect(prospect_id)
+        if not prospect:
+            flash("Prospect not found.", "error")
+            return redirect(url_for("pipeline"))
+
+        activities = db.get_prospect_activities(prospect_id)
+
+        # Parse report data for category scores
+        categories = {}
+        report_data = None
+        if prospect.get("report_data"):
+            try:
+                report_data = _json.loads(prospect["report_data"])
+                categories = report_data.get("categories", {})
+            except Exception:
+                pass
+
+        # Pre-render all email templates
+        templates_rendered = {}
+        for key in ("initial", "followup1", "followup2", "proposal"):
+            templates_rendered[key] = _render_prospect_email(key, prospect, report_data)
+
+        return render_template("prospect_detail.html",
+            prospect=prospect,
+            activities=activities,
+            categories=categories,
+            stages=PIPELINE_STAGES,
+            templates_json=_json.dumps(templates_rendered),
+        )
+    finally:
+        db.close()
+
+
+@app.route("/prospect/add", methods=["POST"])
+@login_required
+def add_prospect():
+    db = get_db()
+    try:
+        name = request.form.get("name", "").strip()
+        domain = request.form.get("domain", "").strip()
+        if not name or not domain:
+            flash("Name and domain are required.", "error")
+            return redirect(url_for("pipeline"))
+
+        # Clean domain
+        if "://" in domain:
+            from urllib.parse import urlparse
+            domain = urlparse(domain).netloc
+        domain = domain.removeprefix("www.").strip("/")
+
+        prospect_id = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+        pid = db.upsert_prospect(
+            prospect_id=prospect_id,
+            domain=domain,
+            name=name,
+            email=request.form.get("email", "").strip() or None,
+            phone=request.form.get("phone", "").strip() or None,
+            contact_name=request.form.get("contact_name", "").strip() or None,
+            vertical=request.form.get("vertical", "dental"),
+        )
+        notes = request.form.get("notes", "").strip()
+        if notes:
+            db.add_prospect_activity(pid, "note", body=notes, created_by=session.get("username", ""))
+
+        audit_log("prospect_created", details=f"Created prospect '{name}' ({domain})")
+        flash(f"Prospect '{name}' added to pipeline.", "success")
+        return redirect(url_for("pipeline"))
+    finally:
+        db.close()
+
+
+@app.route("/prospect/<prospect_id>/note", methods=["POST"])
+@login_required
+def add_prospect_note(prospect_id):
+    db = get_db()
+    try:
+        activity_type = request.form.get("activity_type", "note")
+        body = request.form.get("body", "").strip()
+        if body:
+            db.add_prospect_activity(
+                prospect_id, activity_type, body=body,
+                created_by=session.get("username", ""),
+            )
+        return redirect(url_for("prospect_detail", prospect_id=prospect_id))
+    finally:
+        db.close()
+
+
+@app.route("/api/prospect/stage", methods=["POST"])
+@login_required
+def api_prospect_stage():
+    data = request.get_json()
+    prospect_id = data.get("prospect_id", "")
+    new_stage = data.get("stage", "")
+    lost_reason = data.get("lost_reason", "")
+
+    if not prospect_id or not new_stage:
+        return jsonify({"error": "prospect_id and stage required"}), 400
+
+    valid_stages = [s["value"] for s in PIPELINE_STAGES]
+    if new_stage not in valid_stages:
+        return jsonify({"error": f"Invalid stage: {new_stage}"}), 400
+
+    if new_stage == "lost" and not lost_reason:
+        return jsonify({"error": "Lost reason is required"}), 400
+
+    db = get_db()
+    try:
+        ok = db.update_prospect_stage(
+            prospect_id, new_stage,
+            created_by=session.get("username", ""),
+            lost_reason=lost_reason,
+        )
+        if not ok:
+            return jsonify({"error": "Prospect not found"}), 404
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/api/prospect/log-email", methods=["POST"])
+@login_required
+def api_prospect_log_email():
+    data = request.get_json()
+    prospect_id = data.get("prospect_id", "")
+    subject = data.get("subject", "")
+    body = data.get("body", "")
+
+    if not prospect_id:
+        return jsonify({"error": "prospect_id required"}), 400
+
+    db = get_db()
+    try:
+        db.add_prospect_activity(
+            prospect_id, "email_sent",
+            subject=subject, body=body,
+            created_by=session.get("username", ""),
+        )
+        # Auto-advance to outreach_sent if currently new_lead
+        prospect = db.get_prospect(prospect_id)
+        if prospect and prospect.get("stage") == "new_lead":
+            db.update_prospect_stage(
+                prospect_id, "outreach_sent",
+                created_by=session.get("username", ""),
+            )
+        audit_log("prospect_email_logged", details=f"Email logged for {prospect_id}: {subject[:50]}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
 
 @app.route("/board")
 @login_required
@@ -4452,6 +4849,196 @@ def download_report_docx(customer_id):
         db.close()
 
 
+# --- Landing Page Reports ---
+
+def sync_landing_page_reports(db):
+    """Pull new reports from the CF Worker KV and store in SQLite.
+
+    Idempotent — skips reports already synced (by id).
+    """
+    api_url = os.environ.get(
+        "PRACTICERANK_API_URL",
+        "https://practicerank-api.practice-rank-ai-seo.workers.dev",
+    )
+    api_secret = os.environ.get("LEADS_SECRET", "")
+    if not api_secret:
+        return {"error": "LEADS_SECRET not configured", "synced": 0}
+
+    resp = httpx.get(
+        f"{api_url}/reports",
+        headers={"Authorization": f"Bearer {api_secret}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    remote_reports = resp.json()
+
+    existing = {
+        r["id"]
+        for r in db.conn.execute("SELECT id FROM landing_page_reports").fetchall()
+    }
+
+    synced = 0
+    for meta in remote_reports:
+        if meta["id"] in existing:
+            continue
+
+        # Fetch full report for this lead
+        full_resp = httpx.get(
+            f"{api_url}/reports/{meta['lead_id']}",
+            headers={"Authorization": f"Bearer {api_secret}"},
+            timeout=30,
+        )
+        if full_resp.status_code != 200:
+            continue
+
+        full = full_resp.json()
+        cat_scores = meta.get("meta", {}).get("category_scores", {})
+
+        # Auto-link to existing customer by domain match
+        customer_id = None
+        domain_clean = (meta.get("domain", "") or "").replace("_", ".").lower()
+        if domain_clean:
+            match = db.conn.execute(
+                "SELECT id FROM customers WHERE LOWER(domain) = ? OR LOWER(domain) LIKE ?",
+                (domain_clean, f"%{domain_clean}%"),
+            ).fetchone()
+            if match:
+                customer_id = match["id"]
+
+        db.conn.execute(
+            """INSERT INTO landing_page_reports
+            (id, lead_id, customer_id, timestamp, practice_url, domain,
+             vertical, email, contact_name, practice_name, city, state,
+             overall_score, grade, data_confidence, revenue_lost,
+             category_scores, competitor_count, full_report, synced_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                meta["id"],
+                meta["lead_id"],
+                customer_id,
+                meta["timestamp"],
+                meta.get("practice_url", ""),
+                meta.get("domain", ""),
+                meta.get("vertical", "dental"),
+                meta.get("email", ""),
+                meta.get("name", ""),
+                meta.get("meta", {}).get("practice_name", ""),
+                meta.get("meta", {}).get("city", ""),
+                meta.get("meta", {}).get("state", ""),
+                meta.get("meta", {}).get("overall_score"),
+                meta.get("meta", {}).get("grade", ""),
+                meta.get("meta", {}).get("data_confidence", ""),
+                meta.get("meta", {}).get("revenue_lost", ""),
+                json.dumps(cat_scores),
+                meta.get("meta", {}).get("competitor_count", 0),
+                json.dumps(full.get("report", {})),
+                datetime.now(timezone.utc).isoformat(),
+            ),
+        )
+        synced += 1
+
+    db.conn.commit()
+    return {"synced": synced, "total": len(remote_reports), "already_synced": len(existing)}
+
+
+@app.route("/reports")
+@login_required
+def landing_reports():
+    """List all synced landing page reports. Auto-syncs from worker on load."""
+    db = get_db()
+    try:
+        # Auto-sync on page load
+        sync_result = None
+        try:
+            sync_result = sync_landing_page_reports(db)
+        except Exception as e:
+            logger.warning(f"Auto-sync failed: {e}")
+            sync_result = {"error": str(e)}
+
+        reports = db.conn.execute(
+            """SELECT r.*, c.name as customer_name
+               FROM landing_page_reports r
+               LEFT JOIN customers c ON r.customer_id = c.id
+               ORDER BY r.timestamp DESC"""
+        ).fetchall()
+        reports = [dict(r) for r in reports]
+        for r in reports:
+            if r.get("category_scores"):
+                try:
+                    r["category_scores"] = json.loads(r["category_scores"])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        customers = db.list_customers()
+        return render_template("reports.html", reports=reports, customers=customers, sync_result=sync_result)
+    finally:
+        db.close()
+
+
+@app.route("/reports/<report_id>")
+@login_required
+def report_detail(report_id):
+    """View full rendered report."""
+    db = get_db()
+    try:
+        row = db.conn.execute(
+            """SELECT r.*, c.name as customer_name
+               FROM landing_page_reports r
+               LEFT JOIN customers c ON r.customer_id = c.id
+               WHERE r.id = ?""",
+            (report_id,),
+        ).fetchone()
+        if not row:
+            flash("Report not found.", "error")
+            return redirect(url_for("landing_reports"))
+        report = dict(row)
+        if report.get("full_report"):
+            try:
+                report["full_report"] = json.loads(report["full_report"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        if report.get("category_scores"):
+            try:
+                report["category_scores"] = json.loads(report["category_scores"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+        customers = db.list_customers()
+        return render_template("report_detail.html", report=report, customers=customers)
+    finally:
+        db.close()
+
+
+@app.route("/api/reports/sync", methods=["POST"])
+@login_required
+def api_sync_reports():
+    """Trigger sync of reports from CF Worker KV."""
+    db = get_db()
+    try:
+        result = sync_landing_page_reports(db)
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Report sync failed: {e}")
+        return jsonify({"error": str(e), "synced": 0}), 500
+    finally:
+        db.close()
+
+
+@app.route("/api/reports/<report_id>/link", methods=["POST"])
+@login_required
+def api_link_report(report_id):
+    """Link/unlink a report to a customer."""
+    db = get_db()
+    try:
+        customer_id = (request.json or {}).get("customer_id")
+        db.conn.execute(
+            "UPDATE landing_page_reports SET customer_id = ? WHERE id = ?",
+            (customer_id, report_id),
+        )
+        db.conn.commit()
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
 # --- Analytics ---
 
 @app.route("/analytics")
@@ -4781,6 +5368,29 @@ def api_content_status():
             cid = rec["customer_id"] if rec else ""
             audit_log("content_status_changed", customer_id=cid, details=f"rec={rec_id} -> {new_status}")
         return jsonify({"ok": ok, "status": new_status})
+    finally:
+        db.close()
+
+
+@app.route("/api/content/approve-all", methods=["POST"])
+@login_required
+def api_content_approve_all():
+    """Approve all pending content recommendations for a customer."""
+    data = request.get_json()
+    customer_id = data.get("customer_id", "")
+    if not customer_id:
+        return jsonify({"error": "customer_id required"}), 400
+
+    db = get_db()
+    try:
+        pending = db.get_content_recommendations(customer_id, status="pending", limit=500)
+        approved = 0
+        for rec in pending:
+            ok = db.update_content_recommendation_status(rec["id"], "approved")
+            if ok:
+                approved += 1
+        audit_log("content_approve_all", customer_id=customer_id, details=f"approved {approved} pending recs")
+        return jsonify({"ok": True, "approved": approved, "total": len(pending)})
     finally:
         db.close()
 

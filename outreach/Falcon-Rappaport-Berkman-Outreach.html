@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>FRB Law - AI Visibility Analysis</title>
+<style>
+  @page {
+    size: letter;
+    margin: 0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #1a1a2e; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #fff;
+    padding: 40px 50px 35px;
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-dot {
+    width: 12px;
+    height: 12px;
+    background: #4ade80;
+    border-radius: 50%;
+  }
+  .brand-name {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .brand-url {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .header .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+  }
+  .header .firm-name {
+    color: #4ade80;
+  }
+
+  /* Score banner */
+  .score-banner {
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 20px 50px;
+    display: flex;
+    align-items: center;
+    gap: 30px;
+  }
+  .score-circle {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #dc2626;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .score-circle .number { font-size: 26px; font-weight: 800; line-height: 1; }
+  .score-circle .of { font-size: 10px; opacity: 0.8; }
+  .score-meta h2 { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+  .score-meta p { font-size: 12px; color: #64748b; }
+  .grade-badge {
+    background: #fef2f2;
+    color: #dc2626;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 4px 14px;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    margin-left: auto;
+  }
+
+  /* Content */
+  .content { padding: 30px 50px; }
+  .content p { margin-bottom: 12px; font-size: 13px; }
+  .content strong { color: #0f172a; }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 24px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #4ade80;
+    display: inline-block;
+  }
+
+  /* Score cards */
+  .score-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 16px 0 24px;
+  }
+  .score-card {
+    flex: 1 1 calc(50% - 10px);
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .score-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .score-card-title { font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.04em; }
+  .score-card-value { font-size: 18px; font-weight: 800; }
+  .score-red { color: #dc2626; }
+  .score-yellow { color: #d97706; }
+  .score-green { color: #16a34a; }
+  .score-bar { height: 4px; background: #e2e8f0; border-radius: 2px; margin-bottom: 6px; }
+  .score-bar-fill { height: 100%; border-radius: 2px; }
+  .score-card-detail { font-size: 11px; color: #64748b; line-height: 1.4; }
+
+  /* Long term section */
+  .longterm {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .longterm h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #166534;
+    margin-bottom: 12px;
+  }
+  .longterm ul { padding-left: 18px; margin: 0; }
+  .longterm li { font-size: 12px; margin-bottom: 8px; color: #1a1a2e; }
+  .longterm li strong { color: #166534; }
+
+  /* Monthly deliverables */
+  .deliverables {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .deliverables h3 { font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 10px; }
+  .deliverables ul { padding-left: 18px; margin: 0; }
+  .deliverables li { font-size: 12px; margin-bottom: 6px; color: #334155; }
+
+  /* CTA */
+  .cta {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #fff;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 24px 0 0;
+    text-align: center;
+  }
+  .cta p { color: rgba(255,255,255,0.85); font-size: 13px; margin-bottom: 6px; }
+  .cta .cta-action { font-size: 15px; font-weight: 700; color: #4ade80; }
+
+  /* Footer */
+  .footer {
+    padding: 20px 50px;
+    text-align: center;
+    font-size: 10px;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-name">PracticeRank</div>
+        <div class="brand-url">practicerank.ai</div>
+      </div>
+    </div>
+  </div>
+  <h1>AI Visibility Analysis</h1>
+  <div class="subtitle">Prepared for <span class="firm-name">Falcon Rappaport &amp; Berkman LLP</span> &mdash; frblaw.com</div>
+</div>
+
+<div class="score-banner">
+  <div class="score-circle">
+    <div class="number">35</div>
+    <div class="of">/ 100</div>
+  </div>
+  <div class="score-meta">
+    <h2>Overall AI Visibility Score</h2>
+    <p>Your firm is invisible to AI search platforms. When potential clients ask ChatGPT, Gemini, or Perplexity for legal recommendations, your firm does not appear.</p>
+  </div>
+  <div class="grade-badge">F</div>
+</div>
+
+<div class="content">
+
+  <p>Your firm has <strong>40 Google reviews across 4 locations</strong>. Your top competitor has <strong>223</strong>.</p>
+
+  <p>You have 23 specializations but no AI search visibility. That means when someone asks ChatGPT "who handles commercial litigation in Westchester?" your firm doesn't exist.</p>
+
+  <p>Right now, 40%+ of legal searches start on AI platforms. That number is growing every month. And your competitors aren't optimized for it either, which means <strong>whoever moves first takes the whole market</strong>.</p>
+
+  <div class="section-title">Category Breakdown</div>
+
+  <div class="score-grid">
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">AI Visibility</div>
+        <div class="score-card-value score-red">35/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:35%; background:#dc2626;"></div></div>
+      <div class="score-card-detail">No structured FAQ data, no AI discoverability file. ChatGPT, Gemini, and Perplexity have no way to learn about or recommend your firm.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Reviews</div>
+        <div class="score-card-value score-red">42/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:42%; background:#dc2626;"></div></div>
+      <div class="score-card-detail">40 total reviews across 4 offices vs. competitor's 223. Irvine location has zero reviews, creating a credibility gap.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Local SEO</div>
+        <div class="score-card-value score-yellow">55/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:55%; background:#d97706;"></div></div>
+      <div class="score-card-detail">Website phone (516-599-0888) doesn't match Google Business Profile (914-666-5600). This mismatch actively hurts rankings.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Content</div>
+        <div class="score-card-value score-green">75/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:75%; background:#16a34a;"></div></div>
+      <div class="score-card-detail">23+ specializations is a huge asset, but pages lack the depth search engines and AI platforms need to rank you.</div>
+    </div>
+    <div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">Technical</div>
+        <div class="score-card-value score-green">85/100</div>
+      </div>
+      <div class="score-bar"><div class="score-bar-fill" style="width:85%; background:#16a34a;"></div></div>
+      <div class="score-card-detail">Strong foundation. SSL, mobile optimization, and schema markup are solid.</div>
+    </div>
+  </div>
+
+  <p><strong>Every one of these gaps is a place where potential clients are finding your competitors instead of you.</strong></p>
+
+  <div class="longterm">
+    <h3>How We Support You Long Term</h3>
+    <ul>
+      <li><strong>Monthly AI file updates.</strong> We keep your AI discoverability files current so platforms always have the right information to recommend you when new specializations, cases, attorneys, or offices change.</li>
+      <li><strong>Fresh content every month.</strong> Google pushes down pages untouched for 6+ months. We publish search-optimized content targeting your specific case types and locations.</li>
+      <li><strong>Ongoing competitor monitoring.</strong> The firm with 223 reviews is still collecting more. We track competitors and adjust your strategy so you stay ahead.</li>
+      <li><strong>Continuous schema and structured data tuning.</strong> New reviews, attorneys, and practice areas are reflected in your structured data so search engines always work from current information.</li>
+      <li><strong>Algorithm change protection.</strong> Google and AI platforms change their ranking criteria constantly. We monitor and adjust proactively.</li>
+    </ul>
+  </div>
+
+  <div class="deliverables">
+    <h3>Each Month You Get</h3>
+    <ul>
+      <li>Updated AI discoverability files reflecting any changes to your firm</li>
+      <li>Fresh, search-optimized content targeting your highest value case types</li>
+      <li>Review generation campaigns to close the gap across all 4 locations</li>
+      <li>Local citation monitoring and cleanup</li>
+      <li>Competitor tracking with a monthly performance report</li>
+    </ul>
+  </div>
+
+  <div class="cta">
+    <p>I'd love to jump on a quick 15-minute call to walk through these findings and show you exactly how we'd address each one. No commitment, just a conversation about what's possible.</p>
+    <div class="cta-action">What does your calendar look like this week?</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  PracticeRank &mdash; practicerank.ai &mdash; AI-Powered Search Visibility for Professional Services
+</div>
+
+</body>
+</html>

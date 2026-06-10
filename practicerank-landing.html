@@ -24,6 +24,7 @@
   "@type": "ProfessionalService",
   "name": "PracticeRank",
   "url": "https://practicerank.ai",
+  "telephone": "(917) 994-1232",
   "description": "PracticeRank is an AI-powered dental marketing platform that optimizes dental practices for Google Search, Google Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, Google AI Overviews, Apple Maps, and local search. Services include AI Engine Optimization (AEO/GEO), Google Business Profile management, review generation, schema markup, content publishing, and local citation building. Founded by Jon Lucas at Lost Relic.",
   "founder": { "@type": "Person", "name": "Jon Lucas" },
   "parentOrganization": { "@type": "Organization", "name": "Lost Relic LLC" },
@@ -147,6 +148,19 @@
   }
 
   /* ── Theme Toggle Button ── */
+  /* ── Industry Nav Dropdown ── */
+  .industry-nav { position: relative; }
+  .industry-nav-btn { background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s; }
+  .industry-nav-btn:hover { border-color: var(--accent); background: var(--accent-bg); }
+  .industry-dropdown { display: none; position: absolute; top: 100%; right: 0; background: var(--bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem; min-width: 180px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 200; padding-top: 0.75rem; }
+  .industry-nav::after { content: ''; position: absolute; top: 100%; right: 0; width: 100%; height: 10px; }
+  .industry-nav:hover .industry-dropdown { display: block; }
+  .industry-nav.open .industry-dropdown { display: block; }
+  .industry-dropdown a { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; transition: all 0.15s; }
+  .industry-dropdown a:hover { background: var(--accent-bg); color: var(--text); }
+  .industry-dropdown a.active { color: var(--accent); font-weight: 700; }
+  .industry-dropdown .ind-icon { font-size: 1.1rem; width: 24px; text-align: center; }
+
   .theme-toggle { background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 0.4rem 0.5rem; cursor: pointer; font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--text-secondary); }
   .theme-toggle:hover { border-color: var(--accent); }
   .theme-toggle .icon-sun, .theme-toggle .icon-moon { display: none; }
@@ -175,10 +189,28 @@
   .nav-links a:hover { color: var(--text); }
   .nav-cta { background: var(--accent); color: var(--btn-text); font-weight: 700; font-size: 0.85rem; border: none; border-radius: 8px; padding: 0.55rem 1.2rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; }
   .nav-cta:hover { background: var(--accent-hover); color: var(--btn-text); }
+  .hamburger { display: none; }
+  dialog.mobile-menu { display: none; }
+  dialog.mobile-menu[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; border: none; padding: 2rem; z-index: 1000; background: var(--bg); color: var(--text); font-size: 1.1rem; }
+  dialog.mobile-menu::backdrop { background: transparent; }
+  dialog.mobile-menu a { color: var(--text); text-decoration: none; font-size: 1.1rem; }
+  dialog.mobile-menu a:hover { color: var(--accent); }
+  dialog.mobile-menu .nav-cta { font-size: 1rem; padding: 0.75rem 2rem; display: inline-block; }
+  dialog.mobile-menu .industry-nav { position: static; }
+  dialog.mobile-menu .industry-dropdown { position: static; box-shadow: none; border: none; background: transparent; display: none; text-align: center; min-width: auto; padding: 0.5rem 0 0; }
+  dialog.mobile-menu .industry-nav.open .industry-dropdown { display: flex; flex-direction: column; align-items: center; }
+  dialog.mobile-menu .close-menu { position: absolute; top: 1rem; right: 1.5rem; background: none; border: none; color: var(--text); font-size: 2rem; cursor: pointer; line-height: 1; }
 
   /* ── Shared ── */
   .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
   .section-label { font-size: 0.72rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; }
+  /* ── Industry Badge — prominent hero indicator ── */
+  .industry-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent-bg); border: 2px solid var(--accent); border-radius: 50px; padding: 0.5rem 1.2rem; margin-bottom: 1.2rem; font-size: 0.95rem; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; }
+  .industry-badge .badge-icon { font-size: 1.4rem; }
+  .industry-badge .badge-divider { width: 1px; height: 18px; background: var(--accent); opacity: 0.3; }
+  .industry-other-links { display: flex; gap: 0.75rem; margin-top: -0.5rem; margin-bottom: 1rem; font-size: 0.8rem; }
+  .industry-other-links a { color: var(--text-muted); text-decoration: none; border-bottom: 1px dashed var(--text-muted); padding-bottom: 1px; transition: color 0.2s; }
+  .industry-other-links a:hover { color: var(--accent); border-color: var(--accent); }
   .section-title { font-size: clamp(1.6rem, 3.5vw, 2.4rem); font-weight: 800; letter-spacing: -0.5px; line-height: 1.18; margin-bottom: 1rem; }
   .section-sub { color: var(--text-secondary); font-size: 1.05rem; max-width: 600px; line-height: 1.7; }
   .divider { border: none; border-top: 1px solid var(--divider); margin: 0; }
@@ -460,7 +492,9 @@
     .steps::before { display: none; }
   }
   @media (max-width: 600px) {
-    .nav-links a:not(.nav-cta):not(.theme-toggle) { display: none; }
+    .nav-links { display: none !important; }
+    .hamburger { display: flex; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 0.5rem; z-index: 101; }
+    .hamburger span { width: 24px; height: 2px; background: var(--text); border-radius: 2px; }
     .hero-content { padding: 3rem 1.5rem 2.5rem; }
     .hero-ctas { flex-direction: column; align-items: center; }
     .hero-ctas .btn-primary, .hero-ctas .btn-secondary { width: 100%; max-width: 320px; justify-content: center; }
@@ -490,32 +524,75 @@
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('pr-theme', next);
   }
+  // Close industry dropdown when clicking outside
+  document.addEventListener('click', function(e) {
+    var nav = document.querySelector('.industry-nav');
+    if (nav && !nav.contains(e.target)) nav.classList.remove('open');
+  });
+  function toggleMobileNav() {
+    var d = document.getElementById('mobile-menu');
+    if (d.open) { d.close(); } else { d.showModal(); }
+  }
+  function closeMobileNav() {
+    var d = document.getElementById('mobile-menu');
+    if (d && d.open) d.close();
+  }
 </script>
 
 <!-- ═══ NAV ═══ -->
 <nav>
   <div class="nav-logo">Practice<span>Rank</span></div>
-  <div class="nav-links">
-    <a href="#what-we-do">Services</a>
-    <a href="#results">Results</a>
-    <a href="#pricing">What's Included</a>
-    <a href="#faq">FAQ</a>
+  <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu"><span></span><span></span><span></span></button>
+  <div class="nav-links" id="nav-links">
+    <a href="#what-we-do" onclick="closeMobileNav()">Services</a>
+    <a href="#results" onclick="closeMobileNav()">Results</a>
+    <a href="#pricing" onclick="closeMobileNav()">What's Included</a>
+    <a href="#faq" onclick="closeMobileNav()">FAQ</a>
+    <div class="industry-nav">
+      <button class="industry-nav-btn" onclick="this.parentElement.classList.toggle('open')">Industries &#9662;</button>
+      <div class="industry-dropdown">
+        <a href="/" class="active"><span class="ind-icon">&#x1F9B7;</span> Dental Practices</a>
+        <a href="/legal"><span class="ind-icon">&#x2696;</span> Law Firms</a>
+        <a href="/medical"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
+      </div>
+    </div>
+    <a href="tel:+19179941232" class="nav-phone" style="font-size:0.85rem;color:var(--text-secondary);text-decoration:none;display:flex;align-items:center;gap:0.3rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>(917) 994-1232</a>
     <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
-    <a href="#book" class="nav-cta">Book a Free Call</a>
+    <a href="#book" class="nav-cta" onclick="closeMobileNav()">Book a Free Call</a>
   </div>
 </nav>
+<dialog class="mobile-menu" id="mobile-menu">
+  <button class="close-menu" onclick="closeMobileNav()" aria-label="Close">&times;</button>
+  <a href="#what-we-do" onclick="closeMobileNav()">Services</a>
+  <a href="#results" onclick="closeMobileNav()">Results</a>
+  <a href="#pricing" onclick="closeMobileNav()">What's Included</a>
+  <a href="#faq" onclick="closeMobileNav()">FAQ</a>
+  <div class="industry-nav">
+    <button class="industry-nav-btn" onclick="this.parentElement.classList.toggle('open')">Industries &#9662;</button>
+    <div class="industry-dropdown">
+      <a href="/" class="active"><span class="ind-icon">&#x1F9B7;</span> Dental Practices</a>
+      <a href="/legal"><span class="ind-icon">&#x2696;</span> Law Firms</a>
+      <a href="/medical"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
+    </div>
+  </div>
+  <a href="tel:+19179941232" style="font-size:1rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:0.4rem;padding:0.5rem 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>(917) 994-1232</a>
+  <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
+  <a href="#book" class="nav-cta" onclick="closeMobileNav()">Book a Free Call</a>
+</dialog>
 
 <!-- ═══ HERO — Split layout with AI chat mockup ═══ -->
 <header class="hero">
   <div class="hero-glow"></div>
   <div class="hero-content">
     <div class="hero-text">
-      <div class="section-label">AI-Powered Dental Marketing</div>
+      <div class="industry-badge"><span class="badge-icon">&#x1F9B7;</span><span class="badge-divider"></span> For Dental Practices</div>
       <h1>Get <em>15-25 more new patient inquiries</em> every&nbsp;month.</h1>
       <p class="hero-sub">A full schedule. A growing practice. Zero time wasted on marketing. PracticeRank gets your practice found everywhere patients search — so your phone rings more and you focus on&nbsp;dentistry.</p>
+      <div class="industry-other-links">Also available for: <a href="/legal">Law Firms</a> <a href="/medical">Medical Practices</a></div>
       <div class="hero-ctas">
         <a href="#audit" class="btn-primary">See How Many Patients You're Missing &rarr;</a>
         <a href="#book" class="btn-secondary">Book a Free Strategy Call</a>
+        <a href="tel:+19179941232" class="btn-secondary" style="border-color:var(--text-muted);">Call (917) 994-1232</a>
       </div>
       <p class="hero-proof">Average client sees <strong>15-25 additional new patient inquiries/month</strong> within 90 days &mdash; that's a <strong>5-10x ROI</strong></p>
     </div>
@@ -978,6 +1055,7 @@
       <div class="footer-col">
         <h4>Company</h4>
         <a href="#book">Contact</a>
+        <a href="tel:+19179941232">(917) 994-1232</a>
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <a href="/llms.txt">llms.txt</a>
@@ -1052,7 +1130,7 @@
       if (r.error) throw new Error(r.error);
       await new Promise(resolve => setTimeout(resolve, 600));
       renderReport(r, url);
-    } catch(e) { clearInterval(tick); inner.innerHTML = `<div class="loading-wrap"><p style="color:var(--red);">Something went wrong: ${e.message}. Please try again.</p></div>`; }
+    } catch(e) { clearInterval(tick); inner.innerHTML = `<div class="loading-wrap" style="text-align:center;padding:2rem;"><div style="font-size:2.5rem;margin-bottom:0.75rem;">&#x26A0;&#xFE0F;</div><h3 style="margin:0 0 0.75rem;color:var(--text-primary);font-size:1.1rem;">We couldn't generate your report</h3><p style="color:var(--text-secondary);font-size:0.9rem;max-width:500px;margin:0 auto 1.25rem;line-height:1.6;">${e.message}</p><button onclick="document.getElementById('report-panel').style.display='none'" style="background:var(--accent);color:#fff;border:none;padding:0.6rem 1.5rem;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Try Again</button></div>`; }
     btn.disabled = false; btn.textContent = 'See How Many Patients You\u2019re Missing \u2192';
   }
 
@@ -1179,7 +1257,7 @@
                 <div style="font-size:0.85rem;color:var(--text-secondary);line-height:1.7;">${a.description}</div>
                 <div style="margin-top:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap;">
                   <span style="font-size:0.7rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:4px;background:${a.impact==='high'?'var(--accent)':'var(--yellow)'};color:var(--btn-text);text-transform:uppercase;">${a.impact} impact</span>
-                  <span style="font-size:0.7rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:4px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);">${a.est_patients_mo} patients/mo</span>
+                  <span style="font-size:0.7rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:4px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);">${a.est_new_inquiries_mo || a.est_patients_mo} new inquiries/mo</span>
                 </div>
               </div>
             </div>
@@ -1191,7 +1269,7 @@
       <div class="report-section">
         <h3><span class="dot" style="background:#38bdf8"></span> Your Growth Projections with PracticeRank</h3>
         <div class="report-body">
-          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Based on your current state and market opportunity (avg patient lifetime value: ${r.patient_lifetime_value}):</p>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1rem;">Based on your current state and market opportunity (avg patient lifetime value: ${r.patient_lifetime_value || r.client_lifetime_value}):</p>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;margin-top:0.5rem;">
             <div style="text-align:center;padding:1.25rem 0.75rem;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;">
               <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem;">Today</div>
@@ -1230,10 +1308,18 @@
     const r = window._lastReport;
     if (!r) return;
 
-    const sc = (n) => n >= 81 ? '#22c55e' : n >= 61 ? '#06b6d4' : n >= 31 ? '#f59e0b' : '#ef4444';
+    // Vertical-aware labels
+    const vertCfg = {
+      dental: { business: 'practice', client: 'patient', clients: 'patients', tagline: 'AI-Powered Search Visibility for Dental Practices' },
+      legal:  { business: 'firm', client: 'client', clients: 'clients', tagline: 'AI-Powered Search Visibility for Law Firms' },
+      medical:{ business: 'practice', client: 'patient', clients: 'patients', tagline: 'AI-Powered Search Visibility for Medical Practices' },
+    };
+    const vc = vertCfg[r.vertical] || vertCfg.dental;
+
+    const sc = (n) => n >= 70 ? '#16a34a' : n >= 45 ? '#d97706' : '#dc2626';
     const stLabel = (s) => ({ critical:'Critical', needs_work:'Needs Work', good:'Good', excellent:'Excellent' }[s] || s);
-    const stColor = (s) => ({ critical:'#ef4444', needs_work:'#f59e0b', good:'#22c55e', excellent:'#06b6d4' }[s] || '#888');
-    const vIcon = (v) => v === 'yes' ? '<span style="color:#22c55e;font-weight:700;">&#10003; Visible</span>' : v === 'partial' ? '<span style="color:#f59e0b;font-weight:700;">&#9680; Partial</span>' : '<span style="color:#ef4444;font-weight:700;">&#10007; Not Visible</span>';
+    const stColor = (s) => ({ critical:'#dc2626', needs_work:'#d97706', good:'#16a34a', excellent:'#16a34a' }[s] || '#888');
+    const vIcon = (v) => v === 'yes' ? '<span style="color:#16a34a;font-weight:700;">&#10003; Visible</span>' : v === 'partial' ? '<span style="color:#d97706;font-weight:700;">&#9680; Partial</span>' : '<span style="color:#dc2626;font-weight:700;">&#10007; Not Visible</span>';
 
     const catDefs = [
       { key:'gbp', label:'Google Business Profile' },
@@ -1244,104 +1330,157 @@
       { key:'technical', label:'Technical SEO' },
     ];
 
+    // Score cards with progress bars
+    let scoreCardsHtml = '<div style="display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 24px;">';
+    for (const cat of catDefs) {
+      const d = r.categories[cat.key] || {};
+      if (!d.score && d.score !== 0) continue;
+      scoreCardsHtml += '<div style="flex:1 1 calc(50% - 10px);border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;background:#fff;break-inside:avoid;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+        '<div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.04em;">' + cat.label + '</div>' +
+        '<div style="font-size:18px;font-weight:800;color:' + sc(d.score) + ';">' + d.score + '/100</div></div>' +
+        '<div style="height:4px;background:#e2e8f0;border-radius:2px;margin-bottom:6px;"><div style="height:100%;width:' + d.score + '%;background:' + sc(d.score) + ';border-radius:2px;"></div></div>' +
+        '<div style="font-size:11px;color:#64748b;line-height:1.4;">' + ((d.findings||[])[0]||'') + '</div></div>';
+    }
+    scoreCardsHtml += '</div>';
+
+    // Category deep dives
     let catsHtml = '';
     for (const cat of catDefs) {
       const d = r.categories[cat.key] || {};
-      const findings = (d.findings || []).map(f => '<li style="margin-bottom:6px;color:#334155;font-size:13px;line-height:1.5;">' + f + '</li>').join('');
+      if (!d.findings || !d.findings.length) continue;
+      const findings = d.findings.map(f => '<li style="margin-bottom:6px;color:#334155;font-size:12px;line-height:1.5;">' + f + '</li>').join('');
       let extra = '';
       if (cat.key === 'reviews' && d.count) {
-        extra = '<div style="display:flex;gap:24px;margin-top:12px;">' +
-          '<div style="background:#f1f5f9;padding:10px 18px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:700;color:#0f172a;">' + d.count + '</div><div style="font-size:11px;color:#64748b;">Your Reviews</div></div>' +
-          '<div style="background:#f1f5f9;padding:10px 18px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:700;color:#ef4444;">' + (d.competitor_reviews||'?') + '</div><div style="font-size:11px;color:#64748b;">' + (d.competitor_name||'Competitor') + '</div></div>' +
-          '<div style="background:#f1f5f9;padding:10px 18px;border-radius:8px;text-align:center;"><div style="font-size:24px;font-weight:700;color:#0f172a;">' + (d.rating||'?') + '</div><div style="font-size:11px;color:#64748b;">Your Rating</div></div></div>';
+        extra = '<div style="display:flex;gap:16px;margin-top:12px;">' +
+          '<div style="background:#f1f5f9;padding:10px 18px;border-radius:8px;text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:#0f172a;">' + d.count + '</div><div style="font-size:10px;color:#64748b;">Your Reviews</div></div>' +
+          '<div style="background:#f1f5f9;padding:10px 18px;border-radius:8px;text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:#dc2626;">' + (d.competitor_reviews||'?') + '</div><div style="font-size:10px;color:#64748b;">' + (d.competitor_name||'Competitor') + '</div></div>' +
+          '<div style="background:#f1f5f9;padding:10px 18px;border-radius:8px;text-align:center;flex:1;"><div style="font-size:22px;font-weight:700;color:#0f172a;">' + (d.rating||'?') + ' &#9733;</div><div style="font-size:10px;color:#64748b;">Your Rating</div></div></div>';
       }
-      catsHtml += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:16px;break-inside:avoid;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
-        '<h3 style="margin:0;font-size:16px;color:#0f172a;">' + cat.label + '</h3>' +
-        '<div style="display:flex;align-items:center;gap:10px;">' +
-        '<span style="background:' + stColor(d.status) + ';color:#fff;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">' + stLabel(d.status) + '</span>' +
-        '<span style="font-size:24px;font-weight:800;color:' + sc(d.score) + ';">' + d.score + '</span></div></div>' +
+      catsHtml += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:12px;break-inside:avoid;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<h3 style="margin:0;font-size:14px;color:#0f172a;">' + cat.label + '</h3>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="background:' + stColor(d.status) + ';color:#fff;padding:2px 10px;border-radius:20px;font-size:10px;font-weight:600;">' + stLabel(d.status) + '</span>' +
+        '<span style="font-size:20px;font-weight:800;color:' + sc(d.score) + ';">' + d.score + '</span></div></div>' +
         '<ul style="padding-left:18px;margin:0;">' + findings + '</ul>' + extra + '</div>';
     }
 
+    // AI platform visibility
     let aiRows = '';
     for (const [p, data] of Object.entries(r.ai_visibility || {})) {
-      aiRows += '<tr><td style="padding:10px 14px;font-weight:600;text-transform:capitalize;border-bottom:1px solid #e2e8f0;">' + p + '</td>' +
-        '<td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;">' + vIcon(data.visible) + '</td>' +
-        '<td style="padding:10px 14px;color:#475569;font-size:13px;border-bottom:1px solid #e2e8f0;">' + (data.reason||'') + '</td></tr>';
+      aiRows += '<tr><td style="padding:8px 14px;font-weight:600;text-transform:capitalize;border-bottom:1px solid #e2e8f0;font-size:13px;">' + p + '</td>' +
+        '<td style="padding:8px 14px;border-bottom:1px solid #e2e8f0;">' + vIcon(data.visible) + '</td>' +
+        '<td style="padding:8px 14px;color:#475569;font-size:12px;border-bottom:1px solid #e2e8f0;">' + (data.reason||'') + '</td></tr>';
     }
 
+    // Priority actions
     let actionsHtml = '';
     (r.priority_actions || []).forEach((a, i) => {
-      const ic = a.impact === 'high' ? '#ef4444' : '#f59e0b';
-      actionsHtml += '<div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;break-inside:avoid;">' +
-        '<div style="min-width:36px;height:36px;background:#6366f1;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;">' + (i+1) + '</div>' +
-        '<div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">' +
-        '<strong style="font-size:14px;color:#0f172a;">' + a.title + '</strong>' +
-        '<span style="background:' + ic + ';color:#fff;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">' + (a.impact||'').toUpperCase() + '</span>' +
-        '<span style="color:#6366f1;font-weight:700;font-size:13px;">' + a.est_patients_mo + ' patients/mo</span></div>' +
-        '<p style="margin:0;color:#475569;font-size:13px;line-height:1.5;">' + a.description + '</p></div></div>';
+      const ic = a.impact === 'high' ? '#dc2626' : '#d97706';
+      actionsHtml += '<div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;break-inside:avoid;">' +
+        '<div style="min-width:30px;height:30px;background:#0f172a;color:#4ade80;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;">' + (i+1) + '</div>' +
+        '<div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap;">' +
+        '<strong style="font-size:13px;color:#0f172a;">' + a.title + '</strong>' +
+        '<span style="background:' + ic + ';color:#fff;padding:2px 8px;border-radius:12px;font-size:9px;font-weight:600;">' + (a.impact||'').toUpperCase() + ' IMPACT</span></div>' +
+        '<p style="margin:0;color:#475569;font-size:12px;line-height:1.5;">' + a.description + '</p></div></div>';
     });
 
-    const proj = r.projections || {};
+    const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const domain = window._lastReportUrl || '';
 
     const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>PracticeRank Report - ' + (r.practice_name||'') + '</title>' +
-    '<style>@page{size:A4;margin:36px 44px;}*{box-sizing:border-box;}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.6;margin:0;padding:0;}table{border-spacing:0;}</style></head><body>' +
+    '<style>' +
+    '@page { size: letter; margin: 0; }' +
+    '* { box-sizing: border-box; margin: 0; padding: 0; }' +
+    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.6; color: #1a1a2e; }' +
+    'table { border-spacing: 0; }' +
+    '</style></head><body>' +
 
-    '<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:3px solid #6366f1;margin-bottom:24px;">' +
-    '<div><div style="font-size:28px;font-weight:800;color:#6366f1;">PracticeRank</div><div style="font-size:12px;color:#64748b;margin-top:2px;">AI-Powered Dental Marketing Intelligence</div></div>' +
-    '<div style="text-align:right;"><div style="font-size:11px;color:#64748b;">SEO & AI Search Audit Report</div><div style="font-size:14px;font-weight:600;color:#0f172a;">' + (r.practice_name||'') + '</div><div style="font-size:12px;color:#64748b;">' + (r.city||'') + ', ' + (r.state||'') + '</div></div></div>' +
+    // ── Header
+    '<div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:36px 48px 30px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;">' +
+    '<div style="width:12px;height:12px;background:#4ade80;border-radius:50%;"></div>' +
+    '<div><div style="font-size:18px;font-weight:700;letter-spacing:-0.02em;">PracticeRank</div>' +
+    '<div style="font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:0.05em;">practicerank.ai</div></div></div>' +
+    '<div style="font-size:10px;color:rgba(255,255,255,0.4);">' + dateStr + '</div></div>' +
+    '<h1 style="font-size:24px;font-weight:700;line-height:1.2;margin-bottom:4px;">AI Visibility &amp; SEO Analysis</h1>' +
+    '<div style="font-size:13px;color:rgba(255,255,255,0.6);">Prepared for <span style="color:#4ade80;">' + (r.practice_name||'') + '</span> &mdash; ' + domain + '</div></div>' +
 
-    '<div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:16px;padding:28px;color:#fff;text-align:center;margin-bottom:20px;">' +
-    '<div style="font-size:60px;font-weight:900;line-height:1;">' + r.overall_score + '</div>' +
-    '<div style="font-size:13px;opacity:0.8;margin-top:4px;">out of 100</div>' +
-    '<div style="display:inline-block;margin-top:10px;background:rgba(255,255,255,0.2);padding:5px 18px;border-radius:20px;font-size:18px;font-weight:700;">Grade: ' + r.grade + '</div>' +
-    '<p style="margin:14px auto 0;max-width:540px;font-size:13px;line-height:1.6;opacity:0.9;">' + (r.executive_summary||'') + '</p></div>' +
+    // ── Score banner
+    '<div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:18px 48px;display:flex;align-items:center;gap:24px;">' +
+    '<div style="width:68px;height:68px;border-radius:50%;background:' + sc(r.overall_score) + ';color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;">' +
+    '<div style="font-size:24px;font-weight:800;line-height:1;">' + r.overall_score + '</div>' +
+    '<div style="font-size:9px;opacity:0.8;">/ 100</div></div>' +
+    '<div style="flex:1;"><div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:2px;">Overall AI Visibility Score</div>' +
+    '<div style="font-size:11px;color:#64748b;line-height:1.5;">' + (r.executive_summary||'') + '</div></div>' +
+    '<div style="background:#fef2f2;color:' + sc(r.overall_score) + ';font-weight:800;font-size:14px;padding:4px 14px;border-radius:6px;border:1px solid #fecaca;">' + r.grade + '</div></div>' +
 
-    '<div style="background:#fef2f2;border:2px solid #fca5a5;border-radius:12px;padding:16px;text-align:center;margin-bottom:24px;">' +
-    '<div style="font-size:11px;color:#ef4444;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Estimated Revenue Lost Annually</div>' +
-    '<div style="font-size:30px;font-weight:900;color:#ef4444;margin-top:4px;">' + (r.revenue_lost_annually||'') + '</div>' +
-    '<div style="font-size:11px;color:#64748b;margin-top:4px;">Based on patient lifetime value of ' + (r.patient_lifetime_value||'') + '</div></div>' +
+    // ── Content area
+    '<div style="padding:28px 48px;">' +
 
-    '<h2 style="font-size:17px;color:#0f172a;margin-bottom:14px;">Category Breakdown</h2>' + catsHtml +
+    // Score cards grid
+    '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px;padding-bottom:5px;border-bottom:2px solid #4ade80;display:inline-block;">Category Breakdown</div>' +
+    scoreCardsHtml +
 
+    // Category deep dives
+    '<div style="font-size:14px;font-weight:700;color:#0f172a;margin:20px 0 12px;padding-bottom:5px;border-bottom:2px solid #4ade80;display:inline-block;">Detailed Findings</div>' +
+    catsHtml +
+
+    // Page break before AI visibility
     '<div style="break-before:page;"></div>' +
-    '<h2 style="font-size:17px;color:#0f172a;margin-bottom:14px;">AI Platform Visibility</h2>' +
-    '<p style="font-size:12px;color:#64748b;margin-top:-8px;margin-bottom:12px;">40%+ of patients now use AI assistants to find dentists. Here\'s whether they\'d find you.</p>' +
-    '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:24px;">' +
-    '<thead><tr style="background:#f8fafc;"><th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;border-bottom:2px solid #e2e8f0;width:120px;">Platform</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;border-bottom:2px solid #e2e8f0;width:120px;">Status</th><th style="padding:10px 14px;text-align:left;font-size:11px;color:#64748b;border-bottom:2px solid #e2e8f0;">Details</th></tr></thead>' +
+
+    // AI Platform Visibility
+    '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:4px;padding-bottom:5px;border-bottom:2px solid #4ade80;display:inline-block;">AI Platform Visibility</div>' +
+    '<p style="font-size:11px;color:#64748b;margin:4px 0 12px;">When ' + vc.clients + ' ask AI assistants for recommendations, here\'s whether they\'d find you:</p>' +
+    '<table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:20px;">' +
+    '<thead><tr style="background:#f8fafc;"><th style="padding:8px 14px;text-align:left;font-size:10px;color:#64748b;border-bottom:2px solid #e2e8f0;width:110px;">Platform</th><th style="padding:8px 14px;text-align:left;font-size:10px;color:#64748b;border-bottom:2px solid #e2e8f0;width:110px;">Status</th><th style="padding:8px 14px;text-align:left;font-size:10px;color:#64748b;border-bottom:2px solid #e2e8f0;">Details</th></tr></thead>' +
     '<tbody>' + aiRows + '</tbody></table>' +
 
-    '<div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px;padding:22px;color:#fff;text-align:center;margin-bottom:24px;">' +
-    '<div style="font-size:17px;font-weight:700;">Your practice is invisible to AI search.</div>' +
-    '<div style="font-size:13px;opacity:0.85;margin-top:6px;">40%+ of patients now ask ChatGPT, Gemini, and other AI assistants for dentist recommendations — and they\'ll never hear about you.</div>' +
-    '<a href="https://calendly.com/ethan-practicerank" style="margin-top:12px;display:inline-block;background:#fff;color:#6366f1;padding:9px 24px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;">Book a Free Strategy Call &rarr; calendly.com/ethan-practicerank</a></div>' +
+    // Priority Actions
+    '<div style="font-size:14px;font-weight:700;color:#0f172a;margin:20px 0 12px;padding-bottom:5px;border-bottom:2px solid #4ade80;display:inline-block;">Priority Actions</div>' +
+    '<div style="margin-bottom:20px;">' + actionsHtml + '</div>' +
 
-    '<h2 style="font-size:17px;color:#0f172a;margin-bottom:14px;">Top 5 Priority Actions</h2>' + actionsHtml +
+    // How we support you long term
+    '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px 24px;margin:20px 0;break-inside:avoid;">' +
+    '<div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:10px;">How We Support You Long Term</div>' +
+    '<ul style="padding-left:18px;margin:0;">' +
+    '<li style="font-size:11px;margin-bottom:7px;color:#1a1a2e;"><strong style="color:#166534;">Monthly AI file updates.</strong> We keep your AI discoverability files current so platforms always have the right information to recommend you as your ' + vc.business + ' evolves.</li>' +
+    '<li style="font-size:11px;margin-bottom:7px;color:#1a1a2e;"><strong style="color:#166534;">Fresh content every month.</strong> Google pushes down pages untouched for 6+ months. We publish search-optimized content targeting your highest-value services and locations.</li>' +
+    '<li style="font-size:11px;margin-bottom:7px;color:#1a1a2e;"><strong style="color:#166534;">Ongoing competitor monitoring.</strong> We track competitor activity and adjust your strategy so you stay ahead after the initial push.</li>' +
+    '<li style="font-size:11px;margin-bottom:7px;color:#1a1a2e;"><strong style="color:#166534;">Continuous structured data tuning.</strong> New reviews, team changes, and service updates are reflected in your structured data so search engines always work from current information.</li>' +
+    '<li style="font-size:11px;margin-bottom:0;color:#1a1a2e;"><strong style="color:#166534;">Algorithm change protection.</strong> Google and AI platforms change their ranking criteria constantly. We monitor and adjust proactively.</li>' +
+    '</ul></div>' +
 
-    '<h2 style="font-size:17px;color:#0f172a;margin-top:24px;margin-bottom:14px;">Growth Projections</h2>' +
-    '<div style="display:flex;gap:10px;margin-bottom:24px;">' +
-    '<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:10px;color:#64748b;font-weight:600;">TODAY</div><div style="font-size:26px;font-weight:800;color:#ef4444;margin-top:6px;">' + (proj.current_inquiries_mo||'') + '</div><div style="font-size:10px;color:#64748b;">inquiries/mo</div></div>' +
-    '<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:10px;color:#64748b;font-weight:600;">3 MONTHS</div><div style="font-size:26px;font-weight:800;color:#f59e0b;margin-top:6px;">' + (proj.month_3||'') + '</div><div style="font-size:10px;color:#64748b;">inquiries/mo</div></div>' +
-    '<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:10px;color:#64748b;font-weight:600;">6 MONTHS</div><div style="font-size:26px;font-weight:800;color:#22c55e;margin-top:6px;">' + (proj.month_6||'') + '</div><div style="font-size:10px;color:#64748b;">inquiries/mo</div></div>' +
-    '<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;"><div style="font-size:10px;color:#64748b;font-weight:600;">12 MONTHS</div><div style="font-size:26px;font-weight:800;color:#6366f1;margin-top:6px;">' + (proj.month_12||'') + '</div><div style="font-size:10px;color:#64748b;">inquiries/mo</div></div></div>' +
+    // Monthly deliverables
+    '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px 24px;margin:16px 0;break-inside:avoid;">' +
+    '<div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:8px;">Each Month You Get</div>' +
+    '<ul style="padding-left:18px;margin:0;">' +
+    '<li style="font-size:11px;margin-bottom:5px;color:#334155;">Updated AI discoverability files reflecting any changes to your ' + vc.business + '</li>' +
+    '<li style="font-size:11px;margin-bottom:5px;color:#334155;">Fresh, search-optimized content targeting your highest-value services</li>' +
+    '<li style="font-size:11px;margin-bottom:5px;color:#334155;">Review generation campaigns to build social proof</li>' +
+    '<li style="font-size:11px;margin-bottom:5px;color:#334155;">Local citation monitoring and cleanup</li>' +
+    '<li style="font-size:11px;margin-bottom:0;color:#334155;">Competitor tracking with a monthly performance report</li>' +
+    '</ul></div>' +
 
-    '<div style="background:#0f172a;border-radius:12px;padding:24px;color:#fff;text-align:center;margin-top:16px;">' +
-    '<div style="font-size:13px;color:#f59e0b;font-weight:600;">You\'re leaving ' + (r.revenue_lost_annually||'') + ' on the table every year.</div>' +
-    '<div style="font-size:20px;font-weight:800;margin-top:6px;">Ready to start getting the patients you deserve?</div>' +
-    '<div style="margin-top:10px;font-size:12px;color:#94a3b8;">Schedule a free 30-minute strategy call. We\'ll walk through your report and show you exactly how to fix it.</div>' +
-    '<a href="https://calendly.com/ethan-practicerank" style="margin-top:14px;display:inline-block;background:#6366f1;color:#fff;padding:10px 28px;border-radius:8px;font-weight:700;font-size:14px;text-decoration:none;">Book Your Strategy Call &rarr; calendly.com/ethan-practicerank</a></div>' +
+    // CTA
+    '<div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);border-radius:10px;padding:24px 28px;margin:24px 0 0;text-align:center;">' +
+    '<div style="font-size:13px;color:rgba(255,255,255,0.85);margin-bottom:6px;">We\'d love to walk through these findings on a quick 15-minute call. No commitment, just a conversation about what\'s possible.</div>' +
+    '<div style="font-size:15px;font-weight:700;color:#4ade80;">Book a call: calendly.com/ethan-practicerank</div></div>' +
 
-    '<div style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;">' +
-    '<span style="font-size:10px;color:#94a3b8;">PracticeRank &mdash; AI-Powered Dental Marketing | practicerank.ai | jonlucas@lostrelic.com</span></div>' +
+    '</div>' + // end content
+
+    // Footer
+    '<div style="padding:16px 48px;text-align:center;font-size:9px;color:#94a3b8;border-top:1px solid #e2e8f0;">' +
+    'PracticeRank &mdash; practicerank.ai &mdash; ' + vc.tagline + '</div>' +
 
     '</body></html>';
 
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
-    // Give it a moment to render, then trigger print (Save as PDF)
-    setTimeout(() => { win.print(); }, 500);
+    setTimeout(() => { win.print(); }, 600);
   }
 </script>
 </body>
