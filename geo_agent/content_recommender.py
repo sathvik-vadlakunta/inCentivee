@@ -23,6 +23,43 @@ from geo_agent.llm import MODEL_CONTENT, complete
 
 logger = logging.getLogger(__name__)
 
+# Structured-output schema for content recommendations. The model is constrained
+# to emit JSON matching this (output_config.format), so the response is
+# guaranteed-valid JSON — no fence stripping or repair needed. JSON Schema strict
+# mode: no min/max (use enum for priority), additionalProperties must be false.
+_REC_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "rec_type": {
+            "type": "string",
+            "enum": [
+                "blog_post", "faq_update", "stat_injection",
+                "freshness_update", "new_page", "expert_quote",
+            ],
+        },
+        "target_page": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "html_snippet": {"type": "string"},
+        "priority": {"type": "integer", "enum": [1, 2, 3, 4, 5]},
+        "category": {"type": "string"},
+        "ai_impact_reason": {"type": "string"},
+    },
+    "required": [
+        "rec_type", "target_page", "title", "description",
+        "html_snippet", "priority", "category", "ai_impact_reason",
+    ],
+}
+CONTENT_OUTPUT_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "recommendations": {"type": "array", "items": _REC_SCHEMA},
+    },
+    "required": ["recommendations"],
+}
+
 
 # Research statistics organized by business type
 RESEARCH_STATS = {
@@ -30,7 +67,7 @@ RESEARCH_STATS = {
         {"stat": "According to the American Dental Association, 100 million Americans fail to see a dentist each year", "source": "ADA Health Policy Institute, 2024", "url": "https://www.ada.org/resources/research/health-policy-institute", "category": "general"},
         {"stat": "A systematic review found dental implants have a cumulative survival rate of approximately 96.4% at 10 years", "source": "Journal of Dentistry, Systematic Review and Meta-Analysis, 2019", "url": "https://www.sciencedirect.com/science/article/abs/pii/S0300571219300491", "category": "implants"},
         {"stat": "The CDC reports that approximately 1 in 4 adults in the US have untreated tooth decay", "source": "CDC Oral Health Surveillance Report, 2024", "url": "https://www.cdc.gov/oral-health/php/2024-oral-health-surveillance-report/selected-findings.html", "category": "general"},
-        {"stat": "Research indicates Invisalign treatment averages 12-18 months for most adults", "source": "American Journal of Orthodontics, 2023", "url": "https://www.ajodo.org/", "category": "orthodontics"},
+        {"stat": "A 2024 peer-reviewed study found adult clear-aligner treatment averaged about 14.5 months (within the typical 12-18 month range for mild-to-moderate cases)", "source": "Alam et al., Cureus, 2024 (peer-reviewed)", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11805330/", "category": "orthodontics"},
         {"stat": "CDC/NHANES data shows that 47.2% of adults aged 30 and older have some form of periodontal disease", "source": "CDC/NIDCR National Health and Nutrition Examination Survey", "url": "https://www.nidcr.nih.gov/research/data-statistics/periodontal-disease/adults", "category": "periodontics"},
         {"stat": "Professional teeth whitening can brighten teeth by 3 to 8 shades in a single visit, compared to 1-2 shades with over-the-counter products", "source": "American Dental Association, Whitening", "url": "https://www.ada.org/resources/ada-library/oral-health-topics/whitening", "category": "cosmetic"},
         {"stat": "The 2021 Adult Oral Health Survey found that approximately 42% of adults experience moderate dental anxiety, with 12% experiencing extreme fear", "source": "British Dental Journal, 2024", "url": "https://www.nature.com/articles/s41415-024-7846-1", "category": "general"},
@@ -44,22 +81,19 @@ RESEARCH_STATS = {
     "technology": [
         {"stat": "The global dental CAD/CAM market is projected to reach $4.2B by 2032, growing at a 6.1% CAGR", "source": "Grand View Research, Dental CAD/CAM Market Report, 2024", "url": "https://www.grandviewresearch.com/industry-analysis/dental-cad-cam-market", "category": "market"},
         {"stat": "The U.S. dental laboratory market is projected to exceed $10B by 2032, growing at approximately 10% CAGR", "source": "Fortune Business Insights, U.S. Dental Laboratory Market, 2024", "url": "https://www.fortunebusinessinsights.com/dental-laboratory-market-109498", "category": "market"},
-        {"stat": "Over 50% of dental lab prescriptions contain inadequate information, leading to costly back-and-forth with clinicians", "source": "National Association of Dental Laboratories (NADL) Survey, 2023", "url": "https://www.nadl.org/", "category": "workflow"},
+        {"stat": "An audit of dental prescriptions found about 66% were non-compliant with ethical and legal guidelines, driving costly back-and-forth between clinics and labs", "source": "Berry, Nesbit et al., British Dental Journal, 2011 (prescription audit)", "url": "https://www.nature.com/articles/sj.bdj.2011.623", "category": "workflow"},
         {"stat": "The U.S. dental prosthetics market is expected to surpass $8B by 2032, driven by an aging population and rising implant adoption", "source": "Markets and Markets, Dental Prosthetics Report, 2024", "url": "https://www.marketsandmarkets.com/Market-Reports/dental-prosthetics-market-702.html", "category": "market"},
         {"stat": "Digital impression systems have been adopted by over 50% of U.S. dental offices as of 2024", "source": "ADA Health Policy Institute, Dental Technology Survey, 2024", "url": "https://www.ada.org/resources/research/health-policy-institute", "category": "digital"},
         {"stat": "Intraoral scanner adoption in U.S. dental practices has grown from 14% in 2017 to over 50% in 2024", "source": "ADA Health Policy Institute, Technology Adoption Report, 2024", "url": "https://www.ada.org/resources/research/health-policy-institute", "category": "digital"},
     ],
     "legal": [
-        {"stat": "The American Bar Association reports there are over 1.3 million active attorneys in the United States", "source": "ABA National Lawyer Population Survey, 2024", "url": "https://www.americanbar.org/about_the_aba/profession_statistics/", "category": "general"},
-        {"stat": "96% of people seeking legal advice use a search engine at some point during their research", "source": "Google/Ipsos Legal Services Study, 2023", "url": "https://www.thinkwithgoogle.com/", "category": "marketing"},
-        {"stat": "The average personal injury settlement in the US ranges from $3,000 to $75,000, with cases going to trial averaging significantly higher", "source": "Insurance Information Institute, 2024", "url": "https://www.iii.org/", "category": "personal_injury"},
+        {"stat": "There are over 1.3 million active attorneys in the United States (1,322,649 as of January 2024)", "source": "ABA Profile of the Legal Profession / National Lawyer Population Survey, 2024", "url": "https://www.americanbar.org/news/profile-legal-profession/demographics/", "category": "general"},
         {"stat": "Nearly 40% of people who need legal help never reach out to a lawyer, often due to not knowing where to start", "source": "Legal Services Corporation Justice Gap Study, 2022", "url": "https://www.lsc.gov/our-impact/publications/other-publications-and-reports/justice-gap-report", "category": "general"},
         {"stat": "Online reviews influence 84% of consumers as much as a personal recommendation when choosing a lawyer", "source": "BrightLocal Consumer Review Survey, 2024", "url": "https://www.brightlocal.com/research/local-consumer-review-survey/", "category": "marketing"},
-        {"stat": "Law firms that blog regularly get 67% more leads per month than those that do not", "source": "HubSpot Legal Marketing Report, 2024", "url": "https://www.hubspot.com/marketing-statistics", "category": "marketing"},
         {"stat": "The average cost of hiring a divorce lawyer in the US is $11,300, though this varies significantly by state and complexity", "source": "Martindale-Nolo Legal Fee Survey, 2024", "url": "https://www.nolo.com/legal-encyclopedia/ctp/cost-of-divorce.html", "category": "family_law"},
         {"stat": "Over 50% of potential clients expect a response from a law firm within 1 hour of their inquiry", "source": "Clio Legal Trends Report, 2024", "url": "https://www.clio.com/resources/legal-trends/", "category": "intake"},
         {"stat": "Workers compensation claims account for approximately $100 billion in annual costs to US employers", "source": "National Academy of Social Insurance, 2024", "url": "https://www.nasi.org/research/workers-compensation/", "category": "workers_comp"},
-        {"stat": "The median time to resolution for a personal injury case is 12-14 months, with complex cases taking 2-3 years", "source": "National Center for State Courts, 2024", "url": "https://www.ncsc.org/", "category": "personal_injury"},
+        {"stat": "Tort/personal injury cases take a median of roughly 16 months from filing to disposition, with complex cases taking significantly longer", "source": "BJS Civil Justice Survey of State Courts / NCSC civil caseload data", "url": "https://bjs.ojp.gov/content/pub/ascii/TCILC.TXT", "category": "personal_injury"},
     ],
     "medical": [
         {"stat": "The CDC reports that 83.4% of adults aged 18-64 had contact with a health care professional in the past year", "source": "CDC National Health Interview Survey, 2024", "url": "https://www.cdc.gov/nchs/nhis/index.htm", "category": "general"},
@@ -68,10 +102,7 @@ RESEARCH_STATS = {
         {"stat": "78% of patients use online reviews as their first step in finding a new doctor", "source": "Software Advice Patient Survey, 2024", "url": "https://www.softwareadvice.com/resources/how-patients-use-online-reviews/", "category": "marketing"},
         {"stat": "Dermatology is the most searched medical specialty online, with skin cancer screening searches increasing 45% year-over-year", "source": "Google Health Trends, 2024", "url": "https://trends.google.com/trends/", "category": "dermatology"},
         {"stat": "The average patient lifetime value for primary care is $2,000-$4,000 per year, while specialists range from $5,000-$10,000+", "source": "Medical Group Management Association, 2024", "url": "https://www.mgma.com/data", "category": "general"},
-        {"stat": "Practices with complete and accurate Healthgrades profiles receive 3x more patient inquiries", "source": "Healthgrades Provider Report, 2024", "url": "https://www.healthgrades.com/", "category": "directories"},
-        {"stat": "86% of patients say insurance acceptance is the most important factor when choosing a new provider", "source": "Vitals Patient Survey, 2024", "url": "https://www.vitals.com/", "category": "insurance"},
-        {"stat": "Preventive care visits reduce emergency room utilization by 27% and lower overall healthcare costs by 18%", "source": "American Journal of Preventive Medicine, 2024", "url": "https://www.ajpmonline.org/", "category": "preventive"},
-        {"stat": "Multi-provider practices that feature individual provider pages see 54% higher engagement than practices with a single 'Our Team' page", "source": "PatientPop Healthcare Marketing Report, 2024", "url": "https://www.patientpop.com/", "category": "marketing"},
+        {"stat": "Expanded access to primary care reduced patient-initiated emergency department visits for minor problems by about 26%", "source": "Dolton & Pathania, difference-in-differences analysis (peer-reviewed)", "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5012704/", "category": "preventive"},
     ],
     "ecommerce": [
         {"stat": "The global peptide therapeutics market is projected to reach $49.5B by 2027, growing at 9.7% CAGR", "source": "Grand View Research, Peptide Therapeutics Market Report, 2024", "url": "https://www.grandviewresearch.com/industry-analysis/peptide-therapeutics-market", "category": "market"},
@@ -515,22 +546,20 @@ def generate_content_recommendations(
     system_prompt = SYSTEM_PROMPTS.get(business_type, SYSTEM_PROMPTS.get("service", SYSTEM_PROMPTS["practice"]))
     logger.info(f"Generating content recommendations for {customer.name} (type={business_type})")
 
-    # Stream with a generous cap (these are full HTML articles) and FAIL LOUDLY on
-    # truncation/parse errors — never silently return [] and lose a month of content.
+    # Structured outputs: the schema is enforced server-side, so the response is
+    # guaranteed-valid JSON (no fences, no repair). Streams with a generous cap and
+    # FAILS LOUDLY on truncation — never silently returns [] and loses a month of content.
     response_text = complete(
         client,
         model=MODEL_CONTENT,
         system=system_prompt,
         user=user_prompt,
         max_tokens=64000,
+        output_schema=CONTENT_OUTPUT_SCHEMA,
         label=f"content:{customer.name}",
     )
-    if response_text.startswith("```"):
-        response_text = response_text.split("\n", 1)[1]
-        response_text = response_text.rsplit("```", 1)[0]
-
     try:
-        raw_recs = json.loads(response_text)
+        data = json.loads(response_text)
     except json.JSONDecodeError as e:
         logger.error(
             f"Unparseable content JSON for {customer.name}: {e}; head={response_text[:200]}"
@@ -538,6 +567,7 @@ def generate_content_recommendations(
         raise RuntimeError(
             f"Content generation returned unparseable JSON for {customer.name}"
         ) from e
+    raw_recs = data.get("recommendations", []) if isinstance(data, dict) else data
 
     if not isinstance(raw_recs, list):
         logger.error("Content recommendations response is not a list")
@@ -700,7 +730,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return ONLY a valid JSON array. No markdown fences.
+Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
 """
     elif business_type == "ecommerce":
         services_str = ', '.join(customer.services[:20]) if customer.services else specialties_str
@@ -755,7 +785,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return ONLY a valid JSON array. No markdown fences.
+Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
 """
     elif business_type == "practice":
         return f"""\
@@ -831,7 +861,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return ONLY a valid JSON array. No markdown fences.
+Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
 """
     else:
         # Generic fallback — adapts to any business type using services
@@ -888,7 +918,7 @@ For freshness updates, generate the updated paragraph/section with current date.
 
 Current date: {current_month}
 
-Return ONLY a valid JSON array. No markdown fences.
+Return a JSON object of the form {"recommendations": [ ...one object per recommendation... ]}.
 """
 
 

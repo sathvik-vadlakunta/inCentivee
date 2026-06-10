@@ -5392,12 +5392,29 @@ def api_content_approve_all():
     db = get_db()
     try:
         pending = db.get_content_recommendations(customer_id, status="pending", limit=500)
+
+        # Confirmation gate: don't blind-approve a large batch on a single click.
+        # The client must re-POST with confirm=true after the operator sees the count.
+        if not data.get("confirm"):
+            return jsonify({
+                "needs_confirmation": True,
+                "pending_count": len(pending),
+                "message": (
+                    f"Approve all {len(pending)} pending recommendation(s)? "
+                    f"They'll still be fact-checked before publishing. "
+                    f"Re-send with confirm=true to proceed."
+                ),
+            }), 409
+
         approved = 0
         for rec in pending:
             ok = db.update_content_recommendation_status(rec["id"], "approved")
             if ok:
                 approved += 1
-        audit_log("content_approve_all", customer_id=customer_id, details=f"approved {approved} pending recs")
+        audit_log(
+            "content_approve_all", customer_id=customer_id,
+            details=f"approved {approved} pending recs (confirmed)",
+        )
         return jsonify({"ok": True, "approved": approved, "total": len(pending)})
     finally:
         db.close()

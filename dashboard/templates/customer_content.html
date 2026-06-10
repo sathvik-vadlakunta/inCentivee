@@ -347,13 +347,13 @@ function publishAllToWebflow(customerId) {
 
 function approveAll(customerId) {
     const btn = document.getElementById('approve-all-btn');
-    if (!confirm('Approve all pending content recommendations?')) return;
+    if (!confirm('Approve all pending content recommendations? They will still be fact-checked before publishing.')) return;
     btn.disabled = true;
     btn.textContent = 'Approving...';
     fetch('/api/content/approve-all', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({customer_id: customerId})
+        body: JSON.stringify({customer_id: customerId, confirm: true})
     })
     .then(r => r.json())
     .then(data => {

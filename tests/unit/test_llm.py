@@ -52,3 +52,13 @@ def test_complete_passes_system_and_model():
     assert kwargs["model"] == "claude-opus-4-8"
     assert kwargs["system"] == "sys"
     assert kwargs["max_tokens"] == 99
+    assert "output_config" not in kwargs  # not set unless a schema is given
+
+
+def test_complete_sends_output_schema_when_given():
+    client = _client_returning(_message([_block("text", '{"recommendations": []}')]))
+    schema = {"type": "object", "properties": {}, "additionalProperties": False}
+    complete(client, model="m", user="u", max_tokens=10, output_schema=schema)
+    kwargs = client.messages.stream.call_args.kwargs
+    assert kwargs["output_config"]["format"]["type"] == "json_schema"
+    assert kwargs["output_config"]["format"]["schema"] is schema

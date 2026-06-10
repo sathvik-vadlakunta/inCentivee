@@ -43,6 +43,7 @@ def complete(
     user: str,
     system: str | None = None,
     max_tokens: int = 16000,
+    output_schema: dict | None = None,
     label: str = "",
 ) -> str:
     """Stream a single-turn completion and return its text.
@@ -50,6 +51,11 @@ def complete(
     Streams (so large `max_tokens` don't hit the SDK's ~10-minute non-streaming
     timeout) and raises `TruncatedResponseError` if the model stopped on
     `max_tokens`, so callers fail loudly instead of accepting a cut-off response.
+
+    If `output_schema` (a JSON Schema object) is given, the model is constrained
+    to emit JSON matching it (`output_config.format`) — the returned text is then
+    guaranteed-valid JSON, so callers can `json.loads` directly with no fence
+    stripping or repair.
     """
     kwargs = {
         "model": model,
@@ -58,6 +64,10 @@ def complete(
     }
     if system is not None:
         kwargs["system"] = system
+    if output_schema is not None:
+        kwargs["output_config"] = {
+            "format": {"type": "json_schema", "schema": output_schema}
+        }
 
     with client.messages.stream(**kwargs) as stream:
         message = stream.get_final_message()
