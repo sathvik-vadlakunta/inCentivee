@@ -4,12 +4,47 @@ from __future__ import annotations
 
 import html as html_lib
 import re
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from geo_agent.business_profiles import BusinessProfile, get_profile
 from geo_agent.config import Customer
 from geo_agent.crawler import PageData, clean_page_content, normalize_url
 from geo_agent.google_places import CONFIDENCE_FOR_REVIEWS, VerifiedBusinessData, is_trusted
+
+
+def _answer_seed_faq(question: str, customer: Customer, profile: BusinessProfile | None) -> str | None:
+    """Answer a seed FAQ question from VERIFIED customer facts only (never fabricate).
+
+    Returns None when there isn't a fact-grounded answer, so we skip it rather than
+    invent one.
+    """
+    q = question.lower()
+    loc = f"in {customer.city}, {customer.state}" if customer.city else ""
+
+    if "insurance" in q:
+        if customer.insurance_accepted:
+            return f"Yes — {customer.name} accepts {', '.join(customer.insurance_accepted)}. Call {customer.phone or 'us'} to confirm your specific plan."
+        return None
+    if "emergency" in q:
+        if customer.emergency_available:
+            return f"Yes — {customer.name} offers same-day emergency appointments {loc}. Call {customer.phone or 'us'} as soon as possible."
+        return None
+    if "schedule" in q or "appointment" in q or "book" in q:
+        if customer.phone:
+            return f"Call {customer.name} at {customer.phone} to schedule. {('Located at ' + customer.address + '.') if customer.address else ''}".strip()
+        return None
+    if "hours" in q or "open" in q:
+        return f"{customer.name} hours: {customer.hours}." if customer.hours else None
+    if "where" in q or "located" in q or "location" in q:
+        return f"{customer.name} is located at {customer.address}." if customer.address else None
+    if "service" in q or "offer" in q or "treatment" in q or "procedure" in q:
+        svc = customer.services or customer.specialties
+        if svc:
+            cat = profile.service_category if profile else "services"
+            return f"{customer.name} offers {cat} {loc}, including {', '.join(svc[:6])}."
+        return None
+    return None
 
 
 def _h1_for_type(customer: Customer, profile: BusinessProfile | None = None) -> str:
@@ -209,7 +244,7 @@ def _extract_faqs_from_pages(pages: list[PageData]) -> list[tuple[str, str]]:
     return unique[:10]  # Cap at 10 FAQs
 
 
-def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: VerifiedBusinessData | None = None) -> str:
+def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: VerifiedBusinessData | None = None, extra_faqs: list[tuple[str, str]] | None = None) -> str:
     """Generate the concise llms.txt file.
 
     Follows the llmstxt.org spec by Jeremy Howard:
@@ -263,6 +298,13 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
         lines.append(f"- **Insurance**: {insurance_str}")
     if is_trusted(verified_data, CONFIDENCE_FOR_REVIEWS) and verified_data.review_count > 0:
         lines.append(f"- **Google Reviews**: {verified_data.rating} stars ({verified_data.review_count} reviews)")
+    if customer.city:
+        lines.append(f"- **Service Area**: {customer.city}, {customer.state}")
+    # Freshness signal — regenerated monthly; recency is a real citation factor
+    # (Perplexity especially). Also a corroboration cue for NAP cross-referencing.
+    lines.append(f"- **Last updated**: {datetime.now(timezone.utc).strftime('%B %Y')}")
+    if customer.address and customer.phone:
+        lines.append("- This name, address, and phone match our Google Business Profile and directory listings.")
     lines.append("")
 
     if providers_str:
@@ -314,16 +356,29 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
             lines.append(f"- [{page.title}]({page.url})")
         lines.append("")
 
-    # FAQ section — embed top Q&A pairs inline
+    # FAQ section — embed top Q&A pairs inline. These self-contained Q&A pairs are
+    # the #1 citable asset, so every file should ship a populated block: use crawled
+    # FAQs, then adaptation-fed FAQs (queries AI isn't citing us on), then fact-based
+    # answers to the industry seed questions so a site without an FAQ page still has one.
     faq_pages = by_category.get("faq", [])
-    faqs = _extract_faqs_from_pages(pages)
+    faqs = list(_extract_faqs_from_pages(pages))
+    if extra_faqs:
+        faqs.extend(extra_faqs)
+    if len(faqs) < 4:
+        have_q = {q.lower().strip() for q, _ in faqs}
+        for seed_q in (profile.faq_seeds if profile else []):
+            if seed_q.lower().strip() in have_q:
+                continue
+            ans = _answer_seed_faq(seed_q, customer, profile)
+            if ans:
+                faqs.append((seed_q, ans))
     if faq_pages or faqs:
         lines.append("## Frequently Asked Questions")
         for page in faq_pages:
             lines.append(f"- [{page.title}]({page.url})")
         if faqs:
             lines.append("")
-            for q, a in faqs[:5]:  # Top 5 in llms.txt, keep it concise
+            for q, a in faqs[:7]:  # Top 7 in llms.txt
                 lines.append(f"**Q: {q}**")
                 # Keep answers near-complete: these Q&A pairs are the exact
                 # self-contained chunks AI engines quote, so truncating at 200

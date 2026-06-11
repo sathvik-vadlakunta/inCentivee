@@ -85,5 +85,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://{domain}/sitemap.xml
-Llms-txt: https://{domain}/llms.txt
 """

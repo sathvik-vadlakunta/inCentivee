@@ -226,10 +226,25 @@ class TestFaqEmbedding:
         assert "## Frequently Asked Questions" in result
         assert "How often should I visit" in result
 
-    def test_no_faq_section_when_none(self, sample_customer, sample_pages):
+    def test_faq_section_falls_back_to_seeds(self, sample_customer, sample_pages):
+        # Even with no crawled FAQ pages, every file ships a populated FAQ block
+        # (seed questions answered from verified facts) — the #1 citable asset.
         result = generate_llms_txt(sample_customer, sample_pages)
-        # No FAQ pages in sample_pages, so no FAQ section
-        assert "## Frequently Asked Questions" not in result
+        assert "## Frequently Asked Questions" in result
+        assert "**Q:" in result
+
+    def test_freshness_and_service_area(self, sample_customer, sample_pages):
+        import datetime
+        result = generate_llms_txt(sample_customer, sample_pages)
+        assert "**Last updated**" in result
+        assert datetime.datetime.now().strftime("%B %Y") in result
+        if sample_customer.city:
+            assert "**Service Area**" in result
+
+    def test_extra_faqs_are_embedded(self, sample_customer, sample_pages):
+        extra = [("Do you offer same-day implants in Austin?", "Yes, in many cases.")]
+        result = generate_llms_txt(sample_customer, sample_pages, extra_faqs=extra)
+        assert "same-day implants" in result
 
 
 class TestPageExclusion:

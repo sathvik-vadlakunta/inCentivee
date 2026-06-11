@@ -506,21 +506,38 @@ def process_customer(
     else:
         _start("generate")
         try:
-            llms_txt = generate_llms_txt(customer, pages, verified_data=verified_data)
+            # Adapt over time: feed queries AI isn't citing us on into llms.txt as
+            # FAQ entries, answered from verified facts where possible.
+            extra_faqs = []
+            if db:
+                try:
+                    from geo_agent.generators.llms_txt import _answer_seed_faq
+                    prof = get_profile(customer)
+                    for gap in db.get_uncited_prompts(customer.id)[:6]:
+                        ans = _answer_seed_faq(gap["prompt"], customer, prof)
+                        if ans:
+                            extra_faqs.append((gap["prompt"].rstrip("?").strip() + "?", ans))
+                    if extra_faqs:
+                        logger.info(f"  Adaptation: added {len(extra_faqs)} FAQ(s) for uncited queries")
+                except Exception as e:
+                    logger.warning(f"  Adaptation feed skipped: {e}")
+
+            llms_txt = generate_llms_txt(customer, pages, verified_data=verified_data, extra_faqs=extra_faqs)
             llms_full_txt = generate_llms_full_txt(customer, pages)
             is_webflow = customer.platform == "webflow"
+
+            # On-page FAQPage schema from the same Q&A used in llms.txt (corroboration).
+            analysis_faqs = []
+            for _url, fqs in analysis.get("faq_entries", {}).items():
+                for f in (fqs or []):
+                    if isinstance(f, dict) and f.get("question") and f.get("answer"):
+                        analysis_faqs.append((f["question"], f["answer"]))
+            schema_faqs = analysis_faqs + extra_faqs
             schema_html = generate_all_schemas(
                 customer, verified_data=verified_data, webflow_safe=is_webflow,
+                faqs=schema_faqs or None,
             )
             robots_txt = generate_robots_txt(customer)
-
-            # Add FAQ schemas from analysis
-            faq_entries = analysis.get("faq_entries", {})
-            faq_wrap = schema_to_js_injection if is_webflow else schema_to_script_tag
-            for page_url, faqs in faq_entries.items():
-                if faqs:
-                    faq_schema = generate_faq_schema(faqs)
-                    schema_html += "\n" + faq_wrap(faq_schema)
 
             summary["changes"].append(f"Generated llms.txt ({len(llms_txt)} bytes)")
             summary["changes"].append(f"Generated llms-full.txt ({len(llms_full_txt)} bytes)")

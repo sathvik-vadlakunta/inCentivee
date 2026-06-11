@@ -274,6 +274,7 @@ def generate_all_schemas(
     customer: Customer,
     verified_data: VerifiedBusinessData | None = None,
     webflow_safe: bool = False,
+    faqs: list[tuple[str, str]] | None = None,
 ) -> str:
     """Generate all schema markup as injectable HTML script tags.
 
@@ -281,8 +282,12 @@ def generate_all_schemas(
         webflow_safe: If True, output JS injection wrappers instead of raw
             JSON-LD <script> tags. This prevents Webflow's code editor from
             breaking JSON by inserting line breaks.
+        faqs: (question, answer) pairs to emit as FAQPage schema — pass the SAME
+            Q&A used in llms.txt so the on-page schema and llms.txt corroborate.
+            Falls back to the industry seed questions answered from verified facts.
     """
     wrap = schema_to_js_injection if webflow_safe else schema_to_script_tag
+    profile = get_profile(customer)
     tags = []
 
     # Main business schema (Dentist for practices, Organization for others)
@@ -291,5 +296,25 @@ def generate_all_schemas(
     # Provider schemas
     for provider_schema in generate_provider_schemas(customer):
         tags.append(wrap(provider_schema))
+
+    # FAQPage schema — the highest-impact schema for AI citation. Build from the
+    # passed Q&A, or from seed questions answered with verified facts.
+    if faqs is None:
+        from geo_agent.generators.llms_txt import _answer_seed_faq
+        faqs = []
+        for seed_q in (profile.faq_seeds or []):
+            ans = _answer_seed_faq(seed_q, customer, profile)
+            if ans:
+                faqs.append((seed_q, ans))
+    if faqs:
+        tags.append(wrap(generate_faq_schema(
+            [{"question": q, "answer": a} for q, a in faqs]
+        )))
+
+    # Service schema per offered service (top few)
+    home = f"https://{customer.domain}/"
+    for svc in (customer.services or [])[:6]:
+        desc = f"{svc} at {customer.name}" + (f" in {customer.city}, {customer.state}" if customer.city else "")
+        tags.append(wrap(generate_service_schema(svc, desc, home, customer)))
 
     return "\n".join(tags)

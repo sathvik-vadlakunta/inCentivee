@@ -229,9 +229,11 @@ class TestSchemaToJsInjection:
 class TestGenerateAllSchemas:
     def test_contains_dentist_and_providers(self, sample_customer):
         html = generate_all_schemas(sample_customer)
-        assert html.count("application/ld+json") == 3  # 1 dentist + 2 providers
+        # 1 dentist + 2 providers + FAQPage (+ any Service schemas)
+        assert html.count("application/ld+json") >= 3
         assert '"Dentist"' in html
         assert '"Person"' in html
+        assert '"FAQPage"' in html  # now emitted (highest-impact AI-citation schema)
 
     def test_returns_html_string(self, sample_customer):
         html = generate_all_schemas(sample_customer)
