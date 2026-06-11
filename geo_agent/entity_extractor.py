@@ -56,7 +56,39 @@ _PLATFORM_NAMES = frozenset({
     # Retail/service generic terms
     "customer service", "free shipping", "money back guarantee",
     "free consultation", "free estimate",
+    # Review/aggregator platforms (these get cited a LOT and otherwise pollute
+    # share-of-voice as fake "competitors")
+    "trustpilot", "bbb accredited", "sitejabber", "consumeraffairs",
+    "glassdoor", "indeed", "birdeye", "trustindex", "shopper approved",
+    "resellerratings", "pissedconsumer", "g2", "capterra", "clutch", "yotpo",
+    "trustindex.io", "bbb.org",
 })
+
+# Standalone tokens that mark a name as a review/directory/aggregator platform
+# rather than a competitor — catches variants the exact set misses
+# ('BBB Accredited', 'Trustpilot Reviews', 'Yelp listing').
+_PLATFORM_TOKENS = frozenset({
+    "yelp", "trustpilot", "bbb", "google", "facebook", "instagram", "reddit",
+    "healthgrades", "zocdoc", "vitals", "ratemds", "webmd", "angi", "thumbtack",
+    "homeadvisor", "nextdoor", "yellowpages", "sitejabber", "consumeraffairs",
+    "glassdoor", "indeed", "birdeye", "trustindex", "resellerratings",
+    "pissedconsumer", "capterra", "yotpo",
+})
+
+
+def is_platform_or_directory(normalized_name: str) -> bool:
+    """True if a name is a review/directory/aggregator platform, not a competitor.
+
+    Used both at extraction time and at share-of-voice read time, so already-stored
+    junk entities are filtered without needing a backfill.
+    """
+    n = (normalized_name or "").lower().strip()
+    if not n:
+        return True
+    if n in _PLATFORM_NAMES:
+        return True
+    words = set(re.split(r"[^a-z0-9]+", n))
+    return bool(words & _PLATFORM_TOKENS)
 
 # Common suffixes to strip from extracted names
 _STRIP_SUFFIXES = re.compile(
@@ -92,7 +124,7 @@ def extract_entities_from_response(
         # Skip generic phrases and platform names
         if norm in _STOP_NAMES or any(s in norm for s in _STOP_NAMES):
             return
-        if norm in _PLATFORM_NAMES:
+        if is_platform_or_directory(norm):
             return
         # Must start with uppercase or digit (real business names)
         if not name[0].isupper() and not name[0].isdigit():

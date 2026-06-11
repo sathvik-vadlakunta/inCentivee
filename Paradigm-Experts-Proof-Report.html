@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>AI Search Visibility Report — Paradigm Experts</title>
+<style>
+    :root {
+        --brand: #e94560;
+        --navy: #16213e;
+        --navy-soft: #1f2b4d;
+        --bg: #f6f7fb;
+        --card: #ffffff;
+        --border: #e6e9f2;
+        --text: #1f2937;
+        --muted: #64748b;
+        --green: #16a34a;
+        --green-bg: #ecfdf5;
+        --red: #c2616e;
+        --red-bg: #fdf2f4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.55;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 1.25rem 4rem; }
+
+    /* ---------- Header ---------- */
+    .report-hero {
+        background: linear-gradient(135deg, var(--navy) 0%, var(--navy-soft) 70%);
+        color: #fff;
+        padding: 3rem 1.25rem 4.5rem;
+        margin-bottom: -2.5rem;
+    }
+    .report-hero .inner { max-width: 960px; margin: 0 auto; }
+    .brand-tag {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        font-size: 0.75rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+        color: rgba(255,255,255,0.75); margin-bottom: 1rem;
+    }
+    .brand-tag .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--brand); display: inline-block; }
+    .report-hero h1 { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.35rem; }
+    .report-hero .practice { font-size: 1.15rem; font-weight: 600; color: #fff; }
+    .report-hero .location { font-size: 0.95rem; color: rgba(255,255,255,0.7); margin-top: 0.15rem; }
+
+    /* ---------- Share bar (internal only) ---------- */
+    .share-bar {
+        background: #fff; border: 1px solid var(--border); border-radius: 12px;
+        padding: 1rem 1.25rem; margin: 1.25rem 0 0;
+        display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+        box-shadow: 0 1px 3px rgba(22,33,62,0.06);
+    }
+    .share-bar .label { font-size: 0.8rem; font-weight: 700; color: var(--navy); white-space: nowrap; }
+    .share-bar input {
+        flex: 1; min-width: 200px; font-size: 0.8rem; color: var(--muted);
+        border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem;
+        background: var(--bg); font-family: inherit;
+    }
+    .share-bar button {
+        background: var(--brand); color: #fff; border: none; border-radius: 8px;
+        padding: 0.5rem 1.1rem; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+        transition: opacity 0.15s;
+    }
+    .share-bar button:hover { opacity: 0.88; }
+
+    /* ---------- Sections / cards ---------- */
+    .section { margin-top: 2.5rem; }
+    .section > h2 { font-size: 1.15rem; font-weight: 800; color: var(--navy); margin-bottom: 0.35rem; letter-spacing: -0.2px; }
+    .section > .sub { font-size: 0.875rem; color: var(--muted); margin-bottom: 1.1rem; }
+    .card {
+        background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+        padding: 1.5rem; box-shadow: 0 1px 3px rgba(22,33,62,0.05);
+    }
+
+    /* ---------- Metric cards ---------- */
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+    .metric-card {
+        background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+        padding: 1.4rem 1.5rem; box-shadow: 0 1px 3px rgba(22,33,62,0.05);
+    }
+    .metric-card .m-label {
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+        color: var(--muted); margin-bottom: 0.65rem;
+    }
+    .metric-card .m-value { font-size: 2.3rem; font-weight: 800; color: var(--navy); line-height: 1.1; }
+    .metric-card .m-value .from { font-size: 1.1rem; font-weight: 600; color: var(--muted); }
+    .metric-card .m-value .arrow { font-size: 1.1rem; color: var(--muted); margin: 0 0.2rem; }
+    .metric-card .m-dates { font-size: 0.75rem; color: var(--muted); margin-top: 0.55rem; }
+    .metric-card .m-note { font-size: 0.8rem; color: var(--muted); margin-top: 0.55rem; font-style: italic; }
+    .delta {
+        display: inline-block; font-size: 0.85rem; font-weight: 700;
+        padding: 0.18rem 0.6rem; border-radius: 999px; margin-top: 0.6rem;
+    }
+    .delta.up { color: var(--green); background: var(--green-bg); }
+    .delta.down { color: var(--red); background: var(--red-bg); }
+    .delta.flat { color: var(--muted); background: var(--bg); }
+    .m-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.45rem; }
+
+    /* ---------- Chart ---------- */
+    .chart-box { position: relative; height: 320px; }
+    .engines { margin-top: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .engine-pill {
+        font-size: 0.72rem; font-weight: 600; color: var(--navy);
+        background: var(--bg); border: 1px solid var(--border);
+        padding: 0.2rem 0.65rem; border-radius: 999px;
+    }
+
+    /* ---------- Citation chips ---------- */
+    .citations-card { border-top: 4px solid var(--brand); }
+    .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .chip {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        background: #fff; border: 1px solid var(--border); border-radius: 999px;
+        padding: 0.45rem 0.5rem 0.45rem 1rem;
+        font-size: 0.9rem; font-weight: 600; color: var(--navy);
+        box-shadow: 0 1px 2px rgba(22,33,62,0.05);
+    }
+    .chip .count {
+        background: var(--navy); color: #fff; font-size: 0.72rem; font-weight: 700;
+        border-radius: 999px; padding: 0.12rem 0.55rem; min-width: 1.6rem; text-align: center;
+    }
+
+    /* ---------- Share of voice ---------- */
+    .sov-head { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .sov-head .big { font-size: 2.1rem; font-weight: 800; color: var(--navy); }
+    .sov-head .rank {
+        font-size: 0.85rem; font-weight: 700; color: var(--brand);
+        background: #fdeef1; padding: 0.25rem 0.75rem; border-radius: 999px;
+    }
+    .sov-row { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.65rem; }
+    .sov-row .name {
+        width: 220px; max-width: 38%; font-size: 0.83rem; font-weight: 600; color: var(--text);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;
+    }
+    .sov-row .bar-track { flex: 1; background: var(--bg); border-radius: 999px; height: 14px; overflow: hidden; }
+    .sov-row .bar-fill { height: 100%; border-radius: 999px; background: #b9c0d4; min-width: 2px; }
+    .sov-row.you .bar-fill { background: var(--brand); }
+    .sov-row.you .name { color: var(--brand); font-weight: 800; }
+    .sov-row .pct { width: 52px; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-align: right; flex-shrink: 0; }
+    .sov-row.you .pct { color: var(--brand); }
+
+    /* ---------- GSC ---------- */
+    .gsc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+    .gsc-range { font-size: 0.8rem; color: var(--muted); margin-top: 1rem; }
+
+    /* ---------- Timeline ---------- */
+    .timeline { list-style: none; }
+    .timeline li {
+        position: relative; padding: 0 0 1.4rem 1.9rem; border-left: 2px solid var(--border);
+        margin-left: 0.5rem;
+    }
+    .timeline li:last-child { padding-bottom: 0.2rem; }
+    .timeline li::before {
+        content: ""; position: absolute; left: -8px; top: 0.2rem;
+        width: 14px; height: 14px; border-radius: 50%;
+        background: var(--brand); border: 3px solid #fff; box-shadow: 0 0 0 2px var(--brand);
+    }
+    .timeline .t-date { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+    .timeline .t-title { font-size: 0.95rem; font-weight: 700; color: var(--navy); margin-top: 0.1rem; }
+    .timeline .t-title a { color: var(--navy); text-decoration: none; border-bottom: 1px dotted var(--brand); }
+    .timeline .t-title a:hover { color: var(--brand); }
+    .timeline .t-type {
+        display: inline-block; font-size: 0.7rem; font-weight: 700; color: var(--navy);
+        background: var(--bg); border: 1px solid var(--border);
+        padding: 0.1rem 0.6rem; border-radius: 999px; margin-top: 0.35rem;
+    }
+
+    /* ---------- Footer ---------- */
+    .report-footer {
+        margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);
+        text-align: center; font-size: 0.78rem; color: var(--muted);
+    }
+    .report-footer .pr { font-weight: 800; color: var(--navy); }
+    .report-footer .pr .accent { color: var(--brand); }
+
+    @media (max-width: 600px) {
+        .report-hero { padding: 2.25rem 1.25rem 3.75rem; }
+        .report-hero h1 { font-size: 1.45rem; }
+        .metric-card .m-value { font-size: 1.85rem; }
+        .sov-row .name { width: 110px; }
+        .chart-box { height: 240px; }
+    }
+</style>
+</head>
+<body>
+
+<header class="report-hero">
+    <div class="inner">
+        <div class="brand-tag"><span class="dot"></span> PracticeRank</div>
+        <h1>AI Search Visibility Report</h1>
+        <div class="practice">Paradigm Experts</div>
+        
+        <div class="location">Springfield, Virginia</div>
+        
+    </div>
+</header>
+
+<div class="wrap">
+
+    
+
+    
+    
+    
+    
+    <div class="section">
+        <div class="metrics">
+
+            
+            <div class="metric-card">
+                <div class="m-label">AI Mention Rate</div>
+                
+                    <div class="m-value">80.0%</div>
+                    <div class="m-note">Baseline will lock after the first scheduled run.</div>
+                    <div class="m-dates">As of 2026-06-11</div>
+                
+                <div class="m-hint">How often AI assistants mention your practice when asked for a recommendation.</div>
+            </div>
+            
+
+            
+
+            
+            <div class="metric-card">
+                <div class="m-label">Avg. Position in AI Answers</div>
+                <div class="m-value">
+                    1.5
+                </div>
+                
+                <div class="m-hint">Where you appear in AI recommendation lists &mdash; lower is better.</div>
+            </div>
+            
+
+        </div>
+    </div>
+    
+
+    
+    
+    <div class="section">
+        <h2>Are AI assistants recommending you? (over time)</h2>
+        <p class="sub">Percentage of AI assistant queries where your practice is mentioned, measured each check.</p>
+        <div class="card">
+            <div class="chart-box"><canvas id="trendChart"></canvas></div>
+            
+            <div class="engines">
+                <span class="engine-pill" style="background:#fdeef1;border-color:#f5cdd5;">Tracked across:</span>
+                
+                <span class="engine-pill">ChatGPT</span>
+                
+                <span class="engine-pill">Gemini</span>
+                
+                <span class="engine-pill">Grok</span>
+                
+                <span class="engine-pill">Perplexity</span>
+                
+                <span class="engine-pill">Claude</span>
+                
+            </div>
+            
+        </div>
+    </div>
+    
+
+    
+    
+    <div class="section">
+        <h2>Sources now citing you</h2>
+        <p class="sub">When AI assistants answer questions about your area, these are the sources they pull from that now reference your practice.</p>
+        <div class="card citations-card">
+            <div class="chips">
+                
+                <span class="chip">paradigmexperts.com <span class="count">21</span></span>
+                
+                <span class="chip">yelp.com <span class="count">13</span></span>
+                
+                <span class="chip">bbb.org <span class="count">11</span></span>
+                
+                <span class="chip">facebook.com <span class="count">7</span></span>
+                
+                <span class="chip">whereorg.com <span class="count">6</span></span>
+                
+                <span class="chip">alexandriagoldandsilver.com <span class="count">6</span></span>
+                
+                <span class="chip">goldiew.com <span class="count">5</span></span>
+                
+                <span class="chip">checkbook.org <span class="count">5</span></span>
+                
+                <span class="chip">trustpilot.com <span class="count">4</span></span>
+                
+                <span class="chip">indeed.com <span class="count">3</span></span>
+                
+                <span class="chip">uscarjunker.com <span class="count">3</span></span>
+                
+                <span class="chip">cashforgoldva.com <span class="count">3</span></span>
+                
+                <span class="chip">bullionexchanges.com <span class="count">3</span></span>
+                
+                <span class="chip">unitedcoinandjewelry.com <span class="count">2</span></span>
+                
+                <span class="chip">cashforgoldnova.com <span class="count">2</span></span>
+                
+                <span class="chip">buygoldinwoodbridge.com <span class="count">2</span></span>
+                
+                <span class="chip">alignable.com <span class="count">2</span></span>
+                
+                <span class="chip">instagram.com <span class="count">2</span></span>
+                
+                <span class="chip">virginiagoldbuyer.com <span class="count">2</span></span>
+                
+                <span class="chip">fairfaxcounty.gov <span class="count">2</span></span>
+                
+                <span class="chip">moneymetals.com <span class="count">2</span></span>
+                
+                <span class="chip">yellowpages.com <span class="count">2</span></span>
+                
+                <span class="chip">signalhire.com <span class="count">1</span></span>
+                
+                <span class="chip">glassdoor.com <span class="count">1</span></span>
+                
+                <span class="chip">local.yahoo.com <span class="count">1</span></span>
+                
+                <span class="chip">paradigm-corp.com <span class="count">1</span></span>
+                
+                <span class="chip">paradigmusa.net <span class="count">1</span></span>
+                
+                <span class="chip">paradigmcos.com <span class="count">1</span></span>
+                
+                <span class="chip">be.brussels <span class="count">1</span></span>
+                
+                <span class="chip">jcsgold.com <span class="count">1</span></span>
+                
+                <span class="chip">learcapital.com <span class="count">1</span></span>
+                
+                <span class="chip">reddit.com <span class="count">1</span></span>
+                
+                <span class="chip">jmbullion.com <span class="count">1</span></span>
+                
+                <span class="chip">thebullionbank.com <span class="count">1</span></span>
+                
+            </div>
+        </div>
+    </div>
+    
+
+    
+    
+    
+    <div class="section">
+        <h2>Your share of voice vs. competitors</h2>
+        <p class="sub">How often you&rsquo;re recommended by AI assistants compared with other practices in your market.</p>
+        <div class="card">
+            <div class="sov-head">
+                
+                <span class="big">8.0%</span>
+                
+                
+            </div>
+            
+            
+            
+                
+                
+            
+                
+                
+            
+                
+                
+            
+                
+                
+            
+                
+                
+            
+                
+                
+            
+                
+                
+            
+                
+                
+            
+            
+
+            
+            <div class="sov-row you">
+                <span class="name">Paradigm Experts (you)</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 100.0%;"></div></div>
+                <span class="pct">8.0%</span>
+            </div>
+            
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">Alexandria Gold and Silver</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.2%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">Trustpilot</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">BBB Accredited</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">Cash for Gold Nova</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">SD Bullion</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">Ritz-Carlton</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">Pros</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+            
+            <div class="sov-row">
+                <span class="name">KPMG</span>
+                <div class="bar-track"><div class="bar-fill" style="width: 0.1%;"></div></div>
+                <span class="pct">0.0%</span>
+            </div>
+            
+            
+        </div>
+    </div>
+    
+
+    
+    
+
+    
+    
+
+    <footer class="report-footer">
+        Powered by <span class="pr">Practice<span class="accent">Rank</span></span><br>
+        AI search visibility, measured and improved.
+    </footer>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function () {
+    var trend = [{"avg_position": 1.5, "date": "2026-06-11", "is_baseline": true, "mention_rate": 80.0}];
+    var labels = trend.map(function (p) { return p.date; });
+    var rates = trend.map(function (p) { return p.mention_rate; });
+    var pointColors = trend.map(function (p) { return p.is_baseline ? '#16213e' : '#e94560'; });
+    var pointRadii = trend.map(function (p) { return p.is_baseline ? 7 : 4; });
+
+    var ctx = document.getElementById('trendChart');
+    if (!ctx || typeof Chart === 'undefined') return;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'AI mention rate (%)',
+                data: rates,
+                borderColor: '#e94560',
+                backgroundColor: 'rgba(233, 69, 96, 0.08)',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 3,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: pointRadii,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#16213e',
+                    padding: 12,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function (item) {
+                            var point = trend[item.dataIndex];
+                            var lines = ['Mention rate: ' + item.parsed.y.toFixed(1) + '%'];
+                            if (point.avg_position !== null && point.avg_position !== undefined) {
+                                lines.push('Avg. position: ' + Number(point.avg_position).toFixed(1));
+                            }
+                            if (point.is_baseline) lines.push('Baseline measurement');
+                            return lines;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    suggestedMax: Math.max.apply(null, rates.concat([10])) * 1.2,
+                    ticks: {
+                        color: '#64748b',
+                        callback: function (v) { return v + '%'; }
+                    },
+                    grid: { color: '#eef0f6' }
+                },
+                x: {
+                    ticks: { color: '#64748b', maxRotation: 45 },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+})();
+</script>
+
+
+
+
+</body>
+</html>

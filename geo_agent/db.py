@@ -1714,9 +1714,23 @@ class CustomerDB:
         )
         rows = [dict(r) for r in cur.fetchall()]
 
+        # Drop review/directory/aggregator platforms (Trustpilot, BBB, Yelp, …).
+        # They get cited heavily and otherwise show up as fake "competitors" and
+        # dilute the share denominator. Filtered at read-time so already-stored
+        # rows are cleaned without a backfill.
+        from geo_agent.entity_extractor import is_platform_or_directory
+        rows = [
+            r for r in rows
+            if r["is_customer"] or not is_platform_or_directory(r["entity_name_normalized"])
+        ]
+
         total = sum(r["mention_count"] for r in rows)
         customer_mentions = sum(r["mention_count"] for r in rows if r["is_customer"])
         customer_share = customer_mentions / total if total > 0 else 0
+
+        # Rank the customer among real businesses (1 = most-mentioned).
+        ranked = sorted(rows, key=lambda r: -r["mention_count"])
+        customer_rank = next((i + 1 for i, r in enumerate(ranked) if r["is_customer"]), None)
 
         competitors = []
         for r in rows:
@@ -1733,6 +1747,7 @@ class CustomerDB:
         return {
             "customer_share": round(customer_share, 4),
             "customer_mentions": customer_mentions,
+            "customer_rank": customer_rank,
             "competitors": competitors[:15],
             "total_entity_mentions": total,
             "total_unique_entities": len(rows),
