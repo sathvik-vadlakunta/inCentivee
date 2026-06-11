@@ -30,8 +30,12 @@ _PLATFORM_NAMES = frozenset({
     "angi", "angie's list", "thumbtack", "homeadvisor", "nextdoor",
     "yellowpages", "amazon", "walmart", "costco", "ebay", "etsy",
     # Consulting/unrelated
-    "accenture", "deloitte", "mckinsey", "mckinsey & company",
-    "peptide sciences",
+    "accenture", "deloitte", "mckinsey", "mckinsey & company", "kpmg",
+    "pwc", "ernst & young", "peptide sciences",
+    # Generic listicle/section artifacts that get mis-extracted as businesses
+    "pros", "cons", "industry forums", "forums", "industry experts",
+    "local businesses", "online retailers", "various retailers",
+    "key considerations", "other options", "honorable mentions",
     # Medical institutions
     "mayo clinic", "cleveland clinic", "johns hopkins",
     "american dental association", "ada",
