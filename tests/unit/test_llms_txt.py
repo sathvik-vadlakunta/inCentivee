@@ -247,6 +247,26 @@ class TestFaqEmbedding:
         assert "same-day implants" in result
 
 
+class TestPolish:
+    def test_chunk_content_splits_long_text(self):
+        from geo_agent.generators.llms_txt import _chunk_content
+        text = " ".join(["word"] * 500)
+        chunks = _chunk_content(text, max_words=180)
+        assert len(chunks) >= 2
+        assert all(len(c.split()) <= 180 for c in chunks)
+
+    def test_description_drops_nav_list_fragments(self):
+        from geo_agent.generators.llms_txt import _extract_description
+        nav = "Dental Implants, Teeth Whitening, Root Canals, Dental Emergencies, Crowns, Veneers"
+        assert _extract_description(nav, title="Services") == ""  # no prose -> empty, not a fragment
+
+    def test_description_keeps_real_prose(self):
+        from geo_agent.generators.llms_txt import _extract_description
+        prose = "We offer comprehensive dental care for the whole family in a comfortable setting."
+        out = _extract_description(prose)
+        assert "comprehensive dental care" in out and not out.endswith(",")
+
+
 class TestPageExclusion:
     def test_excluded_pages_not_in_output(self, sample_customer):
         from geo_agent.crawler import is_excluded_page

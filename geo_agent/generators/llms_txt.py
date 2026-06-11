@@ -13,6 +13,43 @@ from geo_agent.crawler import PageData, clean_page_content, normalize_url
 from geo_agent.google_places import CONFIDENCE_FOR_REVIEWS, VerifiedBusinessData, is_trusted
 
 
+def _chunk_content(text: str, max_words: int = 180) -> list[str]:
+    """Split page content into ~150-200 word self-contained passages.
+
+    AI retrieval works on passages, not whole pages — a wall of text fails to
+    surface any quotable unit. Group paragraphs (or sentences when there are no
+    paragraph breaks) into chunks under ~max_words so each is independently liftable.
+    """
+    if not text:
+        return []
+    paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    if len(paras) <= 1:
+        paras = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text.strip()) if s.strip()]
+    chunks: list[str] = []
+    cur: list[str] = []
+    cur_words = 0
+    for p in paras:
+        words = p.split()
+        w = len(words)
+        if w > max_words:
+            # A single passage with no break points — hard-split by word window.
+            if cur:
+                chunks.append(" ".join(cur))
+                cur, cur_words = [], 0
+            for i in range(0, w, max_words):
+                chunks.append(" ".join(words[i:i + max_words]))
+            continue
+        if cur and cur_words + w > max_words:
+            chunks.append(" ".join(cur))
+            cur, cur_words = [p], w
+        else:
+            cur.append(p)
+            cur_words += w
+    if cur:
+        chunks.append(" ".join(cur))
+    return chunks
+
+
 def _answer_seed_faq(question: str, customer: Customer, profile: BusinessProfile | None) -> str | None:
     """Answer a seed FAQ question from VERIFIED customer facts only (never fabricate).
 
@@ -115,6 +152,25 @@ def _get_specialties(customer: Customer) -> str:
     return ", ".join(all_specs) if all_specs else ""
 
 
+_DESC_VERB = re.compile(
+    r"\b(is|are|was|were|we|our|offers?|provides?|specializ\w*|located|call|schedule|"
+    r"welcome|deliver\w*|help\w*|serv\w+|treats?|care|experienced?|trusted)\b",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_nav_list(s: str) -> bool:
+    """True for service-menu / nav remnants (comma-separated lists, no real prose)."""
+    return s.count(",") >= 3 and not _DESC_VERB.search(s)
+
+
+def _clean_truncate(s: str, max_len: int) -> str:
+    """Truncate on a word boundary without leaving a trailing comma fragment."""
+    if len(s) <= max_len:
+        return s
+    return s[:max_len].rsplit(" ", 1)[0].rstrip(",;:-– ") + "..."
+
+
 def _extract_description(content: str, title: str = "", max_len: int = 120) -> str:
     """Extract the first meaningful sentence from page content for link descriptions.
 
@@ -166,6 +222,9 @@ def _extract_description(content: str, title: str = "", max_len: int = 120) -> s
         # Skip lines that are just service menu listings
         if sentence.count("Dentistry") > 3 or sentence.count("Dental") > 5:
             continue
+        # Skip comma-separated nav/service-menu remnants (no real prose)
+        if _looks_like_nav_list(sentence):
+            continue
         # Skip if this sentence is basically the page title repeated
         if title_words:
             sent_words = set(sentence.lower().split())
@@ -173,15 +232,12 @@ def _extract_description(content: str, title: str = "", max_len: int = 120) -> s
             if overlap > 0.7 and len(sentence) < len(title) + 20:
                 continue
 
-        # Truncate to max_len on word boundary
-        if len(sentence) > max_len:
-            sentence = sentence[:max_len].rsplit(" ", 1)[0] + "..."
-        return sentence
+        return _clean_truncate(sentence, max_len)
 
-    # Fallback: just truncate the cleaned text
-    if len(text) > max_len:
-        return text[:max_len].rsplit(" ", 1)[0] + "..."
-    return text
+    # Fallback: only use raw text if it reads like prose, never a menu-list fragment.
+    if text and not _looks_like_nav_list(text[:max_len]):
+        return _clean_truncate(text, max_len)
+    return ""
 
 
 def _normalize_page_url(url: str) -> str:
@@ -478,11 +534,11 @@ def generate_llms_full_txt(customer: Customer, pages: list[PageData]) -> str:
         for page in cat_pages:
             lines.append(f"### [{page.title}]({page.url})")
             lines.append("")
-            # Clean the content before including it
-            cleaned = clean_page_content(page.content)
-            cleaned = html_lib.unescape(cleaned)
-            lines.append(cleaned)
-            lines.append("")
+            # Clean, then split into passage-sized chunks so each is liftable.
+            cleaned = html_lib.unescape(clean_page_content(page.content))
+            for chunk in _chunk_content(cleaned):
+                lines.append(chunk)
+                lines.append("")
             lines.append("---")
             lines.append("")
 

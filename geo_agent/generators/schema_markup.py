@@ -156,8 +156,10 @@ def generate_primary_schema(customer: Customer, verified_data: VerifiedBusinessD
                 "longitude": verified_data.lng,
             }
 
-    # sameAs for social profiles would go here
-    # schema["sameAs"] = [...]
+    # sameAs — GBP/directory/social profiles: the primary on-page signal AI uses to
+    # corroborate the business entity across platforms.
+    if getattr(customer, "same_as", None):
+        schema["sameAs"] = list(customer.same_as)
 
     return schema
 
@@ -172,11 +174,13 @@ def generate_provider_schemas(customer: Customer) -> list[dict]:
     works_for_type = profile.schema_type
     works_for_id = f"https://{customer.domain}/#{profile.schema_id_suffix}"
 
+    is_legal = profile.industry == "legal"
     schemas = []
     for provider in customer.providers:
         schema = {
             "@context": "https://schema.org",
-            "@type": "Person",
+            # Attorney is the specific entity type the legal/AI ecosystem keys on.
+            "@type": ["Person", "Attorney"] if is_legal else "Person",
             "name": provider.name,
             "jobTitle": provider.credentials,
             "worksFor": {
@@ -185,6 +189,13 @@ def generate_provider_schemas(customer: Customer) -> list[dict]:
                 "name": customer.name,
             },
         }
+        # Credentials as a verifiable hasCredential (bar admission, board cert, DDS…).
+        if provider.credentials:
+            schema["hasCredential"] = {
+                "@type": "EducationalOccupationalCredential",
+                "credentialCategory": "Bar Admission" if is_legal else "Professional Credential",
+                "name": provider.credentials,
+            }
         if provider.specialties:
             schema["knowsAbout"] = provider.specialties
         if provider.bio:

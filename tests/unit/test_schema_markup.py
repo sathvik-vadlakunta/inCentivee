@@ -244,6 +244,21 @@ class TestGenerateAllSchemas:
         html = generate_all_schemas(sample_customer, verified_data=sample_verified_data)
         assert '"AggregateRating"' in html
 
+    def test_sameas_emitted_when_present(self, sample_customer):
+        sample_customer.same_as = ["https://g.page/acme", "https://www.yelp.com/biz/acme"]
+        html = generate_all_schemas(sample_customer)
+        assert '"sameAs"' in html and "yelp.com/biz/acme" in html
+
+    def test_legal_provider_is_attorney_with_credential(self):
+        from geo_agent.config import Customer, Provider
+        from geo_agent.generators.schema_markup import generate_provider_schemas
+        c = Customer(id="f", name="Falcon Law", domain="falcon.com", city="Reno", state="NV",
+                     business_type="legal",
+                     providers=[Provider(name="Jane Doe", credentials="Esq., NV Bar")])
+        schemas = generate_provider_schemas(c)
+        assert schemas[0]["@type"] == ["Person", "Attorney"]
+        assert schemas[0]["hasCredential"]["credentialCategory"] == "Bar Admission"
+
     def test_webflow_safe_uses_js_injection(self, sample_customer):
         html = generate_all_schemas(sample_customer, webflow_safe=True)
         assert "document.head.appendChild" in html

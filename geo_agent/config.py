@@ -45,6 +45,7 @@ class Customer:
     image: str = ""  # logo/photo URL for schema markup
     services: list[str] = field(default_factory=list)  # from services table
     verified_quotes: list[dict] = field(default_factory=list)  # [{"quote": "...", "attribution": "Name, Title"}]
+    same_as: list[str] = field(default_factory=list)  # GBP/directory/social URLs for schema sameAs (entity corroboration)
 
     @classmethod
     def from_dict(cls, data: dict) -> Customer:
