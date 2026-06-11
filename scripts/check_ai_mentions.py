@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import sys
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -402,138 +403,187 @@ def build_comprehensive_prompts(
     return prompts
 
 
-# System prompt that forces concise responses — cuts output tokens ~70%
-_CONCISE_SYSTEM = (
-    "Answer concisely. If listing recommendations, give a brief numbered list "
-    "with name and one sentence each. No lengthy explanations."
+# Flagship, web-search-GROUNDED models per engine. Grounding makes the measurement
+# reflect what a real user sees (live retrieval) rather than the model's training
+# memory — which is the whole point of tracking AI-search improvement. Tune cost here.
+ENGINE_MODELS = {
+    "claude": "claude-opus-4-8",         # + web_search tool
+    "openai": "gpt-4o-search-preview",   # web search built in
+    "perplexity": "sonar-pro",           # always searches the live web
+    "gemini": "gemini-2.5-flash",        # + google_search grounding
+    "grok": "grok-4",                    # + live search
+}
+
+# Prompt that frames the model as a real consumer search assistant doing live retrieval.
+GROUNDED_SYSTEM = (
+    "You are a consumer search assistant. Search the web and answer using current, "
+    "real results — not memory. If recommending businesses, give a brief numbered "
+    "list with the business name and one sentence each."
 )
+DEFAULT_MAX_TOKENS = 1500  # grounded answers are longer; 300 truncated mid-list
 
 
-def query_claude(prompt: str, max_tokens: int = 300) -> str | None:
-    """Query Claude and return the response text."""
+@dataclass
+class EngineResult:
+    """A grounded engine response: the text, its web citations, and the model used."""
+    text: str
+    citations: list[str] = field(default_factory=list)
+    model: str = ""
+
+
+def _dedup(urls: list) -> list[str]:
+    return list(dict.fromkeys(u for u in urls if u))
+
+
+def query_claude(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
+    """Query Claude with the web-search tool (real retrieval)."""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         return None
-
+    model = ENGINE_MODELS["claude"]
     try:
         import anthropic
         client = anthropic.Anthropic(api_key=api_key)
-        # Haiku for mention checks — 97% cheaper than Sonnet, sufficient for this.
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=model,
             max_tokens=max_tokens,
-            system=_CONCISE_SYSTEM,
+            system=GROUNDED_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
+            tools=[{"type": "web_search_20260209", "name": "web_search"}],
         )
-        return resp.content[0].text
+        text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
+        citations = []
+        for block in resp.content:
+            for cite in (getattr(block, "citations", None) or []):
+                citations.append(getattr(cite, "url", None))
+        return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Claude query failed: {e}")
         return None
 
 
-def query_openai(prompt: str, max_tokens: int = 300) -> str | None:
-    """Query ChatGPT and return the response text."""
+def query_openai(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
+    """Query ChatGPT with web search (gpt-4o-search-preview)."""
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
         return None
-
+    model = ENGINE_MODELS["openai"]
     try:
         import httpx
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=60.0) as client:
             resp = client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "gpt-4o-mini",
+                    "model": model,
                     "messages": [
-                        {"role": "system", "content": _CONCISE_SYSTEM},
+                        {"role": "system", "content": GROUNDED_SYSTEM},
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": max_tokens,
                 },
             )
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            msg = resp.json()["choices"][0]["message"]
+            citations = [
+                (ann.get("url_citation") or {}).get("url")
+                for ann in (msg.get("annotations") or [])
+                if ann.get("type") == "url_citation"
+            ]
+            return EngineResult(text=(msg.get("content") or "").strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"OpenAI query failed: {e}")
         return None
 
 
-def query_perplexity(prompt: str, max_tokens: int = 300) -> str | None:
-    """Query Perplexity Sonar (searches live web, respects llms.txt)."""
+def query_perplexity(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
+    """Query Perplexity (always searches the live web; returns citations)."""
     api_key = os.environ.get("PERPLEXITY_API_KEY", "")
     if not api_key:
         return None
-
+    model = ENGINE_MODELS["perplexity"]
     try:
         import httpx
-        with httpx.Client(timeout=45.0) as client:
+        with httpx.Client(timeout=60.0) as client:
             resp = client.post(
                 "https://api.perplexity.ai/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "sonar",
+                    "model": model,
                     "messages": [
-                        {"role": "system", "content": _CONCISE_SYSTEM},
+                        {"role": "system", "content": GROUNDED_SYSTEM},
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": max_tokens,
+                    "return_citations": True,
                 },
             )
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            data = resp.json()
+            text = data["choices"][0]["message"]["content"]
+            return EngineResult(text=text.strip(), citations=_dedup(data.get("citations") or []), model=model)
     except Exception as e:
         logger.warning(f"Perplexity query failed: {e}")
         return None
 
 
-def query_gemini(prompt: str, max_tokens: int = 300) -> str | None:
-    """Query Google Gemini (free tier, 15 RPM)."""
+def query_gemini(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
+    """Query Google Gemini with Google Search grounding (closest to AI Overviews)."""
     api_key = os.environ.get("GEMINI_API_KEY", "")
     if not api_key:
         return None
-
+    model = ENGINE_MODELS["gemini"]
     try:
         import httpx
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=60.0) as client:
             resp = client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={api_key}",
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
                 headers={"Content-Type": "application/json"},
                 json={
-                    "contents": [{"parts": [{"text": f"{_CONCISE_SYSTEM}\n\n{prompt}"}]}],
+                    "contents": [{"parts": [{"text": f"{GROUNDED_SYSTEM}\n\n{prompt}"}]}],
+                    "tools": [{"google_search": {}}],
                     "generationConfig": {"maxOutputTokens": max_tokens},
                 },
             )
             resp.raise_for_status()
-            return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            cand = resp.json()["candidates"][0]
+            text = "".join(p.get("text", "") for p in cand.get("content", {}).get("parts", []))
+            citations = [
+                (chunk.get("web") or {}).get("uri")
+                for chunk in (cand.get("groundingMetadata", {}).get("groundingChunks") or [])
+            ]
+            return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Gemini query failed: {e}")
         return None
 
 
-def query_grok(prompt: str, max_tokens: int = 300) -> str | None:
-    """Query xAI Grok (OpenAI-compatible API)."""
+def query_grok(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
+    """Query xAI Grok with live search enabled."""
     api_key = os.environ.get("XAI_API_KEY", "")
     if not api_key:
         return None
-
+    model = ENGINE_MODELS["grok"]
     try:
         import httpx
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=60.0) as client:
             resp = client.post(
                 "https://api.x.ai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
-                    "model": "grok-3-mini",
+                    "model": model,
                     "messages": [
-                        {"role": "system", "content": _CONCISE_SYSTEM},
+                        {"role": "system", "content": GROUNDED_SYSTEM},
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": max_tokens,
+                    "search_parameters": {"mode": "auto", "return_citations": True},
                 },
             )
             resp.raise_for_status()
-            return resp.json()["choices"][0]["message"]["content"]
+            data = resp.json()
+            text = data["choices"][0]["message"]["content"]
+            return EngineResult(text=text.strip(), citations=_dedup(data.get("citations") or []), model=model)
     except Exception as e:
         logger.warning(f"Grok query failed: {e}")
         return None
@@ -678,11 +728,13 @@ def _find_position(text: str, practice_name: str) -> int | None:
             if name_lower in content.lower():
                 return num
 
-    # Try bullet points
+    # Try bullet points. re.split puts pre-list text at index 0, so the first real
+    # bullet is index 1 → already 1-based; clamp so a match in the intro isn't a
+    # falsy position 0 (which downstream `if position` checks would drop).
     bullets = re.split(r'\n\s*[-*•]\s+', text)
     for i, bullet in enumerate(bullets):
         if name_lower in bullet.lower():
-            return i  # 0-indexed but first bullet is position 1 effectively
+            return max(i, 1)
 
     # Fallback: paragraph position
     paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
@@ -742,10 +794,11 @@ def main():
 
             # Query each AI engine
             for ai_name, query_fn in [("Claude", query_claude), ("ChatGPT", query_openai), ("Perplexity", query_perplexity), ("Gemini", query_gemini), ("Grok", query_grok)]:
-                response = query_fn(prompt)
-                if response is None:
+                er = query_fn(prompt)
+                if er is None:
                     print(f"  {ai_name}: (no API key)")
                     continue
+                response = er.text
 
                 result = check_mention(response, customer["name"])
                 if result["mentioned"]:

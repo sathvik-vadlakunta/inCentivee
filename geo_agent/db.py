@@ -447,6 +447,17 @@ class CustomerDB:
             pass  # Column already exists
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_ai_runs_prompt_set ON ai_mention_runs(customer_id, prompt_set, run_date)")
 
+        # Migration: per-result model + web citations (grounded AI-visibility checks)
+        res_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(ai_mention_results)").fetchall()]
+        if "model" not in res_cols:
+            self.conn.execute("ALTER TABLE ai_mention_results ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+        if "citations_json" not in res_cols:
+            self.conn.execute("ALTER TABLE ai_mention_results ADD COLUMN citations_json TEXT NOT NULL DEFAULT '[]'")
+        # Optional baseline marker on a run (locks an onboarding before/after snapshot)
+        run_cols2 = [r[1] for r in self.conn.execute("PRAGMA table_info(ai_mention_runs)").fetchall()]
+        if "is_baseline" not in run_cols2:
+            self.conn.execute("ALTER TABLE ai_mention_runs ADD COLUMN is_baseline INTEGER NOT NULL DEFAULT 0")
+
         # Migration v5: Dashboard users table
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS dashboard_users (
@@ -1240,17 +1251,22 @@ class CustomerDB:
 
     def save_ai_mention_result(self, result: dict):
         """Save a single AI mention check result."""
+        import json as _json
+        citations = result.get("citations") or []
         self.conn.execute(
             """INSERT INTO ai_mention_results
                (run_id, customer_id, engine, prompt, prompt_category, mentioned,
-                position, quality_score, context, full_response, is_disclaimer)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                position, quality_score, context, full_response, is_disclaimer,
+                model, citations_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (result["run_id"], result["customer_id"], result["engine"],
              result["prompt"], result.get("prompt_category", "general"),
              1 if result["mentioned"] else 0, result.get("position"),
              result.get("quality_score", 0),
              result.get("context", ""), result.get("full_response", ""),
-             1 if result.get("is_disclaimer") else 0),
+             1 if result.get("is_disclaimer") else 0,
+             result.get("model", ""),
+             _json.dumps(citations) if not isinstance(citations, str) else citations),
         )
         self.conn.commit()
 

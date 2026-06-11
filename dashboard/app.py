@@ -3734,6 +3734,7 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
             "mention_rate": 0.0,
             "avg_position": None,
             "engines": {},
+            "prompt_set": "comprehensive",
         })
 
         results = []
@@ -3773,10 +3774,10 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
                 for future in as_completed(futures):
                     res = future.result()
                     ai_name = res["ai_name"]
-                    response = res["response"]
+                    er = res["response"]
                     completed_steps += 1
 
-                    if response is None:
+                    if er is None:
                         engines_checked.setdefault(ai_name, "no_api_key")
                         with _ai_check_progress_lock:
                             prog = _ai_check_progress[run_id]
@@ -3784,6 +3785,7 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
                             prog["engines"].setdefault(ai_name, {"status": "no_api_key", "mentions": 0, "total": 0})
                         continue
 
+                    response = er.text
                     engines_checked[ai_name] = "active"
                     result = check_mention(response, customer["name"])
                     is_mentioned = result["mentioned"]
@@ -3802,6 +3804,8 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
                         "context": result["context"][:500] if result.get("context") else "",
                         "full_response": response[:2000] if response else "",
                         "is_disclaimer": result.get("disclaimer", False),
+                        "model": er.model,
+                        "citations": er.citations,
                     })
 
                     result_item = {
@@ -3851,6 +3855,7 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
             "mention_rate": mention_rate,
             "avg_position": avg_position,
             "engines": engine_summary,
+            "prompt_set": "comprehensive",
         })
 
         db.record_kpi(customer_id, "ai_mentions", mention_count, today)

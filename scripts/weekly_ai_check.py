@@ -64,16 +64,18 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
         "mention_rate": 0.0,
         "avg_position": None,
         "engines": {},
+        "prompt_set": "comprehensive",
     })
 
     for pdef in prompt_defs:
         prompt = pdef["prompt"]
         category = pdef["category"]
         for ai_name, query_fn in ENGINES:
-            response = query_fn(prompt)
-            if response is None:
+            er = query_fn(prompt)
+            if er is None:
                 engine_stats.setdefault(ai_name, {"status": "no_key", "mentions": 0, "total": 0})
                 continue
+            response = er.text
             engine_stats.setdefault(ai_name, {"status": "active", "mentions": 0, "total": 0})
             engine_stats[ai_name]["total"] += 1
 
@@ -82,7 +84,7 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
                 mention_count += 1
                 engine_stats[ai_name]["mentions"] += 1
 
-            # Save to DB
+            # Save to DB (with the grounded model + web citations)
             db.save_ai_mention_result({
                 "run_id": run_id,
                 "customer_id": customer_id,
@@ -95,6 +97,8 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
                 "context": result.get("context", "")[:500],
                 "full_response": (response or "")[:2000],
                 "is_disclaimer": result.get("disclaimer", False),
+                "model": er.model,
+                "citations": er.citations,
             })
 
             results.append({
@@ -123,6 +127,7 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
         "mention_rate": mention_rate,
         "avg_position": avg_pos,
         "engines": engine_stats,
+        "prompt_set": "comprehensive",
     })
 
     # Also save to KPI for backward compat
@@ -173,7 +178,9 @@ def main():
             customers = [c for c in customers if c["id"] not in seen and not seen.add(c["id"])]
 
         print(f"Running AI mention check for {len(customers)} customer(s)...")
-        print(f"Active engines: {', '.join(n for n, fn in ENGINES if fn('_test_') is not None or os.environ.get({'Claude': 'ANTHROPIC_API_KEY', 'ChatGPT': 'OPENAI_API_KEY', 'Perplexity': 'PERPLEXITY_API_KEY', 'Gemini': 'GEMINI_API_KEY', 'Grok': 'XAI_API_KEY'}.get(n, ''), ''))}")
+        _engine_keys = {'Claude': 'ANTHROPIC_API_KEY', 'ChatGPT': 'OPENAI_API_KEY', 'Perplexity': 'PERPLEXITY_API_KEY', 'Gemini': 'GEMINI_API_KEY', 'Grok': 'XAI_API_KEY'}
+        active_engines = [n for n, _ in ENGINES if os.environ.get(_engine_keys.get(n, ''))]
+        print(f"Active engines: {', '.join(active_engines)}")
         print()
 
         all_results = []

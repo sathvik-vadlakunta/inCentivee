@@ -121,22 +121,23 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
 
         for ai_name, query_fn in ENGINES:
             try:
-                response = query_fn(prompt)
+                er = query_fn(prompt)
             except Exception as e:
                 logger.warning(f"  {ai_name} query error: {e}")
-                response = None
+                er = None
 
-            if response is None:
+            if er is None:
                 engines_checked.setdefault(ai_name, "no_api_key")
                 continue
 
+            response = er.text
             engines_checked[ai_name] = "active"
             result = check_mention(response, customer["name"])
             is_mentioned = result["mentioned"]
             if is_mentioned:
                 mention_count += 1
 
-            # Save individual result
+            # Save individual result (with the grounded model + web citations)
             db.save_ai_mention_result({
                 "run_id": run_id,
                 "customer_id": customer_id,
@@ -149,6 +150,8 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
                 "context": result["context"][:500] if result.get("context") else "",
                 "full_response": response[:2000] if response else "",
                 "is_disclaimer": result.get("disclaimer", False),
+                "model": er.model,
+                "citations": er.citations,
             })
 
             results.append({
