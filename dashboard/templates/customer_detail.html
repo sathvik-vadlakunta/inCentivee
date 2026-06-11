@@ -1837,6 +1837,13 @@
             <div id="ai-dash-competitor-content"><span style="color:var(--muted);font-size:0.85rem;">Loading share of voice data...</span></div>
         </div>
 
+        <!-- Row 4b: Content gaps — the adapt-over-time loop -->
+        <div class="card" style="padding:16px;margin-bottom:16px;border-left:3px solid var(--primary);">
+            <h4 style="margin:0 0 4px;font-size:0.85rem;color:var(--muted);">Content Gaps — Queries AI Answers Without You</h4>
+            <p style="font-size:0.78rem;color:var(--muted);margin:0 0 10px;">Turn these into FAQ/content to close the loop, then re-check next run for lift.</p>
+            <div id="ai-dash-gaps"><span style="color:var(--muted);font-size:0.85rem;">Loading…</span></div>
+        </div>
+
         <!-- Row 5: Blind Spots + Top Mentions side by side -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
             <div id="ai-dash-blindspots"></div>
@@ -3178,6 +3185,32 @@ function loadAiDashboard(customerId) {
 
     // Load share of voice
     loadAiCompetitorComparison(customerId);
+
+    // Load content gaps (queries we're not cited on -> what to add)
+    fetch('/api/ai-mentions/' + customerId + '/adapt')
+        .then(function(r){ return r.json(); })
+        .then(function(d){ if (d.ok) renderAiGaps(d.plan); });
+}
+
+function renderAiGaps(plan) {
+    var el = document.getElementById('ai-dash-gaps');
+    if (!el) return;
+    var faqs = (plan && plan.suggested_faqs) || [];
+    if (!faqs.length) {
+        el.innerHTML = '<span style="color:var(--muted);font-size:0.85rem;">No gaps yet — run a few AI checks to surface queries you\'re not cited on.</span>';
+        return;
+    }
+    var html = '';
+    (plan.actions || []).forEach(function(a){
+        html += '<div style="font-size:0.8rem;color:#0f3460;margin-bottom:6px;">→ ' + a + '</div>';
+    });
+    html += '<ul style="margin:8px 0 0;padding-left:18px;">';
+    faqs.slice(0, 8).forEach(function(f){
+        html += '<li style="font-size:0.84rem;margin-bottom:5px;"><strong>' + (f.question || '') + '</strong>'
+              + ' <span style="color:var(--muted);font-size:0.75rem;">(' + (f.reason || '') + ')</span></li>';
+    });
+    html += '</ul>';
+    el.innerHTML = html;
 }
 
 function setAiBaseline(customerId) {

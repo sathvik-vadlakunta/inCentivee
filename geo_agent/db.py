@@ -1410,6 +1410,42 @@ class CustomerDB:
                 continue
         return [{"domain": d, "count": c} for d, c in sorted(counts.items(), key=lambda x: -x[1])]
 
+    def get_uncited_prompts(
+        self, customer_id: str, prompt_set: str = "benchmark",
+        last_n_runs: int = 4, min_checks: int = 2,
+    ) -> list[dict]:
+        """Queries the practice is NOT cited on across recent runs (the gaps).
+
+        These are the highest-leverage input to the 'adapt llms.txt/content over
+        time' loop: each is a real question AI engines answer without the practice.
+        Returns [{prompt, category, checks, mentions}] sorted by most-checked first.
+        """
+        run_ids = [
+            r["id"] for r in self.conn.execute(
+                "SELECT id FROM ai_mention_runs WHERE customer_id = ? AND prompt_set = ? "
+                "AND total_queries > 0 ORDER BY run_date DESC, created_at DESC LIMIT ?",
+                (customer_id, prompt_set, last_n_runs),
+            ).fetchall()
+        ]
+        if not run_ids:
+            return []
+        ph = ",".join("?" * len(run_ids))
+        rows = self.conn.execute(
+            f"""SELECT prompt, prompt_category AS category,
+                       COUNT(*) AS checks, COALESCE(SUM(mentioned), 0) AS mentions
+                FROM ai_mention_results
+                WHERE customer_id = ? AND run_id IN ({ph})
+                GROUP BY prompt, prompt_category""",
+            (customer_id, *run_ids),
+        ).fetchall()
+        gaps = [
+            {"prompt": r["prompt"], "category": r["category"], "checks": r["checks"], "mentions": r["mentions"]}
+            for r in rows
+            if r["checks"] >= min_checks and (r["mentions"] or 0) == 0
+        ]
+        gaps.sort(key=lambda g: -g["checks"])
+        return gaps
+
     def get_ai_mention_results_by_customer(self, customer_id: str, limit: int = 200) -> list[dict]:
         """Get recent results across all runs for a customer."""
         cur = self.conn.execute(

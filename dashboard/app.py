@@ -4114,6 +4114,18 @@ def api_ai_mention_events(customer_id):
         db.close()
 
 
+@app.route("/api/ai-mentions/<customer_id>/adapt")
+@login_required
+def api_ai_mention_adapt(customer_id):
+    """The 'adapt over time' plan: queries we're not cited on -> FAQ/content to add."""
+    db = get_db()
+    try:
+        from geo_agent.llms_adaptation import build_adaptation_plan
+        return jsonify({"ok": True, "plan": build_adaptation_plan(db, customer_id)})
+    finally:
+        db.close()
+
+
 @app.route("/api/ai-mentions/<customer_id>/weekly")
 @login_required
 def api_ai_weekly_summaries(customer_id):

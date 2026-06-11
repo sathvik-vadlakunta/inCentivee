@@ -45,10 +45,15 @@ _REC_SCHEMA = {
         "priority": {"type": "integer", "enum": [1, 2, 3, 4, 5]},
         "category": {"type": "string"},
         "ai_impact_reason": {"type": "string"},
+        # YMYL/E-E-A-T byline metadata. Structured outputs require every property
+        # in `required`, so the prompt instructs the model to use "" when N/A.
+        "author_attribution": {"type": "string"},
+        "reviewed_date": {"type": "string"},
     },
     "required": [
         "rec_type", "target_page", "title", "description",
         "html_snippet", "priority", "category", "ai_impact_reason",
+        "author_attribution", "reviewed_date",
     ],
 }
 CONTENT_OUTPUT_SCHEMA = {
@@ -133,10 +138,37 @@ class ContentRecommendation:
     status: str = "pending"  # pending, approved, rejected, published
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     ai_impact_reason: str = ""  # why this helps with AI search specifically
+    author_attribution: str = ""  # visible reviewer/byline name (YMYL E-E-A-T), "" if N/A
+    reviewed_date: str = ""  # YYYY-MM-DD last-reviewed date, "" if N/A
 
     def to_dict(self) -> dict:
         return asdict(self)
 
+
+# Shared GEO rules appended to EVERY system prompt below (Princeton GEO study +
+# 2025-2026 AI-citation research). Defined once so wording stays consistent
+# across business types — do not duplicate these inside the per-type prompts.
+_SHARED_GEO_RULES = """\
+CHUNKABILITY (AI engines retrieve passages, not whole pages):
+- Each <h2> section must be a self-contained answer of ~150-300 words whose FIRST sentence states the key claim/answer, repeats the relevant entity (practice name / city / service) at least once, and makes sense quoted in isolation.
+
+FRESHNESS (machine-readable):
+- Wrap every visible date in <time datetime="YYYY-MM-DD">…</time>
+- Include a <script type="application/ld+json"> BlogPosting/Article block with datePublished and dateModified set to the current date.
+
+ENTITY DENSITY: maximize specific verifiable facts per paragraph — city/neighborhood, exact service, provider names + credentials (only from the provided lists), numbers, conditions. At least one concrete citable fact per 2-3 sentences. Avoid vague filler.
+
+OUTPUT FIELDS: every recommendation includes "author_attribution" and "reviewed_date" fields. Fill author_attribution with the visible reviewer/byline name used in the content (or "" if no byline applies) and reviewed_date with the YYYY-MM-DD review date (or "" if N/A). Never invent a name to fill these fields.
+"""
+
+# YMYL (Your Money or Your Life) byline rule — appended only to practice/medical/legal
+# prompts. AI engines strongly prefer credentialed authorship on health/legal content.
+_YMYL_BYLINE_RULE = """\
+YMYL CREDENTIALED BYLINE (mandatory):
+- Every blog_post and clinical/legal FAQ MUST open with a visible byline using a provider EXACTLY from the Providers list with their stated credentials, e.g. '<p class="reviewed-by">Reviewed by <span itemprop="author">Dr. Jane Smith, DDS</span> · Last reviewed <time datetime="YYYY-MM-DD">Month Year</time></p>'.
+- Do NOT invent reviewers or credentials. If no provider is available, attribute to 'the [Practice Name] clinical team' without a fabricated name.
+- Set author_attribution to the byline name used and reviewed_date to the YYYY-MM-DD review date.
+"""
 
 SYSTEM_PROMPTS = {
     "practice": """\
@@ -163,7 +195,7 @@ CRITICAL — NEVER FABRICATE:
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
-- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
 - Every blog post must have at least 4 statistics from the provided research list
 - Every FAQ must have a direct answer as the first sentence
 - Always mention the practice name and city
@@ -229,7 +261,7 @@ CRITICAL rules for tech companies:
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
-- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
 - Always mention the company name
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
@@ -280,7 +312,7 @@ CRITICAL — NEVER FABRICATE:
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
-- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
 - Always mention the brand name
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
@@ -341,7 +373,7 @@ CRITICAL — NEVER FABRICATE:
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
-- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
 - Every blog post must have at least 4 statistics from the provided research list
 - Every FAQ must have a direct answer as the first sentence
 - Always mention the firm name and location
@@ -406,7 +438,7 @@ CRITICAL — NEVER FABRICATE:
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
-- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
 - Every blog post must have at least 4 statistics from the provided research list
 - Every FAQ must have a direct answer as the first sentence
 - Always mention the practice name and city
@@ -459,7 +491,7 @@ CRITICAL — NEVER FABRICATE:
 Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
-- Include schema-ready FAQ markup (<div itemscope itemtype="https://schema.org/FAQPage">)
+- For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
 - Always mention the company name and location
 - Use current year (2026) in references for freshness signals
 - Include "Last updated: [current month year]" timestamps on all content
@@ -488,6 +520,14 @@ CITATION RULES (mandatory):
 - Blog posts MUST have a "Sources" section at the bottom listing all referenced sources with links
 """,
 }
+
+# Append shared GEO rules to every prompt, and the YMYL byline rule to the
+# health/legal (credentialed-provider) business types. Done once at import time
+# so the per-type prompt bodies stay free of duplicated boilerplate.
+for _bt in SYSTEM_PROMPTS:
+    SYSTEM_PROMPTS[_bt] = SYSTEM_PROMPTS[_bt] + "\n" + _SHARED_GEO_RULES
+for _bt in ("practice", "medical", "legal"):
+    SYSTEM_PROMPTS[_bt] = SYSTEM_PROMPTS[_bt] + "\n" + _YMYL_BYLINE_RULE
 
 # Backward compat alias
 CONTENT_SYSTEM_PROMPT = SYSTEM_PROMPTS["practice"]
@@ -590,6 +630,8 @@ def generate_content_recommendations(
                 priority=min(max(int(rec.get("priority", 3)), 1), 5),
                 category=rec.get("category", "general"),
                 ai_impact_reason=rec.get("ai_impact_reason", ""),
+                author_attribution=rec.get("author_attribution", ""),
+                reviewed_date=rec.get("reviewed_date", ""),
             )
             recommendations.append(cr)
         except (ValueError, TypeError) as e:
@@ -724,7 +766,7 @@ Generate exactly 8-10 recommendations covering:
 - 1-2 freshness updates (update existing content with current year references)
 
 For blog posts, generate the COMPLETE article HTML, not just an outline. Include inline linked citations for every stat and a "Sources" section at the bottom with linked references.
-For FAQ updates, generate complete FAQ HTML with schema.org markup.
+For FAQ updates, generate semantic FAQ HTML (<h3> question + <p> answer, first sentence answers in <=50 words) PLUS a matching <script type="application/ld+json"> FAQPage block.
 For stat injections, generate a <p> or <div> with the statistic and a linked citation (<a href="url">Source Name</a>).
 For freshness updates, generate the updated paragraph/section with current date.
 
@@ -779,7 +821,7 @@ Generate exactly 8-10 recommendations covering:
 - 1-2 freshness updates (update existing content with current year references)
 
 For blog posts, generate the COMPLETE article HTML, not just an outline. Include inline linked citations for every stat and a "Sources" section at the bottom with linked references.
-For FAQ updates, generate complete FAQ HTML with schema.org markup.
+For FAQ updates, generate semantic FAQ HTML (<h3> question + <p> answer, first sentence answers in <=50 words) PLUS a matching <script type="application/ld+json"> FAQPage block.
 For stat injections, generate a <p> or <div> with the statistic and a linked citation (<a href="url">Source Name</a>).
 For freshness updates, generate the updated paragraph/section with current date.
 
@@ -855,7 +897,7 @@ BLOG FORMATTING — CRITICAL (blogs must NOT be walls of text):
 - Add a "Sources" section at the bottom with linked references
 
 For blog posts, generate the COMPLETE article HTML, not just an outline. Include inline linked citations for every stat and a "Sources" section at the bottom with linked references.
-For FAQ updates, generate complete FAQ HTML with schema.org markup.
+For FAQ updates, generate semantic FAQ HTML (<h3> question + <p> answer, first sentence answers in <=50 words) PLUS a matching <script type="application/ld+json"> FAQPage block.
 For stat injections, generate a <p> or <div> with the statistic and a linked citation (<a href="url">Source Name</a>).
 For freshness updates, generate the updated paragraph/section with current date.
 
@@ -912,7 +954,7 @@ Generate exactly 8-10 recommendations covering:
 - 1-2 freshness updates (update existing content with current year references)
 
 For blog posts, generate the COMPLETE article HTML, not just an outline. Include inline linked citations for every stat and a "Sources" section at the bottom with linked references.
-For FAQ updates, generate complete FAQ HTML with schema.org markup.
+For FAQ updates, generate semantic FAQ HTML (<h3> question + <p> answer, first sentence answers in <=50 words) PLUS a matching <script type="application/ld+json"> FAQPage block.
 For stat injections, generate a <p> or <div> with the statistic and a linked citation (<a href="url">Source Name</a>).
 For freshness updates, generate the updated paragraph/section with current date.
 
@@ -1024,6 +1066,23 @@ def _grade_recommendations(
         # Blog posts should be substantial
         if rec.rec_type == "blog_post" and len(rec.html_snippet) < 500:
             rec.priority = min(rec.priority + 1, 5)  # Downgrade thin content
+
+        # GEO quality checks for blog posts — flag (downgrade priority), never drop.
+        if rec.rec_type == "blog_post":
+            snippet_lower = rec.html_snippet.lower()
+            # (a) Inline citation links are the strongest AI-citation signal.
+            if not re.search(r'<a\s[^>]*href=', snippet_lower):
+                rec.priority = min(rec.priority + 1, 5)
+                logger.warning(
+                    f"Blog rec '{rec.title}' has no <a href> citation links — downgraded priority"
+                )
+            # (b) FAQ structure (<details>, FAQPage JSON-LD, or h3 Q&A) is the
+            # most-cited content shape; flag blogs missing any FAQ block.
+            if "<details" not in snippet_lower and "faqpage" not in snippet_lower:
+                rec.priority = min(rec.priority + 1, 5)
+                logger.warning(
+                    f"Blog rec '{rec.title}' has no FAQ/<details>/FAQPage block — downgraded priority"
+                )
 
         # Should contain actual HTML tags
         if "<" not in rec.html_snippet:

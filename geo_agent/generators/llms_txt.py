@@ -325,9 +325,13 @@ def generate_llms_txt(customer: Customer, pages: list[PageData], verified_data: 
             lines.append("")
             for q, a in faqs[:5]:  # Top 5 in llms.txt, keep it concise
                 lines.append(f"**Q: {q}**")
-                # Truncate long answers for the concise version
-                if len(a) > 200:
-                    a = a[:200].rsplit(" ", 1)[0] + "..."
+                # Keep answers near-complete: these Q&A pairs are the exact
+                # self-contained chunks AI engines quote, so truncating at 200
+                # chars destroyed their citability. 600 chars covers almost all
+                # FAQ answers without bloating llms.txt (llms-full.txt always
+                # carries the full text).
+                if len(a) > 600:
+                    a = a[:600].rsplit(" ", 1)[0] + "..."
                 lines.append(f"A: {a}")
                 lines.append("")
         lines.append("")
