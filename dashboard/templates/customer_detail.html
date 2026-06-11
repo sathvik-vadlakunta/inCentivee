@@ -17,6 +17,19 @@
             <span class="badge badge-{{ customer.status }}">{{ customer.status | title }}</span>
             <span id="run-status" style="font-size:0.8rem;"></span>
         </div>
+        {% if customer.status_note or customer.next_action %}
+        <div style="margin-top:0.45rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">
+            {% if customer.status_note %}
+            <span style="font-size:0.8rem;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;border-radius:6px;padding:0.15rem 0.5rem;">
+                <strong>Status:</strong> {{ customer.status_note }}</span>
+            {% endif %}
+            {% if customer.next_action %}
+            <span style="font-size:0.8rem;background:#fff7ed;color:#9a3412;border:1px solid #fed7aa;border-radius:6px;padding:0.15rem 0.5rem;">
+                <strong>Next:</strong> {{ customer.next_action }}</span>
+            {% endif %}
+            <a href="#notes" onclick="switchTab('notes', document.querySelector('.detail-nav-item[onclick*=notes]'))" style="font-size:0.72rem;color:var(--muted);">edit</a>
+        </div>
+        {% endif %}
     </div>
     <div class="customer-header-actions">
         <a class="btn btn-outline" href="{{ url_for('customer_proof', customer_id=customer.id) }}" target="_blank" style="padding:0.45rem 1.1rem;">
@@ -169,6 +182,10 @@
     <button class="detail-nav-item" onclick="switchTab('emails', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Emails
+    </button>
+    <button class="detail-nav-item" onclick="switchTab('notes', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        Notes
     </button>
 
 
@@ -1986,6 +2003,68 @@
     {% endif %}
 </div>
 
+<!-- ==================== NOTES TAB ==================== -->
+<div id="tab-notes" class="tab-content">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+        <!-- Pinned status -->
+        <div class="card">
+            <h2 style="font-size:1rem;">Current Status</h2>
+            <p style="font-size:0.8rem;color:var(--muted);margin-top:-0.3rem;">A one-line snapshot of where this account is — shown at the top of the page.</p>
+            <form method="post" action="{{ url_for('update_customer_status', customer_id=customer.id) }}">
+                <label style="font-size:0.8rem;font-weight:600;">Status</label>
+                <input type="text" name="status_note" maxlength="200" value="{{ customer.status_note or '' }}"
+                       placeholder="e.g. Awaiting Webflow API token" style="width:100%;margin:0.2rem 0 0.6rem;padding:0.45rem;">
+                <label style="font-size:0.8rem;font-weight:600;">Next action</label>
+                <input type="text" name="next_action" maxlength="200" value="{{ customer.next_action or '' }}"
+                       placeholder="e.g. Follow up with Adam Fri" style="width:100%;margin:0.2rem 0 0.7rem;padding:0.45rem;">
+                <button class="btn btn-sm btn-primary" type="submit">Save status</button>
+            </form>
+        </div>
+        <!-- Add note -->
+        <div class="card">
+            <h2 style="font-size:1rem;">Add a Note</h2>
+            <p style="font-size:0.8rem;color:var(--muted);margin-top:-0.3rem;">Log a call, a decision, or anything worth remembering.</p>
+            <form method="post" action="{{ url_for('add_customer_note', customer_id=customer.id) }}">
+                <input type="text" name="subject" maxlength="200" placeholder="Subject (optional)"
+                       style="width:100%;margin-bottom:0.5rem;padding:0.45rem;">
+                <textarea name="body" rows="4" required placeholder="What happened / what's next…"
+                          style="width:100%;padding:0.45rem;resize:vertical;"></textarea>
+                <button class="btn btn-sm btn-primary" type="submit" style="margin-top:0.5rem;">Add note</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card" id="notes">
+        <h2 style="font-size:1rem;">Activity Timeline</h2>
+        {% if customer_activities %}
+        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.5rem;">
+            {% for a in customer_activities %}
+            {% set color = {'email':'#0ea5e9','status':'#6366f1','note':'#16a34a'}.get(a.activity_type, '#9ca3af') %}
+            <div style="display:flex;gap:0.6rem;border-left:3px solid {{ color }};padding:0.3rem 0 0.3rem 0.7rem;">
+                <div style="flex:1;">
+                    <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.03em;color:{{ color }};font-weight:700;">
+                        {{ a.activity_type }}{% if a.meta and a.meta.from %} · from {{ a.meta.from }}{% endif %}
+                    </div>
+                    {% if a.subject %}<div style="font-weight:600;font-size:0.9rem;">{{ a.subject }}</div>{% endif %}
+                    {% if a.body %}<div style="font-size:0.88rem;white-space:pre-wrap;color:#374151;">{{ a.body }}</div>{% endif %}
+                    <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem;">
+                        {{ a.created_at[:16] | replace('T', ' ') }}{% if a.created_by %} · {{ a.created_by }}{% endif %}
+                    </div>
+                </div>
+                <form method="post" action="{{ url_for('delete_customer_activity', customer_id=customer.id, activity_id=a.id) }}"
+                      onsubmit="return confirm('Delete this entry?');">
+                    <button type="submit" title="Delete" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;">×</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--muted);font-size:0.9rem;">No activity yet. Add a note or sync emails to start the timeline.</p>
+        {% endif %}
+    </div>
+</div>
+
 </div><!-- end detail-content -->
 </div><!-- end detail-layout -->
 
@@ -2690,6 +2769,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (tab) {
         const tabBtn = document.querySelector('.detail-nav-item[onclick*="' + tab + '"]');
         switchTab(tab, tabBtn);
+    } else if (window.location.hash === '#notes') {
+        switchTab('notes', document.querySelector('.detail-nav-item[onclick*="notes"]'));
     }
     if (sub && (tab === 'seo' || !tab)) {
         const subBtn = document.querySelector('.detail-nav-sub[onclick*="' + sub + '"]');

@@ -516,7 +516,66 @@ def customer_detail(customer_id):
             topic_clusters=topic_clusters,
             ai_readiness=ai_readiness,
             landing_reports=landing_reports,
+            customer_activities=db.get_customer_activities(customer_id, limit=100),
         )
+    finally:
+        db.close()
+
+
+# --- Customer notes / status ---
+
+@app.route("/customer/<customer_id>/note", methods=["POST"])
+@login_required
+def add_customer_note(customer_id):
+    db = get_db()
+    try:
+        body = (request.form.get("body") or "").strip()
+        subject = (request.form.get("subject") or "").strip()
+        activity_type = request.form.get("activity_type", "note")
+        if body or subject:
+            db.add_customer_activity(
+                customer_id, activity_type=activity_type, subject=subject, body=body,
+                created_by=session.get("username", ""),
+            )
+        return redirect(url_for("customer_detail", customer_id=customer_id) + "#notes")
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/status", methods=["POST"])
+@login_required
+def update_customer_status(customer_id):
+    db = get_db()
+    try:
+        status_note = request.form.get("status_note")
+        next_action = request.form.get("next_action")
+        db.set_customer_status_note(
+            customer_id,
+            status_note=status_note.strip() if status_note is not None else None,
+            next_action=next_action.strip() if next_action is not None else None,
+        )
+        # Log the status change to the timeline for history.
+        summary = " · ".join(p for p in [
+            f"Status: {status_note.strip()}" if status_note else "",
+            f"Next: {next_action.strip()}" if next_action else "",
+        ] if p)
+        if summary:
+            db.add_customer_activity(
+                customer_id, activity_type="status", body=summary,
+                created_by=session.get("username", ""),
+            )
+        return redirect(url_for("customer_detail", customer_id=customer_id) + "#notes")
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/activity/<int:activity_id>/delete", methods=["POST"])
+@login_required
+def delete_customer_activity(customer_id, activity_id):
+    db = get_db()
+    try:
+        db.delete_customer_activity(customer_id, activity_id)
+        return redirect(url_for("customer_detail", customer_id=customer_id) + "#notes")
     finally:
         db.close()
 

@@ -92,6 +92,27 @@ class TestCustomerCRUD:
         assert customer["status"] == "active"
         assert customer["onboarded_at"] is not None
 
+    def test_status_note_and_activity_timeline(self, populated_db):
+        # Pinned status note is distinct from the lifecycle status field.
+        populated_db.set_customer_status_note(
+            "hilltop-dental", status_note="Awaiting Webflow token", next_action="Ping Adam Fri")
+        c = populated_db.get_customer("hilltop-dental")
+        assert c["status_note"] == "Awaiting Webflow token"
+        assert c["next_action"] == "Ping Adam Fri"
+        assert c["status"] != "Awaiting Webflow token"  # didn't clobber lifecycle status
+
+        # Activity timeline: note + email, with gmail de-dupe.
+        populated_db.add_customer_activity("hilltop-dental", "note", body="Called owner")
+        populated_db.add_customer_activity(
+            "hilltop-dental", "email", subject="Re: access", body="ok",
+            meta={"gmail_id": "m1", "from": "owner@x.com"})
+        dup = populated_db.add_customer_activity(
+            "hilltop-dental", "email", subject="Re: access", body="ok", meta={"gmail_id": "m1"})
+        assert dup == 0  # duplicate gmail_id skipped
+        acts = populated_db.get_customer_activities("hilltop-dental")
+        assert len(acts) == 2
+        assert acts[0]["meta"].get("gmail_id") == "m1"  # newest first, meta parsed
+
     def test_get_nonexistent_customer(self, db):
         assert db.get_customer("nonexistent") is None
 

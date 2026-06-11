@@ -371,6 +371,29 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE customers ADD COLUMN business_type TEXT NOT NULL DEFAULT 'practice'")
         if "verified_quotes" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN verified_quotes TEXT NOT NULL DEFAULT '[]'")
+        # Account management: a pinned current-status line so you can see at a
+        # glance where each customer is, separate from the dated activity log.
+        if "status_note" not in cols:
+            self.conn.execute("ALTER TABLE customers ADD COLUMN status_note TEXT NOT NULL DEFAULT ''")
+        if "next_action" not in cols:
+            self.conn.execute("ALTER TABLE customers ADD COLUMN next_action TEXT NOT NULL DEFAULT ''")
+
+        # Per-customer activity timeline: notes, status changes, and ingested
+        # emails. Mirrors prospect_activities so the customer detail page gets the
+        # same running log prospects already have.
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS customer_activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                activity_type TEXT NOT NULL DEFAULT 'note',
+                subject TEXT NOT NULL DEFAULT '',
+                body TEXT NOT NULL DEFAULT '',
+                meta_json TEXT NOT NULL DEFAULT '{}',
+                created_by TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_cust_activities ON customer_activities(customer_id, id DESC);
+        """)
 
         # Migration: store OS pid of the pipeline subprocess so runs can be truly cancelled / reaped
         run_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(runs)").fetchall()]
@@ -3078,3 +3101,90 @@ class CustomerDB:
             "SELECT stage, COUNT(*) as cnt FROM prospects GROUP BY stage"
         )
         return {r["stage"]: r["cnt"] for r in cur.fetchall()}
+
+    # --- Customer activity timeline + status ---
+
+    def add_customer_activity(self, customer_id: str, activity_type: str = "note",
+                              subject: str = "", body: str = "",
+                              meta: dict | None = None, created_by: str = "",
+                              created_at: str | None = None) -> int:
+        """Append a note / status change / email to a customer's timeline.
+
+        Returns the row id, or 0 if a duplicate email (same gmail_id) was skipped.
+        """
+        # De-dupe ingested emails by their gmail message id so repeated syncs
+        # don't create duplicate timeline entries.
+        gmail_id = (meta or {}).get("gmail_id")
+        if gmail_id:
+            existing = self.conn.execute(
+                "SELECT 1 FROM customer_activities WHERE customer_id = ? "
+                "AND json_extract(meta_json, '$.gmail_id') = ? LIMIT 1",
+                (customer_id, gmail_id),
+            ).fetchone()
+            if existing:
+                return 0
+        if created_at:
+            cur = self.conn.execute(
+                """INSERT INTO customer_activities
+                   (customer_id, activity_type, subject, body, meta_json, created_by, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (customer_id, activity_type, subject, body,
+                 json.dumps(meta or {}), created_by, created_at),
+            )
+        else:
+            cur = self.conn.execute(
+                """INSERT INTO customer_activities
+                   (customer_id, activity_type, subject, body, meta_json, created_by)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (customer_id, activity_type, subject, body,
+                 json.dumps(meta or {}), created_by),
+            )
+        self.conn.commit()
+        return cur.lastrowid or 0
+
+    def get_customer_activities(self, customer_id: str, limit: int = 100,
+                                activity_type: str | None = None) -> list[dict]:
+        """Return a customer's activity timeline, newest first."""
+        sql = "SELECT * FROM customer_activities WHERE customer_id = ?"
+        params: list = [customer_id]
+        if activity_type:
+            sql += " AND activity_type = ?"
+            params.append(activity_type)
+        sql += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+        rows = []
+        for r in self.conn.execute(sql, params).fetchall():
+            d = dict(r)
+            try:
+                d["meta"] = json.loads(d.get("meta_json") or "{}")
+            except Exception:
+                d["meta"] = {}
+            rows.append(d)
+        return rows
+
+    def delete_customer_activity(self, customer_id: str, activity_id: int) -> bool:
+        cur = self.conn.execute(
+            "DELETE FROM customer_activities WHERE id = ? AND customer_id = ?",
+            (activity_id, customer_id),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def set_customer_status_note(self, customer_id: str, status_note: str | None = None,
+                                 next_action: str | None = None) -> None:
+        """Update the pinned status line and/or next action for a customer.
+
+        Distinct from set_customer_status (which sets the lifecycle status field).
+        """
+        sets, params = [], []
+        if status_note is not None:
+            sets.append("status_note = ?")
+            params.append(status_note)
+        if next_action is not None:
+            sets.append("next_action = ?")
+            params.append(next_action)
+        if not sets:
+            return
+        params.append(customer_id)
+        self.conn.execute(f"UPDATE customers SET {', '.join(sets)} WHERE id = ?", params)
+        self.conn.commit()
