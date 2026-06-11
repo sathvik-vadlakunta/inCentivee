@@ -111,12 +111,16 @@ def _blockquote_for_type(customer: Customer, profile: BusinessProfile | None = N
             f"Call {customer.phone} to schedule."
         )
 
-    # Non-practice types: describe what the company does
-    desc = specialties_str or profile.service_category
-    # Enrich generic service_category with industry context
-    if not specialties_str and profile.service_keywords:
+    # Non-practice types: describe what the company does. Prefer the real
+    # catalog ("products including BPC-157, TB-500, …"); only fall back to
+    # generic profile keywords when there's no catalog at all.
+    if specialties_str:
+        desc = f"{profile.service_category} including {specialties_str}"
+    elif profile.service_keywords:
         top_kw = ", ".join(profile.service_keywords[:4])
         desc = f"{profile.service_category} including {top_kw}"
+    else:
+        desc = profile.service_category
     location_part = f" in {customer.city}, {customer.state}" if customer.city else ""
     contact_parts = []
     if customer.address:
@@ -138,7 +142,13 @@ def _service_section_label(customer: Customer, profile: BusinessProfile | None =
 
 
 def _get_specialties(customer: Customer) -> str:
-    """Get specialties string, falling back to provider specialties if empty."""
+    """Get specialties string, falling back to provider specialties, then the
+    product/service catalog if empty.
+
+    Non-practice customers (e-commerce, etc.) often have no `specialties` but do
+    have a populated services/products catalog — without this fallback the
+    blockquote degrades to generic profile keywords ('product, shop, store').
+    """
     if customer.specialties:
         return ", ".join(customer.specialties)
 
@@ -148,8 +158,15 @@ def _get_specialties(customer: Customer) -> str:
         for s in (p.specialties or []):
             if s.lower() not in [x.lower() for x in all_specs]:
                 all_specs.append(s)
+    if all_specs:
+        return ", ".join(all_specs)
 
-    return ", ".join(all_specs) if all_specs else ""
+    # Fall back to the real product/service catalog (top items)
+    services = getattr(customer, "services", None) or []
+    if services:
+        return ", ".join(services[:6])
+
+    return ""
 
 
 _DESC_VERB = re.compile(

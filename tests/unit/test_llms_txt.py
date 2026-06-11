@@ -247,6 +247,23 @@ class TestFaqEmbedding:
         assert "same-day implants" in result
 
 
+class TestEcommerceCatalog:
+    def test_blockquote_falls_back_to_services_catalog(self):
+        """Non-practice customer with no specialties but a real product catalog
+        must name the products, not generic profile keywords."""
+        from geo_agent.config import Customer
+        from geo_agent.generators.llms_txt import _blockquote_for_type
+        c = Customer(
+            id="x", name="Axis Biotech", domain="axisbiotech.com", city="", state="",
+            business_type="ecommerce", specialties=[],
+            services=["BPC-157", "TB-500", "Tirzepatide", "Retatrutide"],
+        )
+        bq = _blockquote_for_type(c)
+        assert "BPC-157" in bq and "Tirzepatide" in bq
+        # generic profile-keyword junk must NOT leak in
+        assert "shop, store, catalog" not in bq
+
+
 class TestPolish:
     def test_chunk_content_splits_long_text(self):
         from geo_agent.generators.llms_txt import _chunk_content
