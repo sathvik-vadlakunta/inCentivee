@@ -21,6 +21,7 @@ import logging
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -123,55 +124,66 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
     total_samples_mentioned = 0
     engines_checked = {}
 
-    for pdef in prompt_defs:
-        prompt = pdef["prompt"]
-        category = pdef["category"]
+    # Query the 5 engines CONCURRENTLY per prompt (each a different provider, so
+    # one concurrent call each — no single-provider rate pressure). HTTP runs in the
+    # worker threads; DB writes stay on this main thread via as_completed.
+    with ThreadPoolExecutor(max_workers=len(ENGINES)) as executor:
+        for pdef in prompt_defs:
+            prompt = pdef["prompt"]
+            category = pdef["category"]
+            futures = {
+                executor.submit(run_engine_samples, query_fn, prompt, customer["name"], SAMPLES): ai_name
+                for ai_name, query_fn in ENGINES
+            }
+            for fut in as_completed(futures):
+                ai_name = futures[fut]
+                try:
+                    agg = fut.result()
+                except Exception as e:
+                    engines_checked[ai_name] = "error"
+                    logger.warning(f"  {ai_name} thread error: {e}")
+                    continue
+                if agg is None:
+                    engines_checked.setdefault(ai_name, "no_api_key")
+                    continue
+                if agg.get("error"):
+                    engines_checked[ai_name] = "error"
+                    logger.warning(f"  {ai_name} error: {agg['error']}")
+                    continue
 
-        for ai_name, query_fn in ENGINES:
-            # Sample each prompt×engine SAMPLES times and aggregate (averages out
-            # LLM non-determinism for a stable rate).
-            agg = run_engine_samples(query_fn, prompt, customer["name"], samples=SAMPLES)
-            if agg is None:
-                engines_checked.setdefault(ai_name, "no_api_key")
-                continue
-            if agg.get("error"):
-                engines_checked[ai_name] = "error"
-                logger.warning(f"  {ai_name} error: {agg['error']}")
-                continue
+                engines_checked[ai_name] = "active"
+                is_mentioned = agg["mentioned"]
+                if is_mentioned:
+                    mention_count += 1
+                total_samples += agg["valid"]
+                total_samples_mentioned += agg["samples_mentioned"]
 
-            engines_checked[ai_name] = "active"
-            is_mentioned = agg["mentioned"]
-            if is_mentioned:
-                mention_count += 1
-            total_samples += agg["valid"]
-            total_samples_mentioned += agg["samples_mentioned"]
+                db.save_ai_mention_result({
+                    "run_id": run_id,
+                    "customer_id": customer_id,
+                    "engine": ai_name,
+                    "prompt": prompt,
+                    "prompt_category": category,
+                    "mentioned": is_mentioned,
+                    "position": agg["position"],
+                    "quality_score": agg["quality_score"],
+                    "context": (agg.get("context") or "")[:500],
+                    "full_response": (agg.get("response") or "")[:2000],
+                    "is_disclaimer": agg["is_disclaimer"],
+                    "model": agg["model"],
+                    "citations": agg["citations"],
+                    "samples": agg["valid"],
+                    "samples_mentioned": agg["samples_mentioned"],
+                })
 
-            db.save_ai_mention_result({
-                "run_id": run_id,
-                "customer_id": customer_id,
-                "engine": ai_name,
-                "prompt": prompt,
-                "prompt_category": category,
-                "mentioned": is_mentioned,
-                "position": agg["position"],
-                "quality_score": agg["quality_score"],
-                "context": (agg.get("context") or "")[:500],
-                "full_response": (agg.get("response") or "")[:2000],
-                "is_disclaimer": agg["is_disclaimer"],
-                "model": agg["model"],
-                "citations": agg["citations"],
-                "samples": agg["valid"],
-                "samples_mentioned": agg["samples_mentioned"],
-            })
-
-            results.append({
-                "ai": ai_name,
-                "prompt": prompt,
-                "category": category,
-                "mentioned": is_mentioned,
-                "position": agg["position"],
-                "quality_score": agg["quality_score"],
-            })
+                results.append({
+                    "ai": ai_name,
+                    "prompt": prompt,
+                    "category": category,
+                    "mentioned": is_mentioned,
+                    "position": agg["position"],
+                    "quality_score": agg["quality_score"],
+                })
 
     # Compute final stats. The rate is the AVERAGED fraction across all samples
     # (rock-solid), not a binary per-cell count.
