@@ -679,6 +679,68 @@ def _name_matches(text_lower: str, practice_name: str) -> bool:
     return False
 
 
+def run_engine_samples(query_fn, prompt: str, practice_name: str, samples: int = 1) -> dict | None:
+    """Query one engine `samples` times for one prompt and aggregate the result.
+
+    Sampling averages out LLM non-determinism so a run's mention rate is rock-solid
+    rather than a coin-flip. Returns None if the engine has no API key; a dict with
+    "error" if every sample failed; otherwise an aggregate:
+      valid, samples_mentioned, mentioned (majority), mention_fraction,
+      position (avg over mentioned samples), quality_score, context, is_disclaimer,
+      citations, model.
+    """
+    mentions = 0
+    valid = 0
+    positions: list[int] = []
+    best: dict | None = None
+    best_text = ""
+    last_text = ""
+    citations: list = []
+    model = ""
+    last_err = None
+    saw_key = False
+
+    for _ in range(max(1, samples)):
+        er = query_fn(prompt)
+        if er is None:
+            continue  # no API key
+        saw_key = True
+        model = er.model or model
+        if er.error:
+            last_err = er.error
+            continue
+        valid += 1
+        last_text = er.text
+        citations.extend(er.citations or [])
+        res = check_mention(er.text, practice_name)
+        if res["mentioned"]:
+            mentions += 1
+            if res.get("position"):
+                positions.append(res["position"])
+            if best is None or res.get("quality_score", 0) > best.get("quality_score", 0):
+                best = res
+                best_text = er.text
+
+    if not saw_key:
+        return None
+    if valid == 0:
+        return {"error": last_err or "all samples failed", "model": model}
+
+    return {
+        "valid": valid,
+        "samples_mentioned": mentions,
+        "mentioned": mentions * 2 >= valid,  # majority vote
+        "mention_fraction": mentions / valid,
+        "position": round(sum(positions) / len(positions), 1) if positions else None,
+        "quality_score": (best or {}).get("quality_score", 0),
+        "context": (best or {}).get("context", ""),
+        "is_disclaimer": (best or {}).get("disclaimer", False),
+        "citations": _dedup(citations),
+        "model": model,
+        "response": best_text or last_text,  # representative text (for entity extraction)
+    }
+
+
 def check_mention(text: str, practice_name: str) -> dict:
     """Check if the practice is mentioned and track its position.
 

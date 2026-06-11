@@ -90,3 +90,36 @@ def test_error_result_distinct_from_no_key():
     assert er.error and "410" in er.error and er.model == "some-model" and er.text == ""
     # A no-key path returns None, an error path returns a result with .error set.
     assert cai.EngineResult(text="ok").error == ""
+
+
+# --- multi-sampling (averaging out non-determinism) ---
+
+def _seq_query_fn(results):
+    it = iter(results)
+    def fn(prompt):
+        return next(it)
+    return fn
+
+
+def test_run_engine_samples_majority_and_fraction():
+    # mentions in 2 of 3 samples -> majority True, fraction 2/3
+    rs = [
+        cai.EngineResult(text="Acme Dental is great", model="m"),
+        cai.EngineResult(text="try Other Place", model="m"),
+        cai.EngineResult(text="Acme Dental again", model="m"),
+    ]
+    agg = cai.run_engine_samples(_seq_query_fn(rs), "best dentist", "Acme Dental", samples=3)
+    assert agg["valid"] == 3 and agg["samples_mentioned"] == 2
+    assert agg["mentioned"] is True
+    assert round(agg["mention_fraction"], 2) == 0.67
+
+
+def test_run_engine_samples_none_when_no_key():
+    agg = cai.run_engine_samples(_seq_query_fn([None, None]), "q", "Acme Dental", samples=2)
+    assert agg is None
+
+
+def test_run_engine_samples_error_when_all_fail():
+    rs = [cai._err("m", RuntimeError("boom")), cai._err("m", RuntimeError("boom"))]
+    agg = cai.run_engine_samples(_seq_query_fn(rs), "q", "Acme Dental", samples=2)
+    assert agg.get("error") and agg["model"] == "m"

@@ -453,6 +453,12 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE ai_mention_results ADD COLUMN model TEXT NOT NULL DEFAULT ''")
         if "citations_json" not in res_cols:
             self.conn.execute("ALTER TABLE ai_mention_results ADD COLUMN citations_json TEXT NOT NULL DEFAULT '[]'")
+        # Multi-sampling: how many times this prompt×engine was sampled and how many
+        # mentioned — averages out LLM non-determinism for a rock-solid rate.
+        if "samples" not in res_cols:
+            self.conn.execute("ALTER TABLE ai_mention_results ADD COLUMN samples INTEGER NOT NULL DEFAULT 1")
+        if "samples_mentioned" not in res_cols:
+            self.conn.execute("ALTER TABLE ai_mention_results ADD COLUMN samples_mentioned INTEGER NOT NULL DEFAULT 0")
         # Optional baseline marker on a run (locks an onboarding before/after snapshot)
         run_cols2 = [r[1] for r in self.conn.execute("PRAGMA table_info(ai_mention_runs)").fetchall()]
         if "is_baseline" not in run_cols2:
@@ -1253,12 +1259,14 @@ class CustomerDB:
         """Save a single AI mention check result."""
         import json as _json
         citations = result.get("citations") or []
+        samples = int(result.get("samples", 1) or 1)
+        samples_mentioned = int(result.get("samples_mentioned", 1 if result["mentioned"] else 0))
         self.conn.execute(
             """INSERT INTO ai_mention_results
                (run_id, customer_id, engine, prompt, prompt_category, mentioned,
                 position, quality_score, context, full_response, is_disclaimer,
-                model, citations_json)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                model, citations_json, samples, samples_mentioned)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (result["run_id"], result["customer_id"], result["engine"],
              result["prompt"], result.get("prompt_category", "general"),
              1 if result["mentioned"] else 0, result.get("position"),
@@ -1266,7 +1274,8 @@ class CustomerDB:
              result.get("context", ""), result.get("full_response", ""),
              1 if result.get("is_disclaimer") else 0,
              result.get("model", ""),
-             _json.dumps(citations) if not isinstance(citations, str) else citations),
+             _json.dumps(citations) if not isinstance(citations, str) else citations,
+             samples, samples_mentioned),
         )
         self.conn.commit()
 
@@ -1286,6 +1295,30 @@ class CustomerDB:
             (run_id,),
         )
         return [dict(r) for r in cur.fetchall()]
+
+    def get_rolling_mention_rate(
+        self, customer_id: str, prompt_set: str = "benchmark", window: int = 4
+    ) -> dict | None:
+        """Average mention rate over the last `window` completed runs of a prompt set.
+
+        The headline AI-visibility number: a single run is a coin-flip, so the
+        client-facing metric uses a rolling average for stability.
+        """
+        rows = self.conn.execute(
+            "SELECT mention_rate, run_date FROM ai_mention_runs "
+            "WHERE customer_id = ? AND prompt_set = ? AND total_queries > 0 "
+            "ORDER BY run_date DESC, created_at DESC LIMIT ?",
+            (customer_id, prompt_set, window),
+        ).fetchall()
+        if not rows:
+            return None
+        rates = [r["mention_rate"] for r in rows]
+        return {
+            "rate": sum(rates) / len(rates),
+            "runs": len(rates),
+            "window": window,
+            "latest_date": rows[0]["run_date"],
+        }
 
     # --- Baseline (before/after proof) ---
 

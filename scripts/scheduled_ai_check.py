@@ -35,7 +35,13 @@ from scripts.check_ai_mentions import (
     query_grok,
     query_openai,
     query_perplexity,
+    run_engine_samples,
 )
+
+# Samples per prompt×engine — averages out LLM non-determinism. Each extra sample
+# multiplies grounded API cost, so it's env-tunable; 2 is a solid robustness/cost
+# balance on top of the cross-run rolling average.
+SAMPLES = max(1, int(os.environ.get("AI_CHECK_SAMPLES", "2")))
 
 from geo_agent.db import CustomerDB
 
@@ -113,6 +119,8 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
 
     results = []
     mention_count = 0
+    total_samples = 0
+    total_samples_mentioned = 0
     engines_checked = {}
 
     for pdef in prompt_defs:
@@ -120,28 +128,24 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
         category = pdef["category"]
 
         for ai_name, query_fn in ENGINES:
-            try:
-                er = query_fn(prompt)
-            except Exception as e:
-                logger.warning(f"  {ai_name} query error: {e}")
-                er = None
-
-            if er is None:
+            # Sample each prompt×engine SAMPLES times and aggregate (averages out
+            # LLM non-determinism for a stable rate).
+            agg = run_engine_samples(query_fn, prompt, customer["name"], samples=SAMPLES)
+            if agg is None:
                 engines_checked.setdefault(ai_name, "no_api_key")
                 continue
-            if er.error:
+            if agg.get("error"):
                 engines_checked[ai_name] = "error"
-                logger.warning(f"  {ai_name} error: {er.error}")
+                logger.warning(f"  {ai_name} error: {agg['error']}")
                 continue
 
-            response = er.text
             engines_checked[ai_name] = "active"
-            result = check_mention(response, customer["name"])
-            is_mentioned = result["mentioned"]
+            is_mentioned = agg["mentioned"]
             if is_mentioned:
                 mention_count += 1
+            total_samples += agg["valid"]
+            total_samples_mentioned += agg["samples_mentioned"]
 
-            # Save individual result (with the grounded model + web citations)
             db.save_ai_mention_result({
                 "run_id": run_id,
                 "customer_id": customer_id,
@@ -149,13 +153,15 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
                 "prompt": prompt,
                 "prompt_category": category,
                 "mentioned": is_mentioned,
-                "position": result["position"],
-                "quality_score": result.get("quality_score", 0),
-                "context": result["context"][:500] if result.get("context") else "",
-                "full_response": response[:2000] if response else "",
-                "is_disclaimer": result.get("disclaimer", False),
-                "model": er.model,
-                "citations": er.citations,
+                "position": agg["position"],
+                "quality_score": agg["quality_score"],
+                "context": (agg.get("context") or "")[:500],
+                "full_response": (agg.get("response") or "")[:2000],
+                "is_disclaimer": agg["is_disclaimer"],
+                "model": agg["model"],
+                "citations": agg["citations"],
+                "samples": agg["valid"],
+                "samples_mentioned": agg["samples_mentioned"],
             })
 
             results.append({
@@ -163,13 +169,14 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
                 "prompt": prompt,
                 "category": category,
                 "mentioned": is_mentioned,
-                "position": result["position"],
-                "quality_score": result.get("quality_score", 0),
+                "position": agg["position"],
+                "quality_score": agg["quality_score"],
             })
 
-    # Compute final stats
+    # Compute final stats. The rate is the AVERAGED fraction across all samples
+    # (rock-solid), not a binary per-cell count.
     total_queries = len(results)
-    mention_rate = mention_count / total_queries if total_queries > 0 else 0.0
+    mention_rate = (total_samples_mentioned / total_samples) if total_samples > 0 else 0.0
     positions = [r["position"] for r in results if r["mentioned"] and r["position"]]
     avg_position = sum(positions) / len(positions) if positions else None
 

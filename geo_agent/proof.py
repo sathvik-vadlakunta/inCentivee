@@ -86,6 +86,17 @@ def build_proof_report(db, customer_id: str) -> dict:
             "note": "Baseline will lock after the first scheduled run.",
         }
 
+    # Rolling average — the rock-solid headline number (single runs are noisy).
+    try:
+        rolling = db.get_rolling_mention_rate(customer_id, prompt_set="benchmark", window=4)
+        if rolling:
+            report["ai_rolling"] = {
+                "rate": _pct(rolling["rate"]),
+                "runs": rolling["runs"],
+            }
+    except Exception as e:
+        logger.warning(f"proof: rolling rate failed: {e}")
+
     # Trend series (oldest -> newest) for charting
     report["ai_trend"] = [
         {
