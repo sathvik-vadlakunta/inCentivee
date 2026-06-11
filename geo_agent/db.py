@@ -463,6 +463,18 @@ class CustomerDB:
         run_cols2 = [r[1] for r in self.conn.execute("PRAGMA table_info(ai_mention_runs)").fetchall()]
         if "is_baseline" not in run_cols2:
             self.conn.execute("ALTER TABLE ai_mention_runs ADD COLUMN is_baseline INTEGER NOT NULL DEFAULT 0")
+        # Methodology version: legacy ungrounded runs are '1.0'; new grounded
+        # (real web-search) runs are '2.0'. Primary metrics count 2.0 only.
+        if "methodology" not in run_cols2:
+            self.conn.execute("ALTER TABLE ai_mention_runs ADD COLUMN methodology TEXT NOT NULL DEFAULT '1.0'")
+            # Backfill: tag any existing run that used grounded models as 2.0.
+            self.conn.execute(
+                """UPDATE ai_mention_runs SET methodology = '2.0' WHERE id IN (
+                       SELECT DISTINCT run_id FROM ai_mention_results
+                       WHERE model IN ('claude-opus-4-8','gpt-4o-search-preview','sonar-pro','gemini-2.5-flash','grok-4')
+                          OR (citations_json IS NOT NULL AND citations_json != '[]')
+                   )"""
+            )
 
         # Migration v5: Dashboard users table
         self.conn.execute("""
@@ -1247,11 +1259,12 @@ class CustomerDB:
         """Save an AI mention check run summary."""
         self.conn.execute(
             """INSERT OR REPLACE INTO ai_mention_runs
-               (id, customer_id, run_date, total_mentions, total_queries, mention_rate, avg_position, engines_json, prompt_set)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (id, customer_id, run_date, total_mentions, total_queries, mention_rate, avg_position, engines_json, prompt_set, methodology)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (run["id"], run["customer_id"], run["run_date"], run["total_mentions"],
              run["total_queries"], run["mention_rate"], run.get("avg_position"),
-             json.dumps(run.get("engines", {})), run.get("prompt_set", "benchmark")),
+             json.dumps(run.get("engines", {})), run.get("prompt_set", "benchmark"),
+             run.get("methodology", "2.0")),  # all new (grounded) runs are 2.0
         )
         self.conn.commit()
 
@@ -1279,13 +1292,23 @@ class CustomerDB:
         )
         self.conn.commit()
 
-    def get_ai_mention_runs(self, customer_id: str, limit: int = 52) -> list[dict]:
-        """Get recent AI mention runs for a customer (newest first)."""
-        cur = self.conn.execute(
-            "SELECT * FROM ai_mention_runs WHERE customer_id = ? "
-            "ORDER BY run_date DESC, created_at DESC LIMIT ?",
-            (customer_id, limit),
-        )
+    def get_ai_mention_runs(self, customer_id: str, limit: int = 52, methodology: str | None = None) -> list[dict]:
+        """Get recent AI mention runs for a customer (newest first).
+
+        Pass methodology='2.0' to count only grounded runs (the comparable series).
+        """
+        if methodology:
+            cur = self.conn.execute(
+                "SELECT * FROM ai_mention_runs WHERE customer_id = ? AND methodology = ? "
+                "ORDER BY run_date DESC, created_at DESC LIMIT ?",
+                (customer_id, methodology, limit),
+            )
+        else:
+            cur = self.conn.execute(
+                "SELECT * FROM ai_mention_runs WHERE customer_id = ? "
+                "ORDER BY run_date DESC, created_at DESC LIMIT ?",
+                (customer_id, limit),
+            )
         return [dict(r) for r in cur.fetchall()]
 
     def get_ai_mention_results(self, run_id: str) -> list[dict]:
@@ -1306,7 +1329,7 @@ class CustomerDB:
         """
         rows = self.conn.execute(
             "SELECT mention_rate, run_date FROM ai_mention_runs "
-            "WHERE customer_id = ? AND prompt_set = ? AND total_queries > 0 "
+            "WHERE customer_id = ? AND prompt_set = ? AND total_queries > 0 AND methodology = '2.0' "
             "ORDER BY run_date DESC, created_at DESC LIMIT ?",
             (customer_id, prompt_set, window),
         ).fetchall()
@@ -1339,9 +1362,10 @@ class CustomerDB:
         existing = self.get_baseline_run(customer_id)
         if existing:
             return existing
+        # Baseline must be a grounded (2.0) run — never an old ungrounded one.
         first = self.conn.execute(
             "SELECT * FROM ai_mention_runs WHERE customer_id = ? AND total_queries > 0 "
-            "ORDER BY run_date ASC, created_at ASC LIMIT 1",
+            "AND methodology = '2.0' ORDER BY run_date ASC, created_at ASC LIMIT 1",
             (customer_id,),
         ).fetchone()
         if not first:
@@ -1423,7 +1447,8 @@ class CustomerDB:
         run_ids = [
             r["id"] for r in self.conn.execute(
                 "SELECT id FROM ai_mention_runs WHERE customer_id = ? AND prompt_set = ? "
-                "AND total_queries > 0 ORDER BY run_date DESC, created_at DESC LIMIT ?",
+                "AND total_queries > 0 AND methodology = '2.0' "
+                "ORDER BY run_date DESC, created_at DESC LIMIT ?",
                 (customer_id, prompt_set, last_n_runs),
             ).fetchall()
         ]

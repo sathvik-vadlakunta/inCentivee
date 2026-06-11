@@ -58,10 +58,26 @@ def build_proof_report(db, customer_id: str) -> dict:
         logger.warning(f"proof: baseline failed: {e}")
 
     try:
-        runs = db.get_ai_mention_runs(customer_id, limit=52)  # newest first
+        # Only the grounded (2.0) series — comparable apples-to-apples.
+        runs = db.get_ai_mention_runs(customer_id, limit=52, methodology="2.0")
     except Exception as e:
         logger.warning(f"proof: ai runs failed: {e}")
         runs = []
+
+    # Legacy (pre-grounded, 1.0) context — kept for the long-arc 'since we started'
+    # story, clearly separated from the comparable 2.0 trend.
+    try:
+        legacy = db.get_ai_mention_runs(customer_id, limit=52, methodology="1.0")
+        legacy = [r for r in legacy if (r.get("total_queries") or 0) > 0]
+        if legacy:
+            oldest_legacy = legacy[-1]
+            report["legacy"] = {
+                "first_date": oldest_legacy.get("run_date"),
+                "first_mention_rate": _pct(oldest_legacy.get("mention_rate", 0) or 0),
+                "note": "Pre-grounded measurement (different methodology — directional context only).",
+            }
+    except Exception as e:
+        logger.warning(f"proof: legacy runs failed: {e}")
 
     latest = runs[0] if runs else None
     if baseline and latest and baseline["id"] != latest["id"]:

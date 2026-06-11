@@ -89,6 +89,27 @@ def test_rolling_mention_rate(db):
     assert abs(rolling["rate"] - 0.4) < 1e-9  # (0.2+0.4+0.6)/3
 
 
+def test_methodology_versioning(db):
+    # An old ungrounded (1.0) run and a new grounded (2.0) run.
+    db.save_ai_mention_run({
+        "id": "old", "customer_id": "acme", "run_date": "2025-12-01",
+        "total_mentions": 1, "total_queries": 10, "mention_rate": 0.1,
+        "avg_position": 5.0, "engines": {}, "prompt_set": "benchmark", "methodology": "1.0",
+    })
+    _save_run(db, "new", "2026-03-01", 0.4, 2.0)  # defaults to methodology 2.0
+
+    # Baseline + rolling + trend count only 2.0
+    base = db.ensure_baseline_run("acme")
+    assert base["id"] == "new"
+    assert [r["id"] for r in db.get_ai_mention_runs("acme", methodology="2.0")] == ["new"]
+    rolling = db.get_rolling_mention_rate("acme")
+    assert rolling["runs"] == 1  # only the 2.0 run
+
+    report = build_proof_report(db, "acme")
+    assert report["ai_visibility"]["latest_mention_rate"] == 40.0
+    assert report.get("legacy", {}).get("first_mention_rate") == 10.0  # old run kept as context
+
+
 def test_baseline_skips_aborted_zero_query_run(db):
     # An aborted run (total_queries=0) must NOT become the baseline.
     db.save_ai_mention_run({
