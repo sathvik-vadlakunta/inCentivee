@@ -4072,6 +4072,39 @@ def api_ai_mention_trends(customer_id):
         db.close()
 
 
+@app.route("/api/ai-mentions/<customer_id>/baseline", methods=["GET", "POST"])
+@login_required
+def api_ai_mention_baseline(customer_id):
+    """GET current baseline; POST sets a run (or the latest) as the baseline."""
+    db = get_db()
+    try:
+        if request.method == "POST":
+            run_id = (request.get_json(silent=True) or {}).get("run_id")
+            if not run_id:
+                runs = db.get_ai_mention_runs(customer_id, limit=1)
+                if not runs:
+                    return jsonify({"ok": False, "error": "No runs yet to baseline"}), 400
+                run_id = runs[0]["id"]
+            db.set_baseline_run(customer_id, run_id)
+            audit_log("ai_baseline_set", customer_id=customer_id, details=f"run_id={run_id}")
+        base = db.get_baseline_run(customer_id)
+        return jsonify({"ok": True, "baseline_date": base.get("run_date") if base else None,
+                        "baseline_run_id": base.get("id") if base else None})
+    finally:
+        db.close()
+
+
+@app.route("/api/ai-mentions/<customer_id>/events")
+@login_required
+def api_ai_mention_events(customer_id):
+    """Product-action events (published content) for attribution markers on the trend."""
+    db = get_db()
+    try:
+        return jsonify({"ok": True, "events": db.get_published_content_events(customer_id, limit=50)})
+    finally:
+        db.close()
+
+
 @app.route("/api/ai-mentions/<customer_id>/weekly")
 @login_required
 def api_ai_weekly_summaries(customer_id):

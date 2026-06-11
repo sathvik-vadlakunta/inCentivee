@@ -1768,9 +1768,11 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>
             <h3 style="margin:0;">AI Search Visibility</h3>
-            <p style="color:var(--muted);font-size:0.85em;margin:4px 0 0;">Track how AI engines recommend your business.</p>
+            <p style="color:var(--muted);font-size:0.85em;margin:4px 0 0;">Track how AI engines recommend your business. <span id="ai-baseline-label" style="color:var(--muted);"></span></p>
         </div>
         <div style="display:flex;gap:8px;">
+            <a href="{{ url_for('customer_proof', customer_id=customer.id) }}" target="_blank" class="btn btn-outline btn-sm">Proof Report</a>
+            <button class="btn btn-outline btn-sm" onclick="setAiBaseline('{{ customer.id }}')" id="ai-baseline-btn" title="Mark the most recent run as the before/after baseline">Set baseline</button>
             <a href="/api/ai-mentions/{{ customer.id }}/report" class="btn btn-outline btn-sm">Download Report</a>
             <button class="btn btn-outline btn-sm" onclick="exportAiMentionsCsv('{{ customer.id }}')">Export CSV</button>
             <button class="btn btn-primary" onclick="runFullAiCheck('{{ customer.id }}')" id="ai-full-check-btn">Run AI Check</button>
@@ -3155,16 +3157,44 @@ function loadAiDashboard(customerId) {
             renderWeeklyScorecards(data.weeks);
         });
 
-    // Load score history for AI score chart
-    fetch('/api/ai-trend/' + customerId + '?limit=30')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            if (!d.ok || !d.trend || d.trend.length === 0) return;
-            renderAiScoreChart(d.trend);
+    // Load score history + attribution events together so the trend chart can
+    // mark when we shipped content (publishes) against the visibility line.
+    Promise.all([
+        fetch('/api/ai-trend/' + customerId + '?limit=30').then(function(r){ return r.json(); }),
+        fetch('/api/ai-mentions/' + customerId + '/events').then(function(r){ return r.json(); }).catch(function(){ return {events: []}; }),
+    ]).then(function(res) {
+        var d = res[0], ev = res[1];
+        if (!d.ok || !d.trend || d.trend.length === 0) return;
+        renderAiScoreChart(d.trend, (ev && ev.events) || []);
+    });
+
+    // Current baseline label
+    fetch('/api/ai-mentions/' + customerId + '/baseline')
+        .then(function(r){ return r.json(); })
+        .then(function(b){
+            var el = document.getElementById('ai-baseline-label');
+            if (el && b && b.baseline_date) el.textContent = '· Baseline: ' + b.baseline_date.substring(0,10);
         });
 
     // Load share of voice
     loadAiCompetitorComparison(customerId);
+}
+
+function setAiBaseline(customerId) {
+    if (!confirm('Set the most recent AI check as the before/after baseline? This anchors the proof report. Re-run a check first if you want to baseline fresh grounded data.')) return;
+    fetch('/api/ai-mentions/' + customerId + '/baseline', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' })
+        .then(function(r){ return r.json(); })
+        .then(function(b){
+            if (b.ok) {
+                var el = document.getElementById('ai-baseline-label');
+                if (el && b.baseline_date) el.textContent = '· Baseline: ' + b.baseline_date.substring(0,10);
+                var btn = document.getElementById('ai-baseline-btn');
+                if (btn) { btn.textContent = 'Baseline set ✓'; setTimeout(function(){ btn.textContent = 'Set baseline'; }, 2500); }
+            } else {
+                alert(b.error || 'Could not set baseline');
+            }
+        })
+        .catch(function(){ alert('Network error setting baseline'); });
 }
 
 function renderWeeklyScorecards(weeks) {
@@ -3437,27 +3467,62 @@ function renderAiMentionChart(runs) {
     });
 }
 
-function renderAiScoreChart(trend) {
+function renderAiScoreChart(trend, events) {
     if (!trend || trend.length === 0 || typeof Chart === 'undefined') return;
     var labels = trend.map(function(t) { return t.date.substring(5); });
     var rates = trend.map(function(t) { return t.mention_rate || 0; });
 
+    // Attribution markers: snap each published-content event to the nearest trend
+    // point (by date) so the operator can see gains against what we shipped.
+    var markerData = labels.map(function() { return null; });
+    var markerTitles = labels.map(function() { return []; });
+    (events || []).forEach(function(ev) {
+        var d = (ev.published_at || '').substring(0, 10);
+        if (!d) return;
+        var idx = -1;
+        for (var i = 0; i < trend.length; i++) { if (trend[i].date.substring(0, 10) <= d) idx = i; }
+        if (idx < 0) idx = 0;
+        markerData[idx] = rates[idx];
+        markerTitles[idx].push(ev.title || (ev.rec_type || 'content'));
+    });
+    var datasets = [{
+        label: 'Mention Rate %',
+        data: rates,
+        borderColor: '#16a34a',
+        backgroundColor: 'rgba(22,163,74,0.1)',
+        fill: true, tension: 0.3, pointRadius: 3
+    }];
+    if (markerData.some(function(v) { return v !== null; })) {
+        datasets.push({
+            label: 'Content published',
+            data: markerData,
+            borderColor: '#e94560',
+            backgroundColor: '#e94560',
+            showLine: false,
+            pointStyle: 'triangle',
+            pointRadius: 7,
+            pointHoverRadius: 9
+        });
+    }
+
     if (_aiDashCharts.score) _aiDashCharts.score.destroy();
     _aiDashCharts.score = new Chart(document.getElementById('ai-dash-score-chart').getContext('2d'), {
         type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Mention Rate %',
-                data: rates,
-                borderColor: '#16a34a',
-                backgroundColor: 'rgba(22,163,74,0.1)',
-                fill: true, tension: 0.3, pointRadius: 3
-            }]
-        },
+        data: { labels: labels, datasets: datasets },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: datasets.length > 1, position: 'top', labels: { boxWidth: 10, font: { size: 9 } } },
+                tooltip: { callbacks: { afterBody: function(items) {
+                    var t = [];
+                    items.forEach(function(it) {
+                        if (it.datasetIndex === 1 && markerTitles[it.dataIndex] && markerTitles[it.dataIndex].length) {
+                            t.push('Shipped: ' + markerTitles[it.dataIndex].join('; '));
+                        }
+                    });
+                    return t;
+                } } }
+            },
             scales: {
                 y: { min: 0, max: 100, title: { display: true, text: 'AI Score', font: { size: 9 } }, ticks: { font: { size: 9 } } },
                 x: { ticks: { font: { size: 9 } } }
