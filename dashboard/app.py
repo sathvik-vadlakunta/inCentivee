@@ -4938,6 +4938,7 @@ def sync_landing_page_reports(db):
     }
 
     synced = 0
+    new_prospects = 0
     for meta in remote_reports:
         if meta["id"] in existing:
             continue
@@ -4997,8 +4998,34 @@ def sync_landing_page_reports(db):
         )
         synced += 1
 
+        # Auto-create a prospect from this inbound audit lead — they REQUESTED a
+        # report, so they're the hottest leads. Skip if it matched an existing
+        # customer (then it's a client, not a prospect). Carry the report scores so
+        # the outreach templates can mail-merge the real gap.
+        if customer_id is None and meta.get("email") and domain_clean:
+            try:
+                m = meta.get("meta", {})
+                pname = m.get("practice_name") or meta.get("name") or domain_clean
+                pid = re.sub(r"[^a-z0-9]+", "-", pname.lower()).strip("-")[:48] or domain_clean
+                city_state = ", ".join(p for p in [m.get("city", ""), m.get("state", "")] if p)
+                db.upsert_prospect(
+                    pid, domain_clean, pname,
+                    contact_name=meta.get("name", ""),
+                    email=meta.get("email", ""),
+                    vertical=meta.get("vertical", "dental"),
+                    stage="new_lead",
+                    report_id=meta["id"],
+                    overall_score=m.get("overall_score"),
+                    grade=m.get("grade", ""),
+                    report_data=json.dumps(full.get("report", {})),
+                    notes=f"Auto-created from inbound audit ({city_state})." if city_state else "Auto-created from inbound audit.",
+                )
+                new_prospects += 1
+            except Exception as e:
+                logger.warning(f"Auto-prospect failed for {domain_clean}: {e}")
+
     db.conn.commit()
-    return {"synced": synced, "total": len(remote_reports), "already_synced": len(existing)}
+    return {"synced": synced, "total": len(remote_reports), "already_synced": len(existing), "new_prospects": new_prospects}
 
 
 @app.route("/reports")
@@ -5095,6 +5122,42 @@ def api_link_report(report_id):
         )
         db.conn.commit()
         return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/api/reports/<report_id>/to-pipeline", methods=["POST"])
+@login_required
+def api_report_to_pipeline(report_id):
+    """Create a sales-pipeline prospect from an inbound audit report (manual)."""
+    db = get_db()
+    try:
+        row = db.conn.execute(
+            "SELECT * FROM landing_page_reports WHERE id = ?", (report_id,)
+        ).fetchone()
+        if not row:
+            return jsonify({"ok": False, "error": "Report not found"}), 404
+        r = dict(row)
+        domain = (r.get("domain", "") or "").replace("_", ".").lower()
+        if not domain:
+            return jsonify({"ok": False, "error": "Report has no domain"}), 400
+        pname = r.get("practice_name") or r.get("contact_name") or domain
+        pid = re.sub(r"[^a-z0-9]+", "-", pname.lower()).strip("-")[:48] or domain
+        city_state = ", ".join(p for p in [r.get("city", ""), r.get("state", "")] if p)
+        prospect_id = db.upsert_prospect(
+            pid, domain, pname,
+            contact_name=r.get("contact_name", ""),
+            email=r.get("email", ""),
+            vertical=r.get("vertical", "dental"),
+            stage="new_lead",
+            report_id=report_id,
+            overall_score=r.get("overall_score"),
+            grade=r.get("grade", ""),
+            report_data=r.get("full_report", ""),
+            notes=f"From inbound audit ({city_state})." if city_state else "From inbound audit.",
+        )
+        audit_log("prospect_from_report", details=f"report={report_id} prospect={prospect_id}")
+        return jsonify({"ok": True, "prospect_id": prospect_id})
     finally:
         db.close()
 

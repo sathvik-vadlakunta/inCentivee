@@ -119,13 +119,16 @@
                 {% if r.customer_id and r.customer_name %}
                     <a href="{{ url_for('customer_detail', customer_id=r.customer_id) }}" class="customer-link">{{ r.customer_name }}</a>
                 {% else %}
-                    <div class="link-dropdown">
-                        <button class="link-btn" onclick="toggleLinkDropdown(this)">Link</button>
-                        <div class="link-dropdown-content">
-                            {% for c in customers %}
-                            <a href="#" onclick="linkReport('{{ r.id }}', '{{ c.id }}', this); return false;">{{ c.name }}</a>
-                            {% endfor %}
+                    <div style="display:flex;gap:6px;align-items:center;">
+                        <div class="link-dropdown">
+                            <button class="link-btn" onclick="toggleLinkDropdown(this)">Link</button>
+                            <div class="link-dropdown-content">
+                                {% for c in customers %}
+                                <a href="#" onclick="linkReport('{{ r.id }}', '{{ c.id }}', this); return false;">{{ c.name }}</a>
+                                {% endfor %}
+                            </div>
                         </div>
+                        <button class="link-btn" style="background:var(--primary);color:#fff;" onclick="toPipeline('{{ r.id }}', this)" title="Add this lead to the sales pipeline">→ Pipeline</button>
                     </div>
                 {% endif %}
             </td>
@@ -201,6 +204,17 @@ function linkReport(reportId, customerId, el) {
     })
     .then(function(r) { return r.json(); })
     .then(function() { location.reload(); });
+}
+
+function toPipeline(reportId, btn) {
+    btn.disabled = true; btn.textContent = '…';
+    fetch('/api/reports/' + reportId + '/to-pipeline', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.ok) { window.location = '/prospect/' + d.prospect_id; }
+            else { alert(d.error || 'Failed'); btn.disabled = false; btn.textContent = '→ Pipeline'; }
+        })
+        .catch(function() { alert('Network error'); btn.disabled = false; btn.textContent = '→ Pipeline'; });
 }
 
 document.addEventListener('click', function(e) {
