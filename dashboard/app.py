@@ -6990,6 +6990,45 @@ def api_reviews(customer_id):
         db.close()
 
 
+# --- Proof-of-improvement report (internal view + shareable client link) ---
+
+def _proof_serializer():
+    from itsdangerous import URLSafeSerializer
+    return URLSafeSerializer(app.secret_key, salt="practicerank-proof")
+
+
+@app.route("/customer/<customer_id>/proof")
+@login_required
+def customer_proof(customer_id):
+    """Internal proof-of-improvement view + a shareable client link."""
+    db = get_db()
+    try:
+        from geo_agent.proof import build_proof_report
+        report = build_proof_report(db, customer_id)
+        token = _proof_serializer().dumps(customer_id)
+        share_url = url_for("public_proof", token=token, _external=True)
+        return render_template("proof.html", report=report, public=False, share_url=share_url)
+    finally:
+        db.close()
+
+
+@app.route("/proof/<token>")
+def public_proof(token):
+    """Public, read-only proof report a client can view via a signed link (no login)."""
+    from itsdangerous import BadSignature
+    try:
+        customer_id = _proof_serializer().loads(token)
+    except BadSignature:
+        abort(404)
+    db = get_db()
+    try:
+        from geo_agent.proof import build_proof_report
+        report = build_proof_report(db, customer_id)
+        return render_template("proof.html", report=report, public=True, share_url=None)
+    finally:
+        db.close()
+
+
 def reap_stale_runs():
     """Mark runs left in 'running' with a dead/missing pid as failed.
 

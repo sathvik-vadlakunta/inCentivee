@@ -1286,6 +1286,85 @@ class CustomerDB:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    # --- Baseline (before/after proof) ---
+
+    def get_baseline_run(self, customer_id: str) -> dict | None:
+        """Return the run marked as the onboarding baseline, if any."""
+        row = self.conn.execute(
+            "SELECT * FROM ai_mention_runs WHERE customer_id = ? AND is_baseline = 1 LIMIT 1",
+            (customer_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def ensure_baseline_run(self, customer_id: str) -> dict | None:
+        """Mark the earliest run as the baseline if none is marked yet."""
+        existing = self.get_baseline_run(customer_id)
+        if existing:
+            return existing
+        first = self.conn.execute(
+            "SELECT * FROM ai_mention_runs WHERE customer_id = ? ORDER BY run_date ASC, created_at ASC LIMIT 1",
+            (customer_id,),
+        ).fetchone()
+        if not first:
+            return None
+        self.conn.execute("UPDATE ai_mention_runs SET is_baseline = 1 WHERE id = ?", (first["id"],))
+        self.conn.commit()
+        return dict(first)
+
+    def set_baseline_run(self, customer_id: str, run_id: str) -> None:
+        """Explicitly (re)set which run is the baseline for a customer."""
+        self.conn.execute("UPDATE ai_mention_runs SET is_baseline = 0 WHERE customer_id = ?", (customer_id,))
+        self.conn.execute(
+            "UPDATE ai_mention_runs SET is_baseline = 1 WHERE id = ? AND customer_id = ?",
+            (run_id, customer_id),
+        )
+        self.conn.commit()
+
+    def get_published_content_events(self, customer_id: str, limit: int = 100) -> list[dict]:
+        """Published content (for attribution: tie AI-visibility gains to our actions)."""
+        cur = self.conn.execute(
+            """SELECT title, rec_type, published_at,
+                      platform_draft_url AS published_url
+               FROM content_recommendations
+               WHERE customer_id = ? AND status = 'published' AND published_at IS NOT NULL
+               ORDER BY published_at DESC LIMIT ?""",
+            (customer_id, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_citation_domains(self, customer_id: str, last_n_runs: int = 4) -> list[dict]:
+        """Distinct source domains that cited the practice in grounded AI answers.
+
+        The strongest proof artifact: 'your content was cited by these sources.'
+        """
+        import json as _json
+        from urllib.parse import urlparse
+
+        run_ids = [
+            r["id"] for r in self.conn.execute(
+                "SELECT id FROM ai_mention_runs WHERE customer_id = ? ORDER BY run_date DESC LIMIT ?",
+                (customer_id, last_n_runs),
+            ).fetchall()
+        ]
+        if not run_ids:
+            return []
+        placeholders = ",".join("?" * len(run_ids))
+        rows = self.conn.execute(
+            f"""SELECT citations_json FROM ai_mention_results
+                WHERE customer_id = ? AND mentioned = 1 AND run_id IN ({placeholders})""",
+            (customer_id, *run_ids),
+        ).fetchall()
+        counts: dict[str, int] = {}
+        for row in rows:
+            try:
+                for url in _json.loads(row["citations_json"] or "[]"):
+                    dom = urlparse(url).netloc.replace("www.", "")
+                    if dom:
+                        counts[dom] = counts.get(dom, 0) + 1
+            except Exception:
+                continue
+        return [{"domain": d, "count": c} for d, c in sorted(counts.items(), key=lambda x: -x[1])]
+
     def get_ai_mention_results_by_customer(self, customer_id: str, limit: int = 200) -> list[dict]:
         """Get recent results across all runs for a customer."""
         cur = self.conn.execute(
