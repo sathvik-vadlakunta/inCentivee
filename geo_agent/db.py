@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import secrets
 import sqlite3
 from dataclasses import asdict
@@ -21,6 +22,14 @@ from geo_agent.config import Customer, Provider
 logger = logging.getLogger(__name__)
 
 SCHEMA_VERSION = 8
+
+# Generic mail hosts that must never be used to route email by domain (a customer
+# website domain matching one of these would mis-file unrelated mail).
+_GENERIC_EMAIL_DOMAINS = frozenset({
+    "gmail.com", "googlemail.com", "yahoo.com", "ymail.com", "outlook.com",
+    "hotmail.com", "live.com", "msn.com", "aol.com", "icloud.com", "me.com",
+    "proton.me", "protonmail.com", "comcast.net", "att.net", "verizon.net",
+})
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -973,6 +982,28 @@ class CustomerDB:
             "SELECT * FROM contacts WHERE customer_id = ?", (customer_id,)
         )
         return [dict(r) for r in cur.fetchall()]
+
+    def get_email_customer_index(self) -> dict:
+        """Build lookups for routing inbound email to a customer.
+
+        Returns {"emails": {addr_lower: customer_id}, "domains": {domain: customer_id}}.
+        - emails: every contact email (most precise — handles personal gmail addrs).
+        - domains: each customer's website domain (so mail from anyone @theirdomain
+          routes correctly). Generic mail hosts are never used as domain keys.
+        """
+        emails: dict[str, str] = {}
+        domains: dict[str, str] = {}
+        for c in self.list_customers():
+            cid = c["id"]
+            dom = (c.get("domain") or "").lower().strip()
+            dom = re.sub(r"^www\.", "", dom)
+            if dom and dom not in _GENERIC_EMAIL_DOMAINS:
+                domains.setdefault(dom, cid)
+            for ct in self.get_contacts(cid):
+                addr = (ct.get("email") or "").lower().strip()
+                if addr and "@" in addr:
+                    emails.setdefault(addr, cid)
+        return {"emails": emails, "domains": domains}
 
     # --- Platform Access ---
 

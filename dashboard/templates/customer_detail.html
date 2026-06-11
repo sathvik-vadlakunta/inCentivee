@@ -2036,7 +2036,16 @@
 
     <!-- Timeline -->
     <div class="card" id="notes">
-        <h2 style="font-size:1rem;">Activity Timeline</h2>
+        <div class="section-header">
+            <h2 style="font-size:1rem;">Activity Timeline</h2>
+            <div class="flex" style="align-items:center;gap:0.5rem;">
+                <span id="sync-email-result" style="font-size:0.78rem;color:var(--muted);"></span>
+                <button class="btn btn-sm btn-outline" type="button" onclick="syncEmails(this)"
+                        title="Pull recent email from the PracticeRank inbox and file it to customers">
+                    <span class="sync-label">Sync Gmail</span>
+                </button>
+            </div>
+        </div>
         {% if customer_activities %}
         <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.5rem;">
             {% for a in customer_activities %}
@@ -2478,6 +2487,30 @@ function switchTab(tabName, btn) {
         if (seoBtn) seoBtn.classList.remove('expanded');
     }
     if (tabName === 'ai-mentions') { loadAiDashboard('{{ customer.id }}'); }
+}
+
+function syncEmails(btn) {
+    const label = btn.querySelector('.sync-label');
+    const result = document.getElementById('sync-email-result');
+    label.textContent = 'Syncing…'; btn.disabled = true;
+    if (result) result.textContent = '';
+    fetch('{{ url_for("api_sync_emails") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({days: 14})
+    }).then(r => r.json()).then(d => {
+        if (result) {
+            result.textContent = d.message || '';
+            result.style.color = d.ok ? '#16a34a' : '#dc2626';
+        }
+        label.textContent = 'Sync Gmail'; btn.disabled = false;
+        if (d.ok && d.summary && d.summary.filed > 0) {
+            setTimeout(function() { window.location.reload(); }, 1000);
+        }
+    }).catch(function() {
+        if (result) { result.textContent = 'Sync failed'; result.style.color = '#dc2626'; }
+        label.textContent = 'Sync Gmail'; btn.disabled = false;
+    });
 }
 
 function switchSeoSubtab(subName, btn) {

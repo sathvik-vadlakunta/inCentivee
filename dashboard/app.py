@@ -580,6 +580,26 @@ def delete_customer_activity(customer_id, activity_id):
         db.close()
 
 
+@app.route("/api/sync-emails", methods=["POST"])
+@login_required
+def api_sync_emails():
+    """Pull recent Gmail into per-customer timelines (one inbox → all customers)."""
+    from geo_agent.gmail_ingest import sync, GmailNotConfigured
+    days = int((request.get_json(silent=True) or {}).get("days", 14))
+    db = get_db()
+    try:
+        summary = sync(db, days=days)
+        msg = (f"Filed {summary['filed']} email(s) · {summary['duplicates']} already logged · "
+               f"{summary['skipped_no_match']} unmatched · scanned {summary['scanned']}")
+        return jsonify({"ok": True, "summary": summary, "message": msg})
+    except GmailNotConfigured as e:
+        return jsonify({"ok": False, "message": str(e)}), 400
+    except Exception as e:
+        return jsonify({"ok": False, "message": f"Sync failed: {e}"}), 500
+    finally:
+        db.close()
+
+
 # --- Add Customer ---
 
 @app.route("/customer/new", methods=["GET", "POST"])
