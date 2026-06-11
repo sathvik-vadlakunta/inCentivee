@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Search Gap — {{ gap.customer_name }}</title>
+<style>
+  :root { --brand:#e94560; --navy:#16213e; --ink:#1a1a2e; --muted:#6b7280; --bg:#f7f7fb; --green:#16a34a; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; margin:0; background:var(--bg); color:var(--ink); line-height:1.55; }
+  .wrap { max-width:760px; margin:0 auto; padding:28px 20px 60px; }
+  .hero { background:linear-gradient(135deg,var(--navy),#0f1830); color:#fff; border-radius:16px; padding:32px 28px; }
+  .hero .kicker { text-transform:uppercase; letter-spacing:.08em; font-size:.72rem; color:#ffb3c1; font-weight:700; }
+  .hero h1 { font-size:1.7rem; margin:8px 0 6px; line-height:1.2; }
+  .hero p { color:#cfd6e6; margin:0; font-size:.95rem; }
+  .share { background:#fff3f5; border:1px solid #ffd6de; border-radius:10px; padding:10px 12px; margin:14px 0 0; font-size:.82rem; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .share input { flex:1; min-width:200px; border:1px solid #e5b6c0; border-radius:6px; padding:6px 8px; font-size:.8rem; }
+  .share button { background:var(--brand); color:#fff; border:0; border-radius:6px; padding:6px 12px; font-weight:600; cursor:pointer; }
+  .stat-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin:22px 0; }
+  .stat { background:#fff; border:1px solid #ececf3; border-radius:12px; padding:18px; text-align:center; }
+  .stat .n { font-size:2rem; font-weight:800; color:var(--navy); }
+  .stat.bad .n { color:var(--brand); }
+  .stat .l { font-size:.78rem; color:var(--muted); margin-top:2px; }
+  .card { background:#fff; border:1px solid #ececf3; border-radius:14px; padding:22px; margin:18px 0; }
+  .card h2 { font-size:1.05rem; margin:0 0 14px; color:var(--navy); }
+  .comp { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .comp .name { min-width:150px; font-size:.86rem; font-weight:600; }
+  .comp.you .name { color:var(--brand); }
+  .bar { flex:1; height:18px; background:#eef0f6; border-radius:5px; overflow:hidden; }
+  .bar > div { height:100%; background:var(--navy); border-radius:5px; }
+  .comp.you .bar > div { background:var(--brand); }
+  .comp .v { min-width:64px; text-align:right; font-size:.8rem; font-weight:700; color:var(--navy); }
+  ul.q { margin:0; padding-left:18px; }
+  ul.q li { margin-bottom:7px; font-size:.92rem; }
+  ul.q li b { color:var(--navy); }
+  .cta { background:var(--navy); color:#fff; border-radius:14px; padding:26px; text-align:center; margin-top:22px; }
+  .cta a { display:inline-block; background:var(--brand); color:#fff; text-decoration:none; font-weight:700; padding:12px 26px; border-radius:10px; margin-top:10px; }
+  .foot { text-align:center; color:var(--muted); font-size:.74rem; margin-top:26px; }
+  .empty { color:var(--muted); font-size:.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="kicker">AI Search Visibility Report</div>
+    <h1>Is AI recommending {{ gap.customer_name }}?</h1>
+    <p>{% if gap.city %}{{ gap.city }}{% if gap.state %}, {{ gap.state }}{% endif %} · {% endif %}When patients ask ChatGPT, Gemini, Perplexity &amp; Grok for the best {{ gap.city and 'local ' or '' }}provider, here's what they actually hear.</p>
+  </div>
+
+  {% if not public and share_url %}
+  <div class="share">
+    <span>Shareable link:</span>
+    <input id="gap-link" readonly value="{{ share_url }}">
+    <button onclick="(function(b){navigator.clipboard.writeText(document.getElementById('gap-link').value).then(()=>{b.textContent='Copied!';setTimeout(()=>b.textContent='Copy',1500);});})(this)">Copy</button>
+  </div>
+  {% endif %}
+
+  {% if gap.queries %}
+  <div class="stat-row">
+    <div class="stat bad">
+      <div class="n">{{ gap.you_mentions }}<span style="font-size:1rem;color:var(--muted);">/{{ gap.queries }}</span></div>
+      <div class="l">Times {{ gap.customer_name }} was recommended</div>
+    </div>
+    <div class="stat bad">
+      <div class="n">{{ gap.you_rate }}%</div>
+      <div class="l">AI recommendation rate {% if gap.engines %}across {{ gap.engines|length }} engines{% endif %}</div>
+    </div>
+    {% if gap.top_competitors and gap.top_competitors[0] %}
+    <div class="stat">
+      <div class="n">{{ gap.top_competitors[0].mentions or gap.top_competitors[0].get('mentions', 0) }}</div>
+      <div class="l">Times the top competitor was recommended</div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card"><span class="empty">No grounded AI check has run yet for this business. Run an AI Check to populate the gap.</span></div>
+  {% endif %}
+
+  {% if gap.top_competitors %}
+  <div class="card">
+    <h2>Who AI recommends in your market</h2>
+    {% set maxm = (gap.top_competitors[0].mentions or 1) %}
+    <div class="comp you">
+      <span class="name">{{ gap.customer_name }} (you)</span>
+      <div class="bar"><div style="width:{{ ((gap.customer_mentions or 0) / (maxm if maxm > 0 else 1) * 100)|round }}%;"></div></div>
+      <span class="v">{{ gap.customer_mentions or 0 }}×</span>
+    </div>
+    {% for c in gap.top_competitors %}
+    <div class="comp">
+      <span class="name">{{ c.name or c.domain or 'Competitor' }}</span>
+      <div class="bar"><div style="width:{{ ((c.mentions or 0) / (maxm if maxm > 0 else 1) * 100)|round }}%;"></div></div>
+      <span class="v">{{ c.mentions or 0 }}×</span>
+    </div>
+    {% endfor %}
+    <p style="font-size:.8rem;color:var(--muted);margin:10px 0 0;">Share of AI recommendations in your area. Every mention here is a patient who heard a competitor's name instead of yours.</p>
+  </div>
+  {% endif %}
+
+  {% if gap.uncited %}
+  <div class="card">
+    <h2>Questions AI answers — without you</h2>
+    <ul class="q">
+      {% for u in gap.uncited %}
+      <li><b>"{{ u.prompt }}"</b> — asked {{ u.checks }}×, you were not recommended once.</li>
+      {% endfor %}
+    </ul>
+    <p style="font-size:.8rem;color:var(--muted);margin:10px 0 0;">These are real questions patients ask AI assistants. Right now, your practice is invisible on every one.</p>
+  </div>
+  {% endif %}
+
+  <div class="cta">
+    <div style="font-size:1.15rem;font-weight:700;">This is fixable — and the practices that fix it first own these answers for years.</div>
+    <p style="color:#cfd6e6;font-size:.9rem;margin:8px 0 0;">PracticeRank makes AI assistants recommend your practice. We measure it every week and prove the lift.</p>
+    <a href="https://calendly.com/ethan-practicerank">Book a 20-min walkthrough →</a>
+  </div>
+
+  <div class="foot">Powered by PracticeRank · Measured live across ChatGPT, Gemini, Perplexity, Claude &amp; Grok{% if gap.date %} · {{ gap.date[:10] }}{% endif %}</div>
+</div>
+</body>
+</html>

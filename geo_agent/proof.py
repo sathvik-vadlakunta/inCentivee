@@ -38,6 +38,49 @@ def _delta(now: float | None, base: float | None) -> float | None:
     return round(now - base, 1)
 
 
+def build_ai_gap(db, customer_id: str) -> dict:
+    """Assemble the outreach 'AI gap' story from grounded data.
+
+    The cold-email / one-pager hook: 'we asked AI N times who the best [X] in
+    [city] is — you were recommended in Y, your competitor in Z. Here's what's
+    missing.' Reuses the 2.0 grounded run + share-of-voice + uncited queries.
+    """
+    customer = db.get_customer(customer_id) or {}
+    gap: dict = {
+        "customer_id": customer_id,
+        "customer_name": customer.get("name", customer_id),
+        "city": customer.get("city", ""),
+        "state": customer.get("state", ""),
+    }
+    runs = db.get_ai_mention_runs(customer_id, limit=1, methodology="2.0")
+    latest = runs[0] if runs else None
+    if latest:
+        gap.update({
+            "queries": latest.get("total_queries"),
+            "you_mentions": latest.get("total_mentions"),
+            "you_rate": _pct(latest.get("mention_rate", 0) or 0),
+            "engines": _engine_names(latest),
+            "date": latest.get("run_date"),
+        })
+    try:
+        sov = db.get_share_of_voice(customer_id, last_n_runs=4)
+        comps = sorted((sov.get("competitors") or []), key=lambda c: -(c.get("mention_count") or 0))
+        for c in comps:
+            c["mentions"] = c.get("mention_count", 0)  # template-friendly alias
+        gap["top_competitors"] = comps[:3]
+        gap["customer_mentions"] = sov.get("customer_mentions")
+        gap["customer_share"] = _pct(sov.get("customer_share", 0) or 0)
+    except Exception as e:
+        logger.warning(f"ai_gap: sov failed: {e}")
+        gap["top_competitors"] = []
+    try:
+        gap["uncited"] = db.get_uncited_prompts(customer_id)[:6]
+    except Exception as e:
+        logger.warning(f"ai_gap: uncited failed: {e}")
+        gap["uncited"] = []
+    return gap
+
+
 def build_proof_report(db, customer_id: str) -> dict:
     """Assemble the proof-of-improvement payload for a customer."""
     customer = db.get_customer(customer_id) or {}

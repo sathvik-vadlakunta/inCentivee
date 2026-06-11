@@ -23,6 +23,10 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:4px;"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 4-6"/></svg>
             Proof Report
         </a>
+        <a class="btn btn-outline" href="{{ url_for('customer_ai_gap', customer_id=customer.id) }}" target="_blank" style="padding:0.45rem 1.1rem;" title="Outreach one-pager: the AI-search gap vs competitors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:4px;"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            AI Gap
+        </a>
         <button class="btn btn-primary"
             hx-post="{{ url_for('api_trigger_run') }}"
             hx-vals='{"customer_id":"{{ customer.id }}"}'

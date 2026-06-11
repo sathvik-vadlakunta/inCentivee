@@ -73,6 +73,21 @@ def test_proof_template_renders(db):
     assert "PracticeRank" in html
 
 
+def test_build_ai_gap_renders(db):
+    from geo_agent.proof import build_ai_gap
+    from jinja2 import Environment, FileSystemLoader
+    from pathlib import Path
+    _save_run(db, "g1", "2026-03-01", 0.2, 4.0)  # 2.0 grounded run
+    gap = build_ai_gap(db, "acme")
+    assert gap["customer_name"] == "Acme Dental"
+    assert gap["you_rate"] == 20.0
+    tmpl_dir = Path(__file__).resolve().parents[2] / "dashboard" / "templates"
+    html = Environment(loader=FileSystemLoader(str(tmpl_dir))).get_template("ai_gap.html").render(
+        gap=gap, public=True, share_url=None
+    )
+    assert "Acme Dental" in html
+
+
 def test_minimal_report_no_runs(db):
     """A customer with no runs still produces a renderable (sparse) report."""
     report = build_proof_report(db, "acme")

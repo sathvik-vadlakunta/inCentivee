@@ -7146,6 +7146,43 @@ def public_proof(token):
         db.close()
 
 
+def _gap_serializer():
+    from itsdangerous import URLSafeSerializer
+    return URLSafeSerializer(app.secret_key, salt="practicerank-ai-gap")
+
+
+@app.route("/customer/<customer_id>/ai-gap")
+@login_required
+def customer_ai_gap(customer_id):
+    """Internal AI-gap one-pager (the outreach 'you're invisible' asset) + share link."""
+    db = get_db()
+    try:
+        from geo_agent.proof import build_ai_gap
+        gap = build_ai_gap(db, customer_id)
+        token = _gap_serializer().dumps(customer_id)
+        share_url = url_for("public_ai_gap", token=token, _external=True)
+        return render_template("ai_gap.html", gap=gap, public=False, share_url=share_url)
+    finally:
+        db.close()
+
+
+@app.route("/gap/<token>")
+def public_ai_gap(token):
+    """Public, read-only AI-gap one-pager via a signed link (for prospect outreach)."""
+    from itsdangerous import BadSignature
+    try:
+        customer_id = _gap_serializer().loads(token)
+    except BadSignature:
+        abort(404)
+    db = get_db()
+    try:
+        from geo_agent.proof import build_ai_gap
+        gap = build_ai_gap(db, customer_id)
+        return render_template("ai_gap.html", gap=gap, public=True, share_url=None)
+    finally:
+        db.close()
+
+
 def reap_stale_runs():
     """Mark runs left in 'running' with a dead/missing pid as failed.
 
