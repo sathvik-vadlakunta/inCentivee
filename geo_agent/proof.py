@@ -11,9 +11,21 @@ the report degrades gracefully for customers without (e.g.) GSC access.
 
 from __future__ import annotations
 
+import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _engine_names(run: dict) -> list[str]:
+    """Engine keys from a run's engines_json, guarded against malformed JSON."""
+    raw = run.get("engines_json")
+    if not raw:
+        return []
+    try:
+        return list(json.loads(raw).keys())
+    except Exception:
+        return []
 
 
 def _pct(x: float) -> float:
@@ -64,7 +76,7 @@ def build_proof_report(db, customer_id: str) -> dict:
             ),
             "baseline_avg_position": baseline.get("avg_position"),
             "latest_avg_position": latest.get("avg_position"),
-            "engines": list((latest.get("engines_json") and __import__("json").loads(latest["engines_json"]) or {}).keys()),
+            "engines": _engine_names(latest),
         }
     elif latest:
         report["ai_visibility"] = {

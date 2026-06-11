@@ -129,6 +129,10 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
             if er is None:
                 engines_checked.setdefault(ai_name, "no_api_key")
                 continue
+            if er.error:
+                engines_checked[ai_name] = "error"
+                logger.warning(f"  {ai_name} error: {er.error}")
+                continue
 
             response = er.text
             engines_checked[ai_name] = "active"
@@ -172,8 +176,8 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
     # Engine summary
     engine_summary = {}
     for ai_name, status in engines_checked.items():
-        if status == "no_api_key":
-            engine_summary[ai_name] = {"status": "no_api_key", "mentions": 0, "total": 0}
+        if status in ("no_api_key", "error"):
+            engine_summary[ai_name] = {"status": status, "mentions": 0, "total": 0}
         else:
             ai_results = [r for r in results if r["ai"] == ai_name]
             ai_mentions = sum(1 for r in ai_results if r["mentioned"])

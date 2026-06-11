@@ -1271,9 +1271,10 @@ class CustomerDB:
         self.conn.commit()
 
     def get_ai_mention_runs(self, customer_id: str, limit: int = 52) -> list[dict]:
-        """Get recent AI mention runs for a customer."""
+        """Get recent AI mention runs for a customer (newest first)."""
         cur = self.conn.execute(
-            "SELECT * FROM ai_mention_runs WHERE customer_id = ? ORDER BY run_date DESC LIMIT ?",
+            "SELECT * FROM ai_mention_runs WHERE customer_id = ? "
+            "ORDER BY run_date DESC, created_at DESC LIMIT ?",
             (customer_id, limit),
         )
         return [dict(r) for r in cur.fetchall()]
@@ -1297,12 +1298,17 @@ class CustomerDB:
         return dict(row) if row else None
 
     def ensure_baseline_run(self, customer_id: str) -> dict | None:
-        """Mark the earliest run as the baseline if none is marked yet."""
+        """Mark the earliest COMPLETED run as the baseline if none is marked yet.
+
+        Skips aborted runs (total_queries=0) so the proof report can't show a
+        fabricated 0%-to-now 'improvement' from a crashed first run.
+        """
         existing = self.get_baseline_run(customer_id)
         if existing:
             return existing
         first = self.conn.execute(
-            "SELECT * FROM ai_mention_runs WHERE customer_id = ? ORDER BY run_date ASC, created_at ASC LIMIT 1",
+            "SELECT * FROM ai_mention_runs WHERE customer_id = ? AND total_queries > 0 "
+            "ORDER BY run_date ASC, created_at ASC LIMIT 1",
             (customer_id,),
         ).fetchone()
         if not first:
@@ -1357,8 +1363,14 @@ class CustomerDB:
         counts: dict[str, int] = {}
         for row in rows:
             try:
-                for url in _json.loads(row["citations_json"] or "[]"):
-                    dom = urlparse(url).netloc.replace("www.", "")
+                for cite in _json.loads(row["citations_json"] or "[]"):
+                    if not cite:
+                        continue
+                    # Citations may be full URLs or bare domains (Gemini stores the
+                    # source domain, not a URL).
+                    dom = urlparse(cite).netloc or (cite if "/" not in cite and "." in cite else "")
+                    if dom.startswith("www."):
+                        dom = dom[4:]
                     if dom:
                         counts[dom] = counts.get(dom, 0) + 1
             except Exception:

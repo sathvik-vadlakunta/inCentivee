@@ -429,10 +429,16 @@ class EngineResult:
     text: str
     citations: list[str] = field(default_factory=list)
     model: str = ""
+    error: str = ""  # non-empty => the query FAILED (distinct from a missing API key)
 
 
 def _dedup(urls: list) -> list[str]:
     return list(dict.fromkeys(u for u in urls if u))
+
+
+def _err(model: str, e: Exception) -> "EngineResult":
+    """Build an error result so the orchestration can show 'error' (not 'no key')."""
+    return EngineResult(text="", citations=[], model=model, error=str(e)[:240])
 
 
 def query_claude(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
@@ -449,17 +455,19 @@ def query_claude(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineRes
             max_tokens=max_tokens,
             system=GROUNDED_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
-            tools=[{"type": "web_search_20260209", "name": "web_search"}],
+            tools=[{"type": "web_search_20260209", "name": "web_search", "max_uses": 4}],
         )
         text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
         citations = []
         for block in resp.content:
             for cite in (getattr(block, "citations", None) or []):
                 citations.append(getattr(cite, "url", None))
+        if not text.strip():
+            raise RuntimeError(f"empty response (stop_reason={getattr(resp, 'stop_reason', '?')})")
         return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Claude query failed: {e}")
-        return None
+        return _err(model, e)
 
 
 def query_openai(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
@@ -493,7 +501,7 @@ def query_openai(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineRes
             return EngineResult(text=(msg.get("content") or "").strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"OpenAI query failed: {e}")
-        return None
+        return _err(model, e)
 
 
 def query_perplexity(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
@@ -515,16 +523,20 @@ def query_perplexity(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> Engin
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": max_tokens,
-                    "return_citations": True,
                 },
             )
             resp.raise_for_status()
             data = resp.json()
             text = data["choices"][0]["message"]["content"]
-            return EngineResult(text=text.strip(), citations=_dedup(data.get("citations") or []), model=model)
+            # Perplexity removed the top-level `citations` field — sources are now in
+            # `search_results` (fall back to the legacy field for safety).
+            sources = [r.get("url") for r in (data.get("search_results") or [])]
+            if not sources:
+                sources = data.get("citations") or []
+            return EngineResult(text=text.strip(), citations=_dedup(sources), model=model)
     except Exception as e:
         logger.warning(f"Perplexity query failed: {e}")
-        return None
+        return _err(model, e)
 
 
 def query_gemini(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
@@ -542,51 +554,72 @@ def query_gemini(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineRes
                 json={
                     "contents": [{"parts": [{"text": f"{GROUNDED_SYSTEM}\n\n{prompt}"}]}],
                     "tools": [{"google_search": {}}],
-                    "generationConfig": {"maxOutputTokens": max_tokens},
+                    # thinkingBudget:0 — otherwise 2.5-flash can spend the whole token
+                    # budget "thinking" and return a candidate with no text (false miss).
+                    "generationConfig": {"maxOutputTokens": max_tokens, "thinkingConfig": {"thinkingBudget": 0}},
                 },
             )
             resp.raise_for_status()
             cand = resp.json()["candidates"][0]
             text = "".join(p.get("text", "") for p in cand.get("content", {}).get("parts", []))
+            # web.uri is a Google redirect that pollutes domain stats and expires;
+            # web.title carries the real source domain (e.g. "yelp.com").
             citations = [
-                (chunk.get("web") or {}).get("uri")
+                (chunk.get("web") or {}).get("title") or (chunk.get("web") or {}).get("uri")
                 for chunk in (cand.get("groundingMetadata", {}).get("groundingChunks") or [])
             ]
+            if not text.strip():
+                raise RuntimeError(f"empty response (finishReason={cand.get('finishReason', '?')})")
             return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Gemini query failed: {e}")
-        return None
+        return _err(model, e)
 
 
 def query_grok(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
-    """Query xAI Grok with live search enabled."""
+    """Query xAI Grok with web search via the Responses API.
+
+    The old chat/completions `search_parameters` ("Live Search") was retired by
+    xAI on 2026-01-12 and now returns 410 — this uses the current Responses API
+    with the server-side web_search tool.
+    """
     api_key = os.environ.get("XAI_API_KEY", "")
     if not api_key:
         return None
     model = ENGINE_MODELS["grok"]
     try:
         import httpx
-        with httpx.Client(timeout=60.0) as client:
+        with httpx.Client(timeout=90.0) as client:
             resp = client.post(
-                "https://api.x.ai/v1/chat/completions",
+                "https://api.x.ai/v1/responses",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
                 json={
                     "model": model,
-                    "messages": [
-                        {"role": "system", "content": GROUNDED_SYSTEM},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": max_tokens,
-                    "search_parameters": {"mode": "auto", "return_citations": True},
+                    "instructions": GROUNDED_SYSTEM,
+                    "input": prompt,
+                    "tools": [{"type": "web_search"}],
+                    "max_output_tokens": max_tokens,
                 },
             )
             resp.raise_for_status()
             data = resp.json()
-            text = data["choices"][0]["message"]["content"]
-            return EngineResult(text=text.strip(), citations=_dedup(data.get("citations") or []), model=model)
+            # OpenAI-Responses-compatible: prefer the convenience field, else walk output.
+            text = data.get("output_text") or ""
+            citations: list = []
+            for item in data.get("output", []):
+                for c in (item.get("content") or []):
+                    if c.get("type") in ("output_text", "text"):
+                        if not text:
+                            text += c.get("text", "")
+                        for ann in (c.get("annotations") or []):
+                            if ann.get("type") in ("url_citation", "citation"):
+                                citations.append(ann.get("url"))
+            if not text.strip():
+                raise RuntimeError("empty response from Grok responses API")
+            return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Grok query failed: {e}")
-        return None
+        return _err(model, e)
 
 
 # Generic business words that don't, on their own, identify a specific practice
@@ -626,8 +659,13 @@ def _name_matches(text_lower: str, practice_name: str) -> bool:
     if not distinctive:
         return False  # nothing distinctive — only an exact full-name match counts
 
-    # (b) a distinctive token adjacent to its neighbour, as a phrase
+    # (b) a distinctive token adjacent to its neighbour, as a phrase — but skip pairs
+    # joined by a connector ("of", "the", "and") so "Dental Care of Austin" doesn't
+    # match generic prose like "the best dentists of Austin".
+    connectors = {"of", "the", "and", "for", "in", "at", "a", "an", "&"}
     for a, b in zip(tokens, tokens[1:]):
+        if a in connectors or b in connectors:
+            continue
         if a in distinctive or b in distinctive:
             if re.search(r"\b" + re.escape(a) + r"\W+" + re.escape(b) + r"\b", text_lower):
                 return True
@@ -842,6 +880,9 @@ def main():
                 er = query_fn(prompt)
                 if er is None:
                     print(f"  {ai_name}: (no API key)")
+                    continue
+                if er.error:
+                    print(f"  {ai_name}: ERROR — {er.error}")
                     continue
                 response = er.text
 

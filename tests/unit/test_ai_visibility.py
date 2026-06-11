@@ -77,3 +77,16 @@ def test_no_match_when_only_unrelated_words_present():
 def test_core_tokens_drops_generics():
     assert cai._core_tokens("Summit Dental Care") == ["summit"]
     assert "law" not in cai._core_tokens("Parian Lawyers Law Group")
+
+
+def test_no_false_positive_on_of_city_name():
+    # "Dental Care of Austin" must NOT match generic "best dentists of Austin".
+    r = cai.check_mention("The best dentists of Austin are highly rated.", "Dental Care of Austin")
+    assert r["mentioned"] is False
+
+
+def test_error_result_distinct_from_no_key():
+    er = cai._err("some-model", RuntimeError("410 Gone"))
+    assert er.error and "410" in er.error and er.model == "some-model" and er.text == ""
+    # A no-key path returns None, an error path returns a result with .error set.
+    assert cai.EngineResult(text="ok").error == ""

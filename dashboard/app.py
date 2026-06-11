@@ -3785,6 +3785,15 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
                             prog["engines"].setdefault(ai_name, {"status": "no_api_key", "mentions": 0, "total": 0})
                         continue
 
+                    if er.error:
+                        engines_checked[ai_name] = "error"
+                        logger.warning(f"AI check {ai_name} error: {er.error}")
+                        with _ai_check_progress_lock:
+                            prog = _ai_check_progress[run_id]
+                            prog["completed_steps"] = completed_steps
+                            prog["engines"][ai_name] = {"status": "error", "mentions": 0, "total": 0, "error": er.error}
+                        continue
+
                     response = er.text
                     engines_checked[ai_name] = "active"
                     result = check_mention(response, customer["name"])

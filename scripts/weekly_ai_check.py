@@ -75,6 +75,9 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
             if er is None:
                 engine_stats.setdefault(ai_name, {"status": "no_key", "mentions": 0, "total": 0})
                 continue
+            if er.error:
+                engine_stats[ai_name] = {"status": "error", "mentions": engine_stats.get(ai_name, {}).get("mentions", 0), "total": engine_stats.get(ai_name, {}).get("total", 0)}
+                continue
             response = er.text
             engine_stats.setdefault(ai_name, {"status": "active", "mentions": 0, "total": 0})
             engine_stats[ai_name]["total"] += 1
