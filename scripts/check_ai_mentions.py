@@ -589,6 +589,58 @@ def query_grok(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResul
         return None
 
 
+# Generic business words that don't, on their own, identify a specific practice
+# (kept industry-agnostic so legal/medical names aren't matched too loosely).
+_GENERIC_NAME_WORDS = {
+    "dental", "dentistry", "family", "care", "clinic", "center", "centre",
+    "associates", "group", "partners", "practice", "health", "medical",
+    "law", "legal", "office", "offices", "the", "and", "of", "for",
+    "llc", "pllc", "pc", "pa", "llp", "inc", "co", "company", "services",
+    "orthodontics", "orthodontic", "pediatric", "cosmetic", "smiles", "smile",
+}
+
+
+def _core_tokens(name: str) -> list[str]:
+    """Distinctive tokens of a business name (drops punctuation + generic words)."""
+    import re
+    cleaned = re.sub(r"[^\w\s]", " ", name.lower())
+    return [w for w in cleaned.split() if len(w) > 2 and w not in _GENERIC_NAME_WORDS]
+
+
+def _name_matches(text_lower: str, practice_name: str) -> bool:
+    """Reliable practice-name match: avoids the old 'any single significant word' trap.
+
+    A bare generic/common token (e.g. 'summit' for 'Summit Dental Care') is NOT a
+    match. Matches when (a) the full name appears, (b) any two CONSECUTIVE name
+    words that include a distinctive token appear as a phrase ('summit dental' yes,
+    'summit' alone no), or (c) all distinctive tokens appear in order within a short
+    window (handles longer names phrased loosely).
+    """
+    import re
+    name_lower = practice_name.lower()
+    if name_lower in text_lower:
+        return True
+
+    tokens = re.sub(r"[^\w\s]", " ", name_lower).split()
+    distinctive = set(_core_tokens(practice_name))
+    if not distinctive:
+        return False  # nothing distinctive — only an exact full-name match counts
+
+    # (b) a distinctive token adjacent to its neighbour, as a phrase
+    for a, b in zip(tokens, tokens[1:]):
+        if a in distinctive or b in distinctive:
+            if re.search(r"\b" + re.escape(a) + r"\W+" + re.escape(b) + r"\b", text_lower):
+                return True
+
+    # (c) all distinctive tokens present, in order, within ≤3 words of each other
+    core = _core_tokens(practice_name)
+    if len(core) >= 2 and all(w in text_lower for w in core):
+        pattern = r"\b" + r"\W+(?:\w+\W+){0,3}?".join(re.escape(w) for w in core) + r"\b"
+        if re.search(pattern, text_lower):
+            return True
+    return False
+
+
 def check_mention(text: str, practice_name: str) -> dict:
     """Check if the practice is mentioned and track its position.
 
@@ -603,14 +655,7 @@ def check_mention(text: str, practice_name: str) -> dict:
     text_lower = text.lower()
     name_lower = practice_name.lower()
 
-    # Check full name
-    found = name_lower in text_lower
-
-    # Check significant words from the name
-    if not found:
-        words = [w for w in name_lower.split() if len(w) > 3 and w not in ("dental", "dentistry", "family", "care")]
-        if words and all(w in text_lower for w in words):
-            found = True
+    found = _name_matches(text_lower, practice_name)
 
     if not found:
         return {"mentioned": False, "position": None, "context": ""}

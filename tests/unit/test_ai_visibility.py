@@ -49,3 +49,31 @@ def test_find_position_bullet_is_one_based():
 def test_find_position_numbered():
     text = "1. First Dental\n2. Hilltop Family Dental\n3. Third"
     assert cai._find_position(text, "Hilltop Family Dental") == 2
+
+
+# --- mention-detection reliability (false positives + recall) ---
+
+def test_no_false_positive_on_bare_generic_token():
+    # The old logic matched any response containing 'summit'. It must NOT now.
+    r = cai.check_mention("Summit Medical Center is a great hospital downtown.", "Summit Dental Care")
+    assert r["mentioned"] is False
+
+
+def test_matches_distinctive_bigram():
+    r = cai.check_mention("I'd recommend Summit Dental for implants.", "Summit Dental Care")
+    assert r["mentioned"] is True
+
+
+def test_matches_full_name():
+    r = cai.check_mention("Hilltop Family Dental is excellent in Austin.", "Hilltop Family Dental")
+    assert r["mentioned"] is True
+
+
+def test_no_match_when_only_unrelated_words_present():
+    r = cai.check_mention("The dental care here is good, very caring family practice.", "Summit Dental Care")
+    assert r["mentioned"] is False
+
+
+def test_core_tokens_drops_generics():
+    assert cai._core_tokens("Summit Dental Care") == ["summit"]
+    assert "law" not in cai._core_tokens("Parian Lawyers Law Group")
