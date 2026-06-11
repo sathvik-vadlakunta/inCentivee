@@ -190,15 +190,18 @@ def build_benchmark_prompts(
         add(f"is {practice_name} a good medical practice", "reputation")
 
     else:
-        # Generic business type
-        add(f"best {business_type} in {city} {state}", "general")
-        add(f"top {business_type} companies", "general")
-        add(f"find a {business_type} in {city} {state}", "general")
+        # Generic business type. Humanize the type token for natural phrasing —
+        # nobody searches "best precious_metals_buyer", they search "best
+        # precious metals buyer". Matching logic above still uses the raw type.
+        bt = business_type.replace("_", " ")
+        add(f"best {bt} in {city} {state}", "general")
+        add(f"top {bt} companies", "general")
+        add(f"find a {bt} in {city} {state}", "general")
 
         for svc in all_services[:8]:
             add(f"best {svc.lower()}", "service")
 
-        add(f"recommend a {business_type} in {city} {state}", "recommendation")
+        add(f"recommend a {bt} in {city} {state}", "recommendation")
         if competitors:
             for comp in competitors[:2]:
                 add(f"{practice_name} vs {comp}", "comparison")

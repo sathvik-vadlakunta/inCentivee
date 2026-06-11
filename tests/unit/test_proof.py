@@ -88,6 +88,23 @@ def test_build_ai_gap_renders(db):
     assert "Acme Dental" in html
 
 
+def test_proof_template_renders_single_run(db):
+    """A customer with ONE grounded run (baseline snapshot, no before/after) must
+    still render — regression for the Jinja `undefined is not none` crash."""
+    from jinja2 import Environment, FileSystemLoader
+    _save_run(db, "only", "2026-06-11", 0.8, 1.5)  # single 2.0 run
+    report = build_proof_report(db, "acme")
+    av = report["ai_visibility"]
+    assert av["latest_mention_rate"] == 80.0
+    assert av["baseline_avg_position"] is None  # key present, explicitly None
+    tmpl_dir = Path(__file__).resolve().parents[2] / "dashboard" / "templates"
+    html = Environment(loader=FileSystemLoader(str(tmpl_dir))).get_template("proof.html").render(
+        report=report, public=True, share_url=None
+    )
+    assert "Acme Dental" in html
+    assert "80.0" in html
+
+
 def test_minimal_report_no_runs(db):
     """A customer with no runs still produces a renderable (sparse) report."""
     report = build_proof_report(db, "acme")

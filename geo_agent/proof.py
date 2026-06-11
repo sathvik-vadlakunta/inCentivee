@@ -138,10 +138,17 @@ def build_proof_report(db, customer_id: str) -> dict:
             "engines": _engine_names(latest),
         }
     elif latest:
+        # Single grounded run so far — a baseline snapshot, not a before/after.
+        # Declare baseline_* keys as None so template `is not none` guards work
+        # (Jinja treats *undefined* as not-none and would crash on format()).
         report["ai_visibility"] = {
             "latest_date": latest.get("run_date"),
             "latest_mention_rate": _pct(latest.get("mention_rate", 0) or 0),
             "latest_avg_position": latest.get("avg_position"),
+            "baseline_mention_rate": None,
+            "mention_rate_delta": None,
+            "baseline_avg_position": None,
+            "engines": _engine_names(latest),
             "note": "Baseline will lock after the first scheduled run.",
         }
 
