@@ -34,6 +34,14 @@ const lede = isHome
   : isCounty
     ? `Hilltop Family Dentistry proudly serves families throughout ${area} from our convenient office in ${practice.address.city}.`
     : `Looking for a dentist near ${area}, Wyoming? Hilltop Family Dentistry is just ${driveTime || 'a short drive'} away in ${practice.address.city} — an easy trip for ${area} families of all ages.`
+
+const dest = encodeURIComponent(`${practice.address.street}, ${practice.address.city}, ${practice.address.state} ${practice.address.zip}`)
+const origin = encodeURIComponent(`${area}, WY`)
+const showDirections = !isHome && !isCounty
+const mapSrc = showDirections
+  ? `https://maps.google.com/maps?saddr=${origin}&daddr=${dest}&output=embed`
+  : `https://maps.google.com/maps?q=${dest}&output=embed`
+const directionsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}`
 ---
 
 <Base
@@ -78,6 +86,21 @@ const lede = isHome
   </section>
 
   <div class="bg-light"><Testimonials limit={3} heading={`What ${area}-area patients say`} /></div>
+
+  <!-- Directions map -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px grid lg:grid-cols-3 gap-8 items-center">
+      <div class="reveal">
+        <p class="eyebrow">Easy to find</p>
+        <h2 class="mt-4 text-3xl font-semibold text-dark">{showDirections ? `Directions from ${area}` : `Find us in ${practice.address.city}`}</h2>
+        <p class="mt-3 text-dark/65">{driveTime ? `Just ${driveTime} from ${area} — ` : ''}we're at {practice.address.street}, {practice.address.city}, {practice.address.state} {practice.address.zip}.</p>
+        <a href={directionsUrl} target="_blank" rel="noopener" class="btn btn-gold mt-5">Get directions ↗</a>
+      </div>
+      <div class="lg:col-span-2 reveal rounded-2xl overflow-hidden shadow-lg ring-1 ring-black/5 aspect-[16/9]">
+        <iframe src={mapSrc} class="w-full h-full" style="border:0" loading="lazy" title={`Directions to ${practice.name} from ${area}`} referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </section>
 
   <!-- Local schema -->
   <script type="application/ld+json" set:html={JSON.stringify({

@@ -3,7 +3,7 @@ title: Dental Implants
 description: "The gold standard for replacing missing teeth — implants look, feel, and function like natural teeth and can last a lifetime."
 category: Restorative Dentistry
 order: 10
-image: /images/photo-03.jpg
+image: /images/photo-16.jpg
 faqs:
   - question: "What is the success rate of dental implants?"
     answer: "Modern dental implants have a very high success rate — the AAID reports first-year survival above 97% and long-term success commonly above 95%, depending on your health and oral hygiene."

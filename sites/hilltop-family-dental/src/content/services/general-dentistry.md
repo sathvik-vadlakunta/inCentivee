@@ -3,7 +3,7 @@ title: General & Family Dentistry
 description: "Comprehensive preventive and family dental care for every age — cleanings, exams, fillings, and more, in one comfortable Casper office."
 category: General & Family Dentistry
 order: 10
-image: /images/photo-01.jpg
+image: /images/smile-1.jpg
 faqs:
   - question: "How often should I visit the dentist?"
     answer: "For most patients, a cleaning and exam every six months keeps your smile healthy and catches issues early. If you have gum disease or other risk factors, we may recommend more frequent visits."
