@@ -98,5 +98,15 @@ const gsc: string = analytics.googleSiteVerification || ''
       if (document.readyState !== 'loading') prSetupReveal()
       else document.addEventListener('DOMContentLoaded', prSetupReveal)
     </script>
+    <!-- Conversion: click-to-call (document-level, survives View Transitions) -->
+    <script is:inline>
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest && e.target.closest('a[href^="tel:"]')
+        if (a) {
+          window.dataLayer = window.dataLayer || []
+          window.dataLayer.push({ event: 'click_to_call' })
+        }
+      })
+    </script>
   </body>
 </html>

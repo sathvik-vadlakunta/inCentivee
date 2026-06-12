@@ -57,10 +57,14 @@ const area = (practice as any).areaServed ?? []
         </ul>
       </div>
 
-      <!-- Area served -->
+      <!-- Area served (local SEO landing pages) -->
       <div>
         <h3 class="text-white text-sm font-semibold uppercase tracking-wider mb-4">Proudly Serving</h3>
-        <p class="text-sm leading-relaxed">{area.length ? area.join(' · ') : 'Casper, Wyoming'}</p>
+        <ul class="space-y-1.5 text-sm">
+          {(area.length ? area : ['Casper']).map((a: string) => (
+            <li><a href={`/dentist/${a.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} class="hover:text-white transition-colors">Dentist in {a}</a></li>
+          ))}
+        </ul>
         <a href="/contact" class="btn btn-gold mt-5 !py-2 !px-5 text-sm">Book an Appointment</a>
       </div>
     </div>

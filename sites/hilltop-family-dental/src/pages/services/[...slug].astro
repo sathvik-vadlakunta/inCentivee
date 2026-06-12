@@ -32,6 +32,7 @@ const related = services
 const tel = practice.phone.replace(/[^+\d]/g, '')
 const domain = practice.domain
 const featuredReview = testimonials[service.slug.length % testimonials.length]
+const financingUrl = (practice as any).financingUrl || '/new-patients'
 ---
 
 <Base title={service.data.title} description={service.data.description}>
@@ -87,6 +88,10 @@ const featuredReview = testimonials[service.slug.length % testimonials.length]
         <p class="mt-2 text-sm text-dark/60">Book your {service.data.title.toLowerCase()} consultation at {practice.name} in {practice.address.city}.</p>
         <a href="/contact" class="btn btn-gold w-full mt-4">Request an appointment</a>
         <a href={`tel:${tel}`} class="btn btn-outline w-full mt-2">{practice.phone}</a>
+        <a href={financingUrl} class="mt-3 flex items-center justify-center gap-1.5 text-sm text-primary font-medium hover:underline">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          Flexible monthly payments with Cherry
+        </a>
         {featuredReview && (
           <figure class="mt-5 pt-5 border-t border-black/5">
             <div class="flex gap-0.5 text-accent" aria-label="5 out of 5 stars">

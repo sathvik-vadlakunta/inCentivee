@@ -32,6 +32,15 @@ const schema = {
     })),
   medicalSpecialty: practice.serviceCategories,
   sameAs: Object.values(practice.social).filter(Boolean),
+  aggregateRating:
+    (practice as any).reviews?.count > 0
+      ? {
+          '@type': 'AggregateRating',
+          ratingValue: (practice as any).reviews.rating,
+          reviewCount: (practice as any).reviews.count,
+          bestRating: 5,
+        }
+      : undefined,
 }
 ---
 

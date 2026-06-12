@@ -80,6 +80,8 @@ import practice from '@data/practice.json'
         status.textContent = 'Thank you! We\'ll be in touch shortly.'
         status.className = 'text-sm text-center text-green-600'
         form.reset()
+        window.dataLayer = window.dataLayer || []
+        window.dataLayer.push({ event: 'form_submit', form_name: 'appointment_request' })
       } else {
         throw new Error('Failed')
       }

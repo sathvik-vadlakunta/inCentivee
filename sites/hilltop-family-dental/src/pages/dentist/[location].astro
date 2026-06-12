@@ -1,0 +1,78 @@
+---
+import Base from '@layouts/Base.astro'
+import ServiceCard from '@components/ServiceCard.astro'
+import Testimonials from '@components/Testimonials.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+export function getStaticPaths() {
+  const areas: string[] = (practice as any).areaServed ?? []
+  return areas.map((area) => ({
+    params: { location: area.toLowerCase().replace(/[^a-z0-9]+/g, '-') },
+    props: { area },
+  }))
+}
+
+const { area } = Astro.props
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const domain = practice.domain
+const reviews = (practice as any).reviews ?? {}
+const isHome = area.toLowerCase() === practice.address.city.toLowerCase()
+const lede = isHome
+  ? `Hilltop Family Dentistry is proud to be ${area}'s trusted family and cosmetic dental home — right here at ${practice.address.street}.`
+  : `Looking for a dentist near ${area}, Wyoming? Hilltop Family Dentistry is just a short drive away in ${practice.address.city}, and we happily welcome ${area} families of all ages.`
+---
+
+<Base
+  title={`Dentist in ${area}, WY`}
+  description={`Hilltop Family Dentistry welcomes ${area}, Wyoming families — general, cosmetic, implant, and Invisalign dentistry. ${reviews.rating}★ from ${reviews.count}+ reviews. Call ${practice.phone}.`}
+>
+  <!-- Hero -->
+  <section class="relative overflow-hidden bg-secondary text-white">
+    <img src="/images/mountains.jpg" alt={`Dentist serving ${area}, WY`} class="absolute inset-0 w-full h-full object-cover opacity-25" />
+    <div class="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/90 to-dark/70"></div>
+    <div class="container-px relative py-20 lg:py-24">
+      <p class="eyebrow text-accent-soft">{area}, Wyoming</p>
+      <h1 class="mt-4 max-w-3xl text-4xl sm:text-5xl font-semibold">Your trusted dentist for {area} families</h1>
+      <p class="mt-5 max-w-2xl text-lg text-white/80">{lede}</p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3">
+        <a href="/contact" class="btn btn-gold">Book an appointment</a>
+        <a href={`tel:${tel}`} class="btn btn-ghost">Call {practice.phone}</a>
+      </div>
+      {reviews.count && <p class="mt-5 text-sm text-white/75">★ {reviews.rating} from {reviews.count.toLocaleString()}+ Google reviews — the most-reviewed dental office in the Casper area.</p>}
+    </div>
+  </section>
+
+  <!-- Intro + services -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px">
+      <div class="max-w-3xl reveal">
+        <h2 class="text-3xl font-semibold text-dark">Complete dental care, minutes from {area}</h2>
+        <p class="mt-4 text-dark/70 leading-relaxed">From routine cleanings and fillings to dental implants, Invisalign, dentures, and sleep apnea treatment, Dr. Gallup, Dr. Milmont, and our team provide comprehensive, comfortable care for {area} patients of every age — with most major insurance accepted, plus Cherry financing and an in-house membership plan.</p>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map((s) => (
+          <div class="reveal"><ServiceCard title={s.data.title} description={s.data.description} href={`/services/${s.slug}`} category={s.data.category} /></div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <div class="bg-light"><Testimonials limit={3} heading={`What ${area}-area patients say`} /></div>
+
+  <!-- Local schema -->
+  <script type="application/ld+json" set:html={JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Dentist',
+    name: `${practice.name} — serving ${area}, WY`,
+    url: `https://${domain}/dentist/${area.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+    telephone: practice.phone,
+    address: { '@type': 'PostalAddress', streetAddress: practice.address.street, addressLocality: practice.address.city, addressRegion: practice.address.state, postalCode: practice.address.zip, addressCountry: 'US' },
+    areaServed: { '@type': 'City', name: `${area}, WY` },
+    aggregateRating: reviews.count ? { '@type': 'AggregateRating', ratingValue: reviews.rating, reviewCount: reviews.count, bestRating: 5 } : undefined,
+  })} />
+
+  <CTABanner title={`${area}'s dentist is ready to see you`} subtitle={`New patients from ${area} are always welcome at Hilltop Family Dentistry.`} />
+</Base>

@@ -15,6 +15,24 @@ import practice from '@data/practice.json'
     cta={{ label: 'Become a patient', href: '/contact' }}
   />
 
+  <!-- Aggregate rating band -->
+  {(practice as any).reviews?.count && (
+    <section class="bg-light border-b border-black/5">
+      <div class="container-px py-10 flex flex-col sm:flex-row items-center justify-center gap-x-8 gap-y-4 text-center">
+        <div class="flex items-center gap-3">
+          <span class="text-4xl font-semibold text-dark" style="font-family:var(--font-heading)">{(practice as any).reviews.rating}</span>
+          <span class="flex gap-0.5 text-accent">
+            {[0, 1, 2, 3, 4].map(() => (<svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>))}
+          </span>
+        </div>
+        <p class="text-dark/70"><strong class="text-dark">{(practice as any).reviews.count.toLocaleString()}+</strong> Google reviews — the most-reviewed dental office in the Casper area.</p>
+        {(practice as any).reviews.googleReviewUrl && (
+          <a href={(practice as any).reviews.googleReviewUrl} target="_blank" rel="noopener" class="btn btn-gold !py-2 text-sm">Leave us a review</a>
+        )}
+      </div>
+    </section>
+  )}
+
   <Testimonials limit={testimonials.length} heading="Reviews from Casper families" />
 
   <CTABanner />

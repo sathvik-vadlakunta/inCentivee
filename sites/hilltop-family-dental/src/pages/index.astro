@@ -9,6 +9,9 @@ import { getCollection } from 'astro:content'
 const allServices = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
 const tel = practice.phone.replace(/[^+\d]/g, '')
 
+const reviews = (practice as any).reviews ?? {}
+const reviewsBadge = reviews.count ? (Math.floor(reviews.count / 100) * 100).toLocaleString() + '+' : ''
+
 // Marquee services for the homepage grid (their real offerings)
 const featuredSlugs = [
   'general-dentistry',
@@ -74,6 +77,14 @@ const initials = (name) =>
             {practice.phone}
           </a>
         </div>
+        {reviewsBadge && (
+          <a href="/reviews" class="mt-7 inline-flex items-center gap-3 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 pl-3 pr-4 py-2 transition-colors">
+            <span class="flex gap-0.5 text-accent">
+              {[0, 1, 2, 3, 4].map(() => (<svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>))}
+            </span>
+            <span class="text-sm text-white/90"><strong class="text-white">{reviews.rating}</strong> · {reviewsBadge} Google reviews</span>
+          </a>
+        )}
         <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/75">
           <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> New patients welcome</span>
           <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> Cherry financing &amp; membership plan</span>
