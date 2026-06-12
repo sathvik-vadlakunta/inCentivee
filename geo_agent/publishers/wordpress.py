@@ -248,8 +248,14 @@ class WordPressPublisher:
         llms_txt: str | None = None,
         llms_full_txt: str | None = None,
         robots_txt: str | None = None,
+        sitemap_xml: str | None = None,
     ) -> dict | None:
-        """Push llms.txt, llms-full.txt, and/or robots.txt to WordPress."""
+        """Push llms.txt, llms-full.txt, robots.txt, and/or sitemap.xml to WordPress.
+
+        Note: the plugin only *serves* a pushed sitemap.xml at /sitemap.xml when
+        the operator enables "Managed Sitemap" in Settings → PracticeRank (off by
+        default, so it never clobbers Yoast/RankMath/WP-core sitemaps).
+        """
         payload = {}
         if llms_txt is not None:
             payload["llms.txt"] = llms_txt
@@ -257,6 +263,8 @@ class WordPressPublisher:
             payload["llms-full.txt"] = llms_full_txt
         if robots_txt is not None:
             payload["robots.txt"] = robots_txt
+        if sitemap_xml is not None:
+            payload["sitemap.xml"] = sitemap_xml
 
         if not payload:
             return None

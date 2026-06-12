@@ -2,8 +2,8 @@
 /**
  * Plugin Name: PracticeRank SEO
  * Plugin URI: https://practicerank.ai
- * Description: Full SEO/AEO integration — JSON-LD schema injection, llms.txt serving, content publishing via REST API, and AI-optimized robots.txt.
- * Version: 2.0
+ * Description: Full SEO/AEO integration — JSON-LD schema injection, llms.txt/sitemap serving, content publishing via REST API + MCP server (Claude Code), and AI-optimized robots.txt.
+ * Version: 2.1
  * Author: PracticeRank
  * Author URI: https://practicerank.ai
  * License: Proprietary
@@ -15,7 +15,7 @@
 // Prevent direct access
 if (!defined('ABSPATH')) exit;
 
-define('PRACTICERANK_VERSION', '2.0');
+define('PRACTICERANK_VERSION', '2.1');
 define('PRACTICERANK_OPTION_PREFIX', 'practicerank_');
 
 // Minimum requirements
@@ -83,6 +83,11 @@ function practicerank_activate() {
     if (get_option(PRACTICERANK_OPTION_PREFIX . 'content_as_draft') === false) {
         update_option(PRACTICERANK_OPTION_PREFIX . 'content_as_draft', '1');
     }
+    // Sitemap override defaults OFF — opt-in to avoid clobbering an existing
+    // SEO plugin's sitemap (Yoast/RankMath) or WP core's /wp-sitemap.xml.
+    if (get_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled') === false) {
+        update_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled', '0');
+    }
 
     // Rewrite rules
     practicerank_add_rewrite_rules();
@@ -100,6 +105,11 @@ add_action('init', 'practicerank_add_rewrite_rules');
 function practicerank_add_rewrite_rules() {
     add_rewrite_rule('^llms\.txt$', 'index.php?practicerank_file=llms.txt', 'top');
     add_rewrite_rule('^llms-full\.txt$', 'index.php?practicerank_file=llms-full.txt', 'top');
+    // Sitemap override is opt-in so we never clobber Yoast / RankMath / WP-core
+    // sitemaps. Only register the route when the operator has enabled it.
+    if (get_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled') === '1') {
+        add_rewrite_rule('^sitemap\.xml$', 'index.php?practicerank_file=sitemap.xml', 'top');
+    }
 }
 
 add_filter('query_vars', function($vars) {
@@ -115,9 +125,11 @@ add_action('template_redirect', function() {
     $filepath = $upload_dir['basedir'] . '/practicerank/' . basename($file);
 
     if (file_exists($filepath)) {
-        header('Content-Type: text/plain; charset=utf-8');
+        $is_xml = substr($file, -4) === '.xml';
+        header('Content-Type: ' . ($is_xml ? 'application/xml; charset=utf-8' : 'text/plain; charset=utf-8'));
         header('Cache-Control: public, max-age=3600');
-        header('X-Robots-Tag: noindex');
+        // Text discovery files are noindex; a sitemap must remain crawlable.
+        if (!$is_xml) header('X-Robots-Tag: noindex');
         header('X-Generated-By: PracticeRank');
         readfile($filepath);
         exit;
@@ -213,6 +225,11 @@ add_filter('robots_txt', function($output, $public) {
     $output .= "# llms.txt: {$site_url}/llms.txt\n";
     $output .= "# llms-full.txt: {$site_url}/llms-full.txt\n";
 
+    // Advertise our sitemap only when we're actually serving one.
+    if (get_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled') === '1') {
+        $output .= "Sitemap: {$site_url}/sitemap.xml\n";
+    }
+
     return $output;
 }, 10, 2);
 
@@ -264,6 +281,225 @@ function practicerank_register_routes() {
         'callback' => 'practicerank_api_site_info',
         'permission_callback' => 'practicerank_check_api_key',
     ]);
+
+    // MCP endpoint (Model Context Protocol over Streamable HTTP).
+    // Lets an MCP client (e.g. Claude Code) drive the site conversationally.
+    // The whole endpoint is behind the API-key check — no anonymous access.
+    register_rest_route($namespace, '/mcp', [
+        'methods' => ['GET', 'POST', 'DELETE'],
+        'callback' => 'practicerank_mcp_handler',
+        'permission_callback' => 'practicerank_check_api_key',
+    ]);
+}
+
+// ─── MCP Server (Streamable HTTP, JSON-RPC 2.0) ─────────────────────────────
+// A self-contained Model Context Protocol endpoint so an MCP client (Claude
+// Code) can drive the site directly: no separate adapter plugin, no Node proxy.
+// Every tool reuses an existing REST handler, so all the input sanitization,
+// draft-by-default, and dup-slug protection already in place still apply.
+// The route is registered behind practicerank_check_api_key, so the endpoint
+// is never anonymous. It is purely additive — it touches no core behavior.
+
+function practicerank_mcp_handler($request) {
+    $http_method = $request->get_method();
+
+    // We do not offer a server-initiated SSE stream; per the Streamable HTTP
+    // spec, GET (and session DELETE) must then return 405.
+    if ($http_method !== 'POST') {
+        return new WP_REST_Response(null, 405);
+    }
+
+    $msg = $request->get_json_params();
+    if (!is_array($msg)) {
+        return practicerank_mcp_error(null, -32700, 'Parse error');
+    }
+
+    $id = array_key_exists('id', $msg) ? $msg['id'] : null;
+    $rpc_method = isset($msg['method']) ? (string) $msg['method'] : '';
+    $params = (isset($msg['params']) && is_array($msg['params'])) ? $msg['params'] : [];
+
+    // A JSON-RPC notification/response (no id) is acknowledged with 202, no body.
+    if ($id === null) {
+        return new WP_REST_Response(null, 202);
+    }
+
+    switch ($rpc_method) {
+        case 'initialize':
+            $client_ver = isset($params['protocolVersion']) ? (string) $params['protocolVersion'] : '2025-06-18';
+            return practicerank_mcp_result($id, [
+                'protocolVersion' => $client_ver,
+                'capabilities' => ['tools' => ['listChanged' => false]],
+                'serverInfo' => ['name' => 'PracticeRank SEO', 'version' => PRACTICERANK_VERSION],
+            ]);
+
+        case 'ping':
+            return practicerank_mcp_result($id, (object) []);
+
+        case 'tools/list':
+            return practicerank_mcp_result($id, ['tools' => practicerank_mcp_tools()]);
+
+        case 'tools/call':
+            return practicerank_mcp_tools_call($id, $params);
+
+        default:
+            return practicerank_mcp_error($id, -32601, 'Method not found: ' . $rpc_method);
+    }
+}
+
+function practicerank_mcp_result($id, $result) {
+    return new WP_REST_Response(['jsonrpc' => '2.0', 'id' => $id, 'result' => $result], 200);
+}
+
+function practicerank_mcp_error($id, $code, $message, $data = null) {
+    $err = ['code' => $code, 'message' => $message];
+    if ($data !== null) $err['data'] = $data;
+    return new WP_REST_Response(['jsonrpc' => '2.0', 'id' => $id, 'error' => $err], 200);
+}
+
+function practicerank_mcp_tools() {
+    $obj = new stdClass();
+    return [
+        [
+            'name' => 'health',
+            'description' => 'Check plugin/site health and which SEO assets are active.',
+            'inputSchema' => ['type' => 'object', 'properties' => $obj],
+        ],
+        [
+            'name' => 'get_site_info',
+            'description' => 'List the site pages, posts, and categories.',
+            'inputSchema' => ['type' => 'object', 'properties' => $obj],
+        ],
+        [
+            'name' => 'publish_content',
+            'description' => 'Create a blog post or page. Saved as a draft by default unless publish=true.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'title' => ['type' => 'string'],
+                    'content' => ['type' => 'string', 'description' => 'HTML body'],
+                    'type' => ['type' => 'string', 'enum' => ['post', 'page']],
+                    'slug' => ['type' => 'string'],
+                    'excerpt' => ['type' => 'string'],
+                    'category' => ['type' => 'string'],
+                    'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
+                    'meta_description' => ['type' => 'string'],
+                    'publish' => ['type' => 'boolean'],
+                ],
+                'required' => ['title', 'content'],
+            ],
+        ],
+        [
+            'name' => 'update_content',
+            'description' => 'Update an existing post or page by numeric ID.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'id' => ['type' => 'integer'],
+                    'title' => ['type' => 'string'],
+                    'content' => ['type' => 'string'],
+                    'excerpt' => ['type' => 'string'],
+                    'status' => ['type' => 'string'],
+                    'meta_description' => ['type' => 'string'],
+                    'category' => ['type' => 'string'],
+                    'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
+                ],
+                'required' => ['id'],
+            ],
+        ],
+        [
+            'name' => 'push_schema',
+            'description' => 'Push JSON-LD schema. Keys: global (array), pages (object slug→array), faqs (object).',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'global' => ['type' => 'array'],
+                    'pages' => ['type' => 'object'],
+                    'faqs' => ['type' => 'object'],
+                ],
+            ],
+        ],
+        [
+            'name' => 'push_files',
+            'description' => 'Write llms.txt, llms-full.txt, robots.txt, and/or sitemap.xml.',
+            'inputSchema' => [
+                'type' => 'object',
+                'properties' => [
+                    'llms.txt' => ['type' => 'string'],
+                    'llms-full.txt' => ['type' => 'string'],
+                    'robots.txt' => ['type' => 'string'],
+                    'sitemap.xml' => ['type' => 'string'],
+                ],
+            ],
+        ],
+    ];
+}
+
+function practicerank_mcp_tools_call($id, $params) {
+    $name = isset($params['name']) ? (string) $params['name'] : '';
+    $args = (isset($params['arguments']) && is_array($params['arguments'])) ? $params['arguments'] : [];
+
+    try {
+        switch ($name) {
+            case 'health':
+                $r = practicerank_mcp_call_handler('practicerank_api_health');
+                break;
+            case 'get_site_info':
+                $r = practicerank_mcp_call_handler('practicerank_api_site_info');
+                break;
+            case 'publish_content':
+                $r = practicerank_mcp_call_handler('practicerank_api_push_content', $args);
+                break;
+            case 'update_content':
+                $cid = isset($args['id']) ? (int) $args['id'] : 0;
+                unset($args['id']);
+                $r = practicerank_mcp_call_handler('practicerank_api_update_content', $args, ['id' => $cid]);
+                break;
+            case 'push_schema':
+                $r = practicerank_mcp_call_handler('practicerank_api_push_schema', $args);
+                break;
+            case 'push_files':
+                $r = practicerank_mcp_call_handler('practicerank_api_push_files', $args);
+                break;
+            default:
+                return practicerank_mcp_error($id, -32602, 'Unknown tool: ' . $name);
+        }
+    } catch (Throwable $e) {
+        // Never leak internals or fatally break the request on a handler error.
+        return practicerank_mcp_tool_text($id, 'Tool execution failed.', true);
+    }
+
+    $payload = array_key_exists('data', $r) ? $r['data'] : $r;
+    $text = wp_json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    return practicerank_mcp_tool_text($id, $text, empty($r['ok']));
+}
+
+// Invoke an existing REST handler in-process and normalize its result so we
+// reuse every bit of its validation/sanitization instead of duplicating it.
+function practicerank_mcp_call_handler($fn, array $body = [], array $route_params = []) {
+    $req = new WP_REST_Request('POST', '');
+    $req->set_header('Content-Type', 'application/json');
+    if (!empty($body)) {
+        $req->set_body(wp_json_encode($body));
+    }
+    foreach ($route_params as $k => $v) {
+        $req->set_param($k, $v);
+    }
+    $res = call_user_func($fn, $req);
+    if (is_wp_error($res)) {
+        return ['ok' => false, 'data' => ['error' => $res->get_error_message()]];
+    }
+    if ($res instanceof WP_REST_Response) {
+        $status = $res->get_status();
+        return ['ok' => ($status >= 200 && $status < 300), 'data' => $res->get_data()];
+    }
+    return ['ok' => true, 'data' => $res];
+}
+
+function practicerank_mcp_tool_text($id, $text, $isError = false) {
+    return practicerank_mcp_result($id, [
+        'content' => [['type' => 'text', 'text' => (string) $text]],
+        'isError' => (bool) $isError,
+    ]);
 }
 
 function practicerank_check_api_key($request) {
@@ -308,6 +544,9 @@ function practicerank_api_health($request) {
         'schema_enabled' => get_option(PRACTICERANK_OPTION_PREFIX . 'schema_enabled') === '1',
         'has_llms_txt' => file_exists($pr_dir . '/llms.txt'),
         'has_schema' => is_dir($pr_dir . '/schema'),
+        'has_sitemap' => file_exists($pr_dir . '/sitemap.xml'),
+        'sitemap_enabled' => get_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled') === '1',
+        'mcp_endpoint' => get_rest_url(null, 'practicerank/v1/mcp'),
         'content_as_draft' => get_option(PRACTICERANK_OPTION_PREFIX . 'content_as_draft') === '1',
         'timezone' => wp_timezone_string(),
     ]);
@@ -378,7 +617,7 @@ function practicerank_api_push_files($request) {
         wp_mkdir_p($pr_dir);
     }
 
-    $allowed_files = ['llms.txt', 'llms-full.txt', 'robots.txt'];
+    $allowed_files = ['llms.txt', 'llms-full.txt', 'robots.txt', 'sitemap.xml'];
     $written = [];
 
     foreach ($body as $filename => $content) {
@@ -389,8 +628,9 @@ function practicerank_api_push_files($request) {
         $written[] = $filename;
     }
 
-    // Flush rewrite rules if llms.txt files were updated (ensures routes work)
-    if (array_intersect($written, ['llms.txt', 'llms-full.txt'])) {
+    // Flush rewrite rules when a routed file changed so /llms.txt and
+    // /sitemap.xml resolve. (robots.txt is served via filter, not a route.)
+    if (array_intersect($written, ['llms.txt', 'llms-full.txt', 'sitemap.xml'])) {
         flush_rewrite_rules();
     }
 
@@ -770,6 +1010,16 @@ add_action('admin_init', function() {
     register_setting('practicerank_settings', PRACTICERANK_OPTION_PREFIX . 'content_as_draft', [
         'sanitize_callback' => function($input) { return $input === '1' ? '1' : '0'; },
     ]);
+    register_setting('practicerank_settings', PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled', [
+        'sanitize_callback' => function($input) {
+            $val = $input === '1' ? '1' : '0';
+            // Routes change with this toggle — flush so /sitemap.xml resolves (or stops).
+            update_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled', $val);
+            practicerank_add_rewrite_rules();
+            flush_rewrite_rules();
+            return $val;
+        },
+    ]);
 });
 
 function practicerank_settings_page() {
@@ -777,6 +1027,7 @@ function practicerank_settings_page() {
     $schema_enabled = get_option(PRACTICERANK_OPTION_PREFIX . 'schema_enabled', '1');
     $robots_enabled = get_option(PRACTICERANK_OPTION_PREFIX . 'robots_enabled', '1');
     $content_as_draft = get_option(PRACTICERANK_OPTION_PREFIX . 'content_as_draft', '1');
+    $sitemap_enabled = get_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled', '0');
 
     $upload_dir = wp_upload_dir();
     $pr_dir = $upload_dir['basedir'] . '/practicerank';
@@ -796,6 +1047,15 @@ function practicerank_settings_page() {
             <table class="widefat" style="max-width:500px;">
                 <tr><td>llms.txt</td><td><?php echo $has_llms ? '<span style="color:green;">&#10004; Active</span>' : '<span style="color:#999;">Not yet generated</span>'; ?></td></tr>
                 <tr><td>Schema Markup</td><td><?php echo $has_schema ? '<span style="color:green;">&#10004; Active</span>' : '<span style="color:#999;">Not yet pushed</span>'; ?></td></tr>
+                <tr><td>Managed Sitemap</td><td><?php
+                    if (get_option(PRACTICERANK_OPTION_PREFIX . 'sitemap_enabled') === '1') {
+                        echo file_exists($pr_dir . '/sitemap.xml')
+                            ? '<span style="color:green;">&#10004; Serving /sitemap.xml</span>'
+                            : '<span style="color:#d63638;">Enabled, but no sitemap pushed yet</span>';
+                    } else {
+                        echo '<span style="color:#999;">Off (using your SEO plugin / WP core)</span>';
+                    }
+                ?></td></tr>
                 <tr><td>Managed Content</td><td><?php echo $managed_count; ?> posts/pages</td></tr>
                 <tr><td>REST API</td><td><code><?php echo get_rest_url(null, 'practicerank/v1/health'); ?></code></td></tr>
             </table>
@@ -843,6 +1103,17 @@ function practicerank_settings_page() {
                             Push new content as drafts (requires manual publish)
                         </label>
                         <p class="description">When unchecked, content pushed via API will be published immediately.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Managed Sitemap</th>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="<?php echo PRACTICERANK_OPTION_PREFIX; ?>sitemap_enabled" value="1"
+                                   <?php checked($sitemap_enabled, '1'); ?> />
+                            Serve a PracticeRank-managed sitemap at <code>/sitemap.xml</code>
+                        </label>
+                        <p class="description"><strong>Leave OFF if Yoast, RankMath, or another SEO plugin already manages your sitemap.</strong> Only enable this if you have no SEO plugin and want PracticeRank to control the sitemap.</p>
                     </td>
                 </tr>
             </table>
