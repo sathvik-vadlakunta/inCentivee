@@ -1,7 +1,7 @@
 ---
 title: "Replacing Missing Teeth in Casper: Implants vs. Dentures"
 description: "Dental implants or dentures? A clear, honest look at your options for replacing missing teeth at Hilltop Family Dentistry in Casper, WY."
-pubDate: 2026-06-12
+pubDate: 2026-05-13
 author: Hilltop Family Dentistry
 tags: ["dental implants", "dentures", "restorative dentistry", "casper"]
 draft: false

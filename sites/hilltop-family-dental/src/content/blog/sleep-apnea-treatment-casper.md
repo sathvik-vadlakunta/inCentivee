@@ -1,7 +1,7 @@
 ---
 title: "Snoring or Always Tired? How a Dentist Can Treat Sleep Apnea in Casper"
 description: "Obstructive sleep apnea hurts your energy and health. Learn how a custom oral appliance from Hilltop Family Dentistry can help you sleep — a comfortable CPAP alternative."
-pubDate: 2026-06-12
+pubDate: 2026-06-09
 author: Hilltop Family Dentistry
 tags: ["sleep apnea", "snoring", "oral appliance", "casper"]
 draft: false

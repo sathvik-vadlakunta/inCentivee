@@ -95,10 +95,22 @@ const initials = (name) =>
         </div>
       </div>
 
-      <!-- Real office photo + floating card -->
+      <!-- Hero video (from the practice) + floating card -->
       <div class="lg:col-span-5 relative">
         <div class="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/15">
-          <img src="/images/office.jpg" alt="Inside Hilltop Family Dentistry in Casper, Wyoming" class="w-full h-[22rem] sm:h-[26rem] object-cover" />
+          <video
+            class="w-full h-[22rem] sm:h-[26rem] object-cover"
+            autoplay
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            poster="/images/hero-poster.jpg"
+            aria-label="Welcome to Hilltop Family Dentistry in Casper, Wyoming"
+          >
+            <source src="/images/hero.mp4" type="video/mp4" />
+            <source src="/images/hero.webm" type="video/webm" />
+          </video>
         </div>
         <div class="absolute -bottom-6 -left-4 sm:left-6 rounded-2xl bg-white/95 backdrop-blur p-5 shadow-xl max-w-[15rem]">
           <p class="text-sm uppercase tracking-widest text-primary font-semibold">Visit us</p>

@@ -14,7 +14,11 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   integrations: [
-    sitemap(),
+    sitemap({
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+    }),
     markdoc(),
     keystatic(),
   ],

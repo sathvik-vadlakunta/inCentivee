@@ -1,7 +1,7 @@
 ---
 title: "Is Invisalign Right for You? Clear Aligners in Casper"
 description: "How Invisalign works, what it costs, and who it's right for — straightening smiles discreetly at Hilltop Family Dentistry in Casper, WY."
-pubDate: 2026-06-12
+pubDate: 2026-05-27
 author: Hilltop Family Dentistry
 tags: ["invisalign", "clear aligners", "orthodontics", "casper"]
 draft: false
