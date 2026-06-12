@@ -355,9 +355,13 @@ class CustomerDB:
             Path(__file__).resolve().parent.parent / "data" / "practicerank.db"
         )
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, timeout=15)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA journal_mode=WAL")
+        # Wait (rather than failing instantly) when another connection holds the
+        # write lock — e.g. a long-running pipeline/audit. Without this, any
+        # concurrent write turns every page load into a 500 ("database is locked").
+        self.conn.execute("PRAGMA busy_timeout=15000")
         self.conn.execute("PRAGMA foreign_keys=ON")
         self._init_schema()
 
@@ -622,10 +626,17 @@ class CustomerDB:
             except Exception:
                 pass
 
-        # Migration: map old onboarding_step values to new 9-column board
-        self.conn.execute("UPDATE customers SET onboarding_step = 'outreach' WHERE onboarding_step = 'contacted'")
-        self.conn.execute("UPDATE customers SET onboarding_step = 'setup' WHERE onboarding_step IN ('access_pending', 'access_granted')")
-        self.conn.execute("UPDATE customers SET onboarding_step = 'review' WHERE onboarding_step IN ('audit_setup', 'review_approve')")
+        # Migration: map old onboarding_step values to new 9-column board.
+        # Guarded by a read so the steady state (every page load re-runs
+        # _init_schema) stays read-only and never contends for the write lock.
+        _legacy_steps = ('contacted', 'access_pending', 'access_granted', 'audit_setup', 'review_approve')
+        if self.conn.execute(
+            f"SELECT 1 FROM customers WHERE onboarding_step IN ({','.join('?' * len(_legacy_steps))}) LIMIT 1",
+            _legacy_steps,
+        ).fetchone():
+            self.conn.execute("UPDATE customers SET onboarding_step = 'outreach' WHERE onboarding_step = 'contacted'")
+            self.conn.execute("UPDATE customers SET onboarding_step = 'setup' WHERE onboarding_step IN ('access_pending', 'access_granted')")
+            self.conn.execute("UPDATE customers SET onboarding_step = 'review' WHERE onboarding_step IN ('audit_setup', 'review_approve')")
 
         # Migration v6 → v7: AI response entity extraction table
         self.conn.executescript("""
@@ -746,6 +757,17 @@ class CustomerDB:
             "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
         )
         self.conn.commit()
+
+    def checkpoint(self):
+        """Best-effort WAL truncation. Call after a heavy write burst (a pipeline
+        run, an AI audit) so the -wal file is reset to zero instead of lingering at
+        its high-water mark. No-op if another connection holds the lock — we never
+        want to stall a request on this. The frozen multi-MB WAL behind the
+        2026-06-12 'database is locked' outage is exactly what this prevents."""
+        try:
+            self.conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        except sqlite3.OperationalError:
+            pass
 
     def close(self):
         self.conn.close()

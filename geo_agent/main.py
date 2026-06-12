@@ -909,6 +909,7 @@ def main():
             })
 
     if customer_db:
+        customer_db.checkpoint()
         customer_db.close()
 
     # Print summary

@@ -3998,6 +3998,7 @@ def _run_ai_check_background(customer_id: str, run_id: str, customer: dict):
                 _ai_check_progress[run_id]["status"] = "error"
                 _ai_check_progress[run_id]["error"] = str(e)
     finally:
+        db.checkpoint()
         db.close()
 
 
