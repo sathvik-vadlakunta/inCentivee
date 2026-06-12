@@ -20,9 +20,20 @@ const tel = practice.phone.replace(/[^+\d]/g, '')
 const domain = practice.domain
 const reviews = (practice as any).reviews ?? {}
 const isHome = area.toLowerCase() === practice.address.city.toLowerCase()
+const isCounty = area.toLowerCase().includes('county')
+// Approximate drive times to 3090 Talon Dr, Casper WY
+const DRIVE: Record<string, string> = {
+  mills: 'about 10 minutes',
+  evansville: 'about 10 minutes',
+  'bar nunn': 'about 15 minutes',
+  glenrock: 'about 25 minutes',
+}
+const driveTime = DRIVE[area.toLowerCase()]
 const lede = isHome
   ? `Hilltop Family Dentistry is proud to be ${area}'s trusted family and cosmetic dental home — right here at ${practice.address.street}.`
-  : `Looking for a dentist near ${area}, Wyoming? Hilltop Family Dentistry is just a short drive away in ${practice.address.city}, and we happily welcome ${area} families of all ages.`
+  : isCounty
+    ? `Hilltop Family Dentistry proudly serves families throughout ${area} from our convenient office in ${practice.address.city}.`
+    : `Looking for a dentist near ${area}, Wyoming? Hilltop Family Dentistry is just ${driveTime || 'a short drive'} away in ${practice.address.city} — an easy trip for ${area} families of all ages.`
 ---
 
 <Base
@@ -37,6 +48,12 @@ const lede = isHome
       <p class="eyebrow text-accent-soft">{area}, Wyoming</p>
       <h1 class="mt-4 max-w-3xl text-4xl sm:text-5xl font-semibold">Your trusted dentist for {area} families</h1>
       <p class="mt-5 max-w-2xl text-lg text-white/80">{lede}</p>
+      {driveTime && (
+        <p class="mt-5 inline-flex items-center gap-2 rounded-full bg-accent/20 border border-accent/40 px-4 py-2 text-sm font-medium text-white">
+          <svg class="w-4 h-4 text-accent-soft" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13l2-5h14l2 5M5 13h14v4a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1H8v1a1 1 0 01-1 1H6a1 1 0 01-1-1v-4z"/></svg>
+          Just {driveTime} from {area} to our Casper office
+        </p>
+      )}
       <div class="mt-8 flex flex-col sm:flex-row gap-3">
         <a href="/contact" class="btn btn-gold">Book an appointment</a>
         <a href={`tel:${tel}`} class="btn btn-ghost">Call {practice.phone}</a>

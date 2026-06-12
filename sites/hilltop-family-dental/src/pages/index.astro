@@ -12,6 +12,9 @@ const tel = practice.phone.replace(/[^+\d]/g, '')
 const reviews = (practice as any).reviews ?? {}
 const reviewsBadge = reviews.count ? (Math.floor(reviews.count / 100) * 100).toLocaleString() + '+' : ''
 
+const areas: string[] = (practice as any).areaServed ?? []
+const areaSlug = (a: string) => a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
 // Marquee services for the homepage grid (their real offerings)
 const featuredSlugs = [
   'general-dentistry',
@@ -219,6 +222,22 @@ const initials = (name) =>
       </div>
     </div>
   </section>
+
+  <!-- ───────────────────────── Areas we serve ───────────────────────── -->
+  {areas.length > 0 && (
+    <section class="py-16 sm:py-20">
+      <div class="container-px text-center">
+        <p class="eyebrow justify-center">Areas we serve</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Caring for smiles across the Casper area</h2>
+        <p class="mt-3 text-dark/60 max-w-xl mx-auto">Conveniently located in Casper — just a short drive for families across Natrona County.</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          {areas.map((a) => (
+            <a href={`/dentist/${areaSlug(a)}`} class="reveal rounded-full border border-black/10 bg-light hover:border-accent hover:text-primary px-5 py-2.5 text-sm font-medium transition-colors">Dentist in {a}</a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
 
   <!-- ───────────────────────── FAQ ───────────────────────── -->
   <section class="py-20 sm:py-24 bg-light">
