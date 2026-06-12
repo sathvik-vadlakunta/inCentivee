@@ -198,6 +198,23 @@ const initials = (name) =>
     </div>
   </section>
 
+  <!-- ───────────────────────── Gallery ───────────────────────── -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Inside Hilltop</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">A warm, modern office in the heart of Casper</h2>
+      </div>
+      <div class="mt-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+        {['/images/gallery-1.jpg','/images/office.jpg','/images/gallery-3.jpg','/images/gallery-4.jpg','/images/gallery-5.jpg','/images/gallery-2.jpg','/images/gallery-6.jpg','/images/photo-09.jpg'].map((src) => (
+          <div class="reveal img-zoom rounded-2xl overflow-hidden aspect-square">
+            <img src={src} alt="Inside Hilltop Family Dentistry in Casper, Wyoming" class="w-full h-full object-cover" loading="lazy" />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
   <!-- ───────────────────────── Testimonials ───────────────────────── -->
   <div class="bg-light">
     <Testimonials limit={6} />

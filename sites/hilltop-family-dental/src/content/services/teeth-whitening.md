@@ -3,7 +3,7 @@ title: Teeth Whitening
 description: "Professional teeth whitening that safely brightens your smile by several shades — far more effective than store-bought kits."
 category: Cosmetic Dentistry
 order: 20
-image: /images/photo-08.jpg
+image: /images/svc-whitening.jpg
 faqs:
   - question: "Does whitening damage your teeth?"
     answer: "No — professional whitening is safe when supervised by your dental team. Mild, temporary sensitivity is the most common side effect and usually fades quickly."

@@ -3,7 +3,7 @@ title: Cosmetic Dentistry
 description: "Veneers, bonding, and smile makeovers that give you a brighter, more confident smile — designed to look completely natural."
 category: Cosmetic Dentistry
 order: 10
-image: /images/photo-05.jpg
+image: /images/svc-cosmetic.jpg
 faqs:
   - question: "How long do porcelain veneers last?"
     answer: "With good care, porcelain veneers commonly last 10–15 years or longer before they need replacement."

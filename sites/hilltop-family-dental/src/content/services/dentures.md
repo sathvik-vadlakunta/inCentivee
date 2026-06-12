@@ -3,7 +3,7 @@ title: Dentures
 description: "Custom full and partial dentures — including implant-supported options — to restore your smile, your bite, and your confidence."
 category: Restorative Dentistry
 order: 20
-image: /images/photo-10.jpg
+image: /images/svc-dentures.jpg
 faqs:
   - question: "How long does it take to adjust to new dentures?"
     answer: "Most people adjust within a few weeks. We fine-tune the fit and offer tips so eating and speaking feel natural as quickly as possible."

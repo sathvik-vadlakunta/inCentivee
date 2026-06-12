@@ -3,7 +3,7 @@ title: Sleep Apnea Treatment
 description: "Comfortable, custom oral appliances that treat snoring and obstructive sleep apnea — a CPAP alternative for many patients."
 category: Sleep & Airway
 order: 10
-image: /images/photo-07.jpg
+image: /images/svc-sleep.jpg
 faqs:
   - question: "Can a dentist really treat sleep apnea?"
     answer: "Yes. The American Academy of Sleep Medicine recognizes custom oral appliances as a first-line treatment for mild-to-moderate obstructive sleep apnea, and as an option for CPAP-intolerant patients."
