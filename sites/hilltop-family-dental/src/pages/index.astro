@@ -1,0 +1,239 @@
+---
+import Base from '@layouts/Base.astro'
+import CTABanner from '@components/CTABanner.astro'
+import ServiceCard from '@components/ServiceCard.astro'
+import Testimonials from '@components/Testimonials.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const allServices = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const tel = practice.phone.replace(/[^+\d]/g, '')
+
+// Marquee services for the homepage grid (their real offerings)
+const featuredSlugs = [
+  'general-dentistry',
+  'cosmetic-dentistry',
+  'dental-implants',
+  'invisalign',
+  'dentures',
+  'sleep-apnea',
+]
+const featured = featuredSlugs
+  .map((s) => allServices.find((x) => x.slug === s))
+  .filter(Boolean)
+
+const pillars = [
+  {
+    title: 'Convenient',
+    body: 'Same-day crowns, in-house imaging, flexible scheduling, and easy financing — modern dentistry that fits your life in Casper.',
+    icon: 'M13 10V3L4 14h7v7l9-11h-7z',
+  },
+  {
+    title: 'Cutting-Edge',
+    body: 'CEREC same-day crowns, 3D cone-beam imaging, laser dentistry, and digital scans — advanced technology for gentler, more precise care.',
+    icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+  },
+  {
+    title: 'Comprehensive',
+    body: 'From a child’s first cleaning to full-mouth implant restoration, two experienced dentists and a complete menu of services under one roof.',
+    icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  },
+]
+
+const stats = [
+  { value: `${allServices.length}+`, label: 'Services offered' },
+  { value: '2', label: 'Experienced dentists' },
+  { value: 'Same-Day', label: 'CEREC crowns' },
+  { value: 'Casper', label: 'Family-owned, local' },
+]
+
+const initials = (name) =>
+  name.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).slice(0, 2).join('')
+---
+
+<Base title={practice.name} description={practice.tagline}>
+  <!-- ───────────────────────── Hero ───────────────────────── -->
+  <section class="relative overflow-hidden bg-secondary text-white">
+    <div class="blob" style="width:30rem;height:30rem;background:#6b7882;top:-8rem;right:-6rem;"></div>
+    <div class="blob" style="width:24rem;height:24rem;background:#a38f79;bottom:-10rem;left:-6rem;opacity:0.3;"></div>
+    <div class="container-px relative grid lg:grid-cols-12 gap-12 items-center py-20 lg:py-28">
+      <div class="lg:col-span-7">
+        <p class="eyebrow text-accent-soft">Casper, Wyoming · Family &amp; Cosmetic Dentistry</p>
+        <h1 class="mt-5 text-4xl sm:text-5xl lg:text-6xl font-semibold text-white">
+          The way family dentistry
+          <span class="block">was <span class="text-accent">meant to be.</span></span>
+        </h1>
+        <p class="mt-6 max-w-xl text-lg text-white/80">
+          Warm, modern, comprehensive dental care for every member of your family —
+          from routine cleanings to same-day crowns and full-mouth implant restoration.
+        </p>
+        <div class="mt-9 flex flex-col sm:flex-row gap-3">
+          <a href="/contact" class="btn btn-gold">Book an Appointment</a>
+          <a href={`tel:${tel}`} class="btn btn-ghost">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+            {practice.phone}
+          </a>
+        </div>
+        <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/75">
+          <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> New patients welcome</span>
+          <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> Cherry financing &amp; membership plan</span>
+          <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> Most insurance accepted</span>
+        </div>
+      </div>
+
+      <!-- Real office photo + floating card -->
+      <div class="lg:col-span-5 relative">
+        <div class="rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/15">
+          <img src="/images/office.jpg" alt="Inside Hilltop Family Dentistry in Casper, Wyoming" class="w-full h-[22rem] sm:h-[26rem] object-cover" />
+        </div>
+        <div class="absolute -bottom-6 -left-4 sm:left-6 rounded-2xl bg-white/95 backdrop-blur p-5 shadow-xl max-w-[15rem]">
+          <p class="text-sm uppercase tracking-widest text-primary font-semibold">Visit us</p>
+          <p class="mt-1 font-semibold text-dark leading-snug" style="font-family:var(--font-heading)">{practice.address.street}</p>
+          <p class="text-sm text-dark/60">{practice.address.city}, {practice.address.state} {practice.address.zip}</p>
+          <a href="/contact" class="btn btn-gold w-full mt-3 !py-2 text-sm">Request a visit</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Stats ───────────────────────── -->
+  <section class="bg-light border-b border-black/5">
+    <div class="container-px grid grid-cols-2 lg:grid-cols-4 gap-6 py-10">
+      {stats.map((s) => (
+        <div class="reveal text-center">
+          <div class="text-3xl sm:text-4xl font-semibold text-primary" style="font-family:var(--font-heading)">{s.value}</div>
+          <div class="mt-1 text-sm text-dark/60">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Pillars ───────────────────────── -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">The Hilltop difference</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">
+          Dentistry that feels <span class="gold-underline">personal</span>, built on technology that’s anything but ordinary.
+        </h2>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        {pillars.map((p) => (
+          <div class="reveal card-soft p-8">
+            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={p.icon} /></svg>
+            </div>
+            <h3 class="mt-5 text-xl font-semibold text-dark">{p.title}</h3>
+            <p class="mt-2 text-dark/65 leading-relaxed">{p.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Featured services ───────────────────────── -->
+  <section class="py-20 sm:py-24 bg-light">
+    <div class="container-px">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 reveal">
+        <div class="max-w-xl">
+          <p class="eyebrow">What we do</p>
+          <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">A complete menu of care, under one roof</h2>
+        </div>
+        <a href="/services" class="btn btn-outline shrink-0">All {allServices.length} services</a>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {featured.map((service) => (
+          <div class="reveal">
+            <ServiceCard
+              title={service.data.title}
+              description={service.data.description}
+              href={`/services/${service.slug}`}
+              category={service.data.category}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Doctor spotlight ───────────────────────── -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Meet your dentists</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Casper dentists who genuinely care</h2>
+      </div>
+      <div class="mt-12 grid md:grid-cols-2 gap-6">
+        {practice.providers.map((doc) => (
+          <a href={`/team/${doc.slug}`} class="reveal card-soft p-7 flex items-center gap-6 group">
+            <div class="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white flex items-center justify-center text-2xl font-semibold" style="font-family:var(--font-heading)">
+              {initials(doc.name)}
+            </div>
+            <div>
+              <h3 class="text-xl font-semibold text-dark group-hover:text-primary transition-colors">{doc.name}, {doc.credentials}</h3>
+              <p class="text-sm text-primary font-medium">{doc.title}</p>
+              <div class="mt-3 flex flex-wrap gap-1.5">
+                {doc.specialties.map((s) => (
+                  <span class="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">{s}</span>
+                ))}
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── Testimonials ───────────────────────── -->
+  <div class="bg-light">
+    <Testimonials limit={6} />
+  </div>
+
+  <!-- ───────────────────────── Membership band ───────────────────────── -->
+  <section class="py-16">
+    <div class="container-px">
+      <div class="reveal rounded-3xl text-white overflow-hidden relative bg-dark">
+        <img src="/images/mountains.jpg" alt="Casper, Wyoming mountains" class="absolute inset-0 w-full h-full object-cover opacity-30" />
+        <div class="absolute inset-0 bg-gradient-to-r from-dark via-dark/85 to-secondary/70"></div>
+        <div class="relative grid md:grid-cols-2 gap-8 items-center p-10 sm:p-12">
+          <div>
+            <p class="eyebrow text-accent-soft">No insurance? No problem.</p>
+            <h2 class="mt-4 text-3xl font-semibold">Affordable care with our Membership Plan &amp; Cherry financing</h2>
+            <p class="mt-3 text-white/75">Skip the insurance headaches. Get cleanings, exams, and savings on treatment with a simple yearly membership — plus flexible monthly payments through Cherry.</p>
+          </div>
+          <div class="flex md:justify-end">
+            <a href="/contact" class="btn btn-gold">Ask about membership</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── FAQ ───────────────────────── -->
+  <section class="py-20 sm:py-24 bg-light">
+    <div class="container-px max-w-3xl">
+      <div class="reveal text-center">
+        <p class="eyebrow justify-center">Good to know</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Common questions</h2>
+      </div>
+      <div class="mt-10 space-y-3">
+        {[
+          { q: 'Are you accepting new patients?', a: 'Yes! Hilltop Family Dentistry happily welcomes new patients of all ages across Casper and the surrounding communities. Call us or request an appointment online to get started.' },
+          { q: 'Do you take my insurance?', a: 'We accept most major dental insurance plans and will help you understand your benefits. If you don’t have insurance, ask about our in-house Membership Plan.' },
+          { q: 'What if I have a dental emergency?', a: 'Call us right away. We make every effort to see patients in pain the same day for issues like severe toothaches, broken teeth, or knocked-out teeth.' },
+          { q: 'How do I pay for treatment?', a: 'We offer Cherry financing for flexible monthly payments and an in-house Membership Plan, in addition to accepting most insurance.' },
+        ].map((item) => (
+          <details class="reveal card-soft p-0 group">
+            <summary class="cursor-pointer list-none flex items-center justify-between gap-4 p-5 font-semibold text-dark">
+              {item.q}
+              <span class="text-primary text-xl transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <p class="px-5 pb-5 -mt-1 text-dark/65 leading-relaxed">{item.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>

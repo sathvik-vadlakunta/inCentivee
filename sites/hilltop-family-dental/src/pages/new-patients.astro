@@ -1,0 +1,105 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+
+const steps = [
+  { n: '01', t: 'A warm welcome', d: 'Arrive a few minutes early to complete paperwork (or fill it out ahead of time). We’ll greet you by name and get to know you.' },
+  { n: '02', t: 'A thorough exam', d: 'Digital X-rays, a comprehensive exam, and an oral cancer screening give us a complete picture of your dental health.' },
+  { n: '03', t: 'Your personalized plan', d: 'We’ll walk you through what we found in plain language and build a plan around your goals, comfort, and budget.' },
+  { n: '04', t: 'Comfortable treatment', d: 'Same-day care when possible, sedation options if you need them, and a gentle, judgment-free team every step of the way.' },
+]
+---
+
+<Base title="New Patients" description={`New patients are always welcome at ${practice.name} in ${practice.address.city}, ${practice.address.state}. Learn what to expect on your first visit, insurance, Cherry financing, and our membership plan.`}>
+  <Hero
+    eyebrow="Be our guest"
+    title="Your first visit, made easy"
+    subtitle="New patients of all ages are always welcome at Hilltop Family Dentistry. Here’s exactly what to expect."
+    cta={{ label: 'Request an appointment', href: '/contact' }}
+  />
+
+  <!-- First visit steps -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px">
+      <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="reveal img-zoom rounded-3xl overflow-hidden shadow-xl ring-1 ring-black/5">
+          <img src="/images/photo-02.jpg" alt="Welcoming front desk at Hilltop Family Dentistry, Casper WY" class="w-full h-[28rem] object-cover" />
+        </div>
+        <div>
+          <p class="eyebrow">What to expect</p>
+          <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Four easy steps</h2>
+          <div class="mt-8 space-y-6">
+            {steps.map((s, i) => (
+              <div class="reveal flex gap-4" data-delay={i + 1}>
+                <span class="text-accent text-2xl font-semibold shrink-0" style="font-family:var(--font-heading)">{s.n}</span>
+                <div>
+                  <h3 class="font-semibold text-dark text-lg">{s.t}</h3>
+                  <p class="mt-1 text-dark/65 leading-relaxed">{s.d}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Payment options -->
+  <section class="py-16 sm:py-20 bg-light">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Affordable for every family</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Insurance, financing &amp; membership</h2>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        <div class="reveal card-soft p-7">
+          <h3 class="text-xl font-semibold text-dark">Insurance</h3>
+          <p class="mt-2 text-dark/65 leading-relaxed">We accept most major dental insurance plans and will help you understand and maximize your benefits.</p>
+        </div>
+        <div class="reveal card-soft p-7" data-delay="1">
+          <h3 class="text-xl font-semibold text-dark">Cherry Financing</h3>
+          <p class="mt-2 text-dark/65 leading-relaxed">Flexible monthly payment plans through Cherry make treatment easy to budget — with a quick, no-impact approval.</p>
+        </div>
+        <div class="reveal card-soft p-7" data-delay="2">
+          <h3 class="text-xl font-semibold text-dark">Membership Plan</h3>
+          <p class="mt-2 text-dark/65 leading-relaxed">No insurance? Our in-house membership plan covers your routine cleanings and exams and saves you on treatment — for one simple yearly fee.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Membership tiers -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">In-house membership plan</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Choose the plan that fits your family</h2>
+        <p class="mt-3 text-dark/65">No insurance? Our membership program means no yearly maximums, no waiting periods, and immediate eligibility — plus 20% off other procedures.</p>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        {[
+          { name: 'Child Membership', price: '400', items: ['2× cleanings (prophylaxis)', '2× periodic oral evaluations', '2× fluoride treatments', '20% off other procedures'] },
+          { name: 'Adult Membership', price: '575', featured: true, items: ['3× cleanings (prophylaxis)', '3× periodic oral evaluations', '3× fluoride treatments', '20% off other procedures'] },
+          { name: 'Periodontal', price: '800', items: ['4× periodontal maintenance', '3× periodic oral evaluations', '20% off other procedures'] },
+        ].map((p, i) => (
+          <div class:list={['reveal card-soft p-7 flex flex-col', p.featured && 'ring-2 ring-accent']} data-delay={i + 1}>
+            {p.featured && <span class="self-start text-[11px] uppercase tracking-wider font-semibold text-accent mb-2">Most popular</span>}
+            <h3 class="text-xl font-semibold text-dark">{p.name}</h3>
+            <p class="mt-2"><span class="text-4xl font-semibold text-dark" style="font-family:var(--font-heading)">${p.price}</span><span class="text-dark/50">/year</span></p>
+            <ul class="mt-5 space-y-2 flex-1">
+              {p.items.map((it) => (
+                <li class="flex items-start gap-2 text-sm text-dark/70"><span class="text-accent mt-0.5">✓</span>{it}</li>
+              ))}
+            </ul>
+            <a href="/contact" class="btn btn-gold w-full mt-6">Get started</a>
+          </div>
+        ))}
+      </div>
+      <p class="mt-6 text-sm text-dark/50">Membership is not insurance. Plans cover the listed preventive services for one year from enrollment. Contact us for full details.</p>
+    </div>
+  </section>
+
+  <CTABanner title="Ready to become a patient?" subtitle="Call us or request an appointment — we can’t wait to meet you." />
+</Base>

@@ -1,0 +1,36 @@
+---
+import testimonials from '@data/testimonials.json'
+
+interface Props {
+  limit?: number
+  heading?: string
+}
+const { limit = 6, heading = 'People love it here' } = Astro.props
+const items = testimonials.slice(0, limit)
+const initials = (n: string) => n.replace(/[^A-Za-z ]/g, '').split(' ').map((p) => p[0]).slice(0, 2).join('')
+---
+
+<section class="py-20 sm:py-24">
+  <div class="container-px">
+    <div class="max-w-2xl reveal">
+      <p class="eyebrow">Real patient reviews</p>
+      <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">{heading}</h2>
+    </div>
+    <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {items.map((t, i) => (
+        <figure class="reveal card-soft p-7 flex flex-col" data-delay={(i % 3) + 1}>
+          <div class="flex gap-0.5 text-accent" aria-label="5 out of 5 stars">
+            {[0, 1, 2, 3, 4].map(() => (
+              <svg class="w-4.5 h-4.5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>
+            ))}
+          </div>
+          <blockquote class="mt-4 text-dark/75 leading-relaxed flex-1">"{t.quote}"</blockquote>
+          <figcaption class="mt-5 flex items-center gap-3">
+            <span class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary text-white grid place-items-center text-sm font-semibold">{initials(t.name)}</span>
+            <span class="font-semibold text-dark">{t.name}</span>
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  </div>
+</section>

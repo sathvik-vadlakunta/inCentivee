@@ -1,0 +1,40 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import TeamCard from '@components/TeamCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+---
+
+<Base title="Meet the Doctors" description={`Meet the dentists at ${practice.name} in ${practice.address.city}, ${practice.address.state} — ${practice.providers.map((p) => p.name).join(' and ')}.`}>
+  <Hero
+    eyebrow="Meet the doctors"
+    title="The dentists behind your smile"
+    subtitle="Two experienced, genuinely caring dentists leading a team that treats you like family."
+    cta={{ label: 'Book an appointment', href: '/contact' }}
+  />
+
+  <section class="py-16 sm:py-20">
+    <div class="container-px">
+      <div class="grid sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        {team.map((member, i) => (
+          <div class="reveal" data-delay={i + 1}>
+            <TeamCard
+              name={member.data.name}
+              credentials={member.data.credentials}
+              title={member.data.title}
+              photo={member.data.photo}
+              specialties={member.data.specialties}
+              href={`/team/${member.slug}`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>

@@ -1,0 +1,101 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import TeamCard from '@components/TeamCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+
+const values = [
+  { title: 'Honesty', body: 'Clear, straightforward recommendations — only the treatment you actually need, explained in plain language.' },
+  { title: 'Compassion', body: 'Gentle, judgment-free care from a team that treats you like family, not a chart number.' },
+  { title: 'Comfort', body: 'A calm, welcoming office with sedation options and a team dedicated to easing dental anxiety.' },
+  { title: 'Happiness', body: 'Healthy, confident smiles — and a visit you’ll actually look forward to.' },
+]
+---
+
+<Base title="The Hilltop Difference" description={`Get to know ${practice.name} — a family dental practice in ${practice.address.city}, ${practice.address.state} built on honesty, compassion, comfort, and happiness.`}>
+  <Hero
+    eyebrow="The Hilltop difference"
+    title="Family dentistry, the way it was meant to be"
+    subtitle="We’re a Casper practice built on a simple idea: exceptional dentistry should feel personal, comfortable, and genuinely caring."
+  />
+
+  <!-- Story -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal">
+        <p class="eyebrow">Our story</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Casper roots, modern care</h2>
+        <div class="mt-5 space-y-4 text-dark/70 leading-relaxed">
+          <p>At {practice.name}, we’ve combined the warmth of a hometown practice with the technology of a modern dental office. Whether it’s your child’s very first cleaning or a complete smile transformation, you’ll be cared for by a team that knows you by name.</p>
+          <p>Our two experienced dentists, {practice.providers.map((p) => p.name).join(' and ')}, lead a team committed to comfortable, comprehensive care — from preventive checkups to dental implants, clear aligners, and same-day crowns, all right here in Casper.</p>
+        </div>
+        <a href="/team" class="btn btn-outline mt-8">Meet the doctors</a>
+      </div>
+      <div class="reveal">
+        <div class="rounded-3xl overflow-hidden shadow-xl ring-1 ring-black/5">
+          <img src="/images/office.jpg" alt="The team and office at Hilltop Family Dentistry, Casper WY" class="w-full h-[24rem] object-cover" />
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-4">
+          {[
+            ['Convenient', 'Same-day crowns, in-house imaging, easy scheduling.'],
+            ['Cutting-edge', 'CEREC, 3D cone-beam imaging, and laser dentistry.'],
+          ].map(([t, d]) => (
+            <div class="card-soft p-5">
+              <h3 class="font-semibold text-dark" style="font-family:var(--font-heading)">{t}</h3>
+              <p class="mt-1 text-sm text-dark/60 leading-relaxed">{d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Values -->
+  <section class="py-16 sm:py-20 bg-light">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">What we stand for</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Built on honesty, compassion, comfort &amp; happiness</h2>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {values.map((v, i) => (
+          <div class="reveal card-soft p-7">
+            <span class="text-accent text-3xl font-semibold" style="font-family:var(--font-heading)">0{i + 1}</span>
+            <h3 class="mt-3 text-lg font-semibold text-dark">{v.title}</h3>
+            <p class="mt-1.5 text-sm text-dark/60 leading-relaxed">{v.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Team -->
+  {team.length > 0 && (
+    <section class="py-16 sm:py-20">
+      <div class="container-px">
+        <div class="max-w-2xl reveal">
+          <p class="eyebrow">Meet your dentists</p>
+          <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">The doctors behind your smile</h2>
+        </div>
+        <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
+          {team.map((member) => (
+            <TeamCard
+              name={member.data.name}
+              credentials={member.data.credentials}
+              title={member.data.title}
+              photo={member.data.photo}
+              specialties={member.data.specialties}
+              href={`/team/${member.slug}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <CTABanner />
+</Base>

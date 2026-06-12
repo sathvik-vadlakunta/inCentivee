@@ -1,0 +1,21 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import Testimonials from '@components/Testimonials.astro'
+import CTABanner from '@components/CTABanner.astro'
+import testimonials from '@data/testimonials.json'
+import practice from '@data/practice.json'
+---
+
+<Base title="Patient Reviews" description={`See what patients are saying about ${practice.name} in ${practice.address.city}, ${practice.address.state}.`}>
+  <Hero
+    eyebrow="People love it here"
+    title="What our patients say"
+    subtitle="We love sharing our patients' stories. Here's a look at what families across Casper say about their experience at Hilltop."
+    cta={{ label: 'Become a patient', href: '/contact' }}
+  />
+
+  <Testimonials limit={testimonials.length} heading="Reviews from Casper families" />
+
+  <CTABanner />
+</Base>

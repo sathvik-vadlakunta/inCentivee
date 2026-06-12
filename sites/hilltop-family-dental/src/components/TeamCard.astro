@@ -1,0 +1,37 @@
+---
+interface Props {
+  name: string
+  credentials: string
+  title: string
+  photo?: string
+  specialties?: string[]
+  href?: string
+}
+
+const { name, credentials, title, photo, specialties = [], href } = Astro.props
+const Tag = href ? 'a' : 'div'
+const initials = name.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).slice(0, 2).join('')
+---
+
+<Tag href={href} class:list={['card-soft block overflow-hidden', href && 'group']}>
+  {photo ? (
+    <div class="aspect-[4/5] overflow-hidden bg-cream">
+      <img src={photo} alt={`${name}, ${credentials}`} class:list={['w-full h-full object-cover object-top', href && 'group-hover:scale-105 transition-transform duration-300']} loading="lazy" />
+    </div>
+  ) : (
+    <div class="aspect-[4/5] grid place-items-center bg-gradient-to-br from-primary to-secondary text-white">
+      <span class="text-5xl font-semibold" style="font-family:var(--font-heading)">{initials}</span>
+    </div>
+  )}
+  <div class="p-6">
+    <h3 class="text-lg font-semibold text-dark group-hover:text-primary transition-colors" style="font-family:var(--font-heading)">{name}, {credentials}</h3>
+    <p class="text-sm text-primary font-medium">{title}</p>
+    {specialties.length > 0 && (
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        {specialties.map((s) => (
+          <span class="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full">{s}</span>
+        ))}
+      </div>
+    )}
+  </div>
+</Tag>

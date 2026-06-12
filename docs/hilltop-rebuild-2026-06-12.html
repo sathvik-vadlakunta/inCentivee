@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hilltop Family Dentistry — Site Rebuild Session Results (2026-06-12)</title>
+<style>
+  :root { --slate:#5c686e; --tan:#a38f79; --dark:#2b3236; --cream:#f7f3ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; color:var(--dark); background:#fff; line-height:1.6; }
+  header { background:linear-gradient(135deg,var(--slate),var(--dark)); color:#fff; padding:48px 32px; }
+  header h1 { margin:0 0 8px; font-size:30px; }
+  header p { margin:0; opacity:.85; }
+  .wrap { max-width:980px; margin:0 auto; padding:32px; }
+  h2 { border-bottom:3px solid var(--tan); padding-bottom:6px; margin-top:40px; }
+  .tag { display:inline-block; background:var(--cream); color:var(--slate); border:1px solid #e3dccf; border-radius:999px; padding:3px 12px; font-size:13px; font-weight:600; margin:2px; }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:14px; }
+  th,td { text-align:left; padding:10px 12px; border-bottom:1px solid #eee; vertical-align:top; }
+  th { background:var(--cream); }
+  code { background:#f3f3f3; padding:2px 6px; border-radius:4px; font-size:13px; }
+  .ok { color:#1f7a4d; font-weight:600; }
+  .todo { color:#a85b00; font-weight:600; }
+  .card { border:1px solid #eee; border-radius:12px; padding:20px; margin:14px 0; box-shadow:0 8px 24px -18px rgba(0,0,0,.3); }
+  a { color:var(--slate); }
+  .muted { color:#777; font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hilltop Family Dentistry — Website Rebuild</h1>
+  <p>Session results · 2026-06-12 · Live preview: <a style="color:#e8d9c2" href="https://hilltop-family-dental.pages.dev/">hilltop-family-dental.pages.dev</a></p>
+</header>
+<div class="wrap">
+
+  <h2>Goal</h2>
+  <p>Migrate Hilltop Family Dentistry (Casper, WY) off its thin Webflow site onto the
+  PracticeRank Astro + Cloudflare Pages platform (the SoJo Dental stack), rebuilt with
+  the practice's real brand, real content, and modern SEO/AEO.</p>
+
+  <h2>Stack</h2>
+  <p>
+    <span class="tag">Astro 5</span><span class="tag">Tailwind 4</span>
+    <span class="tag">@tailwindcss/typography</span><span class="tag">Keystatic CMS</span>
+    <span class="tag">Cloudflare Pages</span><span class="tag">View Transitions</span>
+    <span class="tag">Fraunces + Inter</span>
+  </p>
+  <p class="muted">Source: <code>sites/hilltop-family-dental/</code> · Pages project <code>hilltop-family-dental</code> · Cloudflare account <code>64057…</code></p>
+
+  <h2>What shipped</h2>
+
+  <div class="card">
+    <strong>Real brand</strong> — pulled from the live site: tan <code>#a38f79</code> + slate
+    <code>#5c686e</code> palette, their real white/reverse logo (dark slate nav), favicon,
+    and real photography (logo, Casper mountains, office, doctor headshots, 17 practice photos).
+  </div>
+
+  <div class="card">
+    <strong>Accurate services (critical correction)</strong> — the original 29 services were
+    largely fabricated by our content pipeline. Verified against the live site and rebuilt the
+    real <strong>7</strong>, reusing their exact URL slugs for SEO continuity:
+    General &amp; Family Dentistry, Cosmetic Dentistry, Teeth Whitening, Dental Implants,
+    Dentures, Invisalign, Sleep Apnea.
+  </div>
+
+  <div class="card">
+    <strong>Content depth + AEO</strong> — each service page has 4–5 FAQs and
+    <strong>sourced statistics</strong> (never fabricated): AAID (implant success >95%),
+    CDC (decay/gum disease/tooth loss), AASM (sleep-apnea oral appliance), ADA (whitening).
+    Sources cited on-page. Real patient reviews placed next to every CTA.
+  </div>
+
+  <div class="card">
+    <strong>Real doctors</strong> — actual headshots + real bios &amp; education
+    (Dr. Gallup — Indiana University; Dr. Milmont — University of Nebraska).
+  </div>
+
+  <div class="card">
+    <strong>Real testimonials</strong> — 8 genuine Google reviews → homepage section,
+    a <code>/reviews</code> page, and review cards beside service CTAs.
+  </div>
+
+  <h2>Pages</h2>
+  <table>
+    <tr><th>Page</th><th>Notes</th></tr>
+    <tr><td><code>/</code></td><td>Hero (office photo + floating card), stats, pillars, featured services, doctor spotlight, testimonials, membership band (Casper mountains), FAQ, CTA</td></tr>
+    <tr><td><code>/services</code> + 7 detail pages</td><td>Category mega-dropdown; photo hero, prose content, sourced stats, FAQs, sticky CTA + review sidebar, related services</td></tr>
+    <tr><td><code>/about</code></td><td>Story, values, technology, team grid</td></tr>
+    <tr><td><code>/team</code> + 2 doctor pages</td><td>Real headshots, real bios + education</td></tr>
+    <tr><td><code>/new-patients</code></td><td>First-visit steps + insurance/financing + real membership tiers ($400 / $575 / $800)</td></tr>
+    <tr><td><code>/reviews</code></td><td>All 8 real reviews</td></tr>
+    <tr><td><code>/contact</code></td><td>Form + Google map + hours</td></tr>
+    <tr><td><code>/blog</code> + posts</td><td>Implants vs dentures, Invisalign, sleep apnea (accurate, sourced)</td></tr>
+    <tr><td><code>/404</code></td><td>Branded 404 (fixes the soft-404 that served the homepage at 200)</td></tr>
+  </table>
+
+  <h2>SEO / AEO / tracking</h2>
+  <table>
+    <tr><th>Item</th><th>Status</th></tr>
+    <tr><td>XML sitemap (<code>/sitemap-index.xml</code>) — all real pages</td><td class="ok">Live</td></tr>
+    <tr><td>robots.txt — block training bots, allow retrieval bots</td><td class="ok">Live</td></tr>
+    <tr><td>llms.txt + llms-full.txt (AI engines)</td><td class="ok">Live</td></tr>
+    <tr><td>Canonical URLs, Open Graph</td><td class="ok">Live</td></tr>
+    <tr><td>JSON-LD: Dentist + LocalBusiness, per-service MedicalProcedure + Breadcrumb + FAQ</td><td class="ok">Live</td></tr>
+    <tr><td>301 redirect map from old Webflow URLs (<code>_redirects</code>)</td><td class="ok">Live</td></tr>
+    <tr><td>Proper 404s (no soft-404s)</td><td class="ok">Fixed</td></tr>
+    <tr><td>Google Tag Manager <code>GTM-PGSXLM8R</code> (carries GA4 <code>G-8ZHE350VF8</code> + FB Pixel, reused from old site)</td><td class="ok">Live</td></tr>
+    <tr><td>GA4 / GSC verification slots in <code>practice.json → analytics</code></td><td class="ok">Wired</td></tr>
+  </table>
+
+  <h2>Content-parity audit (old → new)</h2>
+  <table>
+    <tr><th>Was missing</th><th>Resolution</th></tr>
+    <tr><td>Patient Portal (iDent login)</td><td>Added to nav + footer</td></tr>
+    <tr><td>Facebook + Instagram</td><td>Footer social icons</td></tr>
+    <tr><td>Membership pricing</td><td>Real tiers on /new-patients (matches old; CTA → contact, as the old site did)</td></tr>
+    <tr><td>Sleep-apnea articles</td><td>New sourced blog post</td></tr>
+  </table>
+
+  <h2>Bugs fixed this session</h2>
+  <ul>
+    <li><strong>Homepage went blank after navigation</strong> — View Transitions stopped the scroll-reveal script re-running; moved to <code>astro:page-load</code>.</li>
+    <li><strong>/team and /reviews "crashed"</strong> — missing <code>/team</code> index + missing <code>404.astro</code> caused soft-404 fallback to the homepage.</li>
+    <li><strong>"Shitty" service pages</strong> — <code>@tailwindcss/typography</code> was never installed, so <code>prose</code> did nothing; installed + brand-tuned <code>.prose-brand</code>.</li>
+    <li><strong>Doctor heads cropped</strong> — taller portrait ratio + <code>object-top</code>.</li>
+  </ul>
+
+  <h2>Open items (need client / next pass)</h2>
+  <ul>
+    <li class="todo">Confirm the 7 services are complete (they may offer more than the old site listed).</li>
+    <li class="todo">Custom test domain <code>hilltop.practicerank.ai</code> — needs a 1-click Cloudflare dashboard step or a DNS-scoped API token.</li>
+    <li class="todo">Production cutover (GoDaddy DNS → Pages) when approved.</li>
+    <li class="todo">Optional: GA4-direct / GSC verification meta if not handled inside GTM.</li>
+  </ul>
+
+  <p class="muted">Generated 2026-06-12. Companion task spec: <code>specs/active/hilltop-astro-port.md</code>.</p>
+</div>
+</body>
+</html>

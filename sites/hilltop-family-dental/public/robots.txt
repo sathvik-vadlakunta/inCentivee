@@ -1,0 +1,39 @@
+# robots.txt — Hilltop Family Dentistry
+
+# Allow standard search + AI retrieval crawlers full access
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: Applebot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+
+# Block AI *training* crawlers (allow retrieval, not model training)
+User-agent: GPTBot
+Disallow: /
+User-agent: Google-Extended
+Disallow: /
+User-agent: CCBot
+Disallow: /
+User-agent: ClaudeBot
+Disallow: /
+User-agent: Applebot-Extended
+Disallow: /
+User-agent: Bytespider
+Disallow: /
+User-agent: anthropic-ai
+Disallow: /
+User-agent: cohere-ai
+Disallow: /
+
+User-agent: *
+Allow: /
+
+Sitemap: https://hilltopfamilydentalwy.com/sitemap-index.xml
+# LLM discovery: https://hilltopfamilydentalwy.com/llms.txt

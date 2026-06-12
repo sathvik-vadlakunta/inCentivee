@@ -1,0 +1,20 @@
+# 301s preserving SEO from the old Webflow site → new Astro site.
+# We reused their real service slugs, so most service URLs map 1:1.
+
+/articles            /blog                                   301
+/blog/dreamsleep     /services/sleep-apnea                   301
+/blog/sleep-apnea    /services/sleep-apnea                   301
+/blog/what-is-home-sleep-testing-and-what-does-it-have-to-do-with-dentistry  /services/sleep-apnea  301
+/cherry-financing    /new-patients                           301
+/contact-us          /contact                                301
+/difference          /about                                  301
+/first-visit         /new-patients                           301
+/hilltop-family-dental-on-the-web   /                        301
+/membership          /new-patients                           301
+/search              /                                       301
+
+# Old service URL variants → real pages
+/services/cosmetic-dentist     /services/cosmetic-dentistry             301
+/services/dentist              /services/general-dentistry              301
+# general-dentistry, cosmetic-dentistry, dental-implants, invisalign,
+# teeth-whitening, dentures, sleep-apnea, /reviews, /team all map 1:1

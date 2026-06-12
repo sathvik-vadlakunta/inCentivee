@@ -1,0 +1,108 @@
+---
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const categories = practice.serviceCategories.filter((c) => services.some((s) => s.data.category === c))
+const grouped = categories.map((cat) => ({
+  name: cat,
+  items: services.filter((s) => s.data.category === cat),
+}))
+
+const navLinks = [
+  { label: 'About', href: '/about' },
+  { label: 'Meet the Doctors', href: '/team' },
+  { label: 'New Patients', href: '/new-patients' },
+  { label: 'Reviews', href: '/reviews' },
+  { label: 'Contact', href: '/contact' },
+]
+const currentPath = Astro.url.pathname
+const tel = practice.phone.replace(/[^+\d]/g, '')
+---
+
+<header class="sticky top-0 z-50 bg-secondary/95 backdrop-blur-md border-b border-white/10 text-white">
+  <nav class="container-px">
+    <div class="flex items-center justify-between h-16 sm:h-20">
+      <a href="/" class="shrink-0">
+        <img src="/images/logo-reverse.svg" alt="Hilltop Family Dentistry" class="h-9 sm:h-11 w-auto" />
+      </a>
+
+      <div class="hidden lg:flex items-center gap-0.5">
+        <!-- Services mega dropdown -->
+        <div class="relative group">
+          <a href="/services" class="px-3.5 py-2 rounded-full text-sm font-medium inline-flex items-center gap-1 text-white/85 hover:text-white hover:bg-white/10 transition-colors">
+            Services
+            <svg class="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </a>
+          <div class="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150 absolute left-1/2 -translate-x-1/2 top-full pt-3 w-[58rem] max-w-[92vw]">
+            <div class="rounded-2xl bg-white text-dark shadow-2xl ring-1 ring-black/5 p-6 grid grid-cols-3 gap-x-6 gap-y-5">
+              {grouped.map((group) => (
+                <div>
+                  <p class="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2">{group.name}</p>
+                  <ul class="space-y-1">
+                    {group.items.map((s) => (
+                      <li><a href={`/services/${s.slug}`} class="block text-sm text-dark/70 hover:text-primary hover:translate-x-0.5 transition py-0.5">{s.data.title}</a></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              <div class="col-span-3 border-t border-black/5 pt-3">
+                <a href="/services" class="text-sm font-semibold text-primary hover:underline">View all {services.length} services →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {navLinks.map((link) => (
+          <a href={link.href} class:list={['px-3.5 py-2 rounded-full text-sm font-medium transition-colors', currentPath.startsWith(link.href) ? 'text-white bg-white/12' : 'text-white/85 hover:text-white hover:bg-white/10']}>
+            {link.label}
+          </a>
+        ))}
+        {(practice as any).patientPortal && (
+          <a href={(practice as any).patientPortal} target="_blank" rel="noopener" class="px-3 py-2 rounded-full text-sm font-medium text-white/85 hover:text-white hover:bg-white/10 transition-colors">Portal</a>
+        )}
+        <a href={`tel:${tel}`} class="ml-1 text-sm font-semibold text-accent-soft hover:text-white px-2">{practice.phone}</a>
+        <a href="/contact" class="btn btn-gold ml-1 !py-2 !px-5 text-sm">Book Now</a>
+      </div>
+
+      <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-md text-white/85 hover:bg-white/10" aria-label="Toggle menu">
+        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+    </div>
+
+    <!-- Mobile -->
+    <div id="mobile-menu" class="hidden lg:hidden pb-4 max-h-[75vh] overflow-y-auto">
+      <a href="/services" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-white hover:bg-white/10">All Services</a>
+      {grouped.map((group) => (
+        <div class="pl-3 mb-1">
+          <p class="text-[11px] uppercase tracking-wider text-accent-soft font-semibold mt-2 mb-1">{group.name}</p>
+          {group.items.map((s) => (
+            <a href={`/services/${s.slug}`} class="block px-2 py-1.5 rounded text-sm text-white/75 hover:bg-white/10">{s.data.title}</a>
+          ))}
+        </div>
+      ))}
+      <div class="border-t border-white/10 mt-2 pt-2">
+        {navLinks.map((link) => (
+          <a href={link.href} class="block px-3 py-2.5 rounded-lg text-base font-medium text-white/85 hover:bg-white/10">{link.label}</a>
+        ))}
+      </div>
+      {(practice as any).patientPortal && (
+        <a href={(practice as any).patientPortal} target="_blank" rel="noopener" class="block px-3 py-2.5 mt-1 rounded-lg text-base font-medium text-white/85 hover:bg-white/10">Patient Portal ↗</a>
+      )}
+      <a href="/contact" class="btn btn-gold w-full mt-3">Book Now</a>
+    </div>
+  </nav>
+</header>
+
+<script is:inline>
+  function prBindMenu() {
+    const btn = document.getElementById('mobile-menu-btn')
+    const menu = document.getElementById('mobile-menu')
+    if (!btn || btn.dataset.bound) return
+    btn.dataset.bound = '1'
+    btn.addEventListener('click', () => menu?.classList.toggle('hidden'))
+  }
+  document.addEventListener('astro:page-load', prBindMenu)
+  if (document.readyState !== 'loading') prBindMenu()
+  else document.addEventListener('DOMContentLoaded', prBindMenu)
+</script>

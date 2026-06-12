@@ -1,0 +1,43 @@
+---
+interface Props {
+  title: string
+  description: string
+  href: string
+  category?: string
+  image?: string
+}
+
+const { title, description, href, category = '' } = Astro.props
+
+// Category → line icon (Heroicons-style paths)
+const ICONS: Record<string, string> = {
+  'General & Family Dentistry':
+    'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  'Restorative Dentistry':
+    'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4',
+  'Cosmetic Dentistry':
+    'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+  'Orthodontics':
+    'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  'Advanced & Specialty Care':
+    'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+}
+const icon = ICONS[category] || ICONS['General & Family Dentistry']
+---
+
+<a href={href} class="card-soft group flex h-full flex-col p-7">
+  <div class="flex items-center justify-between">
+    <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+      <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={icon} /></svg>
+    </div>
+    {category && <span class="text-[11px] uppercase tracking-wider text-dark/40 font-semibold">{category.replace(' Dentistry', '').replace(' Care', '')}</span>}
+  </div>
+  <h3 class="mt-5 text-lg font-semibold text-dark group-hover:text-primary transition-colors" style="font-family:var(--font-heading)">
+    {title}
+  </h3>
+  <p class="mt-2 text-sm text-dark/60 leading-relaxed line-clamp-3 flex-1">{description}</p>
+  <span class="mt-4 inline-flex items-center text-sm font-semibold text-primary">
+    Learn more
+    <svg class="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+  </span>
+</a>

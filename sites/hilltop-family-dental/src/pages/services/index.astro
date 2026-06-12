@@ -1,0 +1,49 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import ServiceCard from '@components/ServiceCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const categories = practice.serviceCategories.filter((c) => services.some((s) => s.data.category === c))
+const grouped = categories.map((cat) => ({
+  name: cat,
+  services: services.filter((s) => s.data.category === cat),
+}))
+---
+
+<Base title="Our Services" description={`Comprehensive dental services at ${practice.name} in ${practice.address.city}, ${practice.address.state} — general, cosmetic, restorative, orthodontics, and advanced care.`}>
+  <Hero
+    eyebrow="What we do"
+    title="A complete menu of dental care"
+    subtitle={`From routine cleanings to full-mouth restoration — ${services.length} services for the whole family, all under one roof in Casper.`}
+  />
+
+  <section class="py-16 sm:py-20">
+    <div class="container-px">
+      {grouped.map((group) => (
+        <div class="mb-16 last:mb-0 reveal">
+          <div class="flex items-center gap-4 mb-8">
+            <h2 class="text-2xl sm:text-3xl font-semibold text-dark">{group.name}</h2>
+            <span class="h-px flex-1 bg-black/10"></span>
+            <span class="text-sm text-dark/40 font-medium">{group.services.length}</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {group.services.map((service) => (
+              <ServiceCard
+                title={service.data.title}
+                description={service.data.description}
+                href={`/services/${service.slug}`}
+                category={service.data.category}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>
