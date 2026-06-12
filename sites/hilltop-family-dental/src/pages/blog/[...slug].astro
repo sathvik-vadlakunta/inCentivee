@@ -15,6 +15,7 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props
 const { Content } = await post.render()
+const faqs = post.data.faqs || []
 const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
@@ -57,6 +58,32 @@ const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
     <div class="prose-brand">
       <Content />
     </div>
+
+    {faqs.length > 0 && (
+      <section class="mt-12">
+        <h2 class="text-2xl font-semibold text-dark mb-6">Frequently Asked Questions</h2>
+        <div class="space-y-3">
+          {faqs.map((faq: { question: string; answer: string }) => (
+            <details class="card-soft group p-0">
+              <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer font-semibold list-none">
+                {faq.question}
+                <span class="text-primary text-xl transition-transform group-open:rotate-45">+</span>
+              </summary>
+              <p class="px-5 pb-5 -mt-1 text-dark/65 leading-relaxed">{faq.answer}</p>
+            </details>
+          ))}
+        </div>
+        <script type="application/ld+json" set:html={JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map((faq: { question: string; answer: string }) => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+          })),
+        })} />
+      </section>
+    )}
 
     <!-- Article Schema (BlogPosting) for search + AI discovery -->
     <script type="application/ld+json" set:html={JSON.stringify({
