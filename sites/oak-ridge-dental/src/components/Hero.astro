@@ -1,0 +1,36 @@
+---
+interface Props {
+  title: string
+  subtitle?: string
+  cta?: { label: string; href: string }
+  image?: string
+  overlay?: boolean
+}
+
+const { title, subtitle, cta, image, overlay = true } = Astro.props
+---
+
+<section
+  class="relative bg-dark text-white py-20 sm:py-28 lg:py-36"
+  style={image ? `background-image: url('${image}'); background-size: cover; background-position: center;` : ''}
+>
+  {image && overlay && <div class="absolute inset-0 bg-dark/60" />}
+  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading mb-4">
+      {title}
+    </h1>
+    {subtitle && (
+      <p class="text-lg sm:text-xl text-gray-200 max-w-2xl mx-auto mb-8">
+        {subtitle}
+      </p>
+    )}
+    {cta && (
+      <a
+        href={cta.href}
+        class="inline-block bg-primary text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-secondary transition-colors"
+      >
+        {cta.label}
+      </a>
+    )}
+  </div>
+</section>

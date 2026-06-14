@@ -1,0 +1,74 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import ServiceCard from '@components/ServiceCard.astro'
+import TeamCard from '@components/TeamCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+---
+
+<Base title={practice.name} description={practice.tagline}>
+  <Hero
+    title={`Welcome to ${practice.name}`}
+    subtitle={practice.tagline}
+    cta={{ label: 'Book Appointment', href: '/contact' }}
+  />
+
+  <!-- Services Section -->
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold font-heading">Our Services</h2>
+        <p class="mt-3 text-gray-600 max-w-2xl mx-auto">
+          Comprehensive dental care for your entire family.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.slice(0, 6).map((service) => (
+          <ServiceCard
+            title={service.data.title}
+            description={service.data.description}
+            href={`/services/${service.slug}`}
+            image={service.data.image}
+          />
+        ))}
+      </div>
+      {services.length > 6 && (
+        <div class="text-center mt-8">
+          <a href="/services" class="text-primary font-semibold hover:underline">
+            View all {services.length} services &rarr;
+          </a>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Team Section -->
+  {team.length > 0 && (
+    <section class="py-16 sm:py-20 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl font-bold font-heading">Meet Our Team</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {team.map((member) => (
+            <TeamCard
+              name={member.data.name}
+              credentials={member.data.credentials}
+              title={member.data.title}
+              photo={member.data.photo}
+              specialties={member.data.specialties}
+              href={`/team/${member.slug}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <CTABanner />
+</Base>

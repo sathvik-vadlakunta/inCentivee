@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* Oak Ridge Dental — brand: blue + coral (distinct from Hilltop's tan/slate) */
+:root {
+  --color-primary: #4f86e8;
+  --color-secondary: #2f5fb0;
+  --color-accent: #f56166;
+  --color-dark: #1d2733;
+  --color-light: #f4f8fd;
+  --font-heading: 'Outfit', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font-body); color: var(--color-dark); background: #fff; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); letter-spacing: -0.01em; }
+
+/* Brand-tuned prose for content pages */
+.prose-brand { color: color-mix(in srgb, var(--color-dark) 80%, #fff); font-size: 1.05rem; line-height: 1.7; }
+.prose-brand h2 { font-family: var(--font-heading); color: var(--color-dark); font-size: 1.6rem; font-weight: 600; margin-top: 2rem; margin-bottom: .4rem; }
+.prose-brand h3 { font-family: var(--font-heading); color: var(--color-dark); font-size: 1.25rem; font-weight: 600; margin-top: 1.4rem; }
+.prose-brand p { margin: .8rem 0; }
+.prose-brand ul { margin: 1rem 0; padding-left: 0; list-style: none; display: grid; gap: .5rem; }
+.prose-brand ul li { position: relative; padding-left: 1.75rem; }
+.prose-brand ul li::before { content: '✓'; position: absolute; left: 0; color: var(--color-primary); font-weight: 700; }
+.prose-brand a { color: var(--color-primary); text-decoration: underline; }

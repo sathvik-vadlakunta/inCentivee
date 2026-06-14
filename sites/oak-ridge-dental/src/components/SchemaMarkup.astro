@@ -1,0 +1,38 @@
+---
+import practice from '@data/practice.json'
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Dentist',
+  name: practice.name,
+  description: practice.tagline,
+  url: `https://${practice.domain}`,
+  telephone: practice.phone,
+  email: practice.email || undefined,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: practice.address.street,
+    addressLocality: practice.address.city,
+    addressRegion: practice.address.state,
+    postalCode: practice.address.zip,
+    addressCountry: 'US',
+  },
+  geo: {
+    '@type': 'GeoCoordinates',
+    latitude: practice.geo.lat,
+    longitude: practice.geo.lng,
+  },
+  openingHoursSpecification: practice.hours
+    .filter((h: { note?: string }) => !h.note)
+    .map((h: { days: string; open?: string; close?: string }) => ({
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: h.days,
+      opens: h.open,
+      closes: h.close,
+    })),
+  medicalSpecialty: practice.serviceCategories,
+  sameAs: Object.values(practice.social).filter(Boolean),
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

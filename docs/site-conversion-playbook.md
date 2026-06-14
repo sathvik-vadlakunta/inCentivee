@@ -308,5 +308,27 @@ same bugs never recur.
 
 ---
 
+## 11. Keep `_template` in sync (learned from the Oak Ridge test)
+
+Test-converting **Oak Ridge Dental** (WordPress, ~70 services) validated the chain end-to-end
+but exposed that **`sites/_template/` is stale** — it predates the Hilltop improvements, so
+forking it reproduced every known gotcha (the keystatic `client:only` build bug, no
+`@tailwindcss/typography`, no `404.astro`, no `/team` index → soft-404, template-blue colors).
+The playbook's gotcha library (§4) caught all of them, but the chain shouldn't have to re-fix
+them every time.
+
+**Action:** after a polished build (currently Hilltop), **backport its platform into
+`_template`**: the `global.css` design system + `.prose-brand`, the polished components (Nav
+with Services/Areas dropdowns, Hero, ServiceCard, TeamCard w/ `object-top`, Footer,
+Testimonials, CTABanner), the pages (`404.astro`, `team/index`, `reviews`, `new-patients`,
+`dentist/[location]`), the typography plugin in `package.json`, View-Transition-safe scripts,
+and the SEO/AEO scaffolding. Remove the stale manual `keystatic` page. Then every conversion
+starts finished, not basic — and `scaffold-site` only swaps data/brand/content.
+
+> Rule: when you fix a bug or add a feature on a client site that belongs to the platform,
+> port it to `_template` the same day.
+
+---
+
 *Living doc — update after each conversion with new gotchas. Companion: the per-client
 results HTML (e.g. `docs/hilltop-rebuild-2026-06-12.html`).*
