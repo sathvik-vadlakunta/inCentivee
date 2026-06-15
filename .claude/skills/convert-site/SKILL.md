@@ -25,6 +25,17 @@ skill is the runbook that ties the sub-skills together.
 6. View-Transition scripts run on **`astro:page-load`**, not `DOMContentLoaded`.
 7. Portrait photos use **`object-top`**; **allow AI crawlers** in robots.txt.
 8. **curl-verify the live production alias** after deploy (cache-bust with `?z=...`).
+9. **Purge previous-client tokens** after forking `_template` (grep `src/` for prior
+   name/city/state/doctors/logo; normalize exact brand spelling). [playbook §11, §12.1]
+10. **Mine `practicerank.db` + `analysis.json`** for real reviews/place_id and the AI
+    FAQ/meta/gap recommendations — roll them out. [§12.1]
+11. **Two human gates:** (a) asset-rehosting authorization, (b) NAP reconciliation when
+    site/GBP/CRM phone or address disagree — surface it, don't auto-pick. [§12.7]
+12. **Full schema set + both llms files + cited 1,500-word blogs + persistent chat widget.**
+    [§12.3–12.5]
+
+> Read **playbook §12 "Lessons from the Oak Ridge full build"** before starting — it captures the
+> data-sourcing shortcuts and the gotchas that cost the most time on the first full run.
 
 ## Process
 

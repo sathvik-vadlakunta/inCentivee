@@ -57,3 +57,15 @@ curl -s -L "$B/robots.txt" | grep -A1 'GPTBot'
 
 ## Output
 A green QA report, or a list of failed assertions with the specific fix to apply.
+
+## Lessons learned — Oak Ridge run (2026-06-15) — see playbook §12
+Add these curl assertions to the QA pass:
+- **No prior-client tokens** in live HTML: `curl … | grep -i "hilltop\|wyoming\|casper"` → empty.
+- **Schema present:** homepage has `"AggregateRating"`, `"speakable"`, `"employee"`; `/reviews`
+  has `"@type":"Review"`; a provider page has `"Physician"`; a blog post has `"FAQPage"` + `"citation"`.
+- **Chat widget reachable + persistent:** the embed script tag is in HTML and its runtime URL
+  returns 200; after a client-side nav the widget DOM survives (loaded once, not re-injected).
+- **AEO files:** `llms.txt` *and* `llms-full.txt` return 200; sitemap shows differentiated
+  priorities; robots lists the AI agents.
+- **Reviews real:** `/reviews` shows actual reviewer names + the real rating/count.
+- Keep cache-busting with `?z=` and check the **production alias**, not the hash deploy URL.

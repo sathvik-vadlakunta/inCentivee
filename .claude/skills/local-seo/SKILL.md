@@ -31,3 +31,12 @@ with localized copy, drive times, text directions, and a Google route map. Use v
 - Don't reuse the server-side `GOOGLE_PLACES_API_KEY` in public HTML — create a restricted
   Maps Embed API key (referrer + Embed-API-only).
 - Confirm area pages appear in the sitemap after build.
+
+## Lessons learned — Oak Ridge run (2026-06-15) — see playbook §12
+- **Real reviews** come from `practicerank.db.google_places` (rating/count/place_id) +
+  `scripts/fetch-reviews.mjs` (Places API New, **5-star only**, max 5 per Google). Wire the rating
+  into `practice.json.reviews` + AggregateRating; never invent reviews.
+- **Reconcile NAP, don't auto-pick.** Site / GBP / CRM phone+address often disagree — surface the
+  discrepancy to the human (the GBP phone is usually the real office line; tracking numbers differ).
+- Location pages must read `STATE`/`CITY`/doctors from `practice.json` — the `_template`'s
+  `dentist/[location].astro` had hardcoded Wyoming/Casper/Gallup leftovers.

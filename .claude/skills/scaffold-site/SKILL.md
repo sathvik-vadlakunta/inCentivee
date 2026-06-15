@@ -47,3 +47,14 @@ isn't a cookie-cutter. Runs after `/scrape-site`. Use via `/scaffold-site <slug>
 
 ## Output
 A bootable `sites/<slug>/` with real brand + assets + practice.json, ready for content.
+
+## Lessons learned — Oak Ridge run (2026-06-15) — see playbook §12
+- **Purge previous-client tokens.** `_template` was forked from a real client, so grep all of
+  `src/` for the prior name/city/state/doctors/`logo-reverse.svg` and replace. Also `grep -ril`
+  both brand-name spellings ("Oak Ridge" / "Oakridge") and normalize to the exact one.
+- **Two-mode header:** transparent-fixed only on `/`; solid sticky (`bg-secondary`) on all other
+  pages (pass a `solid` prop). A single global transparent header breaks every interior page.
+- **Services nav = category-flyout** (left categories → right services) for >~20 services, not a
+  giant grid. **Mobile menu = collapsible `<details>` accordions** (don't auto-expand the list).
+- Nav CTA buttons need `whitespace-nowrap` or they wrap and look "fat."
+- Footer logo + "Proudly serving" + tagline must read from `practice.json`, not hardcoded.

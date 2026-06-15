@@ -41,3 +41,14 @@ sourced blog posts — for a scaffolded site. Runs after `/scaffold-site`. Use v
 
 ## Output
 Real, sourced, service-aligned content collections that build cleanly.
+
+## Lessons learned — Oak Ridge run (2026-06-15) — see playbook §12
+- **Roll out the AI analysis.** From `data/output/<customer>/analysis.json`: map `faq_entries`
+  leaf-slugs → service `.md` files and inject the 5–6 FAQs each; apply `service_descriptions` as
+  meta; build the pages `content_gaps` flags (e.g. New Patients).
+- **Crawlable provider pages.** Generate `/team/<slug>` pages from `practice.json.providers` bios
+  (with `Physician`+`Dentist` schema) — a bio-in-modal is invisible to crawlers/AI.
+- **Blogs must be substantial:** 1,500+ words, internally linked to service pages, with `faqs` +
+  `sources` frontmatter. **Cite real authoritative orgs** (ADA/MouthHealthy, AAID, AAE, AAPD,
+  FDA/manufacturer, Cleveland Clinic) and **verify each fact** before citing — never fabricate.
+- Confirm `src/content/config.ts` blog schema includes `faqs` *and* `sources`.

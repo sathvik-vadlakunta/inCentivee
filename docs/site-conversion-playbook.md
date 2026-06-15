@@ -199,6 +199,17 @@ colors in CSS, schema present, redirects 301, unknown URL → 404, sitemap compl
 | Keyless Google map shows a pin, not a route | Legacy embed can't draw routes reliably | Use **Maps Embed API directions** (free, unlimited) with a restricted key |
 | Map cost worry | — | Maps **Embed API is free/unlimited**; Places/Directions/JS APIs are billed |
 | Stale plugin/zip artifacts | Re-zip/rebuild after edits | Always rebuild the artifact + re-verify live (caching!) |
+| Footer/location pages show the **previous client's** name, city, state, doctors, logo | `_template` was forked from a real client (Hilltop/Casper/Wyoming) and tokens leaked | After scaffold, **grep the whole `src/` for every prior-client token** (name, city, state, doctor names, `logo-reverse.svg`) and replace; see §11 / §12.1 |
+| Brand name spacing wrong ("Oak Ridge" vs "Oakridge") | Scaffold guessed the spacing | Confirm **exact** brand spelling from the live `<title>`/logo; `grep -ril` both variants and normalize |
+| Fixed transparent header breaks interior pages (overlap, white logo on white) | One global header built for the homepage hero | **Two-mode header**: transparent-fixed on `/`, solid sticky (`bg-secondary`) on every other page (reserves space) |
+| Services mega-dropdown is a giant scroll | All services in one grid | **Category-flyout**: left = categories, right = that category's services (fixed height). Use for >~20 services |
+| Mobile menu auto-expands a huge service list | Rendered full tree open | Collapsible native `<details>` accordions (Services/Areas/About/Resources) |
+| Nav CTA buttons wrap to 2 lines (look "fat") | No `whitespace-nowrap` | Add `whitespace-nowrap` + explicit `py`/`px` to nav CTAs |
+| Third-party chat widget (DearDoc) never appears / vanishes after navigating | Embed self-inits on `window.load` + guards on a global; re-injecting per-nav misses `load` and hits the guard | Load the embed **once** at initial load; on `astro:before-swap` **move the widget's DOM nodes** (e.g. `[id^="ddc-"]`) into the incoming document so it persists |
+| Google API key returns `API_KEY_INVALID` even though it works in prod | Shell extraction **truncated** the key (39→36 chars) | Extract env keys exactly (`val="${line#KEY=}"`); Google keys are 39 chars starting `AIza` |
+| Three different phone numbers (site vs GBP vs CRM) | NAP drift across systems | **Flag the discrepancy to the human — never auto-pick.** Reconcile from the source of truth |
+| Bios only in a JS modal | Not crawlable / no AI citation | Also generate **crawlable `/team/<slug>` pages** with `Physician`+`Dentist` schema |
+| Blog posts thin + uncited | First pass was ~500 words, no sources | 1,500+ words, internal links, **real cited authoritative sources** (ADA, AAID, AAE, AAPD, FDA/mfr), FAQ + `citation` + `reviewedBy` schema |
 
 ---
 
@@ -327,6 +338,74 @@ starts finished, not basic — and `scaffold-site` only swaps data/brand/content
 
 > Rule: when you fix a bug or add a feature on a client site that belongs to the platform,
 > port it to `_template` the same day.
+
+---
+
+## 12. Lessons from the Oak Ridge full build (2026-06-15)
+
+### 12.1 — Mine the prod platform DB *before* scraping the live site
+Most "ground truth" already exists in `practicerank.db` on the droplet
+(`/home/kody/dental-marketing/data/practicerank.db`) and the per-customer output dir:
+
+- **`google_places` table** → real `place_id`, `rating`, `review_count` (high/med/low confidence)
+  for every customer. Wire these straight into `practice.json.reviews`. No need to re-derive.
+- **`reviews` table** → stored review text (may be empty; if so, fetch live — see 12.2).
+- **`data/output/<customer>/analysis.json`** → the geo_agent's recommendations:
+  `faq_entries` (5–6 FAQs per service URL), `service_descriptions` (keyword/location-rich meta),
+  `content_gaps` (missing pages to build), `priority_actions` (NAP fixes, schema, etc.).
+  **Roll these out:** map FAQ leaf-slugs → our service `.md` files and inject them; apply the
+  meta descriptions; build the gap pages it flags.
+- **`customers` table** → may hold a *different* phone/email than the live site (NAP drift).
+
+### 12.2 — Google reviews via Places API (New)
+- Key lives in droplet `.env` as `GOOGLE_PLACES_API_KEY` (39 chars, `AIza…`). **Extract it
+  exactly** — a truncated key returns `API_KEY_INVALID` and sends you down a wrong rabbit hole.
+- `POST places:searchText` to find the place; `GET /v1/places/{id}` with
+  `X-Goog-FieldMask: rating,userRatingCount,reviews` for details.
+- **Google returns at most 5 reviews per place** — that's the API cap, not a bug. The aggregate
+  rating/count is the full number.
+- Per business preference, **filter to 5-star reviews only** for the on-site wall.
+- A repeatable refresher lives at `scripts/fetch-reviews.mjs`
+  (`GOOGLE_PLACES_API_KEY=… node scripts/fetch-reviews.mjs [site]`) — reads each site's
+  `reviews.placeId`, writes 5-star reviews to `testimonials.json`, refreshes rating/count.
+
+### 12.3 — The full schema set (don't stop at Dentist + FAQ)
+On top of `Dentist`/`LocalBusiness`, `MedicalProcedure`, `BreadcrumbList`, `FAQPage`,
+`AggregateRating`, also ship:
+- **Individual `Review`** nodes (from the real 5-star reviews) on `/reviews`.
+- **`Physician`+`Dentist`** on each crawlable provider page (`/team/<slug>`).
+- **`speakable`** (cssSelector → `h1`, `.eyebrow`, `[data-speakable]`) for voice/AI.
+- **`sameAs` + `hasMap`** → the real GBP (`maps/place/?q=place_id:<id>`), Facebook, etc.
+- **`employee`** array linking the doctors into the practice entity.
+- Blog: **`citation`** (from `sources` frontmatter) + **`reviewedBy`** (lead dentist).
+
+### 12.4 — AEO content depth
+- Generate **both** `llms.txt` *and* `llms-full.txt` (full dump: every service + FAQs, all
+  bios, reviews). `llms-full.txt` is the one LLMs prefer.
+- Blogs must be **comprehensive (1,500+ words)**, internally linked to service pages, with a
+  **Sources & references** block of real authoritative orgs (ADA/MouthHealthy, AAID, AAE,
+  AAPD, FDA/manufacturer like Neocis/Dentsply Sirona, Cleveland Clinic) — verify each fact
+  before citing. Add `faqs` + `sources` frontmatter so the template renders FAQ/citation schema.
+
+### 12.5 — Third-party widgets + View Transitions
+Chat/booking widgets (DearDoc, etc.) self-init on `window.load` and guard against double-init.
+**Load once at initial page load; persist their DOM across `astro:before-swap`** by moving the
+widget's nodes into the incoming document. Never re-inject per navigation (misses `load`, hits
+the guard → widget disappears after the first client-side nav).
+
+### 12.6 — Sitemap & robots best practice
+- Sitemap: use the `serialize` hook for **per-page priority** (home 1.0 → key pages 0.9 →
+  service/location/provider 0.8 → blog 0.6) instead of a flat 0.7. `site` must be the prod
+  domain so URLs are correct pre-cutover.
+- robots: explicit **allow-list of AI agents** (GPTBot, OAI-SearchBot, ChatGPT-User,
+  Google-Extended, ClaudeBot, anthropic-ai, Claude-Web, PerplexityBot, Applebot-Extended,
+  Amazonbot, meta-externalagent, CCBot) + `Sitemap:` + comment-link both llms files.
+
+### 12.7 — Human gates that actually matter
+- **Asset authorization:** don't bulk-rehost a client's copyrighted photos/logo/headshots until
+  authorization is confirmed (an asset pack from the client, or explicit go-ahead).
+- **NAP reconciliation:** when site/GBP/CRM disagree on phone/address, **surface it and let the
+  human choose** — don't silently pick one.
 
 ---
 

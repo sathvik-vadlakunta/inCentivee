@@ -42,3 +42,15 @@ sitemap, 301 redirects, a real 404, and analytics wiring. Use via `/seo-aeo <slu
 ## Guardrails
 - After deploy, verify: unknown URL → 404, sitemap complete + has lastmod, robots allows AI,
   schema present, GTM loads. (See `/build-deploy-verify`.)
+
+## Lessons learned — Oak Ridge run (2026-06-15) — see playbook §12
+- **Full schema set**, not just Dentist+FAQ: individual `Review` (real 5-star) on `/reviews`,
+  `Physician`+`Dentist` on provider pages, `speakable`, `sameAs`+`hasMap` → real GBP
+  (`maps/place/?q=place_id:<id>`) + Facebook, `employee` array, blog `citation`+`reviewedBy`.
+- Generate **both `llms.txt` and `llms-full.txt`** (full dump of services+FAQs, bios, reviews).
+- Wire **GA4 (`G-…`) and GTM (`GTM-…`)** — both came off the old site.
+- **Sitemap `serialize`** for per-page priority (home 1.0 → key 0.9 → service/location/provider
+  0.8 → blog 0.6), not a flat value. `site` = prod domain.
+- **robots:** explicit AI allow-list (GPTBot, OAI-SearchBot, ChatGPT-User, Google-Extended,
+  ClaudeBot, anthropic-ai, Claude-Web, PerplexityBot, Applebot-Extended, Amazonbot,
+  meta-externalagent, CCBot) + `Sitemap:` + comment-link both llms files.

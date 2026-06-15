@@ -55,3 +55,15 @@ curl -sL "$URL/team" | tr '<' '\n<' | grep -i '<img' | grep -i 'alt="Dr\.'
 Write `sites/<slug>/.scrape.json`. Then **present the service list + key business facts to the
 user and get explicit confirmation** before any building begins. List anything missing that
 needs the client (headshots, exact hours, membership pricing).
+
+## Lessons learned — Oak Ridge run (2026-06-15) — see playbook §12
+- **Mine the prod DB first.** `practicerank.db` already has `google_places` (real
+  `place_id`/`rating`/`review_count`) and `data/output/<customer>/analysis.json` (AI `faq_entries`,
+  `service_descriptions`, `content_gaps`, `priority_actions`). Pull these before re-deriving anything.
+- Capture the **exact brand name spelling/spacing** from `<title>`/logo (e.g. "Oakridge" ≠ "Oak Ridge").
+- Capture the brand color from the live CSS variable (e.g. `--main-color`), not a guess.
+- Capture **every tracking + widget embed**: GA4 (`G-…`) *and* GTM (`GTM-…`), and any chat widget
+  (DearDoc Firebase `code.js`, tawk.to, etc.) — note its init mechanism.
+- Capture **all phone/NAP values** wherever they appear (site, GBP, CRM) — they often disagree.
+- Pull the **full asset set** (logo color+white, favicon, og, headshots, backgrounds, gallery) —
+  but gate re-hosting on client authorization.
