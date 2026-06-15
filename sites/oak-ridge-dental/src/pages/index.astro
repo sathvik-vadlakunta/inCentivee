@@ -26,10 +26,10 @@ const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).s
 ---
 
 <Base title={practice.name} description={practice.tagline}>
-  <!-- Hero -->
-  <section class="relative overflow-hidden bg-gradient-to-br from-secondary to-primary text-white">
-    <div class="blob" style="width:30rem;height:30rem;background:#8fb4f6;top:-8rem;right:-6rem;"></div>
-    <div class="blob" style="width:22rem;height:22rem;background:#f56166;bottom:-9rem;left:-6rem;opacity:0.3;"></div>
+  <!-- Hero (real practice banner) -->
+  <section class="relative overflow-hidden bg-secondary text-white">
+    <img src="/images/oak/banner1.webp" alt="Oak Ridge Dental in Farmington, Utah" class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 bg-gradient-to-br from-secondary/92 via-secondary/85 to-primary/80"></div>
     <div class="container-px relative grid lg:grid-cols-12 gap-12 items-center py-20 lg:py-28">
       <div class="lg:col-span-7">
         <p class="eyebrow text-white/80" style="color:rgba(255,255,255,.85)">Farmington, Utah · Family &amp; Cosmetic Dentistry</p>
@@ -123,12 +123,16 @@ const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).s
         <p class="eyebrow">Meet your dentists</p>
         <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Three dentists who care for you like family</h2>
       </div>
-      <div class="mt-12 grid sm:grid-cols-3 gap-6">
+      <div class="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-6">
         {practice.providers.map((doc) => (
-          <a href="/team" class="reveal card-soft p-7 text-center group">
-            <div class="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white grid place-items-center text-2xl font-semibold">{initials(doc.name)}</div>
-            <h3 class="mt-4 text-lg font-semibold text-dark group-hover:text-primary transition-colors">{doc.name}, {doc.credentials}</h3>
-            <p class="text-sm text-primary">{doc.title}</p>
+          <a href="/team" class="reveal card-soft overflow-hidden text-center group">
+            {doc.photo
+              ? <div class="aspect-square overflow-hidden bg-cream"><img src={doc.photo} alt={`${doc.name}, ${doc.credentials}`} class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" loading="lazy" /></div>
+              : <div class="aspect-square grid place-items-center bg-gradient-to-br from-primary to-secondary text-white text-3xl font-semibold">{initials(doc.name)}</div>}
+            <div class="p-5">
+              <h3 class="text-lg font-semibold text-dark group-hover:text-primary transition-colors">{doc.name}, {doc.credentials}</h3>
+              <p class="text-sm text-primary">{doc.title}</p>
+            </div>
           </a>
         ))}
       </div>

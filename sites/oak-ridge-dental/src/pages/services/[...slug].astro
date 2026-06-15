@@ -22,7 +22,7 @@ const CAT_IMG: Record<string, string> = {
   'Orthodontics': '/images/svc-invisalign.jpg',
   'Advanced & Specialty Care': '/images/photo-07.jpg',
 }
-const heroImg = service.data.image || CAT_IMG[service.data.category] || ''
+const heroImg = service.data.image || CAT_IMG[service.data.category] || '/images/oak/internal-banner.webp'
 
 const related = services
   .filter((s) => s.data.category === service.data.category && s.slug !== service.slug)
