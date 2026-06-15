@@ -38,20 +38,28 @@ const tel = practice.phone.replace(/[^+\d]/g, '')
             Services
             <svg class="w-3.5 h-3.5 transition-transform group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
           </a>
-          <div class="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150 absolute left-1/2 -translate-x-1/2 top-full pt-3 w-[58rem] max-w-[92vw]">
-            <div class="rounded-2xl bg-white text-dark shadow-2xl ring-1 ring-black/5 p-6 grid grid-cols-3 gap-x-6 gap-y-5">
-              {grouped.map((group) => (
-                <div>
-                  <p class="text-[11px] uppercase tracking-wider text-accent font-semibold mb-2">{group.name}</p>
-                  <ul class="space-y-1">
-                    {group.items.map((s) => (
-                      <li><a href={`/services/${s.slug}`} class="block text-sm text-dark/70 hover:text-primary hover:translate-x-0.5 transition py-0.5">{s.data.title}</a></li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-              <div class="col-span-3 border-t border-black/5 pt-3">
-                <a href="/services" class="text-sm font-semibold text-primary hover:underline">View all {services.length} services →</a>
+          <div class="invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-150 absolute left-1/2 -translate-x-1/2 top-full pt-3 w-[50rem] max-w-[94vw]">
+            <div id="svc-mega" class="flex rounded-2xl bg-white text-dark shadow-2xl ring-1 ring-black/5 overflow-hidden">
+              <ul class="w-60 shrink-0 bg-light/70 p-3 border-r border-black/5">
+                {grouped.map((group, i) => (
+                  <li>
+                    <button type="button" data-svc-cat={i} class={`svc-cat flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors ${i === 0 ? 'bg-white text-primary' : 'text-dark/75 hover:bg-white hover:text-primary'}`}>
+                      <span>{group.name}</span>
+                      <svg class="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </li>
+                ))}
+                <li class="mt-1 border-t border-black/5 pt-1"><a href="/services" class="block rounded-lg px-3 py-2 text-sm font-semibold text-primary hover:bg-white">View all {services.length} services →</a></li>
+              </ul>
+              <div class="relative flex-1 min-h-[15rem]">
+                {grouped.map((group, i) => (
+                  <div data-svc-panel={i} class={`svc-panel absolute inset-0 overflow-y-auto p-6 ${i === 0 ? '' : 'hidden'}`}>
+                    <p class="text-[11px] uppercase tracking-wider text-accent font-semibold mb-3">{group.name}</p>
+                    <ul class="columns-2 gap-x-6 [&>li]:mb-1">
+                      {group.items.map((s) => (<li class="break-inside-avoid"><a href={`/services/${s.slug}`} class="block text-sm text-dark/70 hover:text-primary py-0.5">{s.data.title}</a></li>))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -95,33 +103,41 @@ const tel = practice.phone.replace(/[^+\d]/g, '')
     </div>
 
     <!-- Mobile -->
-    <div id="mobile-menu" class="hidden lg:hidden pb-4 max-h-[75vh] overflow-y-auto">
-      <a href="/services" class="block px-3 py-2.5 rounded-lg text-base font-semibold text-white hover:bg-white/10">All Services</a>
-      {grouped.map((group) => (
-        <div class="pl-3 mb-1">
-          <p class="text-[11px] uppercase tracking-wider text-accent-soft font-semibold mt-2 mb-1">{group.name}</p>
-          {group.items.map((s) => (
-            <a href={`/services/${s.slug}`} class="block px-2 py-1.5 rounded text-sm text-white/75 hover:bg-white/10">{s.data.title}</a>
+    <div id="mobile-menu" class="hidden lg:hidden pb-4 max-h-[78vh] overflow-y-auto">
+      <!-- Services accordion (collapsed by default) -->
+      <details class="group/acc border-b border-white/10">
+        <summary class="flex items-center justify-between px-3 py-3 text-base font-semibold text-white cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+          Services
+          <svg class="w-4 h-4 transition-transform group-open/acc:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+        </summary>
+        <div class="pb-2">
+          <a href="/services" class="block px-3 py-1.5 rounded text-sm font-semibold text-accent-soft hover:bg-white/10">All services →</a>
+          {grouped.map((group) => (
+            <div class="pl-3 mb-1">
+              <p class="text-[11px] uppercase tracking-wider text-accent-soft font-semibold mt-2 mb-1">{group.name}</p>
+              {group.items.map((s) => (<a href={`/services/${s.slug}`} class="block px-2 py-1.5 rounded text-sm text-white/75 hover:bg-white/10">{s.data.title}</a>))}
+            </div>
           ))}
         </div>
-      ))}
-      <div class="border-t border-white/10 mt-2 pt-2">
-        {navLinks.map((link) => (
-          <a href={link.href} class="block px-3 py-2.5 rounded-lg text-base font-medium text-white/85 hover:bg-white/10">{link.label}</a>
-        ))}
-      </div>
+      </details>
+
       {areas.length > 0 && (
-        <div class="border-t border-white/10 mt-2 pt-2">
-          <p class="text-[11px] uppercase tracking-wider text-accent-soft font-semibold px-3 mb-1">Areas We Serve</p>
-          {areas.map((a) => (
-            <a href={`/dentist/${areaSlug(a)}`} class="block px-3 py-2 rounded-lg text-sm text-white/75 hover:bg-white/10">Dentist in {a}</a>
-          ))}
-        </div>
+        <details class="group/acc border-b border-white/10">
+          <summary class="flex items-center justify-between px-3 py-3 text-base font-semibold text-white cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            Areas We Serve
+            <svg class="w-4 h-4 transition-transform group-open/acc:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </summary>
+          <div class="pb-2 pl-3">
+            {areas.map((a) => (<a href={`/dentist/${areaSlug(a)}`} class="block px-2 py-1.5 rounded text-sm text-white/75 hover:bg-white/10">Dentist in {a}</a>))}
+          </div>
+        </details>
       )}
+
+      {navLinks.map((link) => (<a href={link.href} class="block px-3 py-3 border-b border-white/10 text-base font-semibold text-white hover:bg-white/10">{link.label}</a>))}
       {(practice as any).patientPortal && (
-        <a href={(practice as any).patientPortal} target="_blank" rel="noopener" class="block px-3 py-2.5 mt-1 rounded-lg text-base font-medium text-white/85 hover:bg-white/10">Patient Portal ↗</a>
+        <a href={(practice as any).patientPortal} target="_blank" rel="noopener" class="block px-3 py-3 border-b border-white/10 text-base font-semibold text-white hover:bg-white/10">Patient Portal ↗</a>
       )}
-      <a href="/contact" class="btn btn-gold w-full mt-3">Book Now</a>
+      <a href="/contact" class="btn btn-gold w-full mt-4">Book Now</a>
     </div>
   </nav>
 </header>
@@ -130,9 +146,32 @@ const tel = practice.phone.replace(/[^+\d]/g, '')
   function prBindMenu() {
     const btn = document.getElementById('mobile-menu-btn')
     const menu = document.getElementById('mobile-menu')
-    if (!btn || btn.dataset.bound) return
-    btn.dataset.bound = '1'
-    btn.addEventListener('click', () => menu?.classList.toggle('hidden'))
+    if (btn && !btn.dataset.bound) {
+      btn.dataset.bound = '1'
+      btn.addEventListener('click', () => menu?.classList.toggle('hidden'))
+    }
+    prBindServicesMega()
+  }
+  function prBindServicesMega() {
+    var cats = document.querySelectorAll('.svc-cat')
+    var panels = document.querySelectorAll('.svc-panel')
+    if (!cats.length) return
+    cats.forEach(function (btn) {
+      if (btn.dataset.bound) return
+      btn.dataset.bound = '1'
+      var activate = function () {
+        var i = btn.getAttribute('data-svc-cat')
+        cats.forEach(function (b) {
+          var on = b.getAttribute('data-svc-cat') === i
+          b.classList.toggle('bg-white', on)
+          b.classList.toggle('text-primary', on)
+          b.classList.toggle('text-dark/75', !on)
+        })
+        panels.forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-svc-panel') !== i) })
+      }
+      btn.addEventListener('mouseenter', activate)
+      btn.addEventListener('focus', activate)
+    })
   }
   document.addEventListener('astro:page-load', prBindMenu)
   if (document.readyState !== 'loading') prBindMenu()

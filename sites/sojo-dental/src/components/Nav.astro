@@ -199,41 +199,36 @@ const navLinks = [
     {/* Mobile Nav */}
     <div id="mobile-menu" class="hidden lg:hidden pb-6">
       {navLinks.map((link) => (
-        <div>
-          <a
-            href={link.href}
-            class:list={[
-              'block px-3 py-2.5 text-sm font-medium uppercase tracking-wider',
-              currentPath === link.href
-                ? 'text-primary'
-                : 'text-white hover:text-primary',
-            ]}
-          >
-            {link.label}
-          </a>
-          {link.children && (
-            <div class="pl-4">
+        link.children ? (
+          <details class="group/acc border-b border-white/10">
+            <summary class="flex items-center justify-between px-3 py-3 text-sm font-medium uppercase tracking-wider text-white cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+              {link.label}
+              <svg class="w-4 h-4 transition-transform group-open/acc:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+            </summary>
+            <div class="pb-2">
+              <a href={link.href} class="block px-3 py-1.5 text-xs uppercase tracking-wider text-primary hover:text-white">All {link.label} →</a>
               {link.children.map((child: any) => (
-                <div>
-                  <a
-                    href={child.href}
-                    target={child.external ? '_blank' : undefined}
-                    class="block px-3 py-1.5 text-xs uppercase tracking-wider text-gray-400 hover:text-primary"
-                  >
-                    {child.label}
-                  </a>
-                  {child.children && (
-                    <div class="pl-4">
+                child.children ? (
+                  <details class="group/sub">
+                    <summary class="flex items-center justify-between px-3 py-2 text-xs uppercase tracking-wider text-gray-300 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                      {child.label}
+                      <svg class="w-3.5 h-3.5 transition-transform group-open/sub:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                    </summary>
+                    <div class="pl-5 pb-1">
                       {child.children.map((gc: any) => (
-                        <a href={gc.href} class="block px-3 py-1 text-xs text-gray-500 hover:text-primary">{gc.label}</a>
+                        <a href={gc.href} class="block px-3 py-1 text-xs text-gray-400 hover:text-primary">{gc.label}</a>
                       ))}
                     </div>
-                  )}
-                </div>
+                  </details>
+                ) : (
+                  <a href={child.href} target={child.external ? '_blank' : undefined} rel={child.external ? 'noopener' : undefined} class="block px-3 py-2 text-xs uppercase tracking-wider text-gray-300 hover:text-primary">{child.label}</a>
+                )
               ))}
             </div>
-          )}
-        </div>
+          </details>
+        ) : (
+          <a href={link.href} class:list={['block px-3 py-3 border-b border-white/10 text-sm font-medium uppercase tracking-wider', currentPath === link.href ? 'text-primary' : 'text-white hover:text-primary']}>{link.label}</a>
+        )
       ))}
       <div class="mt-4 px-3 flex flex-col gap-2">
         <a

@@ -12,7 +12,28 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
   integrations: [
-    sitemap(),
+    sitemap({
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+      serialize(item) {
+        const path = new URL(item.url).pathname
+        if (path === '/') {
+          item.priority = 1.0
+          item.changefreq = 'weekly'
+        } else if (['/contact', '/new-patients', '/services', '/financing', '/reviews', '/team', '/about'].includes(path.replace(/\/$/, ''))) {
+          item.priority = 0.9
+          item.changefreq = 'monthly'
+        } else if (path.startsWith('/services/') || path.startsWith('/dentist/') || path.startsWith('/team/')) {
+          item.priority = 0.8
+          item.changefreq = 'monthly'
+        } else if (path.startsWith('/blog/')) {
+          item.priority = 0.6
+          item.changefreq = 'monthly'
+        }
+        return item
+      },
+    }),
     markdoc(),
     keystatic(),
   ],

@@ -1,5 +1,6 @@
 ---
 import Base from '@layouts/Base.astro'
+import CTABanner from '@components/CTABanner.astro'
 import practice from '@data/practice.json'
 import { getCollection } from 'astro:content'
 
@@ -15,99 +16,137 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props
 const { Content } = await post.render()
-const faqs = post.data.faqs || []
-const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-})
+const base = `https://${practice.domain}`
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const faqs: { question: string; answer: string }[] = post.data.faqs || []
+const sources: { title: string; publisher?: string; url: string }[] = post.data.sources || []
+// E-E-A-T: medically reviewed by the lead dentist
+const reviewer = (practice.providers || [])[0]
+const reviewerName = reviewer ? `${reviewer.name}, ${reviewer.credentials}` : practice.name
+
+// Related services (link the post's tags to real service pages)
+const allServices = await getCollection('services')
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+const related = (post.data.tags || [])
+  .map((t: string) => allServices.find((s) => slugify(s.data.title) === slugify(t) || s.data.category === t))
+  .filter((s, i, arr): s is (typeof allServices)[number] => Boolean(s) && arr.indexOf(s) === i)
+  .slice(0, 4)
+
+const formattedDate = post.data.pubDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.data.title,
+  description: post.data.description,
+  datePublished: post.data.pubDate.toISOString(),
+  dateModified: (post.data.updatedDate || post.data.pubDate).toISOString(),
+  author: { '@type': 'Organization', name: post.data.author || practice.name, url: base },
+  reviewedBy: reviewer ? { '@type': 'Person', name: reviewerName, jobTitle: 'Dentist' } : undefined,
+  publisher: { '@type': 'Organization', name: practice.name, url: base, logo: { '@type': 'ImageObject', url: `${base}/images/oak/logo.webp` } },
+  image: post.data.image ? `${base}${post.data.image}` : `${base}/og.webp`,
+  mainEntityOfPage: `${base}/blog/${post.slug}`,
+  citation: sources.length ? sources.map((s) => ({ '@type': 'CreativeWork', name: s.title, publisher: s.publisher, url: s.url })) : undefined,
+}
+const faqSchema =
+  faqs.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })),
+      }
+    : null
 ---
 
 <Base title={post.data.title} description={post.data.description} image={post.data.image}>
-  <!-- Breadcrumb -->
-  <nav class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-gray-500">
-    <a href="/" class="hover:text-primary">Home</a>
-    <span class="mx-2">/</span>
-    <a href="/blog" class="hover:text-primary">Blog</a>
-    <span class="mx-2">/</span>
-    <span class="text-gray-900 truncate">{post.data.title}</span>
-  </nav>
-
-  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-    <header class="mb-8">
-      <time class="text-sm text-gray-500">{formattedDate}</time>
-      <h1 class="mt-2 text-3xl sm:text-4xl font-bold font-heading">{post.data.title}</h1>
-      <p class="mt-3 text-lg text-gray-600">{post.data.description}</p>
-      {post.data.tags.length > 0 && (
-        <div class="mt-4 flex flex-wrap gap-2">
-          {post.data.tags.map((tag: string) => (
-            <span class="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full">{tag}</span>
-          ))}
+  <article>
+    <!-- Header -->
+    <header class="bg-secondary text-white">
+      <div class="container-px py-4 text-sm text-white/70">
+        <a href="/" class="hover:text-white">Home</a><span class="mx-2">/</span>
+        <a href="/blog" class="hover:text-white">Blog</a><span class="mx-2">/</span>
+        <span class="text-white/95">{post.data.title}</span>
+      </div>
+      <div class="container-px max-w-3xl pb-14 pt-2">
+        {post.data.tags?.[0] && <p class="eyebrow text-accent-soft">{post.data.tags[0]}</p>}
+        <h1 class="mt-4 text-3xl sm:text-5xl font-semibold leading-tight" data-speakable>{post.data.title}</h1>
+        <p class="mt-4 text-lg text-white/85" data-speakable>{post.data.description}</p>
+        <div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/70">
+          <time>{formattedDate}</time>
+          <span class="hidden sm:inline">·</span>
+          <span>Medically reviewed by {reviewerName}</span>
         </div>
-      )}
+      </div>
     </header>
 
     {post.data.image && (
-      <img
-        src={post.data.image}
-        alt={post.data.title}
-        class="w-full rounded-xl mb-8 aspect-[21/9] object-cover"
-      />
+      <div class="container-px max-w-4xl -mt-8">
+        <img src={post.data.image} alt={post.data.title} class="w-full rounded-2xl shadow-xl aspect-[21/9] object-cover" />
+      </div>
     )}
 
-    <div class="prose-brand">
-      <Content />
+    <div class="container-px max-w-3xl py-12">
+      <div class="prose prose-lg max-w-none prose-headings:font-heading prose-headings:text-dark prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-3 prose-a:text-primary prose-a:font-medium prose-strong:text-dark prose-li:marker:text-primary prose-table:text-sm prose-th:text-dark prose-blockquote:border-primary prose-blockquote:text-dark/70">
+        <Content />
+      </div>
+
+      {faqs.length > 0 && (
+        <section class="mt-12">
+          <h2 class="text-2xl font-semibold text-dark font-heading mb-5">Frequently asked questions</h2>
+          <div class="space-y-3">
+            {faqs.map((f) => (
+              <details class="card-soft group p-0">
+                <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer font-semibold list-none [&::-webkit-details-marker]:hidden">
+                  {f.question}
+                  <span class="text-primary text-xl transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <p class="px-5 pb-5 -mt-1 text-dark/65 leading-relaxed">{f.answer}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {sources.length > 0 && (
+        <section class="mt-12 border-t border-black/5 pt-8">
+          <h2 class="text-lg font-semibold text-dark font-heading">Sources &amp; references</h2>
+          <p class="mt-1 text-sm text-dark/55">This article is informational and reviewed by our clinical team. It draws on guidance from the following authoritative organizations:</p>
+          <ol class="mt-4 space-y-2 text-sm">
+            {sources.map((s, i) => (
+              <li class="flex gap-2">
+                <span class="text-primary font-semibold">{i + 1}.</span>
+                <a href={s.url} target="_blank" rel="noopener nofollow" class="text-dark/75 hover:text-primary">
+                  {s.publisher && <span class="font-medium">{s.publisher}.</span>} {s.title} <span class="text-dark/30">↗</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <section class="mt-12 card-soft p-7">
+          <p class="text-[11px] uppercase tracking-wider text-accent font-semibold">Related treatments at {practice.name}</p>
+          <div class="mt-3 grid sm:grid-cols-2 gap-2">
+            {related.map((s) => (
+              <a href={`/services/${s.slug}`} class="flex items-center gap-2 text-sm text-dark/75 hover:text-primary py-1"><span class="text-primary">→</span> {s.data.title}</a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <!-- Inline CTA -->
+      <div class="mt-10 rounded-2xl bg-primary/5 border border-primary/15 p-7 text-center">
+        <h2 class="text-xl font-semibold text-dark font-heading">Have questions about your smile?</h2>
+        <p class="mt-2 text-dark/65">Our team in {practice.address.city} is happy to help. New patients are always welcome.</p>
+        <div class="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="/contact" class="btn btn-gold">Request an appointment</a>
+          <a href={`tel:${tel}`} class="btn btn-outline">Call {practice.phone}</a>
+        </div>
+      </div>
     </div>
 
-    {faqs.length > 0 && (
-      <section class="mt-12">
-        <h2 class="text-2xl font-semibold text-dark mb-6">Frequently Asked Questions</h2>
-        <div class="space-y-3">
-          {faqs.map((faq: { question: string; answer: string }) => (
-            <details class="card-soft group p-0">
-              <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer font-semibold list-none">
-                {faq.question}
-                <span class="text-primary text-xl transition-transform group-open:rotate-45">+</span>
-              </summary>
-              <p class="px-5 pb-5 -mt-1 text-dark/65 leading-relaxed">{faq.answer}</p>
-            </details>
-          ))}
-        </div>
-        <script type="application/ld+json" set:html={JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'FAQPage',
-          mainEntity: faqs.map((faq: { question: string; answer: string }) => ({
-            '@type': 'Question',
-            name: faq.question,
-            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
-          })),
-        })} />
-      </section>
-    )}
-
-    <!-- Article Schema (BlogPosting) for search + AI discovery -->
-    <script type="application/ld+json" set:html={JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': 'BlogPosting',
-      headline: post.data.title,
-      description: post.data.description,
-      datePublished: post.data.pubDate.toISOString(),
-      dateModified: (post.data.updatedDate || post.data.pubDate).toISOString(),
-      mainEntityOfPage: {
-        '@type': 'WebPage',
-        '@id': `https://${practice.domain}/blog/${post.slug}/`,
-      },
-      author: {
-        '@type': 'Dentist',
-        name: practice.name,
-        url: `https://${practice.domain}`,
-      },
-      publisher: {
-        '@type': 'Dentist',
-        name: practice.name,
-        url: `https://${practice.domain}`,
-      },
-      image: post.data.image ? new URL(post.data.image, Astro.site).href : undefined,
-    })} />
+    <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+    {faqSchema && <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />}
   </article>
 </Base>

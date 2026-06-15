@@ -43,6 +43,12 @@ const blog = defineCollection({
     image: z.string().optional(),
     tags: z.array(z.string()).default([]),
     draft: z.boolean().default(false),
+    faqs: z
+      .array(z.object({ question: z.string(), answer: z.string() }))
+      .optional(),
+    sources: z
+      .array(z.object({ title: z.string(), publisher: z.string().optional(), url: z.string() }))
+      .optional(),
   }),
 })
 
