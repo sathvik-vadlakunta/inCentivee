@@ -5,14 +5,14 @@ category: Pediatric Dentistry
 order: 100
 faqs:
   - question: "Do you offer pediatric sedation in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides pediatric sedation for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides pediatric sedation for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Safe, gentle sedation options help anxious or young children stay calm and comfortable during treatment.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Keeps kids calm
 - Safe and monitored

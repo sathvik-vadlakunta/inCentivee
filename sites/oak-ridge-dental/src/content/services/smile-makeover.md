@@ -1,18 +1,24 @@
 ---
 title: Smile Makeover
-description: "A personalized combination of cosmetic treatments designed to give you the complete smile you've always wanted."
+description: "Smile makeovers at Oakridge Dental in Farmington, UT combine whitening, veneers, bonding, crowns, and orthodontics into a personalized plan by Dr. Brian Call to transform your smile and confidence."
 category: Cosmetic Dentistry
 order: 40
 faqs:
-  - question: "Do you offer smile makeover in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides smile makeover for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "What is included in a smile makeover in Farmington, UT?"
+    answer: "A smile makeover at Oakridge Dental in Farmington combines treatments like teeth whitening, veneers, bonding, crowns, and orthodontics into one personalized plan designed by Dr. Brian Call to transform your smile."
+  - question: "How much does a smile makeover cost?"
+    answer: "Smile makeover costs vary based on which procedures are included in your custom plan. Oakridge Dental in Farmington provides a detailed estimate after your consultation. Call (385) 600-6715 to get started."
+  - question: "How long does a smile makeover take?"
+    answer: "Timelines vary by treatment plan at Oakridge Dental in Farmington. Some makeovers are completed in a few visits, while comprehensive plans involving orthodontics may take several months."
+  - question: "How do I know if I'm a candidate for a smile makeover?"
+    answer: "A comprehensive oral exam and digital imaging at Oakridge Dental in Farmington determine your candidacy. Dr. Brian Call considers your facial appearance, skin tone, and tooth color to design your ideal smile."
+  - question: "Will a smile makeover improve my oral health?"
+    answer: "Yes. Beyond appearance, a smile makeover at Oakridge Dental in Farmington can improve oral health, boost confidence, and create a more youthful look, with follow-ups to maintain long-term results."
 ---
 
 A personalized combination of cosmetic treatments designed to give you the complete smile you've always wanted.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Fully personalized plan
 - Combines treatments

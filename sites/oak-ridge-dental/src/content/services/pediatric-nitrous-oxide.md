@@ -5,14 +5,14 @@ category: Pediatric Dentistry
 order: 110
 faqs:
   - question: "Do you offer pediatric nitrous oxide in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides pediatric nitrous oxide for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides pediatric nitrous oxide for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Gentle 'laughing gas' helps children relax during treatment and wears off quickly afterward.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Eases anxiety
 - Wears off fast

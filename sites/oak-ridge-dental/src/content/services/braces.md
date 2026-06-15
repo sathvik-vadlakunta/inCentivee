@@ -1,18 +1,24 @@
 ---
 title: Braces
-description: "Time-tested braces effectively correct crowding, gaps, and bite issues for kids, teens, and adults."
+description: "Oakridge Dental in Farmington, UT provides braces for children, teens, and adults to correct crooked teeth, overbites, and underbites. Dr. Brian Call designs custom treatment plans using advanced imaging and high-quality materials."
 category: Orthodontics
 order: 20
 faqs:
-  - question: "Do you offer braces in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides braces for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "How do braces work?"
+    answer: "Braces apply continuous, gentle pressure to gradually move teeth into proper position. At Oakridge Dental in Farmington, UT, Dr. Brian Call designs a personalized treatment plan and makes regular adjustments to correct crooked teeth, overbites, and underbites."
+  - question: "Are braces available for adults in Farmington, UT?"
+    answer: "Yes, braces are available for patients of all ages, from children and teenagers to adults, at Oakridge Dental in Farmington, UT. It's never too late to improve your smile and oral health."
+  - question: "Do braces hurt?"
+    answer: "You may feel mild soreness after braces are placed or adjusted, which typically subsides within a few days. Oakridge Dental in Farmington, UT uses high-quality materials and gentle techniques to keep you comfortable."
+  - question: "How long will I need to wear braces?"
+    answer: "Most braces treatments last between one and three years depending on your case. Oakridge Dental in Farmington, UT provides a personalized timeline at your consultation. Call (385) 600-6715 to schedule."
+  - question: "How do I care for my teeth with braces?"
+    answer: "Brush after meals, floss daily with orthodontic tools, and avoid hard or sticky foods. Oakridge Dental in Farmington, UT provides detailed care instructions and regular checkups to keep your teeth healthy during treatment."
 ---
 
 Time-tested braces effectively correct crowding, gaps, and bite issues for kids, teens, and adults.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Corrects complex cases
 - Proven and reliable

@@ -1,18 +1,24 @@
 ---
 title: Senior Dentistry
-description: "Gentle, comprehensive dental care tailored to the unique needs of older adults, from dry mouth to restorations."
+description: "Oakridge Dental in Farmington, UT offers senior dentistry including cleanings, denture care, gum disease treatment, implants, and oral cancer screenings, with gentle techniques tailored to older adults."
 category: General Dentistry
 order: 120
 faqs:
-  - question: "Do you offer senior dentistry in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides senior dentistry for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "What dental services do seniors need most in Farmington, UT?"
+    answer: "Seniors often need routine cleanings, denture care, gum disease treatment, and oral cancer screenings. Oakridge Dental in Farmington, UT also offers dental implants and dentures to restore the function and appearance of your smile."
+  - question: "How does aging affect oral health?"
+    answer: "Aging can bring tooth loss, dry mouth, and gum disease. Oakridge Dental in Farmington, UT uses gentle techniques and advanced technology to manage these conditions and maintain seniors' oral health and quality of life."
+  - question: "Does Oakridge Dental offer dentures and implants for seniors?"
+    answer: "Yes. Oakridge Dental in Farmington, UT provides dental implants and dentures to restore function and appearance for senior patients, along with preventive, restorative, and cosmetic procedures tailored to their needs."
+  - question: "Can seniors with dental anxiety get comfortable care?"
+    answer: "Yes. Oakridge Dental addresses dental anxiety and fear with a warm, patient-centered environment and advanced technology, ensuring a stress-free experience for senior patients in Farmington, UT."
+  - question: "Why is regular dental care important for seniors?"
+    answer: "Regular dental visits help prevent serious oral health issues and improve overall health. Oakridge Dental in Farmington, UT emphasizes preventive care and patient education to keep seniors' smiles healthy at any age."
 ---
 
 Gentle, comprehensive dental care tailored to the unique needs of older adults, from dry mouth to restorations.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Care tailored to seniors
 - Gentle and patient

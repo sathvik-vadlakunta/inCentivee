@@ -5,14 +5,14 @@ category: Technology
 order: 20
 faqs:
   - question: "Do you offer digital x-rays in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides digital x-rays for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides digital x-rays for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Digital X-rays give a detailed view with up to 80% less radiation than traditional film.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Up to 80% less radiation
 - Instant, detailed images

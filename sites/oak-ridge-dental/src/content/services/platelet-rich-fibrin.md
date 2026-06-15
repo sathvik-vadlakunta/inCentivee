@@ -1,18 +1,24 @@
 ---
 title: Platelet-Rich Fibrin (PRF)
-description: "PRF uses your own blood to speed healing and improve outcomes after extractions, grafts, and implants."
+description: "Oakridge Dental in Farmington, UT provides PRF (Platelet-Rich Fibrin) therapy, a natural treatment using your own blood to speed healing, reduce swelling, and lower infection risk after dental procedures. Offered by Dr. Brian Call for patients of all ages."
 category: Holistic Dentistry
 order: 30
 faqs:
-  - question: "Do you offer platelet-rich fibrin (prf) in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides platelet-rich fibrin (prf) for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "What is PRF therapy in Farmington, UT?"
+    answer: "PRF (Platelet-Rich Fibrin) therapy at Oakridge Dental in Farmington, UT is a natural treatment that uses your body's own blood to accelerate healing. A small blood sample is spun in a centrifuge to concentrate platelets and growth factors, which are then applied to the treatment area to speed recovery and tissue regeneration."
+  - question: "Is PRF therapy safe?"
+    answer: "Yes, PRF therapy is very safe because it uses your own blood, eliminating the risk of allergic reaction or disease transmission. Oakridge Dental in Farmington, UT offers this minimally invasive treatment for patients of all ages."
+  - question: "What are the benefits of PRF therapy?"
+    answer: "PRF therapy offers reduced swelling, decreased risk of infection, and faster healing times after dental procedures. At Oakridge Dental in Farmington, UT, Dr. Brian Call uses PRF to enhance recovery following surgery, extractions, and implant placement."
+  - question: "Does PRF therapy hurt?"
+    answer: "PRF therapy involves a simple blood draw similar to a routine lab test, so discomfort is minimal. Oakridge Dental in Farmington, UT prioritizes patient comfort throughout the process."
+  - question: "How long does PRF healing take?"
+    answer: "PRF therapy accelerates the body's natural healing, often leading to noticeably faster recovery than standard procedures. Contact Oakridge Dental in Farmington at (385) 600-6715 to learn how PRF can benefit your treatment."
 ---
 
 PRF uses your own blood to speed healing and improve outcomes after extractions, grafts, and implants.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Speeds healing
 - Uses your own platelets

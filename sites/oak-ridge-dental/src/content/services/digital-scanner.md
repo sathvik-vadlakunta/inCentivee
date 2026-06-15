@@ -5,14 +5,14 @@ category: Technology
 order: 60
 faqs:
   - question: "Do you offer digital scanner in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides digital scanner for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides digital scanner for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Our digital scanner creates precise 3D models of your teeth in seconds for accurate, comfortable treatment.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Precise 3D models
 - Fast and comfortable

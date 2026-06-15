@@ -1,18 +1,24 @@
 ---
 title: Special Needs Dentistry
-description: "Compassionate, accommodating dental care for patients with physical, developmental, or sensory needs."
+description: "Oakridge Dental in Farmington, UT provides comfortable special needs dentistry for patients with physical, medical, developmental, or cognitive conditions, using adaptive tools and techniques for all ages."
 category: General Dentistry
 order: 130
 faqs:
-  - question: "Do you offer special needs dentistry in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides special needs dentistry for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "Does Oakridge Dental treat patients with special needs?"
+    answer: "Yes. Oakridge Dental in Farmington, UT provides specialized dental care for patients with physical, medical, developmental, or cognitive conditions. Our dentists and hygienists are trained to manage unique circumstances comfortably."
+  - question: "What special needs dental services are available in Farmington, UT?"
+    answer: "Our services include regular cleanings, fillings, crowns, and extractions with accommodations for patient-specific needs. Oakridge Dental uses adaptive tools and techniques to ensure safe, comfortable care for all ages."
+  - question: "How does Oakridge Dental accommodate patients with anxiety or sensory sensitivities?"
+    answer: "We create a comfortable, supportive environment using adaptive techniques and modern technology to ease dental anxiety and fear for special needs patients in Farmington, UT."
+  - question: "Why is regular dental care important for special needs patients?"
+    answer: "Gum disease and cavities are often more prevalent in patients with special needs. Regular tailored care at Oakridge Dental in Farmington, UT helps maintain oral health and enhances overall well-being and quality of life."
+  - question: "Do you treat children with special needs?"
+    answer: "Yes. Oakridge Dental in Farmington, UT serves special needs patients of all ages, from children and teenagers to adults, providing comfortable and comprehensive dental care."
 ---
 
 Compassionate, accommodating dental care for patients with physical, developmental, or sensory needs.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Patient, accommodating care
 - Comfortable environment

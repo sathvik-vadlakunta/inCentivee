@@ -5,14 +5,14 @@ category: General Dentistry
 order: 160
 faqs:
   - question: "Do you offer initial consultation & examination in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides initial consultation & examination for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides initial consultation & examination for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Your first visit includes a thorough exam, X-rays, and a personalized plan built around your goals.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Comprehensive first exam
 - Personalized plan

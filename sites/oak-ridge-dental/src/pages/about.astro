@@ -1,43 +1,132 @@
 ---
 import Base from '@layouts/Base.astro'
-import Hero from '@components/Hero.astro'
-import TeamCard from '@components/TeamCard.astro'
 import CTABanner from '@components/CTABanner.astro'
 import practice from '@data/practice.json'
-import { getCollection } from 'astro:content'
+import staff from '@data/staff.json'
 
-const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const a = practice.address
+const r = (practice as any).reviews ?? {}
+const providers = (practice as any).providers ?? []
+const teamCount = providers.length + staff.length
+
+const stats = [
+  r.count > 0 ? { value: `${r.rating}★`, label: `${r.count.toLocaleString()}+ Google reviews` } : { value: '5★', label: 'Patient-rated care' },
+  { value: `${providers.length}`, label: 'Experienced dentists' },
+  { value: `${teamCount}`, label: 'Friendly team members' },
+  { value: '20+', label: 'Years serving Davis County' },
+]
+
+const values = [
+  {
+    title: 'Comprehensive, under one roof',
+    body: 'From cleanings and fillings to implants, clear aligners, oral surgery, sedation, and pediatric visits — your whole family is cared for in one familiar place.',
+    icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  },
+  {
+    title: 'Comfortable & judgment-free',
+    body: 'Nervous about the dentist? You’re not alone. Our gentle team and nitrous, oral, IV, and general sedation options make every visit calm and easy.',
+    icon: 'M3 13l2-5h14l2 5M5 13h14v4a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1H8v1a1 1 0 01-1 1H6a1 1 0 01-1-1v-4z',
+  },
+  {
+    title: 'Advanced technology',
+    body: 'Same-day CEREC crowns, 3D cone-beam imaging, iTero digital scanning, and laser dentistry mean more precise, more efficient, more modern care.',
+    icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+  },
+]
 ---
 
-<Base title="About Us" description={`Learn about ${practice.name} and our team of dental professionals.`}>
-  <Hero title="About Us" subtitle={`${practice.name} — ${practice.address.city}, ${practice.address.state}`} />
-
-  <section class="py-16 sm:py-20">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 prose prose-lg">
-      <slot />
-      <!-- Override this section in your customer site's about.astro -->
-      <p>
-        At {practice.name}, we believe everyone deserves quality dental care in a comfortable,
-        welcoming environment. Our team uses state-of-the-art technology and proven techniques
-        to deliver exceptional results for patients of all ages.
-      </p>
+<Base title="About Us" description={`Learn about ${practice.name} — a comprehensive family and cosmetic dental practice in ${a.city}, ${a.state}. Meet our dentists, team, and the technology behind our care.`}>
+  <!-- Hero with photo -->
+  <section class="relative bg-secondary text-white">
+    <img src="/images/oak/internal-banner.webp" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30" />
+    <div class="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/90 to-primary/70"></div>
+    <div class="container-px relative py-16 sm:py-20">
+      <p class="eyebrow text-accent-soft">About us</p>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">Dentistry that feels like coming home</h1>
+      <p class="mt-4 text-white/85 max-w-2xl text-lg">{practice.name} is a comprehensive family and cosmetic dental practice in {a.city}, {a.state} — combining modern technology with a team that treats you like a neighbor.</p>
     </div>
   </section>
 
-  {team.length > 0 && (
-    <section class="py-16 sm:py-20 bg-gray-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-3xl font-bold font-heading text-center mb-12">Our Providers</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {team.map((member) => (
-            <TeamCard
-              name={member.data.name}
-              credentials={member.data.credentials}
-              title={member.data.title}
-              photo={member.data.photo}
-              specialties={member.data.specialties}
-              href={`/team/${member.slug}`}
-            />
+  <!-- Story + photo -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+      <div class="reveal order-2 lg:order-1">
+        <p class="eyebrow">Our story</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Comprehensive, comfortable care for the whole family</h2>
+        <div class="mt-5 space-y-4 text-dark/70 leading-relaxed">
+          <p>At {practice.name}, we believe everyone deserves quality dental care in a comfortable, welcoming environment. From your child's very first checkup to a complete smile makeover, our dentists and team provide gentle, comprehensive care for every member of your family.</p>
+          <p>Right here in {a.city}, we bring together advanced technology, comfortable sedation options, and a genuinely friendly team so that every visit feels easy — even if it's been a while, or the dentist has never been your favorite place to be.</p>
+          <p>Most major insurance plans are accepted, and flexible payment options like Cherry financing and an in-house membership plan make great dentistry attainable for the whole household.</p>
+        </div>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3">
+          <a href="/contact" class="btn btn-gold">Become a patient</a>
+          <a href={`tel:${tel}`} class="btn btn-outline">Call {practice.phone}</a>
+        </div>
+      </div>
+      <div class="reveal order-1 lg:order-2">
+        <div class="overflow-hidden rounded-3xl shadow-xl ring-1 ring-black/5">
+          <img src="/images/oak/banner1.webp" alt={`${practice.name} office in ${a.city}, ${a.state}`} class="w-full h-full object-cover aspect-[4/3]" loading="lazy" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats band -->
+  <section class="bg-light border-y border-black/5">
+    <div class="container-px grid grid-cols-2 lg:grid-cols-4 gap-6 py-10">
+      {stats.map((s) => (
+        <div class="reveal text-center">
+          <div class="text-3xl sm:text-4xl font-semibold text-primary">{s.value}</div>
+          <div class="mt-1 text-sm text-dark/60">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- Values -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Why patients choose us</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Modern dentistry, delivered with genuine care</h2>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        {values.map((v) => (
+          <div class="reveal card-soft p-8">
+            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={v.icon} /></svg>
+            </div>
+            <h3 class="mt-5 text-xl font-semibold text-dark">{v.title}</h3>
+            <p class="mt-2 text-dark/65 leading-relaxed">{v.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Meet the doctors preview -->
+  {providers.length > 0 && (
+    <section class="py-20 sm:py-24 bg-light border-t border-black/5">
+      <div class="container-px">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 reveal">
+          <div class="max-w-xl">
+            <p class="eyebrow">Meet your dentists</p>
+            <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Experienced doctors who care like family</h2>
+          </div>
+          <a href="/team#doctors" class="btn btn-outline shrink-0">Meet the full team</a>
+        </div>
+        <div class="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {providers.map((doc: any) => (
+            <a href="/team#doctors" class="reveal card-soft overflow-hidden text-center group">
+              {doc.photo
+                ? <div class="aspect-square overflow-hidden bg-cream"><img src={doc.photo} alt={`${doc.name}, ${doc.credentials}`} class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" loading="lazy" /></div>
+                : <div class="aspect-square grid place-items-center bg-gradient-to-br from-primary to-secondary text-white text-3xl font-semibold">{doc.name.replace(/^Dr\.?\s+/, '').split(' ').map((p: string) => p[0]).slice(0, 2).join('')}</div>}
+              <div class="p-5">
+                <h3 class="text-lg font-semibold text-dark group-hover:text-primary transition-colors">{doc.name}, {doc.credentials}</h3>
+                <p class="text-sm text-primary">{doc.title}</p>
+              </div>
+            </a>
           ))}
         </div>
       </div>

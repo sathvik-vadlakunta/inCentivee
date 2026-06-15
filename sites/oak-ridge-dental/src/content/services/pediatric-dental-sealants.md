@@ -5,14 +5,14 @@ category: Pediatric Dentistry
 order: 30
 faqs:
   - question: "Do you offer pediatric dental sealants in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides pediatric dental sealants for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides pediatric dental sealants for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Protective sealants shield your child's molars from decay during the cavity-prone years.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Protects young molars
 - Painless application

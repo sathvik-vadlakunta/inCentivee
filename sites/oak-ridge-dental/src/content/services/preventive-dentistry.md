@@ -1,18 +1,24 @@
 ---
 title: Preventive Dentistry
-description: "Preventive care keeps small problems from becoming big ones, with cleanings, exams, sealants, and fluoride tailored to your needs."
+description: "Oakridge Dental in Farmington, UT provides preventive dental care for all ages, including checkups, cleanings, fluoride treatments, and dental sealants to prevent cavities and gum disease. Serving Farmington, Kaysville, Layton, and Northern Utah."
 category: General Dentistry
 order: 20
 faqs:
-  - question: "Do you offer preventive dentistry in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides preventive dentistry for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "How often should I get a dental checkup in Farmington, UT?"
+    answer: "Most patients should visit Oakridge Dental in Farmington, UT every six months for a checkup and cleaning. Regular preventive visits help catch cavities and gum disease early, reducing the need for costly treatments later. Call (385) 600-6715 to schedule."
+  - question: "What does preventive dental care include at Oakridge Dental?"
+    answer: "Preventive care at Oakridge Dental in Farmington, UT includes routine checkups, professional cleanings, fluoride treatments, dental sealants, and education on proper brushing and flossing. We treat patients of all ages, from infants to seniors."
+  - question: "Does preventive dentistry really save money?"
+    answer: "Yes. Preventive dentistry catches problems early, reducing the need for complex and expensive treatments. Oakridge Dental patients in Northern Utah who maintain consistent preventive care experience fewer dental emergencies and better overall oral health."
+  - question: "Is preventive care available for children at Oakridge Dental?"
+    answer: "Yes. Oakridge Dental in Farmington, UT provides preventive care for children and teenagers, including fluoride application and dental sealants to protect against tooth decay, plus education on good oral hygiene habits."
+  - question: "I have dental anxiety — can I still get preventive care?"
+    answer: "Absolutely. Oakridge Dental's compassionate team in Farmington, UT creates a comfortable environment specifically for patients with dental anxiety or fear of the dentist, using modern technology for gentle care."
 ---
 
 Preventive care keeps small problems from becoming big ones, with cleanings, exams, sealants, and fluoride tailored to your needs.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Stop problems before they start
 - Save time and money

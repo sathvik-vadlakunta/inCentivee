@@ -139,8 +139,46 @@ h1, h2, h3, h4, h5, h6 {
 ::view-transition-old(root) { animation: pr-fade-out 0.18s ease both; }
 ::view-transition-new(root) { animation: pr-fade-in 0.32s ease both; }
 
+/* ── Transparent header → solid on scroll ── */
+#site-header { transition: background-color 0.3s ease, box-shadow 0.3s ease; }
+#site-header:not(.is-scrolled) { background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0)); }
+#site-header.is-scrolled {
+  background: color-mix(in srgb, var(--color-secondary) 97%, transparent);
+  box-shadow: 0 6px 24px -10px rgba(0,0,0,0.4);
+}
+
+/* ── Hero staggered entrance ── */
+@keyframes pr-hero-in { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+.hero-in { opacity: 0; animation: pr-hero-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.hero-in[data-d="1"] { animation-delay: 0.1s; }
+.hero-in[data-d="2"] { animation-delay: 0.25s; }
+.hero-in[data-d="3"] { animation-delay: 0.4s; }
+.hero-in[data-d="4"] { animation-delay: 0.55s; }
+
+/* ── Auto-scrolling testimonial marquee ── */
+.marquee { overflow: hidden; -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent); }
+.marquee__track { display: flex; gap: 1.5rem; width: max-content; animation: pr-marquee 48s linear infinite; }
+.marquee:hover .marquee__track { animation-play-state: paused; }
+@keyframes pr-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ── Gallery + lightbox ── */
+.gallery-item { overflow: hidden; border-radius: var(--radius-2xl); cursor: pointer; }
+.gallery-item img { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.gallery-item:hover img { transform: scale(1.07); }
+#lightbox { background: transparent; max-width: 92vw; max-height: 92vh; padding: 0; border: 0; }
+#lightbox::backdrop { background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
+#lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 1rem; }
+
+/* ── Sticky mobile CTA bar ── */
+.mobile-cta { box-shadow: 0 -6px 24px -12px rgba(0, 0, 0, 0.4); }
+
+/* ── Count-up: avoid layout shift ── */
+.stat-num { font-variant-numeric: tabular-nums; }
+
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
   .btn:hover, .card-soft:hover { transform: none; }
   .img-zoom:hover img, .kenburns { animation: none; transform: none; }
+  .hero-in { opacity: 1; animation: none; }
+  .marquee__track { animation: none; }
 }

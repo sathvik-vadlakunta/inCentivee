@@ -5,14 +5,14 @@ category: Pediatric Dentistry
 order: 10
 faqs:
   - question: "Do you offer first visit for children in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides first visit for children for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides first visit for children for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 We make your child's first dental visit positive and stress-free, building healthy habits and trust early.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Positive first experience
 - Builds healthy habits

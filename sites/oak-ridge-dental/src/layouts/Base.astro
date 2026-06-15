@@ -16,7 +16,13 @@ interface Props {
 const { title, description = practice.tagline, image, noindex = false } = Astro.props
 const pageTitle = title === practice.name ? title : `${title} | ${practice.name}`
 const canonicalURL = new URL(Astro.url.pathname, Astro.site)
+const ogImage = new URL(image || '/og.webp', Astro.site)
+// Homepage uses a transparent header over its full-bleed hero; every other page
+// uses a solid maroon header so content isn't hidden and the logo always reads.
+const isHome = Astro.url.pathname === '/'
 
+const deardocSrc: string = (practice as any).deardocSrc || ''
+const tel: string = practice.phone.replace(/[^+\d]/g, '')
 const analytics = (practice as any).analytics ?? {}
 const ga4: string = analytics.ga4 || ''
 const gtm: string = analytics.gtm || ''
@@ -28,7 +34,7 @@ const gsc: string = analytics.googleSiteVerification || ''
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="canonical" href={canonicalURL} />
 
     <title>{pageTitle}</title>
@@ -53,7 +59,9 @@ const gsc: string = analytics.googleSiteVerification || ''
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
-    {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImage} />
 
     <!-- Brand fonts: EB Garamond (serif headings) + Montserrat (body) — matches their site -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -66,15 +74,27 @@ const gsc: string = analytics.googleSiteVerification || ''
     <SchemaMarkup />
     <ClientRouter />
   </head>
-  <body class="min-h-screen flex flex-col bg-white">
+  <body class="min-h-screen flex flex-col bg-white pb-14 lg:pb-0">
     {gtm && (
       <noscript set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`}></noscript>
     )}
-    <Nav />
+    <Nav solid={!isHome} />
     <main class="flex-1">
       <slot />
     </main>
     <Footer />
+
+    <!-- Sticky mobile conversion bar -->
+    <div class="mobile-cta fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 lg:hidden">
+      <a href={`tel:${tel}`} class="flex items-center justify-center gap-2 bg-secondary py-3.5 text-sm font-semibold text-white">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+        Call us
+      </a>
+      <a href="/contact" class="flex items-center justify-center gap-2 bg-primary py-3.5 text-sm font-semibold text-white">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>
+        Book now
+      </a>
+    </div>
 
     <!-- Reveal-on-scroll (re-runs after every View Transition navigation) -->
     <script is:inline>
@@ -108,5 +128,23 @@ const gsc: string = analytics.googleSiteVerification || ''
         }
       })
     </script>
+
+    {/* DearDoc AI chat widget — the practice's licensed embed.
+        The embed self-initialises on the window 'load' event and guards against
+        double-init (window.ddChatbot), so it must load once at initial page load,
+        NOT be re-injected per navigation. Its widget DOM (#ddc-*) is then carried
+        across Astro View Transitions so the bot persists on every page. */}
+    {deardocSrc && (
+      <>
+        <script is:inline src={deardocSrc}></script>
+        <script is:inline>
+          {`document.addEventListener('astro:before-swap', function (e) {
+            document.querySelectorAll('[id^="ddc-"]').forEach(function (el) {
+              try { e.newDocument.body.appendChild(el) } catch (err) {}
+            })
+          })`}
+        </script>
+      </>
+    )}
   </body>
 </html>

@@ -1,18 +1,26 @@
 ---
 title: Oral Hygiene
-description: "Personalized coaching on brushing, flossing, and home care to keep your smile healthy between visits."
+description: "Oakridge Dental in Farmington, UT delivers comprehensive oral hygiene care including cleanings, fluoride, and personalized technique coaching for patients of all ages. Schedule at (385) 600-6715."
 category: General Dentistry
 order: 140
 faqs:
-  - question: "Do you offer oral hygiene in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides oral hygiene for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "What does a professional oral hygiene visit include?"
+    answer: "A professional oral hygiene visit at Oakridge Dental in Farmington, UT includes a comprehensive exam, cleaning to remove plaque and tartar, fluoride treatment, and personalized brushing and flossing guidance."
+  - question: "How often should I have professional oral hygiene care?"
+    answer: "Most patients should visit every six months for professional cleaning and hygiene care. Oakridge Dental in Farmington customizes the schedule based on your oral health needs."
+  - question: "Why is oral hygiene important for overall health?"
+    answer: "Good oral hygiene prevents cavities and gum disease and supports overall health, as oral infections can affect the rest of the body. Our Farmington team emphasizes preventive care and education."
+  - question: "What oral care products do you recommend?"
+    answer: "Our Farmington hygienists recommend suitable toothbrushes, fluoride toothpaste, and floss based on your individual needs, and demonstrate correct brushing and flossing techniques during your visit."
+  - question: "Is professional cleaning suitable for all ages?"
+    answer: "Yes. Oakridge Dental in Farmington provides oral hygiene care for patients of all ages, from children and teenagers to adults, with comfort-focused, gentle care."
+  - question: "How do I book an oral hygiene appointment?"
+    answer: "Call Oakridge Dental in Farmington, UT at (385) 600-6715 to schedule your oral hygiene visit. We serve Farmington, Kaysville, Layton, and surrounding communities."
 ---
 
 Personalized coaching on brushing, flossing, and home care to keep your smile healthy between visits.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Personalized home-care plan
 - Healthier gums

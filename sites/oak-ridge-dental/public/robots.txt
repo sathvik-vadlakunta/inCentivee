@@ -1,0 +1,49 @@
+# robots.txt — Oakridge Dental
+# Search engines and AI assistants are explicitly welcome (AEO/GEO is a goal).
+
+User-agent: *
+Allow: /
+
+# AI / LLM crawlers — explicitly allowed for AI search visibility
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# XML sitemap
+Sitemap: https://oakridgedentalsmiles.com/sitemap-index.xml
+
+# Structured content for LLMs (AEO)
+# https://oakridgedentalsmiles.com/llms.txt
+# https://oakridgedentalsmiles.com/llms-full.txt

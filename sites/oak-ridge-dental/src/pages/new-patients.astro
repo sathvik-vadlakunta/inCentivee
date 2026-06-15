@@ -1,0 +1,110 @@
+---
+import Base from '@layouts/Base.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const base = `https://${practice.domain}`
+const portal = (practice as any).patientPortal || ''
+const cherry = (practice as any).cherryUrl || ''
+
+const steps = [
+  { title: 'Reach out', body: `Call us at ${practice.phone} or request an appointment online. We'll find a time that fits your schedule — including early-morning and Friday hours.` },
+  { title: 'Complete your forms', body: 'We\'ll send new-patient paperwork ahead of time (or you can arrive a few minutes early). Bring your ID, insurance card, and a list of any medications.' },
+  { title: 'Your first visit', body: 'A comprehensive exam, digital X-rays as needed, an oral-cancer screening, and — in most cases — a cleaning the same day, all at a relaxed, gentle pace.' },
+  { title: 'Your personalized plan', body: 'We\'ll walk you through what we found, answer every question, and build a plan around your goals and budget. No pressure, no surprises.' },
+]
+const bring = ['Photo ID', 'Dental insurance card (if you have one)', 'List of current medications', 'Any recent X-rays or records from a previous dentist']
+const faqs = [
+  { q: 'Do you accept new patients of all ages?', a: `Yes. ${practice.name} welcomes patients of every age — from young children to adults and seniors — across ${practice.address.city} and Davis County.` },
+  { q: 'What insurance do you accept?', a: 'We accept most major dental insurance plans and will help you maximize your benefits. We also offer an in-house Family Dental Health Program for patients without insurance, plus Cherry financing for flexible monthly payments.' },
+  { q: 'How long does a first visit take?', a: 'Plan for about an hour. That gives us time for a thorough exam, any necessary X-rays, a cleaning when appropriate, and a conversation about your goals.' },
+  { q: 'I have dental anxiety — can you help?', a: 'Absolutely. We offer several sedation options including nitrous oxide, oral, and IV sedation, and our team is known for a calm, gentle approach.' },
+]
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+}
+---
+<Base title="New Patients" description={`New to ${practice.name} in ${practice.address.city}, ${practice.address.state}? Here's what to expect at your first visit, what to bring, insurance and financing options, and how to book.`}>
+  <section class="relative bg-secondary text-white">
+    <img src="/images/oak/internal-banner.webp" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30" />
+    <div class="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/90 to-primary/70"></div>
+    <div class="container-px relative py-16">
+      <p class="eyebrow text-accent-soft" data-speakable>New patients welcome</p>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">Your first visit, made easy</h1>
+      <p class="mt-4 text-white/85 max-w-2xl" data-speakable>From your first phone call to the warm cookie on your way out, we make joining {practice.name} simple, comfortable, and genuinely friendly.</p>
+      <div class="mt-7 flex flex-col sm:flex-row gap-3">
+        <a href="/contact" class="btn btn-gold">Request an appointment</a>
+        <a href={`tel:${tel}`} class="btn btn-ghost">Call {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Steps -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">What to expect</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Four simple steps to a healthier smile</h2>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {steps.map((s, i) => (
+          <div class="reveal card-soft p-7">
+            <div class="w-10 h-10 rounded-full bg-primary text-white grid place-items-center font-semibold">{i + 1}</div>
+            <h3 class="mt-4 text-lg font-semibold text-dark">{s.title}</h3>
+            <p class="mt-2 text-dark/65 leading-relaxed text-sm">{s.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Bring + Insurance -->
+  <section class="py-16 sm:py-20 bg-light border-y border-black/5">
+    <div class="container-px grid lg:grid-cols-2 gap-10">
+      <div class="reveal card-soft p-8">
+        <h2 class="text-2xl font-semibold text-dark">What to bring</h2>
+        <ul class="mt-5 space-y-2.5">
+          {bring.map((b) => (
+            <li class="flex items-start gap-2.5 text-dark/75"><svg class="mt-0.5 h-5 w-5 shrink-0 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>{b}</li>
+          ))}
+        </ul>
+      </div>
+      <div class="reveal card-soft p-8">
+        <h2 class="text-2xl font-semibold text-dark">Insurance &amp; payment</h2>
+        <p class="mt-4 text-dark/70 leading-relaxed">We accept most major insurance plans, offer an in-house membership for patients without insurance, and partner with Cherry for low-monthly-payment financing.</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a href="/financing" class="btn btn-gold !py-2 !px-5 text-sm">Financial options</a>
+          {cherry && <a href={cherry} target="_blank" rel="noopener" class="btn btn-outline !py-2 !px-5 text-sm">Apply with Cherry</a>}
+          {portal && <a href={portal} target="_blank" rel="noopener" class="btn btn-outline !py-2 !px-5 text-sm">Patient Portal ↗</a>}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="py-16 sm:py-20">
+    <div class="container-px max-w-3xl">
+      <div class="reveal">
+        <p class="eyebrow">Common questions</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">New patient FAQ</h2>
+      </div>
+      <div class="mt-8 space-y-3">
+        {faqs.map((f) => (
+          <details class="card-soft group p-0">
+            <summary class="flex items-center justify-between gap-4 p-5 cursor-pointer font-semibold list-none [&::-webkit-details-marker]:hidden">
+              {f.q}
+              <span class="text-primary text-xl transition-transform group-open:rotate-45">+</span>
+            </summary>
+            <p class="px-5 pb-5 -mt-1 text-dark/65 leading-relaxed">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <CTABanner />
+</Base>

@@ -5,14 +5,14 @@ category: Sedation Dentistry
 order: 10
 faqs:
   - question: "Do you offer nitrous oxide in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides nitrous oxide for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
+    answer: "Yes. Oakridge Dental provides nitrous oxide for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
   - question: "Will my insurance cover it?"
     answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
 ---
 
 Gentle 'laughing gas' helps you relax during treatment and wears off within minutes, so you can drive yourself home.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Eases dental anxiety
 - Wears off quickly

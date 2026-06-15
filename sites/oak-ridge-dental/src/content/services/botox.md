@@ -1,18 +1,24 @@
 ---
 title: Botox
-description: "Administered by our trained dental team, Botox can smooth facial lines and help relieve TMJ-related muscle tension."
+description: "BOTOX treatments at Oakridge Dental in Farmington, UT, administered by Dr. Brian Call, smooth wrinkles, treat excessive sweating, and relieve jaw tension in quick 10-15 minute sessions with no downtime."
 category: Cosmetic Dentistry
 order: 50
 faqs:
-  - question: "Do you offer botox in Farmington?"
-    answer: "Yes. Oak Ridge Dental provides botox for patients across Farmington and Davis County. Call (385) 600-6715 to schedule."
-  - question: "Will my insurance cover it?"
-    answer: "We accept most major dental insurance plans and offer flexible financing. We'll help you understand your coverage before treatment."
+  - question: "How much does BOTOX cost in Farmington, UT?"
+    answer: "BOTOX cost in Farmington depends on the number of units and treatment areas. At Oakridge Dental, Dr. Brian Call provides a personalized quote during your consultation. Call (385) 600-6715 for current pricing and to discuss your goals."
+  - question: "Does BOTOX hurt and how long does the treatment take?"
+    answer: "BOTOX treatment at Oakridge Dental in Farmington is quick and comfortable, typically lasting only 10-15 minutes with minimal discomfort from a fine needle. Most patients return to normal activities immediately with no downtime."
+  - question: "How long does BOTOX last?"
+    answer: "BOTOX results typically last 3-4 months. Regular treatments at Oakridge Dental in Farmington help maintain a youthful, refreshed appearance. Dr. Brian Call will recommend a maintenance schedule based on your needs."
+  - question: "Can a dentist administer BOTOX?"
+    answer: "Yes. Dr. Brian Call at Oakridge Dental in Farmington is trained to administer BOTOX, using his expertise in facial structure to deliver precise, natural-looking results for crow's feet, forehead lines, and frown lines."
+  - question: "Is BOTOX used for anything besides wrinkles?"
+    answer: "Yes. At Oakridge Dental in Farmington, BOTOX can treat excessive sweating (hyperhidrosis) and is also used to relieve TMJ pain and jaw tension, in addition to cosmetic wrinkle reduction."
 ---
 
 Administered by our trained dental team, Botox can smooth facial lines and help relieve TMJ-related muscle tension.
 
-## Why Patients Choose Oak Ridge Dental
+## Why Patients Choose Oakridge Dental
 
 - Smooths facial lines
 - Can relieve TMJ tension

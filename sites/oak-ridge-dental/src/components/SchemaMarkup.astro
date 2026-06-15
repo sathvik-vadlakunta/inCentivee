@@ -1,14 +1,39 @@
 ---
 import practice from '@data/practice.json'
 
+const reviews = (practice as any).reviews ?? {}
+const placeId: string = reviews.placeId || ''
+const base = `https://${practice.domain}`
+// Entity links (sameAs) strengthen the knowledge graph for GEO / AI engines
+const sameAs = [
+  ...Object.values(practice.social).filter(Boolean),
+  placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : '',
+].filter(Boolean)
+
+// Doctors as linked Physician/Dentist entities (E-E-A-T + AI citation)
+const employees = (practice.providers ?? []).map((p: any) => ({
+  '@type': 'Dentist',
+  name: `${p.name}, ${p.credentials}`,
+  jobTitle: p.title,
+  url: `${base}/team/${p.slug}`,
+  image: p.photo ? `${base}${p.photo}` : undefined,
+  knowsAbout: p.specialties,
+}))
+
 const schema = {
   '@context': 'https://schema.org',
   '@type': 'Dentist',
+  '@id': `${base}/#dentist`,
   name: practice.name,
   description: practice.tagline,
-  url: `https://${practice.domain}`,
+  url: base,
   telephone: practice.phone,
   email: practice.email || undefined,
+  image: `${base}/og.webp`,
+  logo: `${base}/images/oak/logo.webp`,
+  priceRange: '$$',
+  currenciesAccepted: 'USD',
+  paymentAccepted: 'Cash, Credit Card, Insurance, Cherry Financing',
   address: {
     '@type': 'PostalAddress',
     streetAddress: practice.address.street,
@@ -22,6 +47,8 @@ const schema = {
     latitude: practice.geo.lat,
     longitude: practice.geo.lng,
   },
+  hasMap: placeId ? `https://www.google.com/maps/place/?q=place_id:${placeId}` : undefined,
+  areaServed: (practice as any).areaServed?.map((a: string) => ({ '@type': 'City', name: a })),
   openingHoursSpecification: practice.hours
     .filter((h: { note?: string }) => !h.note)
     .map((h: { days: string; open?: string; close?: string }) => ({
@@ -31,13 +58,18 @@ const schema = {
       closes: h.close,
     })),
   medicalSpecialty: practice.serviceCategories,
-  sameAs: Object.values(practice.social).filter(Boolean),
+  employee: employees.length ? employees : undefined,
+  sameAs,
+  speakable: {
+    '@type': 'SpeakableSpecification',
+    cssSelector: ['h1', '.eyebrow', '[data-speakable]'],
+  },
   aggregateRating:
-    (practice as any).reviews?.count > 0
+    reviews.count > 0
       ? {
           '@type': 'AggregateRating',
-          ratingValue: (practice as any).reviews.rating,
-          reviewCount: (practice as any).reviews.count,
+          ratingValue: reviews.rating,
+          reviewCount: reviews.count,
           bestRating: 5,
         }
       : undefined,

@@ -3,10 +3,24 @@ import Base from '@layouts/Base.astro'
 import CTABanner from '@components/CTABanner.astro'
 import ServiceCard from '@components/ServiceCard.astro'
 import practice from '@data/practice.json'
+import testimonials from '@data/testimonials.json'
 import { getCollection } from 'astro:content'
 
 const allServices = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
 const tel = practice.phone.replace(/[^+\d]/g, '')
+const reviews = (practice as any).reviews ?? {}
+
+// Office & technology gallery (real practice photography from the asset pack)
+const gallery = [
+  { src: '/images/oak/internal-banner.webp', alt: 'Modern treatment room at Oakridge Dental in Farmington' },
+  { src: '/images/oak/yomi1.webp', alt: 'Yomi robotic-assisted dental implant system' },
+  { src: '/images/oak/dr-call-home.webp', alt: 'Dr. Brian Call at Oakridge Dental' },
+  { src: '/images/oak/yomi2.webp', alt: 'Guided implant technology at Oakridge Dental' },
+  { src: '/images/oak/why-choose-bg.webp', alt: 'Comfortable, modern dental office in Farmington, Utah' },
+  { src: '/images/oak/yomi3.webp', alt: 'Precision implant placement with the Yomi system' },
+]
+// Marquee needs the list duplicated for a seamless loop
+const marqueeReviews = [...testimonials, ...testimonials]
 
 const featuredSlugs = ['dental-implants', 'clear-aligners', 'teeth-whitening', 'root-canal-therapy', 'sleep-apnea-treatment', 'dental-cleanings-exams']
 const featured = featuredSlugs.map((s) => allServices.find((x) => x.slug === s)).filter(Boolean)
@@ -17,10 +31,12 @@ const pillars = [
   { title: 'Advanced', body: 'Same-day CEREC crowns, 3D cone-beam imaging, iTero digital scanning, and laser dentistry for precise, modern care.', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
 ]
 const stats = [
-  { value: `${allServices.length}+`, label: 'Services offered' },
-  { value: '3', label: 'Experienced dentists' },
-  { value: '11', label: 'Areas of dentistry' },
-  { value: 'Farmington', label: 'Serving Davis County' },
+  { num: allServices.length, suffix: '+', label: 'Services offered' },
+  { num: practice.providers.length, suffix: '', label: 'Experienced dentists' },
+  ...(reviews.count > 0
+    ? [{ num: reviews.rating, suffix: '★', decimals: 1, label: `${reviews.count.toLocaleString()} Google reviews` }]
+    : [{ num: 11, suffix: '', label: 'Areas of dentistry' }]),
+  { text: 'Farmington', label: 'Serving Davis County' },
 ]
 const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).slice(0, 2).join('')
 ---
@@ -28,24 +44,49 @@ const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).s
 <Base title={practice.name} description={practice.tagline}>
   <!-- Hero: full-bleed building photo + centered headline (matches their layout) -->
   <section class="relative min-h-[72vh] sm:min-h-[82vh] flex items-end overflow-hidden text-white">
-    <img src="/images/oak/banner1.webp" alt="Oakridge Dental office in Farmington, Utah" class="absolute inset-0 w-full h-full object-cover" />
+    <img src="/images/oak/banner1.webp" alt="Oakridge Dental office in Farmington, Utah" fetchpriority="high" class="absolute inset-0 w-full h-full object-cover kenburns" />
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/15"></div>
     <div class="container-px relative pb-20 sm:pb-28 text-center w-full">
-      <h1 class="text-5xl sm:text-6xl lg:text-7xl font-semibold drop-shadow-lg">{practice.name}</h1>
-      <p class="mt-4 text-lg text-white/90 max-w-2xl mx-auto drop-shadow">Comprehensive, comfortable dentistry for the whole family in {practice.address.city}, {practice.address.state}.</p>
-      <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+      <h1 class="hero-in text-5xl sm:text-6xl lg:text-7xl font-semibold drop-shadow-lg" data-d="1">{practice.name}</h1>
+      <p class="hero-in mt-4 text-lg text-white/90 max-w-2xl mx-auto drop-shadow" data-d="2">Comprehensive, comfortable dentistry for the whole family in {practice.address.city}, {practice.address.state}.</p>
+      <div class="hero-in mt-8 flex flex-col sm:flex-row gap-3 justify-center" data-d="3">
         <a href="/contact" class="btn btn-gold">Request Appointment</a>
         <a href={`tel:${tel}`} class="btn btn-ghost">{practice.phone}</a>
+      </div>
+      {reviews.count > 0 && (
+        <a href={reviews.googleReadUrl} target="_blank" rel="noopener" class="hero-in mt-6 inline-flex items-center gap-2 text-sm text-white/90 drop-shadow hover:text-white" data-d="4">
+          <span class="flex gap-0.5 text-accent-soft">
+            {[0, 1, 2, 3, 4].map(() => (<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>))}
+          </span>
+          <span><strong>{reviews.rating}</strong> from {reviews.count.toLocaleString()}+ Google reviews</span>
+        </a>
+      )}
+    </div>
+  </section>
+
+  <!-- Welcome -->
+  <section class="py-16 sm:py-20 text-center">
+    <div class="container-px max-w-3xl">
+      <p class="eyebrow justify-center">Your dentist in {practice.address.city}, {practice.address.state}</p>
+      <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Welcome to {practice.name}</h2>
+      <p class="mt-5 text-dark/70 leading-relaxed">From your child's first checkup to a complete smile makeover, our team provides comprehensive, gentle dentistry for every member of your family. With advanced technology, comfortable sedation options, and a team that treats you like a neighbor, we make every visit easy.</p>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href="/services" class="btn btn-gold">Explore our services</a>
+        <a href="/contact" class="btn btn-outline">Become a patient</a>
       </div>
     </div>
   </section>
 
-  <!-- Stats -->
+  <!-- Stats (count up on scroll) -->
   <section class="bg-light border-b border-black/5">
     <div class="container-px grid grid-cols-2 lg:grid-cols-4 gap-6 py-10">
       {stats.map((s) => (
         <div class="reveal text-center">
-          <div class="text-3xl sm:text-4xl font-semibold text-primary">{s.value}</div>
+          <div class="text-3xl sm:text-4xl font-semibold text-primary">
+            {s.text
+              ? s.text
+              : <span class="stat-num" data-count={s.num} data-decimals={s.decimals || 0}>0</span>}{!s.text && s.suffix}
+          </div>
           <div class="mt-1 text-sm text-dark/60">{s.label}</div>
         </div>
       ))}
@@ -56,7 +97,7 @@ const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).s
   <section class="py-20 sm:py-24">
     <div class="container-px">
       <div class="max-w-2xl reveal">
-        <p class="eyebrow">The Oak Ridge difference</p>
+        <p class="eyebrow">The Oakridge difference</p>
         <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Modern dentistry, delivered with genuine care</h2>
       </div>
       <div class="mt-12 grid md:grid-cols-3 gap-6">
@@ -96,7 +137,7 @@ const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).s
     <div class="container-px">
       <div class="max-w-2xl reveal">
         <p class="eyebrow">Meet your dentists</p>
-        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Three dentists who care for you like family</h2>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Four dentists who care for you like family</h2>
       </div>
       <div class="mt-12 grid grid-cols-2 lg:grid-cols-4 gap-6">
         {practice.providers.map((doc) => (
@@ -114,5 +155,100 @@ const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).s
     </div>
   </section>
 
-  <CTABanner title="Ready for the dentist your whole family will love?" subtitle="New patients are always welcome at Oak Ridge Dental in Farmington." />
+  <!-- Office & technology gallery -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Take a look inside</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Our office &amp; technology</h2>
+        <p class="mt-3 text-dark/65">From robotic-assisted implants to same-day crowns, in a calm, modern space designed around your comfort.</p>
+      </div>
+      <div class="mt-10 grid grid-cols-2 md:grid-cols-3 gap-4">
+        {gallery.map((g) => (
+          <button type="button" class="gallery-item reveal aspect-[4/3]" data-lightbox={g.src} data-alt={g.alt} aria-label={`View: ${g.alt}`}>
+            <img src={g.src} alt={g.alt} loading="lazy" class="h-full w-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Reviews marquee -->
+  {testimonials.length > 0 && (
+    <section class="py-20 sm:py-24 bg-light border-y border-black/5 overflow-hidden">
+      <div class="container-px">
+        <div class="max-w-2xl reveal">
+          <p class="eyebrow">Loved by Farmington families</p>
+          <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">{reviews.rating}★ from {reviews.count.toLocaleString()}+ Google reviews</h2>
+        </div>
+      </div>
+      <div class="marquee mt-10">
+        <div class="marquee__track">
+          {marqueeReviews.map((t) => (
+            <figure class="w-80 shrink-0 card-soft p-6">
+              <div class="flex gap-0.5 text-accent">{[0, 1, 2, 3, 4].map(() => (<svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>))}</div>
+              <blockquote class="mt-3 text-sm text-dark/70 leading-relaxed line-clamp-5">"{t.quote}"</blockquote>
+              <figcaption class="mt-3 text-sm font-semibold text-dark">— {t.name}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+      <div class="container-px mt-8 text-center">
+        <a href="/reviews" class="btn btn-outline">Read all reviews</a>
+      </div>
+    </section>
+  )}
+
+  <CTABanner title="Ready for the dentist your whole family will love?" subtitle="New patients are always welcome at Oakridge Dental in Farmington." />
+
+  <!-- Lightbox -->
+  <dialog id="lightbox" aria-label="Image viewer">
+    <img id="lightbox-img" src="" alt="" />
+  </dialog>
+
+  <script is:inline>
+    function prCountUp() {
+      var els = document.querySelectorAll('[data-count]')
+      if (!els.length || !('IntersectionObserver' in window)) return
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (e) {
+            if (!e.isIntersecting || e.target.dataset.done) return
+            e.target.dataset.done = '1'
+            io.unobserve(e.target)
+            var target = parseFloat(e.target.getAttribute('data-count'))
+            var dec = parseInt(e.target.getAttribute('data-decimals') || '0', 10)
+            var start = null
+            function step(ts) {
+              if (!start) start = ts
+              var p = Math.min((ts - start) / 1200, 1)
+              var val = target * (1 - Math.pow(1 - p, 3))
+              e.target.textContent = dec ? val.toFixed(dec) : Math.round(val).toLocaleString()
+              if (p < 1) requestAnimationFrame(step)
+            }
+            requestAnimationFrame(step)
+          })
+        },
+        { threshold: 0.5 }
+      )
+      els.forEach(function (el) { io.observe(el) })
+    }
+    function prLightbox() {
+      var dlg = document.getElementById('lightbox')
+      var img = document.getElementById('lightbox-img')
+      if (!dlg) return
+      document.querySelectorAll('[data-lightbox]').forEach(function (btn) {
+        if (btn.dataset.bound) return
+        btn.dataset.bound = '1'
+        btn.addEventListener('click', function () {
+          img.src = btn.getAttribute('data-lightbox')
+          img.alt = btn.getAttribute('data-alt') || ''
+          if (dlg.showModal) dlg.showModal()
+        })
+      })
+      if (!dlg.dataset.bound) { dlg.dataset.bound = '1'; dlg.addEventListener('click', function () { dlg.close() }) }
+    }
+    document.addEventListener('astro:page-load', function () { prCountUp(); prLightbox() })
+    if (document.readyState !== 'loading') { prCountUp(); prLightbox() }
+  </script>
 </Base>

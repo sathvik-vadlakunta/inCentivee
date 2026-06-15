@@ -1,0 +1,77 @@
+---
+import Base from '@layouts/Base.astro'
+import Testimonials from '@components/Testimonials.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import testimonials from '@data/testimonials.json'
+
+const base = `https://${practice.domain}`
+const reviewSchema =
+  testimonials.length > 0
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'Dentist',
+        '@id': `${base}/#dentist`,
+        name: practice.name,
+        review: testimonials.map((t: any) => ({
+          '@type': 'Review',
+          reviewRating: { '@type': 'Rating', ratingValue: t.rating || 5, bestRating: 5 },
+          author: { '@type': 'Person', name: t.name },
+          reviewBody: t.quote,
+          publisher: { '@type': 'Organization', name: t.source || 'Google' },
+        })),
+      }
+    : null
+
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const a = practice.address
+const r = (practice as any).reviews ?? {}
+const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${practice.name} ${a.street} ${a.city} ${a.state} ${a.zip}`)}`
+const reviewUrl: string = r.googleReviewUrl || mapsUrl
+const readUrl: string = r.googleReadUrl || mapsUrl
+const rating: number = r.rating || 0
+const count: number = r.count || 0
+const fullStars = Math.floor(rating)
+---
+<Base title="Reviews" description={`Read reviews and share your experience at ${practice.name} in ${practice.address.city}, ${practice.address.state}.`}>
+  <section class="relative bg-secondary text-white">
+    <img src="/images/oak/internal-banner.webp" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30" />
+    <div class="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/90 to-primary/70"></div>
+    <div class="container-px relative py-16">
+      <p class="eyebrow text-accent-soft">Patient resources</p>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">Reviews</h1>
+      {count > 0 && (
+        <div class="mt-5 flex flex-wrap items-center gap-3">
+          <span class="text-3xl font-semibold">{rating.toFixed(1)}</span>
+          <span class="flex gap-0.5 text-accent-soft" aria-label={`${rating} out of 5 stars`}>
+            {[0, 1, 2, 3, 4].map((n) => (<svg class="h-6 w-6" viewBox="0 0 20 20" fill={n < fullStars ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="1.5"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>))}
+          </span>
+          <span class="text-white/85">from <strong>{count.toLocaleString()}</strong> Google reviews</span>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Real patient reviews -->
+  <Testimonials limit={6} heading={`What ${a.city}-area families say`} googleCta={true} />
+
+  <!-- Leave a review / service recovery -->
+  <section class="pb-16 sm:pb-20 -mt-4">
+    <div class="container-px max-w-3xl text-center">
+      <div class="reveal card-soft p-8 sm:p-10">
+        <div class="flex justify-center gap-1 text-primary" aria-label="Five gold stars">
+          {[0, 1, 2, 3, 4].map(() => (<svg class="h-7 w-7" viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l2.6 5.27 5.82.85-4.21 4.1.99 5.79L10 14.77 4.8 17.5l.99-5.79-4.21-4.1 5.82-.85z" /></svg>))}
+        </div>
+        <h2 class="mt-6 text-3xl font-semibold text-dark">We'd love your feedback</h2>
+        <p class="mt-4 text-dark/70 leading-relaxed">If you've visited us, sharing a quick review helps other families in {a.city} and the surrounding communities find a dental home they can trust. If anything about your visit fell short, please reach out directly so we can make it right.</p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <a href={reviewUrl} target="_blank" rel="noopener" class="btn btn-gold">Leave a review on Google</a>
+          <a href={`tel:${tel}`} class="btn btn-outline">Talk to us — {practice.phone}</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {reviewSchema && <script type="application/ld+json" set:html={JSON.stringify(reviewSchema)} />}
+  <CTABanner />
+</Base>

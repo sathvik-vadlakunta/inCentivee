@@ -1,0 +1,71 @@
+---
+import Base from '@layouts/Base.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const insurers: string[] = (practice as any).insuranceList || []
+const cherryUrl: string = (practice as any).cherryUrl || ''
+const membershipIncludes = [
+  'Two professional cleanings per year',
+  'Two comprehensive dental exams',
+  'Routine fluoride treatments',
+  'Full sets of cavity-detecting X-rays',
+  'No annual deductibles or maximum limits',
+  'No pre-authorizations needed'
+]
+---
+<Base title="Financial Options" description={`Insurance, in-house membership, and Cherry financing options at ${practice.name} in ${practice.address.city}, ${practice.address.state}.`}>
+  <section class="relative bg-secondary text-white">
+    <img src="/images/oak/internal-banner.webp" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30" />
+    <div class="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/90 to-primary/70"></div>
+    <div class="container-px relative py-16">
+      <p class="eyebrow text-accent-soft">Patient resources</p>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">Financial options</h1>
+      <p class="mt-4 text-white/85 max-w-2xl">We want quality dental care to fit your budget. We accept most major insurance plans, offer an in-house membership for patients without insurance, and partner with Cherry for low-monthly-payment financing.</p>
+    </div>
+  </section>
+
+  <section class="py-16 sm:py-20">
+    <div class="container-px grid lg:grid-cols-12 gap-10">
+      <div class="lg:col-span-7 space-y-12">
+        <!-- Insurance -->
+        <div class="reveal">
+          <h2 class="text-2xl font-semibold text-dark">Insurance we work with</h2>
+          <p class="mt-3 text-dark/70 leading-relaxed">Our team is happy to work with most major insurance providers and will help you maximize your benefits, including:</p>
+          <ul class="mt-5 grid sm:grid-cols-2 gap-x-6 gap-y-2">
+            {insurers.map((name) => (
+              <li class="flex items-start gap-2 text-dark/75"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>{name}</li>
+            ))}
+          </ul>
+          <p class="mt-5 text-dark/70 leading-relaxed">If your insurance isn't listed, please <a href={`tel:${tel}`} class="text-primary font-medium hover:underline">call us at {practice.phone}</a> — we accept all payment types for out-of-pocket costs and will gladly verify your coverage.</p>
+        </div>
+
+        <!-- In-house membership -->
+        <div class="reveal card-soft p-7">
+          <h2 class="text-2xl font-semibold text-dark">Family Dental Health Program</h2>
+          <p class="mt-3 text-dark/70 leading-relaxed">Our in-house membership is an affordable alternative for patients without traditional insurance. For a simple annual fee, members receive comprehensive preventive care plus valuable discounts on treatment:</p>
+          <ul class="mt-5 grid sm:grid-cols-2 gap-x-6 gap-y-2">
+            {membershipIncludes.map((item) => (
+              <li class="flex items-start gap-2 text-dark/75"><svg class="mt-0.5 h-5 w-5 shrink-0 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>{item}</li>
+            ))}
+          </ul>
+          <p class="mt-5 text-sm text-dark/55">Program tiers are available for adults, children, and patients with periodontal needs. This program is non-transferable and available exclusively at {practice.name}; annual fees are paid upfront and renew on your program anniversary date.</p>
+        </div>
+      </div>
+
+      <!-- Cherry sidebar -->
+      <aside class="lg:col-span-5">
+        <div class="card-soft p-7 lg:sticky lg:top-28">
+          <img src="/images/oak/cherry-logo.webp" alt="Cherry financing" class="h-8 w-auto" />
+          <h2 class="mt-4 text-xl font-semibold text-dark">Pay over time with Cherry</h2>
+          <p class="mt-2 text-dark/70 leading-relaxed">Break the cost of treatment into easy monthly payments. Checking your eligibility takes seconds and won't affect your credit score.</p>
+          {cherryUrl && <a href={cherryUrl} target="_blank" rel="noopener" class="btn btn-gold w-full mt-5">Apply with Cherry</a>}
+          <a href={`tel:${tel}`} class="btn btn-outline w-full mt-2">Questions? Call {practice.phone}</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>

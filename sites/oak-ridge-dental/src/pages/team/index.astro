@@ -2,34 +2,125 @@
 import Base from '@layouts/Base.astro'
 import CTABanner from '@components/CTABanner.astro'
 import practice from '@data/practice.json'
+import staff from '@data/staff.json'
+
+const initials = (n: string) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).slice(0, 2).join('')
+const GROUP_ORDER = ['Dental Hygienists', 'Hygiene Assistants', 'Dental Assistants', 'Front Office & Management']
+const groups = GROUP_ORDER.map((g) => ({ name: g, people: staff.filter((s: any) => s.group === g) })).filter((g) => g.people.length)
+
+type Person = { name: string; role: string; photo?: string; bio?: string[] }
+const bioAttr = (p: Person) => JSON.stringify({ name: p.name, role: p.role, photo: p.photo || '', bio: p.bio || [] })
 ---
-<Base title="Meet Our Doctors" description={`Meet the dentists at ${practice.name} in ${practice.address.city}, ${practice.address.state}.`}>
+<Base title="Meet Our Team" description={`Meet the dentists and team at ${practice.name} in ${practice.address.city}, ${practice.address.state} — experienced, friendly, and here for your whole family.`}>
   <section class="relative bg-secondary text-white">
     <img src="/images/oak/internal-banner.webp" alt="" class="absolute inset-0 w-full h-full object-cover opacity-30" />
     <div class="absolute inset-0 bg-gradient-to-r from-secondary via-secondary/90 to-primary/70"></div>
     <div class="container-px relative py-16">
-      <p class="eyebrow text-accent-soft">Meet the doctors</p>
-      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">The dentists behind your smile</h1>
-      <p class="mt-4 text-white/85 max-w-2xl">Four experienced, caring dentists providing comprehensive dentistry for the whole family in {practice.address.city}.</p>
+      <p class="eyebrow text-accent-soft">Meet the team</p>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">The people behind your smile</h1>
+      <p class="mt-4 text-white/85 max-w-2xl">From our dentists to our hygienists, assistants, and front-desk team, every face at {practice.name} is here to make your visits in {practice.address.city} easy, gentle, and genuinely friendly. Tap anyone to read their story.</p>
     </div>
   </section>
-  <section class="py-16 sm:py-20">
-    <div class="container-px grid grid-cols-2 lg:grid-cols-4 gap-6">
-      {practice.providers.map((doc) => (
-        <div class="card-soft overflow-hidden text-center">
-          {doc.photo
-            ? <div class="aspect-square overflow-hidden bg-cream"><img src={doc.photo} alt={`${doc.name}, ${doc.credentials}`} class="w-full h-full object-cover object-top" loading="lazy" /></div>
-            : <div class="aspect-square grid place-items-center bg-gradient-to-br from-primary to-secondary text-white text-3xl font-semibold">{doc.name.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).slice(0, 2).join('')}</div>}
-          <div class="p-5">
-            <h2 class="text-lg font-semibold text-dark">{doc.name}, {doc.credentials}</h2>
-            <p class="text-sm text-primary">{doc.title}</p>
-            <div class="mt-3 flex flex-wrap gap-1.5 justify-center">
-              {doc.specialties.slice(0, 2).map((s) => <span class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{s}</span>)}
+
+  <!-- Doctors -->
+  <section id="doctors" class="scroll-mt-24 py-16 sm:py-20">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Our dentists</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Experienced doctors who care like family</h2>
+      </div>
+      <div class="mt-10 grid grid-cols-2 lg:grid-cols-4 gap-6">
+        {practice.providers.map((doc: any) => (
+          <a href={`/team/${doc.slug}`} class="reveal card-soft overflow-hidden text-center group">
+            {doc.photo
+              ? <div class="aspect-square overflow-hidden bg-cream"><img src={doc.photo} alt={`${doc.name}, ${doc.credentials}`} class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" loading="lazy" /></div>
+              : <div class="aspect-square grid place-items-center bg-gradient-to-br from-primary to-secondary text-white text-3xl font-semibold">{initials(doc.name)}</div>}
+            <div class="p-5">
+              <h3 class="text-lg font-semibold text-dark group-hover:text-primary transition-colors">{doc.name}, {doc.credentials}</h3>
+              <p class="text-sm text-primary">{doc.title}</p>
+              <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-dark/55 group-hover:text-primary">View full profile
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </span>
             </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Staff, grouped -->
+  <section id="team" class="scroll-mt-24 py-16 sm:py-20 bg-light border-t border-black/5">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Our team</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">The friendly faces you'll see every visit</h2>
+      </div>
+      {groups.map((group) => (
+        <div class="mt-12">
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-primary mb-5">{group.name}</h3>
+          <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-5">
+            {group.people.map((person: any) => (
+              <button type="button" data-bio={bioAttr(person)} class="reveal text-center group">
+                <div class="aspect-square overflow-hidden rounded-2xl bg-cream shadow-sm">
+                  <img src={person.photo} alt={`${person.name}, ${person.role}`} class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                </div>
+                <h4 class="mt-3 text-sm font-semibold text-dark group-hover:text-primary transition-colors">{person.name}</h4>
+                <p class="text-xs text-dark/55">{person.role}</p>
+              </button>
+            ))}
           </div>
         </div>
       ))}
     </div>
   </section>
+
+  <!-- Bio modal -->
+  <dialog id="bio-modal" class="m-auto w-[92vw] max-w-2xl rounded-3xl p-0 backdrop:bg-black/50 backdrop:backdrop-blur-sm">
+    <div class="relative">
+      <button id="bio-close" aria-label="Close" class="absolute right-4 top-4 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/5 text-dark/60 hover:bg-black/10">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+      <div class="flex flex-col sm:flex-row">
+        <div class="sm:w-2/5 shrink-0 bg-cream">
+          <img id="bio-photo" src="" alt="" class="h-56 w-full object-cover object-top sm:h-full" />
+        </div>
+        <div class="flex-1 p-6 sm:p-8 max-h-[80vh] overflow-y-auto">
+          <h3 id="bio-name" class="text-2xl font-semibold text-dark"></h3>
+          <p id="bio-role" class="mt-1 text-sm font-semibold text-primary"></p>
+          <div id="bio-text" class="mt-4 space-y-3 text-dark/70 leading-relaxed"></div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <CTABanner />
 </Base>
+
+<script is:inline>
+  function prBindBios() {
+    const modal = document.getElementById('bio-modal')
+    if (!modal || modal.dataset.bound) return
+    modal.dataset.bound = '1'
+    const photo = document.getElementById('bio-photo')
+    const name = document.getElementById('bio-name')
+    const role = document.getElementById('bio-role')
+    const text = document.getElementById('bio-text')
+    function open(data) {
+      name.textContent = data.name
+      role.textContent = data.role
+      if (data.photo) { photo.src = data.photo; photo.alt = data.name; photo.parentElement.style.display = '' }
+      else { photo.parentElement.style.display = 'none' }
+      text.innerHTML = ''
+      ;(data.bio || []).forEach((p) => { const el = document.createElement('p'); el.textContent = p; text.appendChild(el) })
+      if (typeof modal.showModal === 'function') modal.showModal()
+    }
+    document.querySelectorAll('[data-bio]').forEach((btn) => {
+      btn.addEventListener('click', () => { try { open(JSON.parse(btn.getAttribute('data-bio'))) } catch (e) {} })
+    })
+    document.getElementById('bio-close')?.addEventListener('click', () => modal.close())
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.close() })
+  }
+  document.addEventListener('astro:page-load', prBindBios)
+  if (document.readyState !== 'loading') prBindBios()
+  else document.addEventListener('DOMContentLoaded', prBindBios)
+</script>
