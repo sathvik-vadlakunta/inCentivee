@@ -2,35 +2,20 @@
 interface Props {
   title: string
   subtitle?: string
+  eyebrow?: string
   cta?: { label: string; href: string }
-  image?: string
-  overlay?: boolean
 }
 
-const { title, subtitle, cta, image, overlay = true } = Astro.props
+const { title, subtitle, eyebrow, cta } = Astro.props
 ---
 
-<section
-  class="relative bg-dark text-white py-20 sm:py-28 lg:py-36"
-  style={image ? `background-image: url('${image}'); background-size: cover; background-position: center;` : ''}
->
-  {image && overlay && <div class="absolute inset-0 bg-dark/60" />}
-  <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading mb-4">
-      {title}
-    </h1>
-    {subtitle && (
-      <p class="text-lg sm:text-xl text-gray-200 max-w-2xl mx-auto mb-8">
-        {subtitle}
-      </p>
-    )}
-    {cta && (
-      <a
-        href={cta.href}
-        class="inline-block bg-primary text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-secondary transition-colors"
-      >
-        {cta.label}
-      </a>
-    )}
+<section class="relative overflow-hidden bg-secondary text-white">
+  <div class="blob" style="width:26rem;height:26rem;background:#6b7882;top:-9rem;right:-5rem;"></div>
+  <div class="blob" style="width:18rem;height:18rem;background:#a38f79;bottom:-8rem;left:-4rem;opacity:0.25;"></div>
+  <div class="container-px relative py-16 sm:py-20 lg:py-24">
+    {eyebrow && <p class="eyebrow text-accent-soft">{eyebrow}</p>}
+    <h1 class="mt-4 max-w-3xl text-4xl sm:text-5xl font-semibold">{title}</h1>
+    {subtitle && <p class="mt-5 max-w-2xl text-lg text-white/80">{subtitle}</p>}
+    {cta && <a href={cta.href} class="btn btn-gold mt-8">{cta.label}</a>}
   </div>
 </section>

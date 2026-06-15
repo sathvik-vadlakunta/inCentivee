@@ -3,6 +3,7 @@ import Nav from '@components/Nav.astro'
 import Footer from '@components/Footer.astro'
 import SchemaMarkup from '@components/SchemaMarkup.astro'
 import practice from '@data/practice.json'
+import { ClientRouter } from 'astro:transitions'
 import '@/styles/global.css'
 
 interface Props {
@@ -15,6 +16,11 @@ interface Props {
 const { title, description = practice.tagline, image, noindex = false } = Astro.props
 const pageTitle = title === practice.name ? title : `${title} | ${practice.name}`
 const canonicalURL = new URL(Astro.url.pathname, Astro.site)
+
+const analytics = (practice as any).analytics ?? {}
+const ga4: string = analytics.ga4 || ''
+const gtm: string = analytics.gtm || ''
+const gsc: string = analytics.googleSiteVerification || ''
 ---
 
 <!doctype html>
@@ -22,12 +28,25 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="canonical" href={canonicalURL} />
 
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {gsc && <meta name="google-site-verification" content={gsc} />}
+
+    {/* Google Analytics 4 — loads only when a measurement ID is configured */}
+    {ga4 && (
+      <>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${ga4}`}></script>
+        <script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga4}');`}></script>
+      </>
+    )}
+    {/* Google Tag Manager — optional */}
+    {gtm && (
+      <script is:inline set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');`}></script>
+    )}
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -36,23 +55,58 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
     <meta property="og:description" content={description} />
     {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
 
-    <!-- Preconnect fonts if custom -->
-    {practice.fonts.heading !== 'system-ui' && (
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        rel="stylesheet"
-        href={`https://fonts.googleapis.com/css2?family=${practice.fonts.heading.replace(/ /g, '+')}:wght@400;600;700&family=${practice.fonts.body.replace(/ /g, '+')}:wght@300;400;500;600&display=swap`}
-      />
-    )}
+    <!-- Brand fonts: EB Garamond (serif headings) + Montserrat (body) — matches their site -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
+    />
 
     <SchemaMarkup />
+    <ClientRouter />
   </head>
-  <body class="min-h-screen flex flex-col">
+  <body class="min-h-screen flex flex-col bg-white">
+    {gtm && (
+      <noscript set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`}></noscript>
+    )}
     <Nav />
     <main class="flex-1">
       <slot />
     </main>
     <Footer />
+
+    <!-- Reveal-on-scroll (re-runs after every View Transition navigation) -->
+    <script is:inline>
+      function prSetupReveal() {
+        const io = new IntersectionObserver(
+          (entries) => {
+            for (const e of entries) {
+              if (e.isIntersecting) {
+                e.target.classList.add('is-visible')
+                io.unobserve(e.target)
+              }
+            }
+          },
+          { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
+        )
+        document.querySelectorAll('.reveal:not(.is-visible)').forEach((el) => io.observe(el))
+      }
+      // astro:page-load fires on initial load AND after each client-side navigation.
+      document.addEventListener('astro:page-load', prSetupReveal)
+      // Fallback if View Transitions are unavailable.
+      if (document.readyState !== 'loading') prSetupReveal()
+      else document.addEventListener('DOMContentLoaded', prSetupReveal)
+    </script>
+    <!-- Conversion: click-to-call (document-level, survives View Transitions) -->
+    <script is:inline>
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest && e.target.closest('a[href^="tel:"]')
+        if (a) {
+          window.dataLayer = window.dataLayer || []
+          window.dataLayer.push({ event: 'click_to_call' })
+        }
+      })
+    </script>
   </body>
 </html>

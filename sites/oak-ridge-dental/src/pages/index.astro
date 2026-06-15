@@ -1,74 +1,139 @@
 ---
 import Base from '@layouts/Base.astro'
-import Hero from '@components/Hero.astro'
-import ServiceCard from '@components/ServiceCard.astro'
-import TeamCard from '@components/TeamCard.astro'
 import CTABanner from '@components/CTABanner.astro'
+import ServiceCard from '@components/ServiceCard.astro'
 import practice from '@data/practice.json'
 import { getCollection } from 'astro:content'
 
-const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
-const team = (await getCollection('team')).sort((a, b) => a.data.order - b.data.order)
+const allServices = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const tel = practice.phone.replace(/[^+\d]/g, '')
+
+const featuredSlugs = ['dental-implants', 'clear-aligners', 'teeth-whitening', 'root-canal-therapy', 'sleep-apnea-treatment', 'dental-cleanings-exams']
+const featured = featuredSlugs.map((s) => allServices.find((x) => x.slug === s)).filter(Boolean)
+
+const pillars = [
+  { title: 'Comprehensive', body: 'From cleanings and fillings to implants, orthodontics, oral surgery, and pediatric care — every service your family needs, under one roof.', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
+  { title: 'Comfortable', body: 'Anxiety-free dentistry with nitrous oxide, oral, IV, and general sedation options — plus a gentle team that treats you like family.', icon: 'M3 13l2-5h14l2 5M5 13h14v4a1 1 0 01-1 1h-1a1 1 0 01-1-1v-1H8v1a1 1 0 01-1 1H6a1 1 0 01-1-1v-4z' },
+  { title: 'Advanced', body: 'Same-day CEREC crowns, 3D cone-beam imaging, iTero digital scanning, and laser dentistry for precise, modern care.', icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' },
+]
+const stats = [
+  { value: `${allServices.length}+`, label: 'Services offered' },
+  { value: '3', label: 'Experienced dentists' },
+  { value: '11', label: 'Areas of dentistry' },
+  { value: 'Farmington', label: 'Serving Davis County' },
+]
+const initials = (n) => n.replace(/^Dr\.?\s+/, '').split(' ').map((p) => p[0]).slice(0, 2).join('')
 ---
 
 <Base title={practice.name} description={practice.tagline}>
-  <Hero
-    title={`Welcome to ${practice.name}`}
-    subtitle={practice.tagline}
-    cta={{ label: 'Book Appointment', href: '/contact' }}
-  />
-
-  <!-- Services Section -->
-  <section class="py-16 sm:py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold font-heading">Our Services</h2>
-        <p class="mt-3 text-gray-600 max-w-2xl mx-auto">
-          Comprehensive dental care for your entire family.
-        </p>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.slice(0, 6).map((service) => (
-          <ServiceCard
-            title={service.data.title}
-            description={service.data.description}
-            href={`/services/${service.slug}`}
-            image={service.data.image}
-          />
-        ))}
-      </div>
-      {services.length > 6 && (
-        <div class="text-center mt-8">
-          <a href="/services" class="text-primary font-semibold hover:underline">
-            View all {services.length} services &rarr;
+  <!-- Hero -->
+  <section class="relative overflow-hidden bg-gradient-to-br from-secondary to-primary text-white">
+    <div class="blob" style="width:30rem;height:30rem;background:#8fb4f6;top:-8rem;right:-6rem;"></div>
+    <div class="blob" style="width:22rem;height:22rem;background:#f56166;bottom:-9rem;left:-6rem;opacity:0.3;"></div>
+    <div class="container-px relative grid lg:grid-cols-12 gap-12 items-center py-20 lg:py-28">
+      <div class="lg:col-span-7">
+        <p class="eyebrow text-white/80" style="color:rgba(255,255,255,.85)">Farmington, Utah · Family &amp; Cosmetic Dentistry</p>
+        <h1 class="mt-5 text-4xl sm:text-5xl lg:text-6xl font-semibold">Comprehensive, comfortable dentistry for the whole family</h1>
+        <p class="mt-6 max-w-xl text-lg text-white/85">From routine checkups to dental implants, orthodontics, and sedation dentistry — Oak Ridge Dental brings advanced, gentle care to families across Davis County.</p>
+        <div class="mt-9 flex flex-col sm:flex-row gap-3">
+          <a href="/contact" class="btn btn-gold">Book an Appointment</a>
+          <a href={`tel:${tel}`} class="btn btn-ghost">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+            {practice.phone}
           </a>
         </div>
-      )}
+        <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/80">
+          <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> New patients welcome</span>
+          <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> Most insurance accepted</span>
+          <span class="inline-flex items-center gap-2"><span class="text-accent">●</span> Sedation options available</span>
+        </div>
+      </div>
+      <div class="lg:col-span-5">
+        <div class="rounded-3xl bg-white/10 backdrop-blur-md border border-white/15 p-7 shadow-2xl">
+          <p class="text-sm uppercase tracking-widest text-white/70 font-semibold">Visit us</p>
+          <p class="mt-2 text-xl font-semibold">{practice.address.street}</p>
+          <p class="text-white/80">{practice.address.city}, {practice.address.state} {practice.address.zip}</p>
+          <div class="mt-5 border-t border-white/15 pt-5">
+            <p class="text-sm uppercase tracking-widest text-white/70 font-semibold mb-2">Office Hours</p>
+            <ul class="space-y-1 text-sm text-white/85">
+              {practice.hours.map((h) => (<li class="flex justify-between gap-4"><span>{h.days}</span><span class="text-white/60">{h.note ? h.note : `${h.open} – ${h.close}`}</span></li>))}
+            </ul>
+          </div>
+          <a href="/contact" class="btn btn-gold w-full mt-6">Request your visit</a>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Team Section -->
-  {team.length > 0 && (
-    <section class="py-16 sm:py-20 bg-gray-50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-          <h2 class="text-3xl font-bold font-heading">Meet Our Team</h2>
+  <!-- Stats -->
+  <section class="bg-light border-b border-black/5">
+    <div class="container-px grid grid-cols-2 lg:grid-cols-4 gap-6 py-10">
+      {stats.map((s) => (
+        <div class="reveal text-center">
+          <div class="text-3xl sm:text-4xl font-semibold text-primary">{s.value}</div>
+          <div class="mt-1 text-sm text-dark/60">{s.label}</div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          {team.map((member) => (
-            <TeamCard
-              name={member.data.name}
-              credentials={member.data.credentials}
-              title={member.data.title}
-              photo={member.data.photo}
-              specialties={member.data.specialties}
-              href={`/team/${member.slug}`}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  )}
+      ))}
+    </div>
+  </section>
 
-  <CTABanner />
+  <!-- Pillars -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">The Oak Ridge difference</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Modern dentistry, delivered with genuine care</h2>
+      </div>
+      <div class="mt-12 grid md:grid-cols-3 gap-6">
+        {pillars.map((p) => (
+          <div class="reveal card-soft p-8">
+            <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={p.icon} /></svg>
+            </div>
+            <h3 class="mt-5 text-xl font-semibold text-dark">{p.title}</h3>
+            <p class="mt-2 text-dark/65 leading-relaxed">{p.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured services -->
+  <section class="py-20 sm:py-24 bg-light">
+    <div class="container-px">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 reveal">
+        <div class="max-w-xl">
+          <p class="eyebrow">What we do</p>
+          <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Complete care for every smile</h2>
+        </div>
+        <a href="/services" class="btn btn-outline shrink-0">All {allServices.length} services</a>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {featured.map((service) => (
+          <div class="reveal"><ServiceCard title={service.data.title} description={service.data.description} href={`/services/${service.slug}`} category={service.data.category} /></div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Doctors -->
+  <section class="py-20 sm:py-24">
+    <div class="container-px">
+      <div class="max-w-2xl reveal">
+        <p class="eyebrow">Meet your dentists</p>
+        <h2 class="mt-4 text-3xl sm:text-4xl font-semibold text-dark">Three dentists who care for you like family</h2>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-3 gap-6">
+        {practice.providers.map((doc) => (
+          <a href="/team" class="reveal card-soft p-7 text-center group">
+            <div class="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white grid place-items-center text-2xl font-semibold">{initials(doc.name)}</div>
+            <h3 class="mt-4 text-lg font-semibold text-dark group-hover:text-primary transition-colors">{doc.name}, {doc.credentials}</h3>
+            <p class="text-sm text-primary">{doc.title}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <CTABanner title="Ready for the dentist your whole family will love?" subtitle="New patients are always welcome at Oak Ridge Dental in Farmington." />
 </Base>

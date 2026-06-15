@@ -1,37 +1,147 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
-/* Oak Ridge Dental — brand: blue + coral (distinct from Hilltop's tan/slate) */
+/*
+  Oak Ridge Dental — brand system matching THEIR site.
+  Brand: blue (#6b98f2) + coral (#f56166). Their real fonts: EB Garamond
+  (serif headings) + Montserrat (body). Clean, light, serif-forward look.
+*/
 :root {
-  --color-primary: #4f86e8;
-  --color-secondary: #2f5fb0;
-  --color-accent: #f56166;
-  --color-dark: #1d2733;
-  --color-light: #f4f8fd;
-  --font-heading: 'Outfit', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --color-primary: #4f86e8;     /* brand blue */
+  --color-secondary: #2f5fb0;   /* deep blue */
+  --color-accent: #f56166;      /* brand coral */
+  --color-accent-soft: #fbd2d4; /* light coral */
+  --color-dark: #1d2733;        /* near-black navy */
+  --color-light: #f4f8fd;       /* cool off-white */
+  --color-cream: #eaf1fb;
+  --font-heading: 'EB Garamond', 'Georgia', serif;
+  --font-body: 'Montserrat', system-ui, sans-serif;
 }
 
 @theme {
   --color-primary: var(--color-primary);
   --color-secondary: var(--color-secondary);
   --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
   --color-dark: var(--color-dark);
   --color-light: var(--color-light);
+  --color-cream: var(--color-cream);
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
 }
 
 html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
 body { font-family: var(--font-body); color: var(--color-dark); background: #fff; }
-h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); letter-spacing: -0.01em; }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
 
-/* Brand-tuned prose for content pages */
-.prose-brand { color: color-mix(in srgb, var(--color-dark) 80%, #fff); font-size: 1.05rem; line-height: 1.7; }
-.prose-brand h2 { font-family: var(--font-heading); color: var(--color-dark); font-size: 1.6rem; font-weight: 600; margin-top: 2rem; margin-bottom: .4rem; }
-.prose-brand h3 { font-family: var(--font-heading); color: var(--color-dark); font-size: 1.25rem; font-weight: 600; margin-top: 1.4rem; }
-.prose-brand p { margin: .8rem 0; }
-.prose-brand ul { margin: 1rem 0; padding-left: 0; list-style: none; display: grid; gap: .5rem; }
-.prose-brand ul li { position: relative; padding-left: 1.75rem; }
-.prose-brand ul li::before { content: '✓'; position: absolute; left: 0; color: var(--color-primary); font-weight: 700; }
-.prose-brand a { color: var(--color-primary); text-decoration: underline; }
+/* ── Layout ── */
+.container-px { margin-inline: auto; max-width: 80rem; padding-inline: 1.25rem; }
+@media (min-width: 1024px) { .container-px { padding-inline: 2rem; } }
+
+/* ── Eyebrow label ── */
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-family: var(--font-body); font-weight: 600; font-size: 0.78rem;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-accent);
+}
+.eyebrow::before { content: ''; width: 1.75rem; height: 2px; background: var(--color-accent); border-radius: 2px; }
+
+.gold-underline { background-image: linear-gradient(transparent 62%, var(--color-accent-soft) 62%); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  border-radius: 9999px; padding: 0.85rem 1.6rem; font-weight: 600; font-size: 0.97rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-primary { background: var(--color-primary); color: #fff; box-shadow: 0 10px 24px -10px rgba(79,134,232,0.8); }
+.btn-primary:hover { background: var(--color-secondary); }
+/* main CTA = coral accent (pops on the blue brand) */
+.btn-gold { background: var(--color-accent); color: #fff; box-shadow: 0 10px 24px -10px rgba(245,97,102,0.8); }
+.btn-gold:hover { background: #e0484e; }
+.btn-dark { background: var(--color-primary); color: #fff; }
+.btn-dark:hover { background: var(--color-secondary); }
+.btn-ghost { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,0.45); }
+.btn-ghost:hover { background: rgba(255,255,255,0.12); }
+.btn-outline { background: #fff; color: var(--color-secondary); border: 1.5px solid color-mix(in srgb, var(--color-primary) 30%, #fff); }
+.btn-outline:hover { border-color: var(--color-primary); }
+
+/* ── Cards ── */
+.card-soft {
+  background: #fff; border: 1px solid rgba(43,50,54,0.08); border-radius: var(--radius-2xl);
+  box-shadow: 0 1px 2px rgba(43,50,54,0.04), 0 12px 30px -18px rgba(43,50,54,0.18);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+.card-soft:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1px 2px rgba(43,50,54,0.04), 0 24px 48px -20px rgba(43,50,54,0.3);
+  border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* ── Scroll reveal + stagger ── */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1), transform 0.7s cubic-bezier(0.22,1,0.36,1); }
+.reveal.is-visible { opacity: 1; transform: none; }
+.reveal[data-delay="1"] { transition-delay: 0.08s; }
+.reveal[data-delay="2"] { transition-delay: 0.16s; }
+.reveal[data-delay="3"] { transition-delay: 0.24s; }
+.reveal[data-delay="4"] { transition-delay: 0.32s; }
+.reveal[data-delay="5"] { transition-delay: 0.4s; }
+
+/* ── Image polish: zoom-on-hover + ken-burns ── */
+.img-zoom { overflow: hidden; }
+.img-zoom img { transition: transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+.img-zoom:hover img { transform: scale(1.06); }
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.12); } }
+.kenburns { animation: kenburns 18s ease-out forwards; }
+
+/* ── Decorative blob ── */
+.blob { position: absolute; border-radius: 50%; filter: blur(48px); opacity: 0.45; pointer-events: none; }
+
+/* ── Article / prose styling (brand-tuned) ── */
+.prose-brand {
+  color: color-mix(in srgb, var(--color-dark) 78%, #fff);
+  font-size: 1.075rem; line-height: 1.75; max-width: none;
+}
+.prose-brand > * + * { margin-top: 1.15rem; }
+.prose-brand h2 {
+  font-family: var(--font-heading); color: var(--color-dark);
+  font-size: 1.7rem; font-weight: 600; margin-top: 2.4rem; margin-bottom: 0.4rem;
+  padding-bottom: 0.5rem; border-bottom: 2px solid var(--color-accent-soft); display: inline-block;
+}
+.prose-brand h3 {
+  font-family: var(--font-heading); color: var(--color-dark);
+  font-size: 1.3rem; font-weight: 600; margin-top: 1.6rem; margin-bottom: 0.25rem;
+}
+.prose-brand p { margin: 0.9rem 0; }
+.prose-brand ul { margin: 1rem 0; padding-left: 0; list-style: none; display: grid; gap: 0.6rem; }
+.prose-brand ul li {
+  position: relative; padding-left: 1.9rem;
+}
+.prose-brand ul li::before {
+  content: '✓'; position: absolute; left: 0; top: 0.05rem;
+  width: 1.3rem; height: 1.3rem; display: grid; place-items: center;
+  font-size: 0.72rem; font-weight: 700; color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 16%, #fff); border-radius: 9999px;
+}
+.prose-brand a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
+.prose-brand strong { color: var(--color-dark); }
+
+/* ── Page transition (View Transitions) ── */
+@keyframes pr-fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pr-fade-out { from { opacity: 1; } to { opacity: 0; } }
+::view-transition-old(root) { animation: pr-fade-out 0.18s ease both; }
+::view-transition-new(root) { animation: pr-fade-in 0.32s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .btn:hover, .card-soft:hover { transform: none; }
+  .img-zoom:hover img, .kenburns { animation: none; transform: none; }
+}
