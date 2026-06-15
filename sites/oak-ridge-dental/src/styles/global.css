@@ -2,18 +2,18 @@
 @plugin '@tailwindcss/typography';
 
 /*
-  Oak Ridge Dental — brand system matching THEIR site.
-  Brand: blue (#6b98f2) + coral (#f56166). Their real fonts: EB Garamond
-  (serif headings) + Montserrat (body). Clean, light, serif-forward look.
+  Oakridge Dental — brand system matching THEIR site identity.
+  Brand: maroon (#AB2A2B) + neutral grays. Their fonts: EB Garamond
+  (serif headings) + Montserrat (body). Clean, photo-forward look.
 */
 :root {
-  --color-primary: #4f86e8;     /* brand blue */
-  --color-secondary: #2f5fb0;   /* deep blue */
-  --color-accent: #f56166;      /* brand coral */
-  --color-accent-soft: #fbd2d4; /* light coral */
-  --color-dark: #1d2733;        /* near-black navy */
-  --color-light: #f4f8fd;       /* cool off-white */
-  --color-cream: #eaf1fb;
+  --color-primary: #ab2a2b;     /* brand maroon */
+  --color-secondary: #8a2122;   /* deep maroon */
+  --color-accent: #ab2a2b;      /* maroon accent (buttons, eyebrows) */
+  --color-accent-soft: #e9c9c9; /* light maroon tint */
+  --color-dark: #1a1a1a;        /* near-black */
+  --color-light: #f2f2f2;       /* light gray section bg */
+  --color-cream: #ececec;
   --font-heading: 'EB Garamond', 'Georgia', serif;
   --font-body: 'Montserrat', system-ui, sans-serif;
 }
@@ -62,11 +62,10 @@ h1, h2, h3, h4, h5, h6 {
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 }
 .btn:hover { transform: translateY(-2px); }
-.btn-primary { background: var(--color-primary); color: #fff; box-shadow: 0 10px 24px -10px rgba(79,134,232,0.8); }
+.btn-primary { background: var(--color-primary); color: #fff; box-shadow: 0 10px 24px -10px rgba(171,42,43,0.7); }
 .btn-primary:hover { background: var(--color-secondary); }
-/* main CTA = coral accent (pops on the blue brand) */
-.btn-gold { background: var(--color-accent); color: #fff; box-shadow: 0 10px 24px -10px rgba(245,97,102,0.8); }
-.btn-gold:hover { background: #e0484e; }
+.btn-gold { background: var(--color-accent); color: #fff; box-shadow: 0 10px 24px -10px rgba(171,42,43,0.7); }
+.btn-gold:hover { background: var(--color-secondary); }
 .btn-dark { background: var(--color-primary); color: #fff; }
 .btn-dark:hover { background: var(--color-secondary); }
 .btn-ghost { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,0.45); }
