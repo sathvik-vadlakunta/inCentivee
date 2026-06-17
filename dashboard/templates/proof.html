@@ -7,9 +7,9 @@
 <title>AI Search Visibility Report — {{ report.customer_name }}</title>
 <style>
     :root {
-        --brand: #e94560;
-        --navy: #16213e;
-        --navy-soft: #1f2b4d;
+        --brand: #16a34a;   /* PracticeRank green — matches the marketing site */
+        --navy: #08080d;
+        --navy-soft: #14361f;
         --bg: #f6f7fb;
         --card: #ffffff;
         --border: #e6e9f2;
@@ -424,28 +424,27 @@
     {% endif %}
 
     {# ============ WHAT WE SHIPPED ============ #}
-    {% if report.published %}
+    {% if report.published_summary and report.published_summary.total %}
     <div class="section">
         <h2>What we shipped for you</h2>
-        <p class="sub">The work behind the numbers &mdash; every improvement we&rsquo;ve published on your behalf.</p>
+        <p class="sub">The work behind the numbers &mdash; <strong>{{ report.published_summary.total }}</strong> improvements published on your behalf.</p>
         <div class="card">
-            <ul class="timeline">
-                {% for item in report.published %}
-                <li>
-                    {% if item.published_at %}<div class="t-date">{{ item.published_at }}</div>{% endif %}
-                    <div class="t-title">
-                        {% if item.published_url %}
-                        <a href="{{ item.published_url }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                        {% else %}
-                        {{ item.title }}
-                        {% endif %}
-                    </div>
-                    {% if item.rec_type %}
-                    <span class="t-type">{{ item.rec_type|replace('_', ' ')|replace('-', ' ')|title }}</span>
-                    {% endif %}
-                </li>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0.75rem;">
+                {% for g in report.published_summary.groups %}
+                <div style="background:var(--green-bg);border:1px solid #c7ead4;border-radius:10px;padding:0.9rem 1rem;">
+                    <div style="font-size:1.6rem;font-weight:800;color:var(--green);line-height:1;">{{ g.count }}</div>
+                    <div style="font-size:0.85rem;color:var(--muted);margin-top:0.2rem;">{{ g.label }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if report.published_summary.recent %}
+            <p class="sub" style="margin-top:1rem;margin-bottom:0.35rem;">Recent highlights:</p>
+            <ul style="margin:0;padding-left:1.1rem;font-size:0.9rem;color:var(--text);">
+                {% for title in report.published_summary.recent %}
+                <li style="margin:0.2rem 0;">{{ title }}</li>
                 {% endfor %}
             </ul>
+            {% endif %}
         </div>
     </div>
     {% endif %}

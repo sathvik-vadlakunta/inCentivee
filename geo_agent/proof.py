@@ -224,11 +224,41 @@ def build_proof_report(db, customer_id: str) -> dict:
     except Exception as e:
         logger.warning(f"proof: score failed: {e}")
 
-    # --- Attribution timeline: what we shipped ---------------------------
+    # --- Attribution: what we shipped (summarized, not a wall of timestamps) ---
     try:
-        report["published"] = db.get_published_content_events(customer_id, limit=50)
+        events = db.get_published_content_events(customer_id, limit=200)
+        report["published"] = events
+        report["published_summary"] = _summarize_published(events)
     except Exception as e:
         logger.warning(f"proof: published events failed: {e}")
         report["published"] = []
+        report["published_summary"] = None
 
     return report
+
+
+# Friendly group labels for the "what we shipped" summary.
+_REC_TYPE_LABELS = {
+    "new_page": "Location & service pages",
+    "blog_post": "Blog posts",
+    "faq_update": "FAQ enhancements",
+    "freshness_update": "Content refreshes",
+    "expert_quote": "Expert quotes added",
+    "stat_injection": "Statistics added",
+}
+
+
+def _summarize_published(events: list[dict]) -> dict:
+    """Roll published content into a clean summary: total + counts by type +
+    a few recent highlights (instead of a 30-row timestamp dump)."""
+    from collections import Counter
+    counts = Counter((e.get("rec_type") or "other") for e in events)
+    groups = [
+        {"label": _REC_TYPE_LABELS.get(t, t.replace("_", " ").title()), "count": c}
+        for t, c in counts.most_common()
+    ]
+    return {
+        "total": len(events),
+        "groups": groups,
+        "recent": [e.get("title", "") for e in events[:5] if e.get("title")],
+    }
