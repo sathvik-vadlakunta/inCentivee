@@ -502,6 +502,36 @@ def _err(model: str, e: Exception) -> "EngineResult":
     return EngineResult(text="", citations=[], model=model, error=str(e)[:240])
 
 
+def _post_json(url: str, headers: dict, payload: dict, timeout: float = 60.0,
+               retries: int = 4):
+    """POST with exponential backoff on 429 / 5xx so transient rate limits don't
+    get recorded as a missed mention. Honors Retry-After when present. Returns the
+    httpx.Response (2xx) or raises after exhausting retries."""
+    import time
+
+    import httpx
+    delay = 2.0
+    last_resp = None
+    for attempt in range(retries):
+        with httpx.Client(timeout=timeout) as client:
+            resp = client.post(url, headers=headers, json=payload)
+        if resp.status_code < 400:
+            return resp
+        last_resp = resp
+        # Retry only on rate-limit / server errors; fail fast on other 4xx.
+        if resp.status_code == 429 or resp.status_code >= 500:
+            ra = resp.headers.get("Retry-After", "")
+            wait = float(ra) if ra.replace(".", "", 1).isdigit() else delay
+            if attempt < retries - 1:
+                logger.info(f"{url.split('/')[2]} {resp.status_code} — backing off {wait:.0f}s "
+                            f"(attempt {attempt + 1}/{retries})")
+                time.sleep(min(wait, 30.0))
+                delay *= 2
+                continue
+        resp.raise_for_status()
+    last_resp.raise_for_status()
+
+
 def query_claude(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResult | None:
     """Query Claude with the web-search tool (real retrieval)."""
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -538,28 +568,26 @@ def query_openai(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineRes
         return None
     model = ENGINE_MODELS["openai"]
     try:
-        import httpx
-        with httpx.Client(timeout=60.0) as client:
-            resp = client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": GROUNDED_SYSTEM},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": max_tokens,
-                },
-            )
-            resp.raise_for_status()
-            msg = resp.json()["choices"][0]["message"]
-            citations = [
-                (ann.get("url_citation") or {}).get("url")
-                for ann in (msg.get("annotations") or [])
-                if ann.get("type") == "url_citation"
-            ]
-            return EngineResult(text=(msg.get("content") or "").strip(), citations=_dedup(citations), model=model)
+        resp = _post_json(
+            "https://api.openai.com/v1/chat/completions",
+            {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": GROUNDED_SYSTEM},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": max_tokens,
+            },
+            timeout=60.0,
+        )
+        msg = resp.json()["choices"][0]["message"]
+        citations = [
+            (ann.get("url_citation") or {}).get("url")
+            for ann in (msg.get("annotations") or [])
+            if ann.get("type") == "url_citation"
+        ]
+        return EngineResult(text=(msg.get("content") or "").strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"OpenAI query failed: {e}")
         return _err(model, e)
@@ -572,29 +600,27 @@ def query_perplexity(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> Engin
         return None
     model = ENGINE_MODELS["perplexity"]
     try:
-        import httpx
-        with httpx.Client(timeout=60.0) as client:
-            resp = client.post(
-                "https://api.perplexity.ai/chat/completions",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": GROUNDED_SYSTEM},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "max_tokens": max_tokens,
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            text = data["choices"][0]["message"]["content"]
-            # Perplexity removed the top-level `citations` field — sources are now in
-            # `search_results` (fall back to the legacy field for safety).
-            sources = [r.get("url") for r in (data.get("search_results") or [])]
-            if not sources:
-                sources = data.get("citations") or []
-            return EngineResult(text=text.strip(), citations=_dedup(sources), model=model)
+        resp = _post_json(
+            "https://api.perplexity.ai/chat/completions",
+            {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": GROUNDED_SYSTEM},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": max_tokens,
+            },
+            timeout=60.0,
+        )
+        data = resp.json()
+        text = data["choices"][0]["message"]["content"]
+        # Perplexity removed the top-level `citations` field — sources are now in
+        # `search_results` (fall back to the legacy field for safety).
+        sources = [r.get("url") for r in (data.get("search_results") or [])]
+        if not sources:
+            sources = data.get("citations") or []
+        return EngineResult(text=text.strip(), citations=_dedup(sources), model=model)
     except Exception as e:
         logger.warning(f"Perplexity query failed: {e}")
         return _err(model, e)
@@ -607,31 +633,29 @@ def query_gemini(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineRes
         return None
     model = ENGINE_MODELS["gemini"]
     try:
-        import httpx
-        with httpx.Client(timeout=60.0) as client:
-            resp = client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
-                headers={"Content-Type": "application/json"},
-                json={
-                    "contents": [{"parts": [{"text": f"{GROUNDED_SYSTEM}\n\n{prompt}"}]}],
-                    "tools": [{"google_search": {}}],
-                    # thinkingBudget:0 — otherwise 2.5-flash can spend the whole token
-                    # budget "thinking" and return a candidate with no text (false miss).
-                    "generationConfig": {"maxOutputTokens": max_tokens, "thinkingConfig": {"thinkingBudget": 0}},
-                },
-            )
-            resp.raise_for_status()
-            cand = resp.json()["candidates"][0]
-            text = "".join(p.get("text", "") for p in cand.get("content", {}).get("parts", []))
-            # web.uri is a Google redirect that pollutes domain stats and expires;
-            # web.title carries the real source domain (e.g. "yelp.com").
-            citations = [
-                (chunk.get("web") or {}).get("title") or (chunk.get("web") or {}).get("uri")
-                for chunk in (cand.get("groundingMetadata", {}).get("groundingChunks") or [])
-            ]
-            if not text.strip():
-                raise RuntimeError(f"empty response (finishReason={cand.get('finishReason', '?')})")
-            return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
+        resp = _post_json(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
+            {"Content-Type": "application/json"},
+            {
+                "contents": [{"parts": [{"text": f"{GROUNDED_SYSTEM}\n\n{prompt}"}]}],
+                "tools": [{"google_search": {}}],
+                # thinkingBudget:0 — otherwise 2.5-flash can spend the whole token
+                # budget "thinking" and return a candidate with no text (false miss).
+                "generationConfig": {"maxOutputTokens": max_tokens, "thinkingConfig": {"thinkingBudget": 0}},
+            },
+            timeout=60.0,
+        )
+        cand = resp.json()["candidates"][0]
+        text = "".join(p.get("text", "") for p in cand.get("content", {}).get("parts", []))
+        # web.uri is a Google redirect that pollutes domain stats and expires;
+        # web.title carries the real source domain (e.g. "yelp.com").
+        citations = [
+            (chunk.get("web") or {}).get("title") or (chunk.get("web") or {}).get("uri")
+            for chunk in (cand.get("groundingMetadata", {}).get("groundingChunks") or [])
+        ]
+        if not text.strip():
+            raise RuntimeError(f"empty response (finishReason={cand.get('finishReason', '?')})")
+        return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Gemini query failed: {e}")
         return _err(model, e)
@@ -649,35 +673,33 @@ def query_grok(prompt: str, max_tokens: int = DEFAULT_MAX_TOKENS) -> EngineResul
         return None
     model = ENGINE_MODELS["grok"]
     try:
-        import httpx
-        with httpx.Client(timeout=90.0) as client:
-            resp = client.post(
-                "https://api.x.ai/v1/responses",
-                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                json={
-                    "model": model,
-                    "instructions": GROUNDED_SYSTEM,
-                    "input": prompt,
-                    "tools": [{"type": "web_search"}],
-                    "max_output_tokens": max_tokens,
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            # OpenAI-Responses-compatible: prefer the convenience field, else walk output.
-            text = data.get("output_text") or ""
-            citations: list = []
-            for item in data.get("output", []):
-                for c in (item.get("content") or []):
-                    if c.get("type") in ("output_text", "text"):
-                        if not text:
-                            text += c.get("text", "")
-                        for ann in (c.get("annotations") or []):
-                            if ann.get("type") in ("url_citation", "citation"):
-                                citations.append(ann.get("url"))
-            if not text.strip():
-                raise RuntimeError("empty response from Grok responses API")
-            return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
+        resp = _post_json(
+            "https://api.x.ai/v1/responses",
+            {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            {
+                "model": model,
+                "instructions": GROUNDED_SYSTEM,
+                "input": prompt,
+                "tools": [{"type": "web_search"}],
+                "max_output_tokens": max_tokens,
+            },
+            timeout=90.0,
+        )
+        data = resp.json()
+        # OpenAI-Responses-compatible: prefer the convenience field, else walk output.
+        text = data.get("output_text") or ""
+        citations: list = []
+        for item in data.get("output", []):
+            for c in (item.get("content") or []):
+                if c.get("type") in ("output_text", "text"):
+                    if not text:
+                        text += c.get("text", "")
+                    for ann in (c.get("annotations") or []):
+                        if ann.get("type") in ("url_citation", "citation"):
+                            citations.append(ann.get("url"))
+        if not text.strip():
+            raise RuntimeError("empty response from Grok responses API")
+        return EngineResult(text=text.strip(), citations=_dedup(citations), model=model)
     except Exception as e:
         logger.warning(f"Grok query failed: {e}")
         return _err(model, e)

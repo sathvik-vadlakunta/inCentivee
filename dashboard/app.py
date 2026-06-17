@@ -531,17 +531,12 @@ def customer_detail(customer_id):
 @app.route("/report/<customer_id>/weekly")
 @login_required
 def weekly_report_view(customer_id):
-    """Serve the latest weekly report, or regenerate on demand with ?refresh=1."""
+    """Always build the latest weekly report fresh (and snapshot it), so the
+    internal view never serves a stale cached report. Shared links (/r/<token>)
+    still serve their point-in-time snapshot."""
     from geo_agent import weekly_report as wr
     db = get_db()
     try:
-        if request.args.get("refresh"):
-            result = wr.generate_and_store(db, customer_id)
-            return Response(result["html"], mimetype="text/html")
-        snap = db.get_latest_report_snapshot(customer_id, "weekly")
-        if snap and snap.get("html"):
-            return Response(snap["html"], mimetype="text/html")
-        # No snapshot yet — build the first one now.
         result = wr.generate_and_store(db, customer_id)
         return Response(result["html"], mimetype="text/html")
     finally:
