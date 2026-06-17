@@ -68,6 +68,27 @@
   <h2>🟠 Open — P1 (high value)</h2>
 
   <div class="item">
+    <h3><span class="tag p1">P1</span> "Nearby cities within 25 min" capability (feeds 2 features)</h3>
+    <div class="meta">High leverage — one helper, two uses.</div>
+    <ul>
+      <li>Build <code>find_service_area_cities(lat, lng, minutes=25)</code> — derive nearby cities from the customer's location (Geocoding / Places localities in a ~15-mile radius, or a drive-time matrix).</li>
+      <li><b>Use 1 — Content recommendations:</b> suggest a location/service-area page per nearby city we don't have one for (a major content gap for local businesses).</li>
+      <li><b>Use 2 — AI query coverage:</b> auto-populate <code>service_areas</code> (currently set manually for Paradigm) so AI checks span the right cities.</li>
+      <li>Cap the count; let the operator approve the city list.</li>
+    </ul>
+    <div class="files">Files: new helper in <code>geo_agent/google_places.py</code>; consumers <code>content_recommender.py</code> + <code>check_ai_mentions.build_comprehensive_prompts</code>.</div>
+  </div>
+
+  <div class="item">
+    <h3><span class="tag p1">P1</span> Systematic AI re-runs</h3>
+    <ul>
+      <li>The ad-hoc detached run was unreliable (came back 0/0). Add a clean per-customer runner (<code>scripts/run_ai_check.py --customer &lt;id&gt;</code>) + a throttled "run all" that goes customer-by-customer with logging + rate-limit backoff.</li>
+      <li>After fixing query relevance, customers with old generic-query data should be re-baselined (we did Paradigm).</li>
+    </ul>
+  </div>
+
+
+  <div class="item">
     <h3><span class="tag p1">P1</span> Weekly report is "too basic" — enrich it</h3>
     <ul>
       <li>Lead with <b>AI Share-of-Voice</b>: rank (#1 for Paradigm) + real competitor leaderboard from <code>get_share_of_voice()</code>.</li>
