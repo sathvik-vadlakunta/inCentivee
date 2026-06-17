@@ -205,9 +205,9 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
         "dry_run": dry_run,
     }
 
-    # --- 1. Audit issues: resolve ones no longer present ---
+    # --- 1. Audit issues: re-audit, resolve fixed, persist fresh scores ---
     open_issues = db.get_audit_issues(customer_id, status="open")
-    audit = run_site_audit(domain, platform=customer.get("platform", "")) if domain else {"issues": []}
+    audit = run_site_audit(domain, platform=customer.get("platform", "")) if domain else {"issues": [], "scores": {}}
     current = {(i.get("category"), i.get("title")) for i in audit.get("issues", [])}
     for issue in open_issues:
         if (issue.get("category"), issue.get("title")) not in current:
@@ -215,6 +215,13 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
             if not dry_run:
                 db.update_audit_issue_status(issue["id"], "fixed")
     open_critical = sum(1 for i in audit.get("issues", []) if i.get("severity") == "critical")
+    result["audit_scores"] = audit.get("scores") or {}
+    # Persist the audit daily so the Site Audit card stays current (scores + new
+    # issues, deduped) instead of only refreshing on the weekly GSC pull.
+    if domain and not dry_run and audit.get("scores"):
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        db.save_site_audit(customer_id, today, audit.get("scores", {}),
+                           audit.get("issues", []), audit.get("raw_data"))
 
     # --- 2. Content: mark live recs as published ---
     page_cache: dict = {}  # share fetched pages across recs in this run

@@ -2658,12 +2658,17 @@ class CustomerDB:
              json.dumps(issues), json.dumps(raw_data or {})),
         )
         audit_id = cur.lastrowid
-        # Save individual issues
-        self.conn.execute(
-            "DELETE FROM audit_issues WHERE customer_id = ? AND audit_id = ?",
-            (customer_id, audit_id),
-        )
+        # Save individual issues. Each run gets a fresh audit_id, so we dedupe
+        # against existing open/ignored issues by (category, title) — otherwise
+        # the same finding piles up as duplicates on every audit run.
         for issue in issues:
+            dup = self.conn.execute(
+                "SELECT 1 FROM audit_issues WHERE customer_id = ? AND category = ? "
+                "AND title = ? AND status IN ('open', 'ignored') LIMIT 1",
+                (customer_id, issue["category"], issue["title"]),
+            ).fetchone()
+            if dup:
+                continue
             self.conn.execute(
                 """INSERT INTO audit_issues
                    (customer_id, audit_id, category, severity, title, description, fix_instruction)

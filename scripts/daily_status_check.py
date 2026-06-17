@@ -31,6 +31,10 @@ DB_PATH = os.environ.get("DB_PATH", "/app/data/practicerank.db")
 def _print(r: dict):
     tag = "[dry-run] " if r["dry_run"] else ""
     print(f"  {tag}{r['customer_id']} ({r['domain']})")
+    if r.get("audit_scores"):
+        s = r["audit_scores"]
+        print(f"    audit scores: perf={s.get('performance')} seo={s.get('seo')} "
+              f"a11y={s.get('accessibility')} bp={s.get('best_practices')}")
     if r["issues_fixed"]:
         print(f"    issues resolved: {len(r['issues_fixed'])} -> " +
               ", ".join(i["title"] or str(i["id"]) for i in r["issues_fixed"][:5]))
