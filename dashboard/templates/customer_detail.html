@@ -1748,6 +1748,7 @@
             <button class="btn btn-outline btn-sm" onclick="pushAllToSquarespace('{{ customer.id }}')">Push All Drafts</button>
             {% endif %}
             <button class="btn btn-outline btn-sm" onclick="downloadAllContent('{{ customer.id }}')">Download All (DOCX)</button>
+            <button class="btn btn-outline btn-sm" onclick="markAllPublished('{{ customer.id }}')" id="mark-all-published-btn">Mark All Published</button>
             {% endif %}
             <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-outline btn-sm">View All</a>
         </div>
@@ -3979,6 +3980,26 @@ function updateRecStatus(recId, status, btn) {
     .then(data => {
         if (data.ok) location.reload();  // reload now stays on the Content tab (hash restore)
     });
+}
+
+function markAllPublished(customerId) {
+    const btn = document.getElementById('mark-all-published-btn');
+    if (!confirm('Mark ALL recommendations as published? Use this when the content is already live — it does NOT push to any CMS.')) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Marking…'; }
+    fetch('/api/content/mark-all-published', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId, confirm: true})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            if (btn) btn.textContent = 'Marked ' + data.published + ' published!';
+            setTimeout(() => location.reload(), 800);
+        } else if (btn) {
+            btn.textContent = 'Error'; alert(data.error || 'Failed'); btn.disabled = false;
+        }
+    })
+    .catch(() => { if (btn) { btn.textContent = 'Network error'; btn.disabled = false; } });
 }
 
 function approveAll(customerId) {

@@ -23,6 +23,9 @@
         {% if counts.approved > 0 %}
         <button class="btn btn-success btn-sm" onclick="publishAllToWebflow('{{ customer.id }}')" id="publish-all-btn">Publish All to Webflow ({{ counts.approved }})</button>
         {% endif %}
+        {% if counts.published < counts.total %}
+        <button class="btn btn-outline btn-sm" onclick="markAllPublished('{{ customer.id }}')" id="mark-all-published-btn">Mark All Published</button>
+        {% endif %}
         <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">Generate New</button>
     </div>
 </div>
@@ -352,6 +355,35 @@ function publishAllToWebflow(customerId) {
         btn.textContent = 'Network Error';
         btn.disabled = false;
         setTimeout(() => { btn.textContent = 'Publish All to Webflow'; }, 3000);
+    });
+}
+
+function markAllPublished(customerId) {
+    const btn = document.getElementById('mark-all-published-btn');
+    if (!confirm('Mark ALL recommendations as published? Use this when the content is already live on the site — it does NOT push to any CMS.')) return;
+    btn.disabled = true;
+    btn.textContent = 'Marking...';
+    fetch('/api/content/mark-all-published', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId, confirm: true})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = 'Marked ' + data.published + ' published!';
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            btn.textContent = 'Error';
+            alert(data.error || 'Mark all published failed');
+            btn.disabled = false;
+            setTimeout(() => { btn.textContent = 'Mark All Published'; }, 3000);
+        }
+    })
+    .catch(() => {
+        btn.textContent = 'Network Error';
+        btn.disabled = false;
+        setTimeout(() => { btn.textContent = 'Mark All Published'; }, 3000);
     });
 }
 

@@ -5779,6 +5779,42 @@ def api_content_approve_all():
         db.close()
 
 
+@app.route("/api/content/mark-all-published", methods=["POST"])
+@login_required
+def api_content_mark_all_published():
+    """Mark every non-rejected recommendation as published.
+
+    For when the content work was done directly on the site (not via our Webflow
+    push) — flips draft/pending/approved → published so status + checklist reflect
+    reality. Does NOT push to any CMS.
+    """
+    data = request.get_json()
+    customer_id = data.get("customer_id", "")
+    if not customer_id:
+        return jsonify({"error": "customer_id required"}), 400
+
+    db = get_db()
+    try:
+        recs = db.get_content_recommendations(customer_id, limit=500)
+        targets = [r for r in recs if r.get("status") not in ("published", "rejected")]
+        if not data.get("confirm"):
+            return jsonify({
+                "needs_confirmation": True,
+                "count": len(targets),
+                "message": f"Mark all {len(targets)} recommendation(s) as published? "
+                           f"This won't push to any CMS — use it when the content is already live.",
+            }), 409
+        published = 0
+        for rec in targets:
+            if db.update_content_recommendation_status(rec["id"], "published"):
+                published += 1
+        audit_log("content_mark_all_published", customer_id=customer_id,
+                  details=f"marked {published} recs published (confirmed)")
+        return jsonify({"ok": True, "published": published, "total": len(targets)})
+    finally:
+        db.close()
+
+
 @app.route("/api/content/publish", methods=["POST"])
 @login_required
 def api_content_publish():
