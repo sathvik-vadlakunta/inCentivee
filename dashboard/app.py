@@ -7430,21 +7430,15 @@ def _proof_serializer():
 @app.route("/customer/<customer_id>/proof")
 @login_required
 def customer_proof(customer_id):
-    """Internal proof-of-improvement view + a shareable client link."""
-    db = get_db()
-    try:
-        from geo_agent.proof import build_proof_report
-        report = build_proof_report(db, customer_id)
-        token = _proof_serializer().dumps(customer_id)
-        share_url = url_for("public_proof", token=token, _external=True)
-        return render_template("proof.html", report=report, public=False, share_url=share_url)
-    finally:
-        db.close()
+    """Consolidated into the one weekly report — send staff to the Weekly Report tab
+    (view, share link, history) instead of a separate proof page."""
+    return redirect(url_for("customer_detail", customer_id=customer_id) + "#reports")
 
 
 @app.route("/proof/<token>")
 def public_proof(token):
-    """Public, read-only proof report a client can view via a signed link (no login)."""
+    """Public client link → the one consolidated report (the comprehensive weekly
+    report). Signed token encodes the customer; always shows the current report."""
     from itsdangerous import BadSignature
     try:
         customer_id = _proof_serializer().loads(token)
@@ -7452,9 +7446,12 @@ def public_proof(token):
         abort(404)
     db = get_db()
     try:
-        from geo_agent.proof import build_proof_report
-        report = build_proof_report(db, customer_id)
-        return render_template("proof.html", report=report, public=True, share_url=None)
+        from geo_agent import weekly_report as wr
+        html = wr.render_html(wr.build_report_data(db, customer_id))
+        resp = Response(html, mimetype="text/html")
+        resp.headers["Cache-Control"] = "private, no-store"
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return resp
     finally:
         db.close()
 

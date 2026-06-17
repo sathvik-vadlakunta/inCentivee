@@ -200,11 +200,44 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
                  if (r.get("published_at") or "")[:10] >= ds(cur_start)]
     data["sections"]["wins"] = {"published": published}
 
+    # --- Sources now citing you (from grounded AI answers) ---
+    try:
+        srcs = db.get_citation_domains(customer_id, last_n_runs=4)
+        if srcs:
+            data["sections"]["sources"] = srcs[:12]
+    except Exception:
+        pass
+
+    # --- What we shipped (all-time summary, not just this week) ---
+    try:
+        events = db.get_published_content_events(customer_id, limit=200)
+        if events:
+            data["sections"]["shipped"] = _summarize_published(events)
+    except Exception:
+        pass
+
     # --- Alerts (REAL) → inform "what's next" ---
     data["alerts"] = db.get_alerts(customer_id, active_only=True, limit=10)
 
     data["exec_summary"] = _exec_summary(data)
     return data
+
+
+_REC_TYPE_LABELS = {
+    "new_page": "Location & service pages", "blog_post": "Blog posts",
+    "faq_update": "FAQ enhancements", "freshness_update": "Content refreshes",
+    "expert_quote": "Expert quotes added", "stat_injection": "Statistics added",
+}
+
+
+def _summarize_published(events: list[dict]) -> dict:
+    """Roll published content into total + counts by type + recent highlights."""
+    from collections import Counter
+    counts = Counter((e.get("rec_type") or "other") for e in events)
+    groups = [{"label": _REC_TYPE_LABELS.get(t, t.replace("_", " ").title()), "count": c}
+              for t, c in counts.most_common()]
+    return {"total": len(events), "groups": groups,
+            "recent": [e.get("title", "") for e in events[:5] if e.get("title")]}
 
 
 def _exec_summary(data: dict) -> str:
@@ -425,7 +458,29 @@ def render_html(data: dict) -> str:
             <div class="pillars"><p style="margin:0 0 6px">{ls['consistent']} of {ls['total']} key directories consistent.</p><ul style="margin:4px 0">{issues}</ul></div>
           </div></div>""")
 
-    # 9. Wins
+    # 9. Sources now citing you (from grounded AI answers)
+    if "sources" in s and s["sources"]:
+        chips = "".join(
+            f'<span class="chip">{e(src.get("domain",""))} · {src.get("count",0)}</span>'
+            for src in s["sources"])
+        parts.append(f'<div class="r-sec"><h3>Sources now citing you</h3>'
+                     f'<p class="mini" style="margin:0 0 10px">When AI assistants answer questions about your area, '
+                     f'these are the sources they pull from that reference you:</p>'
+                     f'<div class="engines">{chips}</div></div>')
+
+    # 10. What we've shipped (all-time summary)
+    if "shipped" in s and s["shipped"].get("total"):
+        sh = s["shipped"]
+        cards = "".join(
+            f'<div class="kpi"><div class="v">{g["count"]}</div><div class="k">{e(g["label"])}</div></div>'
+            for g in sh["groups"])
+        recent = "".join(f'<li>{e(t)}</li>' for t in sh.get("recent", []))
+        recent_html = (f'<p class="mini" style="margin:12px 0 4px">Recent highlights:</p>'
+                       f'<ul style="margin:0">{recent}</ul>') if recent else ""
+        parts.append(f'<div class="r-sec"><h3>What we\'ve shipped — {sh["total"]} improvements</h3>'
+                     f'<div class="kpis">{cards}</div>{recent_html}</div>')
+
+    # 11. Wins (this week)
     wins = s.get("wins", {}).get("published", [])
     if wins:
         items = "".join(f'<li>✅ Published <b>{e(w["title"])}</b></li>' for w in wins[:8])
