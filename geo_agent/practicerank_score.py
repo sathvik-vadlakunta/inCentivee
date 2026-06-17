@@ -1,18 +1,27 @@
-"""PracticeRank Score — Composite 0-100 score across 5 pillars.
+"""PracticeRank Score — Composite 0-100 score (v2).
 
-Pillars and weights:
-- AI Visibility  (30%) — mention rate, position quality, engine breadth, trend
-- Search Growth  (25%) — click growth, impression growth, keyword momentum
-- Technical Health (15%) — Lighthouse, open issues, schema completeness
-- Content Velocity (15%) — publish recency, pending ratio, content quality
-- Reputation     (15%) — rating, review volume vs competitors, growth
+Designed to show real progress within 4-6 weeks: weighted toward the work we
+control and that moves fast (GEO Foundation + Content + AI), and robust to
+missing/flaky data (no zeros on absent signals; Search omitted when no GSC).
+See specs/active/practicerank-score-v2.html.
+
+Pillars (DB keys kept stable to avoid a migration; labels updated):
+- ai_visibility    (30%) — mention rate, position, engine breadth, trend
+- technical_health (30%) — GEO FOUNDATION: completion of schema/llms.txt/robots/
+                           FAQ/sitemap deliverables (not PageSpeed; PageSpeed
+                           flakiness no longer tanks the score)
+- content_velocity (20%) — CONTENT & COVERAGE: publish cadence + breadth +
+                           service-area page coverage + freshness
+- reputation       (10%) — rating + review-growth trend (volume de-emphasised)
+- search_growth    (10%) — SEARCH PERFORMANCE: organic trend; omitted (weight
+                           redistributed) when GSC isn't connected
 """
 
 from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,20 +29,31 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Pillar weights (must sum to 1.0)
+# Pillar weights (must sum to 1.0). Keys are the stable DB columns.
 PILLAR_WEIGHTS = {
     "ai_visibility": 0.30,
-    "search_growth": 0.25,
-    "technical_health": 0.15,
-    "content_velocity": 0.15,
-    "reputation": 0.15,
+    "technical_health": 0.30,   # GEO Foundation
+    "content_velocity": 0.20,   # Content & Coverage
+    "reputation": 0.10,
+    "search_growth": 0.10,      # Search Performance
 }
 
+# Human labels for the pillar keys (used by the report).
+PILLAR_LABELS = {
+    "ai_visibility": "AI Visibility",
+    "technical_health": "GEO Foundation",
+    "content_velocity": "Content & Coverage",
+    "reputation": "Reputation",
+    "search_growth": "Search Performance",
+}
+
+# Recalibrated so a fully-executed early account (foundation done, content
+# shipped, AI building) lands at a strong B (~80).
 GRADES = [
-    (90, "A", "Excellent", "#16a34a"),
-    (75, "B", "Strong", "#65a30d"),
-    (60, "C", "Good", "#d97706"),
-    (40, "D", "Needs Work", "#ea580c"),
+    (88, "A", "Excellent", "#16a34a"),
+    (72, "B", "Strong", "#65a30d"),
+    (55, "C", "Good", "#d97706"),
+    (38, "D", "Needs Work", "#ea580c"),
     (0, "F", "Critical", "#dc2626"),
 ]
 
@@ -132,7 +152,9 @@ def _score_ai_trend(current_rate: float, prev_rate: float | None) -> float:
 
 def compute_ai_visibility(db: CustomerDB, customer_id: str) -> dict | None:
     """Compute AI Visibility pillar score (0-100)."""
-    runs = db.get_ai_mention_runs(customer_id, limit=24)
+    # Only count runs that actually measured something — an empty/failed run
+    # (0 queries) must NOT tank the score (omit it like any missing signal).
+    runs = [r for r in db.get_ai_mention_runs(customer_id, limit=24) if r.get("total_queries")]
     if not runs:
         return None
 
@@ -321,86 +343,54 @@ def compute_search_growth(db: CustomerDB, customer_id: str) -> dict | None:
 # Pillar 3: Technical Health (15%)
 # ---------------------------------------------------------------------------
 
+# GEO Foundation deliverables → points (sum to 100). Driven by the persisted
+# checklist (the daily reconciler ticks these from live detection), so it's
+# DB-only and robust — a PageSpeed timeout can never tank it.
+_FOUNDATION_ITEMS = [
+    (("seo_schema_localbusiness", "seo_schema_org", "seo_schema_legalservice"), 20),  # core schema (any)
+    (("seo_schema_faq",), 15),                                                         # FAQ schema
+    (("seo_llms_txt",), 15),                                                           # llms.txt live
+    (("seo_robots_txt",), 15),                                                         # robots AI rules
+    (("seo_llms_full",), 10),                                                          # llms-full.txt
+    (("seo_xml_sitemap",), 10),                                                        # sitemap
+    (("seo_schema_review", "seo_schema_person", "seo_schema_service"), 10),            # supporting schema (any)
+    (("seo_structured_headings",), 5),                                                 # heading hierarchy
+]
+
+
 def compute_technical_health(db: CustomerDB, customer_id: str) -> dict | None:
-    """Compute Technical Health pillar score (0-100)."""
-    audit = db.get_latest_audit(customer_id)
-    if not audit:
-        return None
+    """GEO FOUNDATION (key kept as technical_health). Completion of the GEO
+    deliverables we ship — robust, no PageSpeed dependency."""
+    checklist = db.get_checklist(customer_id) or {}
+    # A brand-new customer has an empty checklist → foundation ~0 (the baseline).
+    earned = 0
+    done = {}
+    for keys, pts in _FOUNDATION_ITEMS:
+        hit = any(checklist.get(k) for k in keys)
+        done[keys[0]] = hit
+        if hit:
+            earned += pts
 
-    # Lighthouse scores
-    seo_score = audit.get("seo_score") or 0
-    perf_score = audit.get("performance_score") or 0
+    # Open critical audit issues subtract (a real, fixable regression — not a
+    # PageSpeed timeout). PageSpeed performance is an optional small bonus.
+    issues = db.get_audit_issues(customer_id, status="open")
+    critical_open = sum(1 for i in issues if i.get("severity") == "critical")
+    score = max(0.0, earned - critical_open * 10)
 
-    # Issues ratio
-    issues = db.get_audit_issues(customer_id)
-    total_issues = len(issues)
-    open_issues = sum(1 for i in issues if i.get("status") == "open")
-    critical_open = sum(1 for i in issues if i.get("status") == "open" and i.get("severity") == "critical")
-
-    if total_issues > 0:
-        fixed_ratio = (total_issues - open_issues) / total_issues
-        issues_score = fixed_ratio * 100
-        # Penalize critical issues heavily
-        issues_score = max(0, issues_score - critical_open * 15)
-    else:
-        issues_score = 80.0  # no issues found = good but not perfect (might not have been audited deeply)
-
-    # Schema completeness
-    schema_score = 0.0
-    ai_readiness = db.get_latest_ai_readiness(customer_id)
-    if ai_readiness and ai_readiness.get("breakdown"):
-        breakdown = ai_readiness["breakdown"]
-        if breakdown.get("local_business_schema") or breakdown.get("organization_schema"):
-            schema_score += 25
-        if breakdown.get("faq_schema"):
-            schema_score += 25
-        if breakdown.get("aggregate_rating_schema"):
-            schema_score += 25
-        if breakdown.get("llms_txt"):
-            schema_score += 25
-    else:
-        # Try to infer from audit data
-        raw_data = audit.get("raw_data_json", "{}")
-        if isinstance(raw_data, str):
-            try:
-                raw = json.loads(raw_data)
-            except (json.JSONDecodeError, TypeError):
-                raw = {}
-        else:
-            raw = raw_data or {}
-        schema_types = raw.get("schema_types", [])
-        if any(s in schema_types for s in ("LocalBusiness", "Organization", "Dentist")):
-            schema_score += 25
-        if "FAQPage" in schema_types:
-            schema_score += 25
-        if "AggregateRating" in schema_types:
-            schema_score += 25
-        if raw.get("llms_txt_exists"):
-            schema_score += 25
-
-    # Weighted combination
-    score = (
-        seo_score * 0.30
-        + perf_score * 0.20
-        + issues_score * 0.30
-        + schema_score * 0.20
-    )
+    audit = db.get_latest_audit(customer_id) or {}
+    perf = audit.get("performance_score") or 0
+    if perf:  # tiny bonus when we have a real (non-zero) perf score; never a penalty
+        score = min(100.0, score + min(5.0, perf / 20.0))
 
     return {
         "score": round(score),
         "detail": {
-            "lighthouse_seo": seo_score,
-            "lighthouse_performance": perf_score,
-            "open_issues": open_issues,
+            "deliverables_done": sum(1 for v in done.values() if v),
+            "deliverables_total": len(_FOUNDATION_ITEMS),
             "critical_issues": critical_open,
-            "total_issues": total_issues,
-            "schema_completeness": round(schema_score),
-            "sub_scores": {
-                "seo": round(seo_score, 1),
-                "performance": round(perf_score, 1),
-                "issues": round(issues_score, 1),
-                "schema": round(schema_score, 1),
-            },
+            "lighthouse_performance": perf,
+            "sub_scores": {PILLAR_LABELS["technical_health"]: round(score, 1)},
+            "items": {k: bool(v) for k, v in done.items()},
         },
     }
 
@@ -409,96 +399,69 @@ def compute_technical_health(db: CustomerDB, customer_id: str) -> dict | None:
 # Pillar 4: Content Velocity (15%)
 # ---------------------------------------------------------------------------
 
+# Target content categories (breadth) — having each type published is a signal.
+_CONTENT_CATEGORIES = {
+    "blog_post": "blog", "faq_update": "faq", "new_page": "pages",
+    "expert_quote": "depth", "stat_injection": "depth", "freshness_update": "fresh",
+}
+
+
 def compute_content_velocity(db: CustomerDB, customer_id: str) -> dict | None:
-    """Compute Content Velocity pillar score (0-100)."""
-    recs = db.get_content_recommendations(customer_id, limit=100)
+    """CONTENT & COVERAGE (key kept). Publish cadence + breadth + service-area
+    page coverage + freshness — all work we control, so it climbs in weeks 1-6."""
+    recs = db.get_content_recommendations(customer_id, limit=300)
     if not recs:
-        # No content recs at all — check if there are page scores at least
-        page_scores = db.get_page_scores(customer_id)
-        if not page_scores:
-            return None
-        avg_quality = sum(p.get("score", 0) for p in page_scores) / len(page_scores)
-        return {
-            "score": round(min(avg_quality, 50)),  # cap at 50 without content pipeline
-            "detail": {
-                "publish_recency_days": None,
-                "published_count": 0,
-                "approved_count": 0,
-                "total_recs": 0,
-                "avg_page_quality": round(avg_quality, 1),
-                "sub_scores": {
-                    "recency": 0,
-                    "pending_ratio": 50,
-                    "quality": round(avg_quality, 1),
-                },
-            },
-        }
-
+        return None
     published = [r for r in recs if r.get("status") == "published"]
-    approved = [r for r in recs if r.get("status") == "approved"]
 
-    # Publish recency
-    now = datetime.now(timezone.utc)
-    recency_score = 0.0
-    days_since_publish = None
-    if published:
-        dates = []
-        for r in published:
-            pub_date = r.get("published_at")
-            if pub_date:
-                try:
-                    dt = datetime.fromisoformat(pub_date.replace("Z", "+00:00"))
-                    dates.append(dt)
-                except (ValueError, TypeError):
-                    pass
-        if dates:
-            latest_publish = max(dates)
-            days_since_publish = (now - latest_publish).days
-            if days_since_publish <= 7:
-                recency_score = 100.0
-            elif days_since_publish <= 14:
-                recency_score = 80.0
-            elif days_since_publish <= 30:
-                recency_score = 60.0
-            elif days_since_publish <= 60:
-                recency_score = 30.0
-            else:
-                recency_score = 10.0
+    # Breadth — distinct content categories we've actually published.
+    cats = {_CONTENT_CATEGORIES.get(r.get("rec_type")) for r in published}
+    cats.discard(None)
+    breadth_score = min(len(cats), 4) / 4 * 100
 
-    # Pending ratio (approved + published vs total)
-    total_actionable = len(published) + len(approved)
-    if total_actionable > 0:
-        publish_ratio = len(published) / total_actionable
-        pending_score = publish_ratio * 100
+    # Volume — published count (8+ = full marks).
+    volume_score = min(len(published), 8) / 8 * 100
+
+    # Service-area coverage — cities with a published location page ÷ cities served.
+    customer = db.get_customer(customer_id) or {}
+    areas = customer.get("service_areas") or []
+    if areas:
+        page_titles = " || ".join((r.get("title") or "").lower()
+                                  for r in published if r.get("rec_type") == "new_page")
+        covered = sum(1 for a in areas if a.split(",")[0].strip().lower() in page_titles)
+        coverage_score = covered / len(areas) * 100
     else:
-        pending_score = 50.0  # neutral
+        covered = 0
+        coverage_score = 60.0  # neutral when no service area is defined
 
-    # Content quality from page scores
-    page_scores = db.get_page_scores(customer_id)
-    if page_scores:
-        avg_quality = sum(p.get("score", 0) for p in page_scores) / len(page_scores)
-    else:
-        avg_quality = 50.0  # neutral
+    # Freshness — a freshness_update published in the last 90 days.
+    cutoff = (datetime.now(timezone.utc).timestamp() - 90 * 86400)
+    fresh = False
+    for r in published:
+        if r.get("rec_type") == "freshness_update" and r.get("published_at"):
+            try:
+                if datetime.fromisoformat(r["published_at"].replace("Z", "+00:00")).timestamp() >= cutoff:
+                    fresh = True
+                    break
+            except (ValueError, TypeError):
+                pass
+    freshness_score = 100.0 if fresh else 50.0
 
-    # Weighted combination
-    score = (
-        recency_score * 0.40
-        + pending_score * 0.30
-        + avg_quality * 0.30
-    )
+    score = (breadth_score * 0.35 + volume_score * 0.30
+             + coverage_score * 0.20 + freshness_score * 0.15)
 
     return {
         "score": round(score),
         "detail": {
-            "publish_recency_days": days_since_publish,
             "published_count": len(published),
-            "approved_count": len(approved),
-            "total_recs": len(recs),
-            "avg_page_quality": round(avg_quality, 1),
+            "categories": sorted(cats),
+            "service_areas": len(areas),
+            "areas_covered": covered,
             "sub_scores": {
-                "recency": round(recency_score, 1),
-                "pending_ratio": round(pending_score, 1),
-                "quality": round(avg_quality, 1),
+                "breadth": round(breadth_score, 1),
+                "volume": round(volume_score, 1),
+                "coverage": round(coverage_score, 1),
+                "freshness": round(freshness_score, 1),
             },
         },
     }
@@ -531,76 +494,40 @@ def compute_reputation(db: CustomerDB, customer_id: str) -> dict | None:
     else:
         rating_score = 0.0
 
-    # Review volume vs competitors
-    competitors = db.get_competitors(customer_id)
-    comp_avg = 0
-    if competitors:
-        comp_counts = [c.get("review_count", 0) for c in competitors if c.get("review_count")]
-        comp_avg = sum(comp_counts) / len(comp_counts) if comp_counts else 0
-
-    if comp_avg > 0:
-        ratio = review_count / comp_avg
-        if ratio >= 1.5:
-            volume_score = 100.0
-        elif ratio >= 1.0:
-            volume_score = 50 + (ratio - 1.0) / 0.5 * 50
-        else:
-            volume_score = ratio * 50
-    else:
-        # Absolute scale
-        if review_count >= 100:
-            volume_score = 80.0
-        elif review_count >= 50:
-            volume_score = 60.0
-        elif review_count >= 20:
-            volume_score = 40.0
-        elif review_count >= 10:
-            volume_score = 25.0
-        else:
-            volume_score = max(0, review_count / 10 * 25)
-
-    # Review growth (last 30 days)
+    # Review growth (vs last recorded count). Volume-vs-competitors is dropped —
+    # it depended on the (often wrong-industry) competitors table and is a slow,
+    # external signal we shouldn't over-weight.
     review_kpis = db.get_kpis(customer_id, metric="review_count", limit=2)
     growth_score = 50.0  # neutral default
     if len(review_kpis) >= 2:
-        curr_count = review_kpis[0]["value"]
-        prev_count = review_kpis[1]["value"]
-        new_reviews = curr_count - prev_count
+        new_reviews = review_kpis[0]["value"] - review_kpis[1]["value"]
         if new_reviews >= 10:
             growth_score = 100.0
         elif new_reviews >= 5:
-            growth_score = 80.0
+            growth_score = 85.0
         elif new_reviews >= 1:
-            growth_score = 60.0
+            growth_score = 70.0
         elif new_reviews == 0:
-            growth_score = 40.0
+            growth_score = 50.0
         else:
-            growth_score = 20.0
+            growth_score = 30.0
 
     # Sentiment from reviews
     reviews = db.get_reviews(customer_id, limit=50)
-    sentiment_score = 50.0  # neutral default
+    sentiment_score = 60.0  # neutral-positive default
     if reviews:
         positive = sum(1 for r in reviews if r.get("sentiment") == "positive" or (r.get("rating") and r["rating"] >= 4))
         sentiment_score = (positive / len(reviews)) * 100
 
-    # Weighted combination
-    score = (
-        rating_score * 0.40
-        + volume_score * 0.30
-        + growth_score * 0.20
-        + sentiment_score * 0.10
-    )
+    score = rating_score * 0.6 + growth_score * 0.3 + sentiment_score * 0.1
 
     return {
         "score": round(score),
         "detail": {
             "rating": rating,
             "review_count": review_count,
-            "competitor_avg_reviews": round(comp_avg),
             "sub_scores": {
                 "rating": round(rating_score, 1),
-                "volume": round(volume_score, 1),
                 "growth": round(growth_score, 1),
                 "sentiment": round(sentiment_score, 1),
             },
@@ -677,10 +604,40 @@ def compute_practicerank_score(db: CustomerDB, customer_id: str) -> dict:
     overall = round(max(0, min(100, weighted_sum)))
     grade = grade_from_score(overall)
 
+    # Data-readiness warnings — surface "we're missing valuable context" so the
+    # score isn't trusted blindly. Order-of-operations: Google + competitors first.
+    warnings = []
+    if not db.get_google_places(customer_id):
+        warnings.append({"key": "google_places", "severity": "error",
+                         "message": "Google Business Profile not verified — connect it first (Reputation & local context missing)."})
+    if not db.get_competitors(customer_id):
+        warnings.append({"key": "competitors", "severity": "warning",
+                         "message": "No competitors identified — run competitor discovery for competitive context."})
+    if len(db.get_gsc_daily(customer_id, limit=7)) < 7:
+        warnings.append({"key": "gsc", "severity": "warning",
+                         "message": "Search Console not connected — Search Performance is excluded from the score."})
+    if not db.get_ai_mention_runs(customer_id, limit=1):
+        warnings.append({"key": "ai_mentions", "severity": "warning",
+                         "message": "No AI-mention data yet — AI Visibility not measured."})
+
+    # Week-0 baseline: lock the first score (pre-work) so we can show progress.
+    customer = db.get_customer(customer_id) or {}
+    baseline = customer.get("baseline_score")
+    if baseline is None:
+        try:
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            db.update_customer(customer_id, baseline_score=overall, baseline_date=today)
+            baseline = overall
+        except Exception:
+            logger.warning("could not set baseline for %s", customer_id)
+
     return {
         "score": overall,
         "grade": grade,
         "pillars": pillars_output,
         "available_count": len(available),
+        "baseline": baseline,
+        "delta_from_baseline": (overall - baseline) if baseline is not None else 0,
+        "warnings": warnings,
         "breakdown_json": json.dumps(pillar_results, default=str),
     }

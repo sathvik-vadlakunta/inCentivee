@@ -394,6 +394,11 @@ class CustomerDB:
             # Nearby cities (~25 min) the business serves — drives AI-mention
             # geographic coverage to match the location pages we build.
             self.conn.execute("ALTER TABLE customers ADD COLUMN service_areas TEXT NOT NULL DEFAULT '[]'")
+        if "baseline_score" not in cols:
+            # Week-0 PracticeRank Score (locked on the first score, pre-work) so
+            # the report can show "+N since baseline". NULL = not yet set.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN baseline_score INTEGER")
+            self.conn.execute("ALTER TABLE customers ADD COLUMN baseline_date TEXT")
 
         # Per-customer activity timeline: notes, status changes, and ingested
         # emails. Mirrors prospect_activities so the customer detail page gets the

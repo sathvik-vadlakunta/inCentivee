@@ -316,8 +316,8 @@ def render_html(data: dict) -> str:
             arr = "▲" if d > 0 else ("▼" if d < 0 else "–")
             delta = f' <span class="mini">{arr} {d:+d} vs last</span>' if d else ""
         pillars_html = ""
-        names = {"ai_visibility": "AI Visibility", "search_growth": "Search Growth",
-                 "technical_health": "Technical Health", "content_velocity": "Content Velocity",
+        names = {"ai_visibility": "AI Visibility", "search_growth": "Search Performance",
+                 "technical_health": "GEO Foundation", "content_velocity": "Content & Coverage",
                  "reputation": "Reputation"}
         for key, label in names.items():
             p = score["pillars"].get(key, {})

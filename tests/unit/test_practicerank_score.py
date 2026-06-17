@@ -308,9 +308,12 @@ class TestSearchGrowth:
 
 
 class TestTechnicalHealth:
-    def test_returns_none_without_audit(self, db, customer_id):
+    def test_foundation_zero_when_nothing_done(self, db, customer_id):
+        # v2: GEO Foundation is completion-based — always available, 0 when the
+        # checklist is empty (brand-new account / pre-work baseline).
         result = compute_technical_health(db, customer_id)
-        assert result is None
+        assert result is not None
+        assert result["score"] == 0
 
     def test_returns_score_with_audit(self, db, customer_id):
         _insert_site_audit(db, customer_id)
@@ -319,8 +322,10 @@ class TestTechnicalHealth:
         assert 0 <= result["score"] <= 100
 
     def test_high_scores(self, db, customer_id):
-        _insert_site_audit(db, customer_id, seo=95, perf=90)
-        _insert_ai_readiness(db, customer_id, score=90)
+        # v2: foundation is driven by completed deliverables (checklist), not PageSpeed.
+        for k in ("seo_schema_localbusiness", "seo_schema_faq", "seo_llms_txt", "seo_robots_txt",
+                  "seo_llms_full", "seo_xml_sitemap", "seo_schema_review", "seo_structured_headings"):
+            db.set_checklist_item(customer_id, k, True)
         result = compute_technical_health(db, customer_id)
         assert result["score"] >= 60
 
@@ -378,11 +383,15 @@ class TestCompositeScore:
         assert result["score"] is None
         assert result["label"] == "Insufficient Data"
 
-    def test_one_pillar_insufficient(self, db, customer_id):
-        """Only 1 pillar available → still insufficient."""
+    def test_places_only_gives_low_baseline_with_warnings(self, db, customer_id):
+        """v2: GEO Foundation is always evaluable, so places + foundation(0) = 2
+        pillars → a low baseline score (not 'insufficient'), plus warnings about
+        the missing valuable context (no AI/GSC data)."""
         _insert_google_places(db, customer_id)
         result = compute_practicerank_score(db, customer_id)
-        assert result["score"] is None
+        assert result["score"] is not None
+        assert result["score"] <= 40
+        assert any(w["key"] == "ai_mentions" for w in result["warnings"])
 
     def test_two_pillars_sufficient(self, db, customer_id):
         """2 pillars → enough for a score."""
