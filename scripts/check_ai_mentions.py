@@ -215,18 +215,41 @@ def build_prompts(practice_name: str, city: str, state: str, specialties: list[s
     return [p["prompt"] for p in build_comprehensive_prompts(practice_name, city, state, specialties, business_type)]
 
 
+# Human-readable label per business_type (avoids "precious_metals_buyer" leaking
+# into queries). Used by the generic branch + as a fallback.
+BUSINESS_LABEL = {
+    "precious_metals_buyer": "gold and silver buyer",
+    "practice": "dentist",
+    "legal": "law firm",
+    "medical": "doctor",
+    "ecommerce": "online store",
+    "technology": "software company",
+    "consulting": "consultant",
+    "real_estate": "real estate agent",
+}
+
+
+def business_label(business_type: str) -> str:
+    return BUSINESS_LABEL.get(business_type, (business_type or "business").replace("_", " "))
+
+
 def build_comprehensive_prompts(
     practice_name: str, city: str, state: str, specialties: list[str],
     business_type: str = "practice", competitors: list[str] | None = None,
     neighborhoods: list[str] | None = None,
     services: list[str] | None = None,
+    service_areas: list[str] | None = None,
 ) -> list[dict]:
     """Build comprehensive categorized prompts for AI mention tracking.
 
     Returns list of {"prompt": str, "category": str} dicts.
     Categories: brand, general, service, location, comparison, reputation, recommendation
+
+    service_areas: nearby cities (within ~25 min) the business serves — queries are
+    expanded across them so we measure AI visibility where we built location pages.
     """
     prompts = []
+    service_areas = service_areas or []
 
     def add(prompt: str, category: str):
         prompts.append({"prompt": prompt, "category": category})
@@ -381,17 +404,52 @@ def build_comprehensive_prompts(
 
         add(f"recommend {industry} software", "recommendation")
 
+    elif business_type == "precious_metals_buyer":
+        # Goal: attract people looking to SELL gold/silver (primary) + jewelry
+        # (secondary). Queries are seller-intent and expanded across service areas.
+        # --- Seller-intent, no-geo (top of funnel) ---
+        add("how do I sell my gold", "general")
+        add("how do I sell my silver coins", "general")
+        add("how much is my gold worth", "general")
+        add("where can I sell silver bullion", "general")
+        # --- Seller-intent in the home city ---
+        if city:
+            add(f"best place to sell gold in {city} {state}", "location")
+            add(f"who buys gold and silver near {city}", "location")
+            add(f"cash for gold {city}", "location")
+            add(f"sell gold coins {city} {state}", "service")
+            add(f"where to sell silver coins {city}", "service")
+            add(f"gold buyer near me {city}", "location")
+            add(f"recommend a gold buyer in {city} {state}", "recommendation")
+            # Secondary: jewelry
+            add(f"where to sell jewelry in {city}", "service")
+            add(f"sell diamond ring {city}", "service")
+            add(f"where to sell my watch {city}", "service")
+        # --- Service-area cities (where we built location pages) ---
+        for area in service_areas[:6]:
+            add(f"best place to sell gold in {area}", "location")
+            add(f"who buys gold near {area}", "location")
+        # --- Reputation ---
+        add(f"is {practice_name} legit", "reputation")
+        add(f"{practice_name} reviews", "reputation")
+        if competitors:
+            for comp in competitors[:3]:
+                add(f"{practice_name} vs {comp}", "comparison")
+
     else:
-        # --- Generic business (consulting, services, etc.) ---
-        add(f"best {business_type} companies", "general")
-        add(f"top {business_type} firms", "general")
-        add(f"{practice_name} {business_type}", "brand")
+        # --- Generic business (consulting, services, etc.) — use a human label ---
+        label = business_label(business_type)
+        add(f"best {label} companies", "general")
+        add(f"top {label} firms", "general")
+        add(f"{practice_name} {label}", "brand")
 
         if city and state:
-            add(f"best {business_type} in {city} {state}", "location")
-            add(f"{business_type} near {city}", "location")
-            add(f"top rated {business_type} {city}", "general")
-            add(f"recommend a {business_type} in {city} {state}", "recommendation")
+            add(f"best {label} in {city} {state}", "location")
+            add(f"{label} near {city}", "location")
+            add(f"top rated {label} {city}", "general")
+            add(f"recommend a {label} in {city} {state}", "recommendation")
+        for area in service_areas[:6]:
+            add(f"best {label} in {area}", "location")
 
         for specialty in specialties[:8]:
             add(f"best {specialty.lower()}", "service")

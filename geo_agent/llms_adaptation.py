@@ -27,7 +27,7 @@ def prompt_to_question(prompt: str, practice_name: str = "") -> str:
     if practice_name:
         q = re.sub(re.escape(practice_name), "we", q, flags=re.IGNORECASE)
     if not q.lower().startswith(_LEADERS):
-        q = f"What should patients know about {q}"
+        q = f"What should I know about {q}"
     return q[0].upper() + q[1:] + "?"
 
 

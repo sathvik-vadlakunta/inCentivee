@@ -46,6 +46,7 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
         customer.get("specialties", []),
         business_type=customer.get("business_type", "practice"),
         competitors=competitors,
+        service_areas=customer.get("service_areas", []),
     )
 
     results = []

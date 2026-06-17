@@ -390,6 +390,10 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE customers ADD COLUMN status_note TEXT NOT NULL DEFAULT ''")
         if "next_action" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN next_action TEXT NOT NULL DEFAULT ''")
+        if "service_areas" not in cols:
+            # Nearby cities (~25 min) the business serves — drives AI-mention
+            # geographic coverage to match the location pages we build.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN service_areas TEXT NOT NULL DEFAULT '[]'")
 
         # Per-customer activity timeline: notes, status changes, and ingested
         # emails. Mirrors prospect_activities so the customer detail page gets the
@@ -955,6 +959,7 @@ class CustomerDB:
         d["emergency_available"] = bool(d.get("emergency_available", 0))
         d["hosting_info"] = json.loads(d.get("hosting_info", "{}"))
         d["verified_quotes"] = json.loads(d.get("verified_quotes", "[]"))
+        d["service_areas"] = json.loads(d.get("service_areas", "[]"))
         return d
 
     def to_config_customer(self, customer_id: str) -> Customer | None:
