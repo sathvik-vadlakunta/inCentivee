@@ -3153,7 +3153,7 @@ class CustomerDB:
 
     def get_report_snapshots(self, customer_id: str, report_type: str = "weekly", limit: int = 26) -> list[dict]:
         cur = self.conn.execute(
-            "SELECT id, report_type, period_start, period_end, score, emailed_at, created_at "
+            "SELECT id, report_type, period_start, period_end, score, share_token, emailed_at, created_at "
             "FROM report_snapshots WHERE customer_id = ? AND report_type = ? "
             "ORDER BY period_end DESC LIMIT ?",
             (customer_id, report_type, limit),

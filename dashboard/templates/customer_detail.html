@@ -198,6 +198,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Emails
     </button>
+    <button class="detail-nav-item" onclick="switchTab('reports', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        Weekly Report
+    </button>
     <button class="detail-nav-item" onclick="switchTab('notes', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
         Notes
@@ -2071,6 +2075,57 @@
         <p>No email templates found. Add templates to <code>templates/emails/</code></p>
     </div>
     {% endif %}
+</div>
+
+<!-- ==================== WEEKLY REPORT TAB ==================== -->
+<div id="tab-reports" class="tab-content">
+    <div class="card">
+        <div class="section-header">
+            <h2 style="font-size:1.1rem;">Weekly Report</h2>
+            <div class="flex">
+                <a class="btn btn-primary btn-sm" href="{{ url_for('weekly_report_view', customer_id=customer.id) }}" target="_blank">View Latest Report</a>
+                <a class="btn btn-outline btn-sm" href="{{ url_for('weekly_report_view', customer_id=customer.id, refresh=1) }}" target="_blank">Generate Fresh</a>
+            </div>
+        </div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:-0.25rem;">The customer's weekly progress report — search, AI visibility, reviews, and wins. Generated from live data.</p>
+
+        <!-- Secure customer share link -->
+        <div style="margin-top:1rem;padding:0.9rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+            <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.3rem;">🔗 Customer share link</div>
+            {% if weekly_snapshot and weekly_snapshot.share_token %}
+            <p style="font-size:0.8rem;color:var(--muted);margin:0 0 0.5rem;">Send this to the customer — <b>no login required</b>, unguessable, and not indexed by search engines. Always shows their latest report.</p>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <input type="text" id="share-link-input" readonly value="" data-token="{{ weekly_snapshot.share_token }}"
+                       style="flex:1;padding:0.45rem 0.6rem;font-size:0.82rem;border:1px solid var(--border);border-radius:6px;background:#fff;font-family:ui-monospace,monospace;">
+                <button class="btn btn-success btn-sm" onclick="copyShareLink(this)">Copy Link</button>
+                <a class="btn btn-outline btn-sm" id="share-link-open" href="#" target="_blank">Open</a>
+            </div>
+            {% else %}
+            <p style="font-size:0.8rem;color:var(--muted);margin:0;">No report generated yet — click <b>View Latest Report</b> above to create the first one, then the share link appears here.</p>
+            {% endif %}
+        </div>
+
+        <!-- History -->
+        <h3 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:1.4rem 0 0.5rem;">Report history</h3>
+        {% if report_history %}
+        <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
+            <tr style="text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase;">
+                <th style="padding:0.4rem 0.5rem;">Week ending</th><th>Score</th><th>Generated</th><th>Emailed</th><th></th>
+            </tr>
+            {% for snap in report_history %}
+            <tr style="border-top:1px solid var(--border);">
+                <td style="padding:0.45rem 0.5rem;">{{ snap.period_end }}</td>
+                <td><b>{{ snap.score }}</b></td>
+                <td style="color:var(--muted);">{{ snap.created_at[:10] }}</td>
+                <td style="color:var(--muted);">{{ 'Yes' if snap.emailed_at else '—' }}</td>
+                <td style="text-align:right;"><a class="btn btn-outline btn-sm" href="{{ url_for('public_report', token=snap.share_token) }}" target="_blank">View</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p style="color:var(--muted);font-size:0.85rem;">No reports yet. Click <b>View Latest Report</b> to generate the first one.</p>
+        {% endif %}
+    </div>
 </div>
 
 <!-- ==================== NOTES TAB ==================== -->
@@ -4166,6 +4221,24 @@ function saveGscIntegration(e, customerId) {
     }).then(r => r.json()).then(data => {
         if (data.ok) showResult('gsc-test-result', 'Saved!', 'success');
         else showResult('gsc-test-result', data.error || 'Save failed', 'error');
+    });
+}
+
+// --- Weekly report share link ---
+(function initShareLink() {
+    const input = document.getElementById('share-link-input');
+    if (!input) return;
+    const url = window.location.origin + '/r/' + input.dataset.token;
+    input.value = url;
+    const open = document.getElementById('share-link-open');
+    if (open) open.href = url;
+})();
+function copyShareLink(btn) {
+    const input = document.getElementById('share-link-input');
+    if (!input) return;
+    navigator.clipboard.writeText(input.value).then(() => {
+        const t = btn.textContent; btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = t, 1500);
     });
 }
 

@@ -519,6 +519,7 @@ def customer_detail(customer_id):
             ai_readiness=ai_readiness,
             landing_reports=landing_reports,
             weekly_snapshot=db.get_latest_report_snapshot(customer_id, "weekly"),
+            report_history=db.get_report_snapshots(customer_id, "weekly", limit=26),
             customer_activities=db.get_customer_activities(customer_id, limit=100),
         )
     finally:
