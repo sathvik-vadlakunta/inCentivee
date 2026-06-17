@@ -325,7 +325,7 @@ def customer_detail(customer_id):
         content_recs = db.get_content_recommendations(customer_id, limit=5)
 
         import markdown
-        raw_templates = _get_email_templates()
+        raw_templates = _get_email_templates(customer.get("onboarding_step"))
         ai_run_summary = db.get_latest_ai_run_summary(customer_id)
         email_templates = []
         email_kwargs = dict(
@@ -346,6 +346,8 @@ def customer_detail(customer_id):
                 "slug": t["slug"],
                 "subject": _render_email_template(t["subject"], customer, contacts, **email_kwargs),
                 "body_html": body_html,
+                "category": t["category"],
+                "recommended": t["recommended"],
             })
 
         # SEO Tools data
@@ -1555,26 +1557,55 @@ def edit_customer(customer_id):
 
 # --- Email Templates ---
 
-def _get_email_templates() -> list[dict]:
-    """Return list of available email templates with metadata."""
+# Which lifecycle stage each email belongs to, and which onboarding steps it's
+# relevant for. Drives the email tab's ordering, category filter, and the
+# "recommended for current stage" badge. `order` is the natural send sequence.
+EMAIL_TEMPLATE_META = {
+    "08-pricing-quote":          {"category": "Sales",      "steps": ["new", "outreach"],                 "order": 1},
+    "01-initial-access-request": {"category": "Access",     "steps": ["outreach", "setup"],               "order": 2},
+    "02-access-followup":        {"category": "Access",     "steps": ["setup"],                           "order": 3},
+    "03-onboarding-complete":    {"category": "Onboarding",  "steps": ["review", "live"],                  "order": 4},
+    "05-staging-approval":       {"category": "Approvals",  "steps": ["review", "live"],                  "order": 5},
+    "06-content-review":         {"category": "Approvals",  "steps": ["content", "live", "monitoring"],   "order": 6},
+    "07-weekly-seo-update":      {"category": "Reporting",  "steps": ["live", "content", "monitoring"],   "order": 7},
+    "04-monthly-report":         {"category": "Reporting",  "steps": ["monitoring"],                      "order": 8},
+}
+
+# Order categories surface in the filter bar.
+EMAIL_CATEGORY_ORDER = ["Sales", "Access", "Onboarding", "Approvals", "Reporting", "Other"]
+
+
+def _get_email_templates(current_step: str | None = None) -> list[dict]:
+    """Return available email templates with stage metadata.
+
+    Sorted so the emails relevant to ``current_step`` come first (each flagged
+    ``recommended``), then by natural send order.
+    """
     templates = []
     if not TEMPLATE_DIR.exists():
         return templates
-    for f in sorted(TEMPLATE_DIR.glob("*.md")):
+    for f in TEMPLATE_DIR.glob("*.md"):
         with open(f) as fh:
             content = fh.read()
-        # Extract subject from first line
         subject = ""
         for line in content.splitlines():
             if line.startswith("Subject:"):
                 subject = line.replace("Subject:", "").strip()
                 break
+        meta = EMAIL_TEMPLATE_META.get(f.stem, {"category": "Other", "steps": [], "order": 99})
+        recommended = bool(current_step and current_step in meta["steps"])
         templates.append({
             "filename": f.name,
             "slug": f.stem,
             "subject": subject,
             "content": content,
+            "category": meta["category"],
+            "steps": meta["steps"],
+            "order": meta["order"],
+            "recommended": recommended,
         })
+    # Recommended-for-this-stage first, then natural send order.
+    templates.sort(key=lambda t: (not t["recommended"], t["order"]))
     return templates
 
 

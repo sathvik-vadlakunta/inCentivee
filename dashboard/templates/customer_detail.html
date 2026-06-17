@@ -1738,6 +1738,9 @@
             <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">
                 Generate Recommendations
             </button>
+            {% if content_pending and content_pending > 0 %}
+            <button class="btn btn-success btn-sm" onclick="approveAll('{{ customer.id }}')" id="approve-all-btn">Approve All ({{ content_pending }})</button>
+            {% endif %}
             {% if content_recs %}
             {% if customer.platform == 'webflow' and webflow_connected %}
             <button class="btn btn-outline btn-sm" onclick="publishAllToWebflow('{{ customer.id }}')">Publish All to Webflow</button>
@@ -2024,14 +2027,34 @@
 <!-- ==================== EMAILS TAB ==================== -->
 <div id="tab-emails" class="tab-content">
     {% if email_templates %}
-    <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.85rem;">
-        Emails rendered for <strong>{{ customer.name }}</strong>. Click "Copy" to copy formatted text — paste directly into Outlook, Gmail, or any email client.
+    <p style="color: var(--muted); margin-bottom: 0.6rem; font-size: 0.85rem;">
+        Emails rendered for <strong>{{ customer.name }}</strong>. ⭐ = recommended for the current stage
+        (<strong>{{ customer.onboarding_step | replace('_',' ') | title }}</strong>). Click "Copy" to paste into any email client.
     </p>
 
+    <!-- Search + category filter -->
+    <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+        <input type="text" id="email-search" oninput="applyEmailFilter()" placeholder="Search emails…"
+               style="flex:1;min-width:200px;padding:0.45rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;">
+        <div style="display:flex;gap:0.25rem;flex-wrap:wrap;">
+            {% for cat in ['All','Sales','Access','Onboarding','Approvals','Reporting'] %}
+            <button class="email-cat-chip{% if cat == 'All' %} active{% endif %}" data-cat="{{ cat }}"
+                    onclick="filterEmailCat('{{ cat }}', this)"
+                    style="padding:0.3rem 0.7rem;font-size:0.78rem;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;">{{ cat }}</button>
+            {% endfor %}
+        </div>
+    </div>
+
     {% for t in email_templates %}
-    <div class="card" id="{{ t.slug }}">
+    <div class="card email-card" id="{{ t.slug }}"
+         data-category="{{ t.category }}"
+         data-search="{{ (t.slug ~ ' ' ~ t.subject ~ ' ' ~ t.category) | lower }}">
         <div class="section-header">
-            <h2 style="font-size: 1rem;">{{ t.slug | replace('-', ' ') | title }}</h2>
+            <h2 style="font-size: 1rem;">
+                {% if t.recommended %}<span title="Recommended for current stage">⭐</span> {% endif %}
+                {{ t.slug.split('-')[1:] | join(' ') | title }}
+                <span style="font-size:0.7rem;font-weight:600;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:0.1rem 0.5rem;margin-left:0.4rem;vertical-align:middle;">{{ t.category }}</span>
+            </h2>
             <div class="flex">
                 <button class="btn btn-sm btn-primary" onclick="copyFormatted('email-body-{{ loop.index }}', this)">Copy for Email</button>
                 <button class="btn btn-sm btn-outline" onclick="copySubject('email-subject-{{ loop.index }}', this)">Copy Subject</button>
@@ -2041,6 +2064,7 @@
         <div class="email-body" id="email-body-{{ loop.index }}">{{ t.body_html | safe }}</div>
     </div>
     {% endfor %}
+    <div id="email-no-results" class="card empty-state" style="display:none;"><p>No emails match your search.</p></div>
     {% else %}
     <div class="card empty-state">
         <p>No email templates found. Add templates to <code>templates/emails/</code></p>
@@ -2514,6 +2538,9 @@ let _activeSeoSub = 'checklist';
 
 function switchTab(tabName, btn) {
     _activeTab = tabName;
+    // Remember the tab so a reload (e.g. after approving content) stays put
+    // instead of dropping back to Overview.
+    try { history.replaceState(null, '', '#' + tabName); } catch (e) {}
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     // Deactivate all nav items (but not sub-items)
     document.querySelectorAll('.detail-nav-item').forEach(el => el.classList.remove('active'));
@@ -2533,6 +2560,16 @@ function switchTab(tabName, btn) {
     }
     if (tabName === 'ai-mentions') { loadAiDashboard('{{ customer.id }}'); }
 }
+
+// Restore the active tab from the URL hash on load (so reloads stay on the tab
+// the user was on — content/emails/etc. — not Overview).
+document.addEventListener('DOMContentLoaded', function() {
+    const h = (location.hash || '').slice(1);
+    if (h && document.getElementById('tab-' + h)) {
+        const navBtn = document.querySelector('.detail-nav-item[onclick*="\'' + h + '\'"]');
+        switchTab(h, navBtn);
+    }
+});
 
 function syncEmails(btn) {
     const label = btn.querySelector('.sync-label');
@@ -3940,8 +3977,31 @@ function updateRecStatus(recId, status, btn) {
     })
     .then(r => r.json())
     .then(data => {
-        if (data.ok) location.reload();
+        if (data.ok) location.reload();  // reload now stays on the Content tab (hash restore)
     });
+}
+
+function approveAll(customerId) {
+    const btn = document.getElementById('approve-all-btn');
+    if (!confirm('Approve all pending content recommendations? They will still be fact-checked before publishing.')) return;
+    if (btn) { btn.disabled = true; btn.textContent = 'Approving…'; }
+    fetch('/api/content/approve-all', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId, confirm: true})
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            if (btn) btn.textContent = 'Approved ' + data.approved + '!';
+            setTimeout(() => location.reload(), 800);
+        } else if (btn) {
+            btn.textContent = 'Error';
+            alert(data.error || 'Approve all failed');
+            btn.disabled = false;
+        }
+    })
+    .catch(() => { if (btn) { btn.textContent = 'Network error'; btn.disabled = false; } });
 }
 
 function copySnippet(btn) {
@@ -4086,6 +4146,32 @@ function saveGscIntegration(e, customerId) {
         if (data.ok) showResult('gsc-test-result', 'Saved!', 'success');
         else showResult('gsc-test-result', data.error || 'Save failed', 'error');
     });
+}
+
+// --- Email template search + category filter ---
+let _emailCat = 'All';
+function filterEmailCat(cat, btn) {
+    _emailCat = cat;
+    document.querySelectorAll('.email-cat-chip').forEach(c => {
+        const on = c === btn;
+        c.classList.toggle('active', on);
+        c.style.background = on ? 'var(--accent, #16a34a)' : 'transparent';
+        c.style.color = on ? '#fff' : 'var(--muted)';
+    });
+    applyEmailFilter();
+}
+function applyEmailFilter() {
+    const q = (document.getElementById('email-search')?.value || '').toLowerCase().trim();
+    let shown = 0;
+    document.querySelectorAll('.email-card').forEach(card => {
+        const okCat = _emailCat === 'All' || card.dataset.category === _emailCat;
+        const okQ = !q || (card.dataset.search || '').indexOf(q) >= 0;
+        const show = okCat && okQ;
+        card.style.display = show ? '' : 'none';
+        if (show) shown++;
+    });
+    const none = document.getElementById('email-no-results');
+    if (none) none.style.display = shown ? 'none' : '';
 }
 
 // --- Staging approve/publish (in-place, no full-page reload) ---
