@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PracticeRank Score v2 — Spec</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:940px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:21px;margin:34px 0 12px;letter-spacing:-.01em}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+  p{margin:10px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,Menlo,monospace}
+  pre{background:#0d1117;color:#e6edf3;padding:14px 16px;border-radius:10px;overflow:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:72ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 30px;box-shadow:var(--shadow);margin-bottom:24px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  ul{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  .bad{color:var(--bad)} .good{color:var(--accent)} .warn{color:var(--warn)}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e}
+  .mini{font-size:12px;color:var(--muted)}
+  .bar{height:10px;border-radius:99px;background:#eef1f4;overflow:hidden;display:inline-block;width:100%}
+  .bar i{display:block;height:100%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · SCORING</span>
+  <h1>PracticeRank Score v2</h1>
+  <p class="lead">Rebuild the 0–100 score so it <b>reliably shows real progress within 4–6 weeks</b>, is robust to missing/flaky data, and is driven by the work we actually do — not by lagging signals we don't control.</p>
+  <p class="mini">Owner: Kody · Status: Spec (draft) · 2026-06-17 · <code>specs/active/practicerank-score-v2.html</code> · supersedes <code>geo_agent/practicerank_score.py</code> v1</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">1. Why v1 can't show 4–6 week progress</h2>
+    <table>
+      <tr><th>v1 pillar</th><th>weight</th><th>problem for near-term progress</th></tr>
+      <tr><td>AI Visibility</td><td>30%</td><td>✓ good — moves in weeks, we influence it</td></tr>
+      <tr><td>Search Growth</td><td>25%</td><td><span class="bad">Organic rankings/traffic take <b>months</b>, and most customers have <b>no GSC connected</b> (Paradigm = 0 data). 25% on a lagging, often-missing signal.</span></td></tr>
+      <tr><td>Technical Health</td><td>15%</td><td><span class="bad">Built on PageSpeed <code>seo_score/perf_score</code> → when PageSpeed <b>times out it's 0</b>, tanking the pillar (Paradigm Tech = 15). API flakiness ≠ regression.</span></td></tr>
+      <tr><td>Content Velocity</td><td>15%</td><td>OK but underweighted — this is work we 100% control.</td></tr>
+      <tr><td>Reputation</td><td>15%</td><td>Review volume grows <b>slowly</b>; 15% on a months-scale signal.</td></tr>
+    </table>
+    <p><b>Net effect:</b> Paradigm's score <span class="bad">dropped −3</span> the same week we shipped 32 content pieces, 13 location pages, schema, FAQ, and llms.txt — because the things we shipped barely move the number, while a PageSpeed timeout and missing GSC data dragged it down. <b>The score punishes us for data gaps and rewards nothing for the playbook.</b></p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">2. Design principles</h2>
+    <ul>
+      <li><b>Lead with what we control and what moves in weeks.</b> The GEO foundation (schema, llms.txt, robots, FAQ, location pages) and content velocity go from ~0 → ~100% in the first 4–6 weeks as we run the playbook. That should be the <b>engine of early progress</b>.</li>
+      <li><b>De-weight lagging/external signals.</b> Organic rankings/traffic (months) and review volume (slow) stay in the score as <i>outcome confirmation</i>, but at low weight — and <b>never tank it</b> when absent.</li>
+      <li><b>Missing data is neutral, not zero.</b> No connected GSC / failed PageSpeed → use a neutral baseline or carry-forward last good value. A timeout must not look like a regression.</li>
+      <li><b>Smooth + monotonic-friendly.</b> Completion pillars only ratchet up as we ship; rolling averages absorb noise (AI non-determinism, API flakiness).</li>
+      <li><b>Baseline + trajectory.</b> Lock a week-0 baseline; always show <b>"+N since baseline"</b> and an expected 6-week trajectory, so progress is the headline, not the absolute number.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">3. v2 pillars &amp; weights</h2>
+    <p>Re-weighted so the two things we control and ship fast (<b>Foundation + Content</b>) drive ~50%, AI 30%, and the laggy/external signals drop to 20% combined.</p>
+    <table>
+      <tr><th>Pillar</th><th>v2 weight</th><th>What it measures (all leading where possible)</th><th>Moves</th></tr>
+      <tr><td><b>GEO Foundation</b></td><td>30%</td><td><b>Completion-based</b> (not PageSpeed): schema present (LocalBusiness/vertical), llms.txt + llms-full live, robots AI rules, FAQPage schema, sitemap, Person/Service where relevant, critical audit issues = 0. = the checklist we complete.</td><td>wk 1–3</td></tr>
+      <tr><td><b>AI Visibility</b></td><td>30%</td><td>Rolling mention rate, Share-of-Voice rank, engine breadth, avg position, trend. (Keep v1's smoothing.)</td><td>wk 2–6</td></tr>
+      <tr><td><b>Content &amp; Coverage</b></td><td>20%</td><td>Published cadence (blog/FAQ/quotes/stats), service-area/location coverage (cities with a page ÷ cities in area), content depth/freshness.</td><td>wk 1–6</td></tr>
+      <tr><td><b>Reputation</b></td><td>10%</td><td>Rating + review-growth trend (not absolute volume vs competitors). Low weight.</td><td>slow</td></tr>
+      <tr><td><b>Search Performance</b></td><td>10%</td><td>Organic clicks/impressions/position trend <i>when GSC connected</i>. <b>Omitted (weight redistributed), never zeroed, when absent.</b></td><td>wk 6+</td></tr>
+    </table>
+    <p class="mini">Foundation replaces v1 "Technical Health" but is <b>completion-driven</b>, reusing the live-detection we already persist (schema/llms/robots from the daily reconciler + the industry checklist). PageSpeed performance becomes a small optional bonus inside Foundation, carry-forward on failure.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">4. Robustness rules</h2>
+    <table>
+      <tr><th>Situation</th><th>v1</th><th>v2</th></tr>
+      <tr><td>No GSC connected</td><td>Search Growth → low/0, dilutes score</td><td>Search pillar <b>omitted</b>, its 10% redistributed across available pillars</td></tr>
+      <tr><td>PageSpeed times out</td><td>perf/seo = 0 → Tech tanks</td><td>Foundation ignores perf (or carries forward last good value); completion signals unaffected</td></tr>
+      <tr><td>AI run partial (1 engine 429)</td><td>counts as misses</td><td>retry/backoff (done); rolling 4-wk average absorbs the rest</td></tr>
+      <tr><td>A pillar has no data yet</td><td>redistribute (can swing wildly)</td><td>redistribute <b>+ clamp week-over-week delta</b> (e.g. ±8 pts) so the number can't whipsaw</td></tr>
+      <tr><td>Stored each run?</td><td>daily, can be noisy</td><td>store daily but <b>display a 7-day trailing value</b> so the client sees a smooth line</td></tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">5. Baseline &amp; the 4–6 week progress model</h2>
+    <p>Make progress the headline, designed so the standard playbook visibly moves the number.</p>
+    <ul>
+      <li><b>Lock a baseline at onboarding (week 0)</b> — the score before we touch anything. Store as <code>baseline_score</code> + date on the customer.</li>
+      <li>Every report shows <b>"{score} · +{score − baseline} since {month}"</b> and a 6-week sparkline.</li>
+      <li><b>Expected trajectory</b> from running the playbook (illustrative, Foundation+Content do the early lifting):</li>
+    </ul>
+    <table>
+      <tr><th>Week</th><th>What lands</th><th>Foundation</th><th>Content</th><th>AI</th><th>Expected score</th></tr>
+      <tr><td>0 (baseline)</td><td>nothing yet</td><td>20</td><td>10</td><td>15</td><td>~35</td></tr>
+      <tr><td>1–2</td><td>schema, llms.txt, robots, FAQ schema live</td><td>75</td><td>35</td><td>20</td><td>~50</td></tr>
+      <tr><td>3–4</td><td>location pages, blog cadence, content depth</td><td>90</td><td>70</td><td>40</td><td>~65</td></tr>
+      <tr><td>5–6</td><td>AI engines start citing; SoV climbs</td><td>95</td><td>80</td><td>70</td><td>~78</td></tr>
+    </table>
+    <p class="mini">Concrete promise to the client: <b>"measurable progress within 4–6 weeks."</b> Foundation + Content are mostly us executing, so they reliably climb regardless of GSC/competitor externals — that's what makes the early curve dependable.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">6. Implementation</h2>
+    <ul>
+      <li>Rewrite <code>geo_agent/practicerank_score.py</code>: new <code>PILLAR_WEIGHTS</code>; replace <code>compute_technical_health</code> with <code>compute_geo_foundation</code> (completion-based, reuse <code>status_checker.detect_live_status</code> + checklist); fold service-area coverage into <code>compute_content</code>; drop Search to 10% with omit-on-missing; soften Reputation to trend.</li>
+      <li>Add <b>delta clamping</b> + <b>7-day trailing display</b> in the score writer.</li>
+      <li>Add <code>customers.baseline_score</code> + <code>baseline_date</code> (set on first score, or on first onboarding run); surface "+N since baseline" in the weekly report's score section.</li>
+      <li>Keep the <code>practicerank_scores</code> history table (already stores pillar breakdown) — no migration beyond the two baseline columns.</li>
+      <li>Backfill: recompute current scores under v2 so existing customers jump to the more representative number (e.g. Paradigm's Foundation is largely done → score should reflect it).</li>
+    </ul>
+    <h3>Open questions</h3>
+    <ul>
+      <li>Grade bands — keep A/B/C/D/F at 90/75/60/40, or recalibrate so a "fully executed, early-days" account lands at a strong B (~80)?</li>
+      <li>Baseline timing — week-0 pre-work, or the first scheduled run after access is granted?</li>
+      <li>Delta clamp size (±8/week?) and trailing window (7d?).</li>
+    </ul>
+  </div>
+
+  <p class="mini">On approval: rewrite the score module behind the existing tests, add baseline columns, backfill, and wire "+N since baseline" into the weekly report.</p>
+</div>
+</body>
+</html>
