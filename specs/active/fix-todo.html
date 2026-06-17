@@ -43,28 +43,14 @@
 
   <h2>🔴 Open — P0 (wrong data / blocking)</h2>
 
-  <div class="item">
-    <h3><span class="tag p0">P0</span> AI-mention queries are generic + dental-templated</h3>
-    <div class="meta">The whole AI-visibility product looks wrong for non-dental customers.</div>
-    <p>Paradigm's AI checks ask <i>"top precious_metals_buyer companies"</i> and <i>"what should <b>patients</b> know about…"</i> — raw <code>business_type</code> with underscores + dental language. Need <b>intent-based, industry-relevant</b> questions.</p>
-    <ul>
-      <li>Add a human <code>business_type</code> label map (no underscores): <code>precious_metals_buyer → "gold &amp; silver buyer"</code>.</li>
-      <li>Strip "patients"/"the practice" wording for non-practice verticals (use "customers"/"the business").</li>
-      <li><b>Intent matters:</b> Paradigm wants <b>sellers</b>, so generate seller-intent queries: <i>"how do I sell my gold?", "where can I sell silver coins near {city}?", "best place to sell gold in {city}", "who buys gold and silver near {city}?", "cash for gold {city}", "how much is my gold worth"</i>.</li>
-      <li>Drive query templates off the vertical (reuse the checklist verticals) + a per-vertical intent set.</li>
-    </ul>
-    <div class="files">Files: AI-mention prompt generator (locate in <code>geo_agent/</code> — prompt_set "benchmark"), likely an analyzer/prompt module.</div>
+  <div class="item" style="opacity:.7">
+    <h3><span class="tag done">DONE</span> AI-mention queries are generic + dental-templated</h3>
+    <p>Fixed: dedicated <code>precious_metals_buyer</code> branch with seller-intent queries ("how do I sell my gold", "cash for gold {city}", "who buys gold near {area}"); <code>BUSINESS_LABEL</code> map kills raw <code>business_type</code>; dropped "patients" wording. Old generic-query run data cleaned; re-ran with new queries. <code>scripts/check_ai_mentions.py</code>.</p>
   </div>
 
-  <div class="item">
-    <h3><span class="tag p0">P0</span> AI checks don't cover surrounding service-area cities</h3>
-    <div class="meta">We built location pages for ~13 NOVA cities but only ever query the home city (Springfield).</div>
-    <ul>
-      <li>Expand AI-mention queries to cover service-area cities within ~25-min drive.</li>
-      <li>Source the city list from: (a) the service-area / location pages we generated (content recs / new_page targets), or (b) nearby-cities lookup from the customer's lat/lng (Places/geocode, ~15-mile radius).</li>
-      <li>Cap per-run query count sensibly; rotate cities so we don't blow the prompt budget.</li>
-      <li>Tie back to content: a city we have a page for AND get AI-cited in = win; page but no citation = content gap to fix.</li>
-    </ul>
+  <div class="item" style="opacity:.7">
+    <h3><span class="tag done">DONE</span> AI checks now cover service-area cities</h3>
+    <p>Fixed alongside #1: new <code>service_areas</code> customer field + <code>build_comprehensive_prompts</code> expands queries across nearby cities. Paradigm seeded with 12 NOVA cities (Burke, Fairfax, Vienna, Tysons…).</p>
   </div>
 
   <div class="item">
