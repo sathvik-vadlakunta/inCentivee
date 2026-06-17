@@ -54,16 +54,26 @@ def detect_live_status(domain: str) -> dict[str, bool]:
                     detected["seo_schema_org"] = True
                     detected["seo_schema_localbusiness"] = True
                 else:
-                    if '"Dentist"' in body or '"LocalBusiness"' in body:
+                    if '"Dentist"' in body or '"LocalBusiness"' in body or '"Store"' in body:
                         detected["seo_schema_localbusiness"] = True
-                    if '"Organization"' in body or '"SoftwareApplication"' in body:
+                    if '"Organization"' in body:
                         detected["seo_schema_org"] = True
+                    if '"SoftwareApplication"' in body:
+                        detected["seo_schema_software"] = True
+                    if '"LegalService"' in body or '"Attorney"' in body:
+                        detected["seo_schema_legalservice"] = True
+                    if '"Person"' in body:
+                        detected["seo_schema_person"] = True
+                    if '"Service"' in body:
+                        detected["seo_schema_service"] = True
                     if '"FAQPage"' in body:
                         detected["seo_schema_faq"] = True
                     if '"MedicalProcedure"' in body:
                         detected["seo_schema_medical"] = True
                     if '"AggregateRating"' in body or '"Review"' in body:
                         detected["seo_schema_review"] = True
+                    if '"Product"' in body:
+                        detected["seo_schema_product"] = True
             if "<h1" in body and "<h2" in body:
                 detected["seo_structured_headings"] = True
     except Exception:
@@ -173,6 +183,32 @@ def _content_is_live(domain: str, rec: dict, cache: dict | None = None) -> bool:
     return False
 
 
+def _content_task_status(recs: list[dict]) -> dict[str, bool]:
+    """Tick content checklist tasks from content we actually published.
+
+    Maps published rec_types → SEO_GEO_TASKS content keys so the checklist
+    reflects shipped work instead of sitting at 0/N.
+    """
+    pub = [r for r in recs if r.get("status") == "published"]
+    types = {r.get("rec_type") for r in pub}
+    out: dict[str, bool] = {}
+    if "faq_update" in types:
+        out["seo_faq_sections"] = True
+    if "expert_quote" in types:
+        out["seo_expert_quotes"] = True
+    if "stat_injection" in types:
+        out["seo_stats_embedded"] = True
+    if "blog_post" in types:
+        out["seo_blog_cadence"] = True
+    if "new_page" in types:
+        out["seo_content_depth"] = True
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+    if any(r.get("rec_type") == "freshness_update" and (r.get("published_at") or "")[:10] >= cutoff
+           for r in pub):
+        out["seo_fresh_content"] = True
+    return out
+
+
 def _recent_data(db, customer_id: str, days: int = 14) -> bool:
     cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
     g = db.conn.execute(
@@ -233,8 +269,10 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
             if not dry_run:
                 db.update_content_recommendation_status(rec["id"], "published")
 
-    # --- 3. Todos: persist auto-detected completions ---
+    # --- 3. Todos: persist auto-detected completions (schema live + content shipped) ---
     detected = detect_live_status(domain)
+    recs_all = db.get_content_recommendations(customer_id, limit=200)
+    detected.update(_content_task_status(recs_all))
     checklist = db.get_checklist(customer_id)
     for key, done in detected.items():
         if done and not checklist.get(key):
@@ -250,8 +288,7 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
     # yet live). draft/pending recs are an ongoing idea backlog and never block —
     # an active customer always has pending suggestions.
     just_published = {c["id"] for c in result["content_published"]}
-    recs = db.get_content_recommendations(customer_id, limit=200)
-    approved_unpublished = [r for r in recs
+    approved_unpublished = [r for r in recs_all
                             if r.get("status") == "approved" and r["id"] not in just_published]
 
     has_core_schema = bool(detected.get("seo_schema_localbusiness") or detected.get("seo_schema_org"))

@@ -2108,9 +2108,33 @@ def _get_va_todos(customer: dict, access: list[dict], contacts: list[dict],
 
 # --- SEO/GEO Optimization Tasks ---
 
+# Industry verticals — each business_type maps to one. Drives which schema/content
+# tasks a customer sees. Unknown/blank types fall back to 'default'. See
+# specs/active/checklist-overhaul.html.
+BUSINESS_TYPE_VERTICAL = {
+    "practice": "practice", "medical": "practice", "dental": "practice",
+    "legal": "legal",
+    "precious_metals_buyer": "local_retail", "retail": "local_retail",
+    "shop": "local_retail", "jeweler": "local_retail",
+    "ecommerce": "ecommerce", "product": "ecommerce",
+    "consulting": "professional_services", "advisory": "professional_services",
+    "agency": "professional_services", "finance": "professional_services",
+    "technology": "saas", "saas": "saas", "software": "saas",
+}
+# Verticals that are local, foot-traffic / location-based businesses (get GBP,
+# maps, citations, review-funnel tasks).
+LOCAL_VERTICALS = {"practice", "legal", "local_retail", "professional_services", "default"}
+
+
+def vertical_for(business_type: str) -> str:
+    return BUSINESS_TYPE_VERTICAL.get((business_type or "").lower(), "default")
+
+
 SEO_GEO_TASKS = [
     # Schema Markup
-    {"key": "seo_schema_localbusiness", "task": "LocalBusiness (Dentist) schema markup", "category": "Schema Markup", "practice_only": True,
+    {"key": "seo_schema_localbusiness", "task": "LocalBusiness (Dentist) schema markup", "category": "Schema Markup",
+     "verticals": ["practice", "local_retail", "default"],
+     "labels": {"local_retail": "LocalBusiness / Store schema markup", "default": "LocalBusiness schema markup"},
      "guide": {
          "webflow": (
              "<b>How to add schema markup in Webflow:</b>"
@@ -2137,7 +2161,9 @@ SEO_GEO_TASKS = [
              "</div>"
          ),
      }},
-    {"key": "seo_schema_org", "task": "Organization / SoftwareApplication schema markup", "category": "Schema Markup", "practice_only": False, "non_practice_only": True,
+    {"key": "seo_schema_org", "task": "Organization schema markup", "category": "Schema Markup",
+     "verticals": ["ecommerce", "professional_services", "saas", "default"],
+     "labels": {"saas": "Organization + SoftwareApplication schema markup"},
      "guide": {
          "webflow": (
              "<b>Same process as LocalBusiness schema</b> — the GEO Agent auto-injects Organization schema for non-practice customers."
@@ -2158,10 +2184,20 @@ SEO_GEO_TASKS = [
              "<b>To verify:</b> View page source and search for <code>Organization</code>."
          ),
      }},
-    {"key": "seo_schema_faq", "task": "FAQPage schema on all service pages", "category": "Schema Markup"},
-    {"key": "seo_schema_medical", "task": "MedicalProcedure schema for each service", "category": "Schema Markup", "practice_only": True},
-    {"key": "seo_schema_review", "task": "AggregateRating / Review schema", "category": "Schema Markup", "practice_only": True},
-    {"key": "seo_schema_product", "task": "Product / SoftwareApplication schema for offerings", "category": "Schema Markup", "practice_only": False, "non_practice_only": True},
+    {"key": "seo_schema_faq", "task": "FAQPage schema on key pages", "category": "Schema Markup"},
+    {"key": "seo_schema_medical", "task": "MedicalProcedure schema for each service", "category": "Schema Markup", "verticals": ["practice"]},
+    {"key": "seo_schema_review", "task": "AggregateRating / Review schema", "category": "Schema Markup",
+     "verticals": ["practice", "legal", "local_retail", "ecommerce"]},
+    {"key": "seo_schema_product", "task": "Product / Offer schema for offerings", "category": "Schema Markup",
+     "verticals": ["ecommerce", "saas"]},
+    {"key": "seo_schema_legalservice", "task": "LegalService / Attorney schema markup", "category": "Schema Markup",
+     "verticals": ["legal"]},
+    {"key": "seo_schema_software", "task": "SoftwareApplication schema markup", "category": "Schema Markup",
+     "verticals": ["saas"]},
+    {"key": "seo_schema_person", "task": "Person schema (providers / attorneys / experts)", "category": "Schema Markup",
+     "verticals": ["practice", "legal", "professional_services"]},
+    {"key": "seo_schema_service", "task": "Service schema for each offering", "category": "Schema Markup",
+     "verticals": ["legal", "local_retail", "professional_services"]},
     # llms.txt & AI Readiness
     {"key": "seo_llms_txt", "task": "Deploy llms.txt on domain", "category": "AI Readiness (GEO)",
      "guide": {
@@ -2395,8 +2431,14 @@ SEO_GEO_TASKS = [
              "</ol>"
          ),
      }},
-    {"key": "seo_use_cases", "task": "Use case / case study pages for each product", "category": "Content Optimization", "practice_only": False, "non_practice_only": True},
-    {"key": "seo_comparison_pages", "task": "Competitor comparison / alternatives pages", "category": "Content Optimization", "practice_only": False, "non_practice_only": True},
+    {"key": "seo_use_cases", "task": "Use case / case study pages", "category": "Content Optimization", "verticals": ["saas", "ecommerce"]},
+    {"key": "seo_comparison_pages", "task": "Competitor comparison / alternatives pages", "category": "Content Optimization", "verticals": ["saas", "ecommerce"]},
+    {"key": "seo_blog_cadence", "task": "Blog posts targeting key questions", "category": "Content Optimization"},
+    {"key": "seo_fresh_content", "task": "Content refreshed in the last 90 days", "category": "Content Optimization"},
+    {"key": "seo_attorney_bios", "task": "Attorney bios with bar admissions & practice areas", "category": "Content Optimization", "verticals": ["legal"]},
+    {"key": "seo_practice_area_pages", "task": "Dedicated practice-area pages", "category": "Content Optimization", "verticals": ["legal"]},
+    {"key": "seo_service_area_pages", "task": "Service-area / location pages", "category": "Content Optimization", "verticals": ["local_retail", "professional_services"]},
+    {"key": "seo_pricing_page", "task": "Pricing / quote / 'how it works' page", "category": "Content Optimization", "verticals": ["local_retail", "professional_services"]},
     # Technical SEO
     {"key": "seo_xml_sitemap", "task": "XML sitemap present and submitted", "category": "Technical SEO",
      "guide": {
@@ -2783,10 +2825,18 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
                     detected["seo_schema_localbusiness"] = True
                 else:
                     # Inline JSON-LD — check specific types
-                    if '"Dentist"' in body or '"LocalBusiness"' in body:
+                    if '"Dentist"' in body or '"LocalBusiness"' in body or '"Store"' in body:
                         detected["seo_schema_localbusiness"] = True
-                    if '"Organization"' in body or '"SoftwareApplication"' in body:
+                    if '"Organization"' in body:
                         detected["seo_schema_org"] = True
+                    if '"SoftwareApplication"' in body:
+                        detected["seo_schema_software"] = True
+                    if '"LegalService"' in body or '"Attorney"' in body:
+                        detected["seo_schema_legalservice"] = True
+                    if '"Person"' in body:
+                        detected["seo_schema_person"] = True
+                    if '"Service"' in body:
+                        detected["seo_schema_service"] = True
                     if '"FAQPage"' in body:
                         detected["seo_schema_faq"] = True
                     if '"MedicalProcedure"' in body:
@@ -2970,16 +3020,31 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
     Auto-detected status overrides manual checklist for verifiable tasks.
     Resolves guide text for the current platform and domain.
     """
-    is_practice = business_type in ("practice", "legal", "medical")
+    vertical = vertical_for(business_type)
+    # Dental-specific directories stay practice-only even though they're Local SEO.
+    _practice_only_directories = {"seo_healthgrades", "seo_zocdoc"}
     ad = auto_detected or {}
     tasks = []
     for t in SEO_GEO_TASKS:
-        # Skip practice-only tasks for non-practices
-        if t.get("practice_only") and not is_practice:
-            continue
-        # Skip non-practice-only tasks for practices
-        if t.get("non_practice_only") and is_practice:
-            continue
+        vs = t.get("verticals")
+        if vs is not None:
+            # Explicit vertical scoping (the new model).
+            if vertical not in vs:
+                continue
+        else:
+            # Legacy fallback. practice_only Local-SEO / Reviews tasks apply to all
+            # LOCAL verticals (a metals buyer or law firm needs GBP, citations,
+            # review funnels too) — except dental-only directories. Everything else
+            # practice_only is genuinely practice-specific.
+            if t.get("practice_only"):
+                if (t["category"] in ("Local SEO", "Reviews & Reputation")
+                        and t["key"] not in _practice_only_directories):
+                    if vertical not in LOCAL_VERTICALS:
+                        continue
+                elif vertical != "practice":
+                    continue
+            if t.get("non_practice_only") and vertical == "practice":
+                continue
         # Skip platform-specific tasks for other platforms
         if t.get("platform_only") and t["platform_only"] != platform:
             continue
@@ -2989,6 +3054,8 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
         # Auto-detected takes priority over manual checklist
         done = ad.get(t["key"], checklist.get(t["key"], False))
         auto = t["key"] in ad
+        # Per-vertical label override (e.g. LocalBusiness vs Store vs Dentist).
+        label = t.get("labels", {}).get(vertical, t["task"])
         # Resolve guide for current platform
         guide = ""
         if t.get("guide"):
@@ -2997,7 +3064,7 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
                 guide = guide.replace("{domain}", domain).replace("{customer_id}", customer_id).replace("{city}", city)
         tasks.append({
             "key": t["key"],
-            "task": t["task"],
+            "task": label,
             "category": t["category"],
             "done": done,
             "auto": auto,
