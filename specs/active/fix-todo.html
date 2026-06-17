@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PracticeRank — Fix TODO Board</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:16px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:30px 0 12px}
+  p{margin:9px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:#4ade80;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:72ch}
+  .item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+  .item h3{margin:0 0 4px;font-size:16px}
+  .item .meta{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap;margin-right:6px}
+  .p0{background:#fdeaea;color:var(--bad)} .p1{background:#fdf3e3;color:var(--warn)} .p2{background:#eef4f8;color:#0f3d5c}
+  .done{background:#e8f5ec;color:var(--accent)}
+  ul{margin:8px 0;padding-left:20px} li{margin:4px 0;font-size:14px}
+  .files{font-size:12px;color:var(--muted);margin-top:8px}
+  .files code{font-size:11.5px}
+  .ctx{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e;margin:12px 0}
+  details{margin-top:8px} summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · FIX TODO</span>
+  <h1>What we need to fix — TODO board</h1>
+  <p class="lead">Running backlog of issues found while building out PracticeRank (weekly reports, GA4, daily reconciliation, checklist, AI mentions). Priorities: <b>P0</b> blocking/wrong-data · <b>P1</b> high-value · <b>P2</b> polish.</p>
+  <p class="files">Owner: Kody · 2026-06-17 · <code>specs/active/fix-todo.html</code></p>
+
+  <div class="ctx">
+    <b>Customer context that keeps biting us — Paradigm Experts.</b> business_type <code>precious_metals_buyer</code> → vertical <code>local_retail</code>.
+    <b>Primary business: buying gold &amp; silver. Secondary: jewelry store.</b> Their goal is to attract <b>people looking to SELL</b> gold/silver to them.
+    Service area = Northern Virginia (Springfield + Burke, Fairfax, Lorton, Oakton, Vienna, Tysons, McLean, Falls Church, Arlington, Alexandria, Woodbridge, Fairfax Station, Centreville). We built location pages for these — but AI checks don't query them.
+  </div>
+
+  <h2>🔴 Open — P0 (wrong data / blocking)</h2>
+
+  <div class="item">
+    <h3><span class="tag p0">P0</span> AI-mention queries are generic + dental-templated</h3>
+    <div class="meta">The whole AI-visibility product looks wrong for non-dental customers.</div>
+    <p>Paradigm's AI checks ask <i>"top precious_metals_buyer companies"</i> and <i>"what should <b>patients</b> know about…"</i> — raw <code>business_type</code> with underscores + dental language. Need <b>intent-based, industry-relevant</b> questions.</p>
+    <ul>
+      <li>Add a human <code>business_type</code> label map (no underscores): <code>precious_metals_buyer → "gold &amp; silver buyer"</code>.</li>
+      <li>Strip "patients"/"the practice" wording for non-practice verticals (use "customers"/"the business").</li>
+      <li><b>Intent matters:</b> Paradigm wants <b>sellers</b>, so generate seller-intent queries: <i>"how do I sell my gold?", "where can I sell silver coins near {city}?", "best place to sell gold in {city}", "who buys gold and silver near {city}?", "cash for gold {city}", "how much is my gold worth"</i>.</li>
+      <li>Drive query templates off the vertical (reuse the checklist verticals) + a per-vertical intent set.</li>
+    </ul>
+    <div class="files">Files: AI-mention prompt generator (locate in <code>geo_agent/</code> — prompt_set "benchmark"), likely an analyzer/prompt module.</div>
+  </div>
+
+  <div class="item">
+    <h3><span class="tag p0">P0</span> AI checks don't cover surrounding service-area cities</h3>
+    <div class="meta">We built location pages for ~13 NOVA cities but only ever query the home city (Springfield).</div>
+    <ul>
+      <li>Expand AI-mention queries to cover service-area cities within ~25-min drive.</li>
+      <li>Source the city list from: (a) the service-area / location pages we generated (content recs / new_page targets), or (b) nearby-cities lookup from the customer's lat/lng (Places/geocode, ~15-mile radius).</li>
+      <li>Cap per-run query count sensibly; rotate cities so we don't blow the prompt budget.</li>
+      <li>Tie back to content: a city we have a page for AND get AI-cited in = win; page but no citation = content gap to fix.</li>
+    </ul>
+  </div>
+
+  <div class="item">
+    <h3><span class="tag p0">P0</span> Competitor data is wrong industry (dental for a metals buyer)</h3>
+    <div class="meta">Makes the weekly report show "−1970 reviews vs Hudson Orthodontics".</div>
+    <ul>
+      <li><b>Done:</b> added <code>precious_metals_buyer</code> to <code>VERTICAL_PLACE_TYPES</code> / <code>EXCLUDE_KEYWORDS</code> / <code>INDUSTRY_KEYWORDS</code> (gold/silver/coin/bullion; exclude dental/medical/legal).</li>
+      <li><b>Todo:</b> clear Paradigm's existing dental competitors from the <code>competitors</code> table.</li>
+      <li><b>Todo:</b> re-discover with the corrected types, OR seed from the AI Share-of-Voice competitors (Alexandria Gold &amp; Silver, JM Bullion, APMEX, Cash for Gold VA…) which are already correct.</li>
+      <li>Audit other non-practice customers for the same bad-competitor problem.</li>
+    </ul>
+    <div class="files">Files: <code>geo_agent/google_places.py</code> (mapping ✅), competitor discovery routes <code>dashboard/app.py:api_discover_competitors</code>.</div>
+  </div>
+
+  <h2>🟠 Open — P1 (high value)</h2>
+
+  <div class="item">
+    <h3><span class="tag p1">P1</span> Weekly report is "too basic" — enrich it</h3>
+    <ul>
+      <li>Lead with <b>AI Share-of-Voice</b>: rank (#1 for Paradigm) + real competitor leaderboard from <code>get_share_of_voice()</code>.</li>
+      <li>Per-engine breakdown chips (Gemini / Perplexity / Claude / ChatGPT) from <code>ai_mention_runs.engines_json</code>.</li>
+      <li><b>Drop the bogus competitor review-gap</b> (or gate it: hide when competitor reviews ≫ customer / wrong industry).</li>
+      <li>Richer exec summary (mention AI rank, mention rate, position).</li>
+      <li>Hide sections with no/garbage data instead of rendering thin/odd blocks.</li>
+    </ul>
+    <div class="files">Files: <code>geo_agent/weekly_report.py</code> (build_report_data + render_html).</div>
+  </div>
+
+  <div class="item">
+    <h3><span class="tag p1">P1</span> Content tasks not auto-detectable</h3>
+    <ul>
+      <li><code>seo_service_area_pages</code>, <code>seo_pricing_page</code> have no auto-tick — add live detection (crawl for the page) or tie to published <code>new_page</code> recs with matching slugs.</li>
+      <li><code>seo_expert_quotes</code> / <code>seo_stats_embedded</code> only tick from published recs of those types — Paradigm has none; confirm the generator actually produces <code>expert_quote</code>/<code>stat_injection</code> recs for non-practice verticals.</li>
+    </ul>
+  </div>
+
+  <h2>🔵 Open — P2 (polish)</h2>
+  <div class="item">
+    <h3><span class="tag p2">P2</span> Misc</h3>
+    <ul>
+      <li>PageSpeed occasionally times out (read timeout) → bump timeout / add one retry.</li>
+      <li>GA4 per-customer Property IDs still need entering before Leads populate.</li>
+      <li>Generator follow-up: emit LegalService / Person / Service JSON-LD where the new schema tasks expect it.</li>
+      <li>Branch <code>feat/weekly-reports-ga4-daily-status</code> (~12 commits, all deployed) is <b>not pushed</b> — push + open PR.</li>
+    </ul>
+  </div>
+
+  <h2>✅ Done this session (deployed)</h2>
+  <div class="item">
+    <ul>
+      <li><span class="tag done">DONE</span> Weekly report engine + secure share links + <b>Weekly Report tab</b> (view / history / customer link).</li>
+      <li><span class="tag done">DONE</span> GA4 leads via OAuth-as-kdoherty@ (Internal consent → permanent token).</li>
+      <li><span class="tag done">DONE</span> Daily status reconciliation + auto-advance to active/monitoring (cron 06:30).</li>
+      <li><span class="tag done">DONE</span> GSC-pull + weekly-report crons installed (were missing entirely).</li>
+      <li><span class="tag done">DONE</span> Industry-aware checklist (verticals) — Paradigm shows Store/Service, law firms no longer get Dentist tasks.</li>
+      <li><span class="tag done">DONE</span> Content auto-tick from published rec types + <b>Mark All Published</b> action.</li>
+      <li><span class="tag done">DONE</span> Staging approve/publish + content tab no longer full-reload/reroute (hash-persist tabs).</li>
+      <li><span class="tag done">DONE</span> Email tab search/filter + stage ordering + workflow doc.</li>
+      <li><span class="tag done">DONE</span> Audit issue dedup (36 dupes cleaned) + audit now persists daily.</li>
+      <li><span class="tag done">DONE</span> PageSpeed API key + all 4 categories (SEO/a11y scores were 0).</li>
+      <li><span class="tag done">DONE</span> robots.txt "blocks all crawlers" false-positive fix (training-bot blocks).</li>
+      <li><span class="tag done">DONE</span> Fuzzy content-live match (survives post-publish edits).</li>
+    </ul>
+  </div>
+
+  <p class="files">Next up (recommended order): P0 AI-query relevance + city coverage → P0 competitor cleanup → P1 weekly-report enrichment → push branch.</p>
+</div>
+</body>
+</html>

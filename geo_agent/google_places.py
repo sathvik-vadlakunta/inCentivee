@@ -67,6 +67,7 @@ VERTICAL_PLACE_TYPES: dict[str, list[str]] = {
     "salon": ["beauty_salon", "hair_care"],
     "auto": ["car_dealer", "car_repair"],
     "jewelry": ["jewelry_store"],
+    "precious_metals_buyer": ["jewelry_store"],  # closest type; refined by text search
     "product": [],       # no good Places type — use text search fallback
 }
 
@@ -109,6 +110,7 @@ EXCLUDE_KEYWORDS: dict[str, list[str]] = {
     "salon": ["dental", "dentist", "doctor", "lawyer"],
     "auto": ["dental", "dentist", "doctor", "lawyer"],
     "jewelry": ["dental", "dentist", "doctor", "lawyer", "restaurant"],
+    "precious_metals_buyer": ["dental", "dentist", "doctor", "orthodont", "lawyer", "attorney", "restaurant", "salon", "veterinar"],
     "product": ["dental", "dentist", "doctor", "lawyer", "restaurant"],
 }
 
@@ -128,6 +130,9 @@ INDUSTRY_KEYWORDS: dict[str, list[str]] = {
     "salon": ["salon", "beauty", "hair", "spa", "stylist", "nail"],
     "auto": ["auto", "car", "vehicle", "dealer", "repair", "service"],
     "jewelry": ["jewelry", "gold", "silver", "diamond", "gem", "ring", "watch", "buy", "sell"],
+    # Primary: buying gold & silver; secondary: jewelry store.
+    "precious_metals_buyer": ["gold", "silver", "coin", "bullion", "metals", "buy", "sell",
+                              "cash for gold", "pawn", "jewelry", "diamond", "watch", "appraisal"],
     "product": ["product", "buy", "shop", "order", "price"],
 }
 
