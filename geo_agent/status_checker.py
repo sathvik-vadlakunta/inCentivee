@@ -17,6 +17,7 @@ the daily script can print exactly what it would change before any writes.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -86,33 +87,89 @@ def detect_live_status(domain: str) -> dict[str, bool]:
     return detected
 
 
-def _content_is_live(domain: str, rec: dict) -> bool:
-    """Conservative check that a content rec is actually on the live site.
+_TAG_RE = re.compile(r"<[^>]+>")
+_WORD_RE = re.compile(r"[a-z0-9]+")
+# Common stop-words we don't want to count toward a title match.
+_STOP = {"the", "and", "for", "with", "your", "you", "are", "our", "from", "what",
+         "how", "why", "when", "this", "that", "these", "those", "a", "an", "of",
+         "to", "in", "on", "is", "it", "we", "or", "by", "at", "as", "be"}
 
-    Crawls the target page (or home) and looks for the rec's title or a
-    distinctive chunk of its snippet. Platform-agnostic; only ever promotes.
-    """
-    if not domain:
-        return False
-    path = (rec.get("target_page") or "").strip()
-    if path and not path.startswith("/") and not path.startswith("http"):
-        path = "/" + path
-    url = path if path.startswith("http") else f"https://{domain}{path}"
+
+def _page_words(html: str) -> set[str]:
+    """Visible-text word set from an HTML page (tags stripped, lowercased)."""
+    text = _TAG_RE.sub(" ", html).lower()
+    return set(_WORD_RE.findall(text))
+
+
+def _significant_words(text: str) -> set[str]:
+    """Meaningful words (len>3, non-stopword) from a title/snippet."""
+    return {w for w in _WORD_RE.findall((text or "").lower())
+            if len(w) > 3 and w not in _STOP}
+
+
+def _slugify(text: str) -> str:
+    return "-".join(_WORD_RE.findall((text or "").lower()))
+
+
+def _fetch_words(url: str, cache: dict) -> set[str]:
+    if url in cache:
+        return cache[url]
+    words: set[str] = set()
     try:
         r = httpx.get(url, timeout=10.0, follow_redirects=True)
-        if r.status_code != 200:
-            return False
-        body = r.text.lower()
+        if r.status_code == 200:
+            words = _page_words(r.text)
     except Exception:
+        pass
+    cache[url] = words
+    return words
+
+
+def _overlap(needle: set[str], haystack: set[str]) -> float:
+    if not needle:
+        return 0.0
+    return len(needle & haystack) / len(needle)
+
+
+def _content_is_live(domain: str, rec: dict, cache: dict | None = None) -> bool:
+    """Is this content rec live on the site (or close enough to count as published)?
+
+    Strong signal: we already pushed it to the CMS (has a platform item id).
+    Otherwise crawl candidate URLs (the target page, plus slug guesses) and match
+    on *word overlap* — ≥80% of the title's significant words present, or a strong
+    snippet overlap — so lightly-reworded or reformatted content still matches.
+    Platform-agnostic; only ever promotes.
+    """
+    if rec.get("webflow_item_id") or rec.get("platform_item_id"):
+        return True
+    if not domain:
         return False
-    title = (rec.get("title") or "").strip().lower()
-    if title and len(title) > 8 and title in body:
-        return True
-    # Fall back to a distinctive slice of the snippet's visible text.
-    snippet = (rec.get("html_snippet") or rec.get("description") or "").strip().lower()
-    snippet = " ".join(snippet.split())
-    if len(snippet) > 40 and snippet[:60] in body:
-        return True
+    cache = cache if cache is not None else {}
+
+    candidates: list[str] = []
+    path = (rec.get("target_page") or "").strip()
+    if path and path not in ("new",):
+        if path.startswith("http"):
+            candidates.append(path)
+        else:
+            candidates.append(f"https://{domain}/{path.lstrip('/')}")
+    slug = _slugify(rec.get("title", ""))
+    if slug:
+        candidates += [f"https://{domain}/{slug}", f"https://{domain}/blog/{slug}"]
+    if not candidates:
+        candidates.append(f"https://{domain}")
+
+    title_words = _significant_words(rec.get("title", ""))
+    snippet_words = _significant_words(rec.get("html_snippet") or rec.get("description") or "")
+
+    for url in candidates:
+        page = _fetch_words(url, cache)
+        if not page:
+            continue
+        if title_words and _overlap(title_words, page) >= 0.8:
+            return True
+        if len(snippet_words) >= 6 and _overlap(snippet_words, page) >= 0.7:
+            return True
     return False
 
 
@@ -160,10 +217,11 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
     open_critical = sum(1 for i in audit.get("issues", []) if i.get("severity") == "critical")
 
     # --- 2. Content: mark live recs as published ---
+    page_cache: dict = {}  # share fetched pages across recs in this run
     for rec in db.get_content_recommendations(customer_id, limit=200):
         if rec.get("status") in ("published", "rejected"):
             continue
-        if _content_is_live(domain, rec):
+        if _content_is_live(domain, rec, page_cache):
             result["content_published"].append({"id": rec["id"], "title": rec.get("title")})
             if not dry_run:
                 db.update_content_recommendation_status(rec["id"], "published")

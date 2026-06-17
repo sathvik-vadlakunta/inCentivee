@@ -39,6 +39,28 @@ def _fully_live(monkeypatch, audit_issues=None):
     monkeypatch.setattr(sc, "_recent_data", lambda *a, **k: True)
 
 
+def test_content_is_live_fuzzy_match(monkeypatch):
+    # Page text reworded/reformatted vs the stored title — should still match on
+    # word overlap (the "edited after we tracked it" case).
+    page_html = ("<html><body><h1>Emergency Dental Care in Casper, WY</h1>"
+                 "<p>Same-day emergency appointments for chipped teeth.</p></body></html>")
+    monkeypatch.setattr(sc, "_fetch_words", lambda url, cache: sc._page_words(page_html))
+    rec = {"id": "r1", "title": "Emergency Dental Care Casper", "target_page": "/emergency"}
+    assert sc._content_is_live("example.com", rec, {}) is True
+
+
+def test_content_is_live_no_match(monkeypatch):
+    monkeypatch.setattr(sc, "_fetch_words", lambda url, cache: sc._page_words("<p>About our team</p>"))
+    rec = {"id": "r1", "title": "Dental Implants Cost Guide", "target_page": "/x"}
+    assert sc._content_is_live("example.com", rec, {}) is False
+
+
+def test_content_is_live_cms_item_id_counts(monkeypatch):
+    # If we already pushed it to the CMS, it's live without crawling.
+    rec = {"id": "r1", "title": "x", "webflow_item_id": "abc123"}
+    assert sc._content_is_live("example.com", rec, {}) is True
+
+
 def test_resolves_fixed_audit_issues(db, monkeypatch):
     _open_issue(db, "c1", "Schema", "Missing FAQ schema")
     _open_issue(db, "c1", "Performance", "Slow LCP")
@@ -76,7 +98,7 @@ def test_marks_live_content_published(db, monkeypatch):
     monkeypatch.setattr(sc, "run_site_audit", lambda *a, **k: {"issues": []})
     monkeypatch.setattr(sc, "detect_live_status", lambda d: {})
     monkeypatch.setattr(sc, "_recent_data", lambda *a, **k: False)
-    monkeypatch.setattr(sc, "_content_is_live", lambda dom, rec: rec["id"] == "r1")
+    monkeypatch.setattr(sc, "_content_is_live", lambda dom, rec, *a: rec["id"] == "r1")
 
     r = sc.reconcile_customer(db, "c1", dry_run=False)
     assert [c["id"] for c in r["content_published"]] == ["r1"]
