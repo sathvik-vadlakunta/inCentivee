@@ -131,15 +131,30 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
                                           ds(prev_start), ds(prev_end)),
         }
 
-    # --- AI visibility (REAL) ---
+    # --- AI visibility (REAL — our differentiator) ---
     rolling = db.get_rolling_mention_stats(customer_id)
     llms = db.get_latest_kpi(customer_id, "llms_txt_hits")
     llms_hist = db.get_kpis(customer_id, "llms_txt_hits", limit=2)
-    if rolling or llms:
+    ai_runs = db.get_ai_mention_runs(customer_id, limit=1)
+    latest_ai = ai_runs[0] if ai_runs else None
+    engines = {}
+    if latest_ai and latest_ai.get("engines_json"):
+        try:
+            engines = json.loads(latest_ai["engines_json"])
+        except Exception:
+            engines = {}
+    try:
+        sov = db.get_share_of_voice(customer_id)
+    except Exception:
+        sov = None
+    if rolling or llms or latest_ai:
         data["sections"]["ai"] = {
             "rolling": rolling,
             "llms": llms,
             "llms_prev": llms_hist[1]["value"] if len(llms_hist) > 1 else None,
+            "latest": latest_ai,
+            "engines": engines,
+            "sov": sov,
         }
 
     # --- Leads / conversions (R3; renders only when GA4 conversions configured) ---
@@ -155,11 +170,16 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
         # new reviews in window
         new_reviews = [r for r in db.get_reviews(customer_id, limit=100)
                        if (r.get("review_date") or "")[:10] >= ds(cur_start)]
+        gap = db.get_competitor_review_gap(customer_id, own_reviews)
+        # Suppress an absurd/mismatched competitor (wrong-industry seed data) —
+        # don't show "−1970 vs an orthodontist" on a metals buyer's report.
+        if gap and gap.get("competitor_reviews", 0) > max(50, own_reviews * 5):
+            gap = None
         data["sections"]["reviews"] = {
             "places": places,
             "new_count": len(new_reviews),
             "new_five_star": sum(1 for r in new_reviews if r.get("rating") == 5),
-            "gap": db.get_competitor_review_gap(customer_id, own_reviews),
+            "gap": gap,
         }
 
     # --- Local listings / NAP (R4; renders only when citations audited) ---
@@ -192,6 +212,17 @@ def _exec_summary(data: dict) -> str:
     name = data["practice_name"]
     bits = []
     s = data["sections"]
+    # Lead with AI rank when strong — it's our differentiator.
+    if "ai" in s and s["ai"].get("sov"):
+        sov = s["ai"]["sov"]
+        rank = sov.get("customer_rank")
+        if rank == 1:
+            bits.append("you're ranked #1 in AI search vs your competitors")
+        elif rank and rank <= 3:
+            bits.append(f"you're a top-{rank} result in AI search")
+    if "ai" in s and (s["ai"].get("latest") or {}).get("total_queries"):
+        lr = s["ai"]["latest"]
+        bits.append(f"AI engines mention you {round(lr['mention_rate']*100)}% of the time")
     if "search" in s and s["search"].get("prev"):
         label, direction = _pct_delta(s["search"]["cur"]["clicks"], s["search"]["prev"]["clicks"])
         if direction == "up":
@@ -294,22 +325,58 @@ def render_html(data: dict) -> str:
         parts.append(f"""<div class="r-sec"><h3>Top keywords</h3>
           <table><tr><th>Query</th><th>Clicks</th><th>Avg position</th></tr>{rows}</table></div>""")
 
-    # 5. AI visibility
+    # 5. AI visibility (the differentiator — lead with Share of Voice)
     if "ai" in s:
+        ai = s["ai"]
+        latest = ai.get("latest") or {}
+        roll = ai.get("rolling")
+        # Headline KPIs
         kpis = ""
-        roll = s["ai"].get("rolling")
-        if roll:
+        rate = None
+        if latest and latest.get("total_queries"):
+            rate = latest["mention_rate"] * 100
+        elif roll:
             rate = roll["current_rate"] * 100
-            d = ("from %.0f%%" % (roll["prev_rate"] * 100), roll["trend"]) if roll.get("prev_rate") else ("", "flat")
+        if rate is not None:
+            d = ("from %.0f%%" % (roll["prev_rate"] * 100), roll["trend"]) if roll and roll.get("prev_rate") else ("", "flat")
             kpis += _kpi("AI mention rate", f"{rate:.0f}%", _delta_span(*d) if d[0] else "")
-        if s["ai"].get("llms"):
-            cur = s["ai"]["llms"]["value"]
-            prev = s["ai"].get("llms_prev")
+        if latest.get("avg_position"):
+            kpis += _kpi("Avg position in answers", f"#{latest['avg_position']:.1f}")
+        if ai.get("llms"):
+            cur = ai["llms"]["value"]; prev = ai.get("llms_prev")
             kpis += _kpi("llms.txt bot hits", f"{int(cur)}",
                          _delta_span(*_abs_delta(cur, prev)) if prev is not None else "")
-        if kpis:
-            parts.append(f'<div class="r-sec"><h3>AI search visibility</h3>'
-                         f'<div class="kpis" style="grid-template-columns:repeat(2,1fr)">{kpis}</div></div>')
+        # Per-engine chips
+        engine_chips = ""
+        for name, info in (ai.get("engines") or {}).items():
+            if not isinstance(info, dict):
+                continue
+            m, t = info.get("mentions", 0), info.get("total", 0)
+            if info.get("status") == "active" and t:
+                engine_chips += f'<span class="chip">✓ {e(name)} {m}/{t}</span>'
+            else:
+                engine_chips += f'<span class="chip miss">{e(name)} — pending</span>'
+        # Share of Voice leaderboard
+        sov_html = ""
+        sov = ai.get("sov")
+        if sov and sov.get("competitors"):
+            rank = sov.get("customer_rank")
+            n = len(sov["competitors"]) + 1
+            you = round((sov.get("customer_share", 0) or 0) * 100)
+            rows = f'<tr style="font-weight:700;color:{BRAND["accent"]}"><td>★ You</td><td>{you}%</td></tr>'
+            for c in sov["competitors"][:5]:
+                rows += f'<tr><td>{e(c.get("name",""))}</td><td>{round((c.get("share",0) or 0)*100)}%</td></tr>'
+            rank_txt = f'<b>#{rank} of {n}</b> in AI search share of voice' if rank else 'AI search share of voice'
+            sov_html = (f'<p class="mini" style="margin:14px 0 6px">{rank_txt} — who AI engines name for your queries:</p>'
+                        f'<table><tr><th>Business</th><th>Share</th></tr>{rows}</table>')
+        if kpis or engine_chips or sov_html:
+            block = '<div class="r-sec"><h3>AI search visibility</h3>'
+            if kpis:
+                block += f'<div class="kpis" style="grid-template-columns:repeat(3,1fr)">{kpis}</div>'
+            if engine_chips:
+                block += f'<div class="engines" style="margin-top:12px">{engine_chips}</div>'
+            block += sov_html + '</div>'
+            parts.append(block)
 
     # 6. Leads (R3)
     if "leads" in s:
@@ -392,6 +459,9 @@ def render_html(data: dict) -> str:
   .r-sec:last-child{{border-bottom:0}}
   h3{{color:{b['ink']};font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 12px;font-weight:700}}
   .mini{{font-size:12px;color:{b['muted']}}}
+  .engines{{display:flex;gap:8px;flex-wrap:wrap}}
+  .chip{{font-size:12px;background:#eef4f8;border:1px solid #d7e6ef;color:#0f3d5c;padding:4px 10px;border-radius:99px}}
+  .chip.miss{{background:{b['bg']};color:{b['muted']};border-color:{b['line']}}}
   .summary{{background:{b['accent']}12;border:1px solid {b['accent']}33;border-radius:12px;padding:16px 18px}}
   .summary p{{margin:0;font-size:15.5px;color:#14532d}}
   .score-row{{display:flex;gap:22px;align-items:center;flex-wrap:wrap}}

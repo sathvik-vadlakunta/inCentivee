@@ -3129,6 +3129,19 @@ class CustomerDB:
         ).fetchone()
         return row["share_token"] if row else token
 
+    def delete_report_snapshot(self, snapshot_id: int) -> bool:
+        self.conn.execute("DELETE FROM report_snapshots WHERE id = ?", (snapshot_id,))
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
+    def delete_all_report_snapshots(self, customer_id: str, report_type: str = "weekly") -> int:
+        cur = self.conn.execute(
+            "DELETE FROM report_snapshots WHERE customer_id = ? AND report_type = ?",
+            (customer_id, report_type),
+        )
+        self.conn.commit()
+        return cur.rowcount
+
     def get_report_by_token(self, token: str) -> dict | None:
         """Look up a single snapshot by its share token (public, unguessable link)."""
         if not token:

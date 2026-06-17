@@ -548,6 +548,30 @@ def weekly_report_view(customer_id):
         db.close()
 
 
+@app.route("/report/<customer_id>/snapshot/<int:snapshot_id>/delete", methods=["POST"])
+@login_required
+def delete_report_snapshot(customer_id, snapshot_id):
+    db = get_db()
+    try:
+        db.delete_report_snapshot(snapshot_id)
+        audit_log("report_snapshot_deleted", customer_id=customer_id, details=str(snapshot_id))
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/report/<customer_id>/delete-all", methods=["POST"])
+@login_required
+def delete_all_reports(customer_id):
+    db = get_db()
+    try:
+        n = db.delete_all_report_snapshots(customer_id, "weekly")
+        audit_log("report_history_cleared", customer_id=customer_id, details=f"{n} snapshots")
+        return jsonify({"ok": True, "deleted": n})
+    finally:
+        db.close()
+
+
 @app.route("/r/<token>")
 def public_report(token):
     """Public, login-free customer link. Security model: the token is an

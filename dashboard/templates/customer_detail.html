@@ -2106,19 +2106,27 @@
         </div>
 
         <!-- History -->
-        <h3 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:1.4rem 0 0.5rem;">Report history</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:1.4rem 0 0.5rem;">
+            <h3 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0;">Report history</h3>
+            {% if report_history %}
+            <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteAllReports('{{ customer.id }}')">Clear all history</button>
+            {% endif %}
+        </div>
         {% if report_history %}
-        <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
+        <table style="width:100%;font-size:0.85rem;border-collapse:collapse;" id="report-history-table">
             <tr style="text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase;">
                 <th style="padding:0.4rem 0.5rem;">Week ending</th><th>Score</th><th>Generated</th><th>Emailed</th><th></th>
             </tr>
             {% for snap in report_history %}
-            <tr style="border-top:1px solid var(--border);">
+            <tr style="border-top:1px solid var(--border);" id="report-row-{{ snap.id }}">
                 <td style="padding:0.45rem 0.5rem;">{{ snap.period_end }}</td>
                 <td><b>{{ snap.score }}</b></td>
                 <td style="color:var(--muted);">{{ snap.created_at[:10] }}</td>
                 <td style="color:var(--muted);">{{ 'Yes' if snap.emailed_at else '—' }}</td>
-                <td style="text-align:right;"><a class="btn btn-outline btn-sm" href="{{ url_for('public_report', token=snap.share_token) }}" target="_blank">View</a></td>
+                <td style="text-align:right;white-space:nowrap;">
+                    <a class="btn btn-outline btn-sm" href="{{ url_for('public_report', token=snap.share_token) }}" target="_blank">View</a>
+                    <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteReport('{{ customer.id }}', {{ snap.id }})">Delete</button>
+                </td>
             </tr>
             {% endfor %}
         </table>
@@ -4239,6 +4247,23 @@ function copyShareLink(btn) {
     navigator.clipboard.writeText(input.value).then(() => {
         const t = btn.textContent; btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = t, 1500);
+    });
+}
+function deleteReport(customerId, snapshotId) {
+    if (!confirm('Delete this weekly report snapshot?')) return;
+    fetch('/report/' + customerId + '/snapshot/' + snapshotId + '/delete', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { const row = document.getElementById('report-row-' + snapshotId); if (row) row.remove(); }
+        else alert('Delete failed');
+    });
+}
+function deleteAllReports(customerId) {
+    if (!confirm('Delete ALL weekly report history for this customer? This cannot be undone.')) return;
+    fetch('/report/' + customerId + '/delete-all', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(r => r.json()).then(d => {
+        if (d.ok) location.reload(); else alert('Delete failed');
     });
 }
 
