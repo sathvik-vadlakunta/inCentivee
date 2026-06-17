@@ -516,8 +516,53 @@ def customer_detail(customer_id):
             topic_clusters=topic_clusters,
             ai_readiness=ai_readiness,
             landing_reports=landing_reports,
+            weekly_snapshot=db.get_latest_report_snapshot(customer_id, "weekly"),
             customer_activities=db.get_customer_activities(customer_id, limit=100),
         )
+    finally:
+        db.close()
+
+
+# --- Weekly customer report (R0) ---
+
+@app.route("/report/<customer_id>/weekly")
+@login_required
+def weekly_report_view(customer_id):
+    """Serve the latest weekly report, or regenerate on demand with ?refresh=1."""
+    from geo_agent import weekly_report as wr
+    db = get_db()
+    try:
+        if request.args.get("refresh"):
+            result = wr.generate_and_store(db, customer_id)
+            return Response(result["html"], mimetype="text/html")
+        snap = db.get_latest_report_snapshot(customer_id, "weekly")
+        if snap and snap.get("html"):
+            return Response(snap["html"], mimetype="text/html")
+        # No snapshot yet — build the first one now.
+        result = wr.generate_and_store(db, customer_id)
+        return Response(result["html"], mimetype="text/html")
+    finally:
+        db.close()
+
+
+@app.route("/r/<token>")
+def public_report(token):
+    """Public, login-free customer link. Security model: the token is an
+    unguessable 24-byte URL-safe random string that maps to exactly ONE report
+    snapshot. There are no customer IDs in the URL and no listing/enumeration
+    endpoint, so a link cannot be altered to reach another practice's report —
+    knowing one token reveals nothing about any other. Revoke by regenerating
+    (which we don't, to keep links stable) or by deleting the snapshot row."""
+    db = get_db()
+    try:
+        snap = db.get_report_by_token(token)
+        if not snap or not snap.get("html"):
+            abort(404)
+        # Don't let browsers/proxies cache a customer's report at a shared CDN.
+        resp = Response(snap["html"], mimetype="text/html")
+        resp.headers["Cache-Control"] = "private, no-store"
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return resp
     finally:
         db.close()
 
@@ -877,6 +922,7 @@ def update_status(customer_id):
 @app.route("/customer/<customer_id>/approve", methods=["POST"])
 @login_required
 def approve_staging(customer_id):
+    ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     staging = get_staging()
     db = get_db()
     try:
@@ -886,8 +932,12 @@ def approve_staging(customer_id):
             if latest_run and latest_run["status"] == "staged":
                 db.approve_run(latest_run["id"])
             audit_log("staging_approved", customer_id=customer_id)
+            if ajax:
+                return jsonify({"ok": True, "message": "Changes approved!"})
             flash("Changes approved!", "success")
         else:
+            if ajax:
+                return jsonify({"ok": False, "error": "No staged changes to approve."})
             flash("No staged changes to approve.", "error")
     finally:
         db.close()
@@ -1021,10 +1071,13 @@ def _publish_to_webflow(customer_id: str, db, staging) -> list[str]:
 @login_required
 def publish_staging(customer_id):
     """Publish approved staged changes — auto-push to Webflow if OAuth connected."""
+    ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     staging = get_staging()
     db = get_db()
     try:
         if not staging.is_approved(customer_id):
+            if ajax:
+                return jsonify({"ok": False, "error": "Changes must be approved before publishing."})
             flash("Changes must be approved before publishing.", "error")
             return redirect(url_for("customer_detail", customer_id=customer_id))
 
@@ -1059,13 +1112,19 @@ def publish_staging(customer_id):
             msg = f"Published {len(published)} files. {' '.join(all_warnings)}"
             if verification:
                 msg += f" Verification: {verification}"
+            if ajax:
+                return jsonify({"ok": True, "message": msg, "warning": True})
             flash(msg, "warning")
         else:
             msg = f"Published {len(published)} files."
             if verification:
                 msg += f" {verification}"
+            if ajax:
+                return jsonify({"ok": True, "message": msg})
             flash(msg, "success")
     except Exception as e:
+        if ajax:
+            return jsonify({"ok": False, "error": f"Publish failed: {e}"})
         flash(f"Publish failed: {e}", "error")
     finally:
         db.close()
@@ -6434,7 +6493,7 @@ def api_get_integrations(customer_id):
         integrations = db.get_integrations(customer_id)
         # Fill in defaults for unconfigured integrations
         configured = {i["integration"] for i in integrations}
-        defaults = ["gsc", "google_places", "pagespeed"]
+        defaults = ["gsc", "google_places", "pagespeed", "ga4", "brightlocal"]
         for name in defaults:
             if name not in configured:
                 integrations.append({
@@ -6510,6 +6569,21 @@ def api_test_integration(customer_id, integration):
                     return jsonify({"ok": False, "error": "GSC query failed — check that the service account has access to this property"})
             except ImportError:
                 return jsonify({"ok": False, "error": "google-api-python-client not installed on server"})
+        elif integration == "ga4":
+            from geo_agent.ga4_client import test_connection as ga4_test
+            return jsonify(ga4_test(db, customer_id))
+        elif integration == "brightlocal":
+            import os as _os
+            if not _os.environ.get("BRIGHTLOCAL_API_KEY"):
+                return jsonify({"ok": False, "error": "BRIGHTLOCAL_API_KEY not set on server."})
+            if not integ["config"].get("location_id"):
+                return jsonify({"ok": False, "error": "No BrightLocal location_id configured for this customer."})
+            from geo_agent.brightlocal_client import track_citations
+            n = track_citations(db, customer_id)
+            if n is None:
+                return jsonify({"ok": False, "error": "BrightLocal request failed — check API key and location_id."})
+            db.update_integration_status(customer_id, integration, "active")
+            return jsonify({"ok": True, "message": f"Connected! Synced {n} citation(s)."})
         elif integration == "pagespeed":
             # PageSpeed always works (free, no key)
             db.update_integration_status(customer_id, integration, "active")

@@ -21,7 +21,7 @@ from geo_agent.config import Customer, Provider
 
 logger = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 # Generic mail hosts that must never be used to route email by domain (a customer
 # website domain matching one of these would mis-file unrelated mail).
@@ -752,6 +752,72 @@ class CustomerDB:
             CREATE INDEX IF NOT EXISTS idx_activities_prospect ON prospect_activities(prospect_id);
             CREATE INDEX IF NOT EXISTS idx_activities_type ON prospect_activities(activity_type);
         """)
+
+        # Migration v8 → v9: Weekly customer report + supporting trackers
+        # (see docs/requirements.md → Reporting & Data-Completeness Requirements)
+        self.conn.executescript("""
+            -- R0: rendered weekly/monthly report snapshots
+            CREATE TABLE IF NOT EXISTS report_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                report_type TEXT NOT NULL DEFAULT 'weekly',
+                period_start TEXT NOT NULL,
+                period_end TEXT NOT NULL,
+                score INTEGER NOT NULL DEFAULT 0,
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                html TEXT NOT NULL DEFAULT '',
+                share_token TEXT NOT NULL DEFAULT '',
+                emailed_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                UNIQUE(customer_id, report_type, period_end)
+            );
+            CREATE INDEX IF NOT EXISTS idx_report_snapshots ON report_snapshots(customer_id, report_type, period_end);
+            CREATE INDEX IF NOT EXISTS idx_report_share_token ON report_snapshots(share_token);
+
+            -- R1: query-dimension GSC data (powers top keywords + movers)
+            CREATE TABLE IF NOT EXISTS gsc_query_daily (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                query TEXT NOT NULL,
+                clicks INTEGER NOT NULL DEFAULT 0,
+                impressions INTEGER NOT NULL DEFAULT 0,
+                ctr REAL NOT NULL DEFAULT 0.0,
+                position REAL NOT NULL DEFAULT 0.0,
+                UNIQUE(customer_id, date, query)
+            );
+            CREATE INDEX IF NOT EXISTS idx_gsc_query_daily ON gsc_query_daily(customer_id, date);
+
+            -- R2: competitor rating/review history (powers gap trend)
+            CREATE TABLE IF NOT EXISTS competitor_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                competitor_id INTEGER NOT NULL REFERENCES competitors(id),
+                customer_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                rating REAL NOT NULL DEFAULT 0.0,
+                review_count INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(competitor_id, date)
+            );
+            CREATE INDEX IF NOT EXISTS idx_competitor_snapshots ON competitor_snapshots(customer_id, date);
+
+            -- R3: conversion events (calls/forms) from GA4
+            CREATE TABLE IF NOT EXISTS conversions_daily (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                event_name TEXT NOT NULL,
+                channel TEXT NOT NULL DEFAULT 'organic',
+                count INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(customer_id, date, event_name, channel)
+            );
+            CREATE INDEX IF NOT EXISTS idx_conversions_daily ON conversions_daily(customer_id, date);
+        """)
+
+        # share_token may be missing on report_snapshots created before it was added.
+        rs_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(report_snapshots)").fetchall()]
+        if "share_token" not in rs_cols:
+            self.conn.execute("ALTER TABLE report_snapshots ADD COLUMN share_token TEXT NOT NULL DEFAULT ''")
+            self.conn.execute("CREATE INDEX IF NOT EXISTS idx_report_share_token ON report_snapshots(share_token)")
 
         self.conn.execute(
             "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
@@ -3021,6 +3087,196 @@ class CustomerDB:
             ORDER BY ps.overall_score DESC
         """)
         return [dict(r) for r in cur.fetchall()]
+
+    # --- Weekly report snapshots (R0) ---
+
+    def save_report_snapshot(
+        self, customer_id: str, report_type: str, period_start: str,
+        period_end: str, score: int, payload_json: str, html: str,
+    ) -> str:
+        """Persist a rendered report so it can be re-served (dashboard + share link).
+
+        Mints an unguessable share_token on first insert and keeps it stable across
+        regenerations of the same period, so a link given to a customer never breaks.
+        Returns the share_token.
+        """
+        token = secrets.token_urlsafe(24)
+        # ON CONFLICT deliberately does NOT touch share_token — it stays stable.
+        self.conn.execute(
+            """INSERT INTO report_snapshots
+               (customer_id, report_type, period_start, period_end, score, payload_json, html, share_token)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(customer_id, report_type, period_end) DO UPDATE SET
+                 period_start=excluded.period_start, score=excluded.score,
+                 payload_json=excluded.payload_json, html=excluded.html,
+                 created_at=strftime('%Y-%m-%dT%H:%M:%SZ','now')""",
+            (customer_id, report_type, period_start, period_end, score, payload_json, html, token),
+        )
+        self.conn.commit()
+        row = self.conn.execute(
+            "SELECT share_token FROM report_snapshots WHERE customer_id = ? AND report_type = ? AND period_end = ?",
+            (customer_id, report_type, period_end),
+        ).fetchone()
+        return row["share_token"] if row else token
+
+    def get_report_by_token(self, token: str) -> dict | None:
+        """Look up a single snapshot by its share token (public, unguessable link)."""
+        if not token:
+            return None
+        cur = self.conn.execute(
+            "SELECT * FROM report_snapshots WHERE share_token = ? LIMIT 1", (token,)
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def mark_report_emailed(self, customer_id: str, report_type: str, period_end: str) -> None:
+        self.conn.execute(
+            "UPDATE report_snapshots SET emailed_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') "
+            "WHERE customer_id = ? AND report_type = ? AND period_end = ?",
+            (customer_id, report_type, period_end),
+        )
+        self.conn.commit()
+
+    def get_latest_report_snapshot(self, customer_id: str, report_type: str = "weekly") -> dict | None:
+        cur = self.conn.execute(
+            "SELECT * FROM report_snapshots WHERE customer_id = ? AND report_type = ? "
+            "ORDER BY period_end DESC LIMIT 1",
+            (customer_id, report_type),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def get_report_snapshots(self, customer_id: str, report_type: str = "weekly", limit: int = 26) -> list[dict]:
+        cur = self.conn.execute(
+            "SELECT id, report_type, period_start, period_end, score, emailed_at, created_at "
+            "FROM report_snapshots WHERE customer_id = ? AND report_type = ? "
+            "ORDER BY period_end DESC LIMIT ?",
+            (customer_id, report_type, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- GSC query-level data (R1) ---
+
+    def save_gsc_query_daily(self, customer_id: str, date: str, rows: list[dict]) -> int:
+        """Upsert query-dimension GSC rows for one day. rows: query/clicks/impressions/ctr/position."""
+        self.conn.executemany(
+            """INSERT INTO gsc_query_daily (customer_id, date, query, clicks, impressions, ctr, position)
+               VALUES (?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(customer_id, date, query) DO UPDATE SET
+                 clicks=excluded.clicks, impressions=excluded.impressions,
+                 ctr=excluded.ctr, position=excluded.position""",
+            [(customer_id, date, r["query"], int(r.get("clicks", 0)),
+              int(r.get("impressions", 0)), float(r.get("ctr", 0.0)),
+              float(r.get("position", 0.0))) for r in rows],
+        )
+        self.conn.commit()
+        return len(rows)
+
+    def get_top_queries(self, customer_id: str, start: str, end: str, limit: int = 10) -> list[dict]:
+        """Top queries by clicks in [start, end], with impression-weighted avg position."""
+        cur = self.conn.execute(
+            """SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions,
+                      CASE WHEN SUM(impressions) > 0
+                           THEN SUM(position * impressions) / SUM(impressions)
+                           ELSE AVG(position) END AS position
+               FROM gsc_query_daily
+               WHERE customer_id = ? AND date >= ? AND date <= ?
+               GROUP BY query ORDER BY clicks DESC LIMIT ?""",
+            (customer_id, start, end, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def get_query_movers(self, customer_id: str, cur_start: str, cur_end: str,
+                         prev_start: str, prev_end: str, limit: int = 5) -> dict:
+        """Compare avg position this period vs prior; return biggest improvers/decliners."""
+        def avg_positions(s, e):
+            cur = self.conn.execute(
+                """SELECT query,
+                          CASE WHEN SUM(impressions) > 0
+                               THEN SUM(position * impressions) / SUM(impressions)
+                               ELSE AVG(position) END AS position,
+                          SUM(clicks) AS clicks
+                   FROM gsc_query_daily WHERE customer_id = ? AND date >= ? AND date <= ?
+                   GROUP BY query""",
+                (customer_id, s, e),
+            )
+            return {r["query"]: dict(r) for r in cur.fetchall()}
+
+        now, prev = avg_positions(cur_start, cur_end), avg_positions(prev_start, prev_end)
+        moves = []
+        for q, c in now.items():
+            if q in prev and prev[q]["position"] and c["position"]:
+                # lower position number = better; positive move = improvement
+                delta = round(prev[q]["position"] - c["position"], 1)
+                if abs(delta) >= 0.3:
+                    moves.append({"query": q, "position": round(c["position"], 1),
+                                  "move": delta, "clicks": c["clicks"]})
+        moves.sort(key=lambda m: m["move"], reverse=True)
+        return {"up": moves[:limit], "down": [m for m in reversed(moves) if m["move"] < 0][:limit]}
+
+    # --- Competitor snapshots (R2) ---
+
+    def save_competitor_snapshot(self, competitor_id: int, customer_id: str, date: str,
+                                 rating: float, review_count: int) -> None:
+        self.conn.execute(
+            """INSERT INTO competitor_snapshots (competitor_id, customer_id, date, rating, review_count)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(competitor_id, date) DO UPDATE SET
+                 rating=excluded.rating, review_count=excluded.review_count""",
+            (competitor_id, customer_id, date, rating, review_count),
+        )
+        self.conn.commit()
+
+    def get_competitor_review_gap(self, customer_id: str, own_review_count: int) -> dict | None:
+        """Gap vs the top competitor (by current review_count) + week-over-week gap change."""
+        comps = self.get_competitors(customer_id)
+        if not comps:
+            return None
+        top = max(comps, key=lambda c: c.get("review_count", 0))
+        gap_now = own_review_count - top.get("review_count", 0)
+        # prior-week gap from snapshots, if any
+        prev_gap = None
+        if top.get("id"):
+            cur = self.conn.execute(
+                "SELECT review_count FROM competitor_snapshots WHERE competitor_id = ? "
+                "AND date <= date('now', '-7 day') ORDER BY date DESC LIMIT 1",
+                (top["id"],),
+            )
+            row = cur.fetchone()
+            if row is not None:
+                prev_gap = own_review_count - row["review_count"]
+        return {
+            "competitor": top.get("name", "nearest competitor"),
+            "competitor_reviews": top.get("review_count", 0),
+            "gap": gap_now,
+            "gap_delta": (gap_now - prev_gap) if prev_gap is not None else None,
+        }
+
+    # --- Conversions (R3) ---
+
+    def record_conversion(self, customer_id: str, date: str, event_name: str,
+                          channel: str, count: int) -> None:
+        self.conn.execute(
+            """INSERT INTO conversions_daily (customer_id, date, event_name, channel, count)
+               VALUES (?, ?, ?, ?, ?)
+               ON CONFLICT(customer_id, date, event_name, channel) DO UPDATE SET
+                 count=excluded.count""",
+            (customer_id, date, event_name, channel, count),
+        )
+        self.conn.commit()
+
+    def get_conversions(self, customer_id: str, start: str, end: str,
+                        channel: str | None = None) -> dict:
+        """Totals per event_name in [start, end]. Returns {event_name: count}."""
+        q = ("SELECT event_name, SUM(count) AS total FROM conversions_daily "
+             "WHERE customer_id = ? AND date >= ? AND date <= ?")
+        params = [customer_id, start, end]
+        if channel:
+            q += " AND channel = ?"
+            params.append(channel)
+        q += " GROUP BY event_name"
+        cur = self.conn.execute(q, params)
+        return {r["event_name"]: r["total"] for r in cur.fetchall()}
 
     # --- Prospects / Sales Pipeline ---
 

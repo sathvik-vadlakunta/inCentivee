@@ -29,10 +29,16 @@ To get started, we need access to a few key platforms. Here's what we need and h
    - Email: **kdoherty@practicerank.ai**
    - Permission level: **Full**
 
-2. **Google Analytics** — Add kdoherty@practicerank.ai as an Editor
-   - Go to Admin > Account Access Management > Add user
+2. **Google Analytics 4** — Add kdoherty@practicerank.ai + send us your Property ID
+   - Go to Admin > Property Access Management > Add user
+   - Email: **kdoherty@practicerank.ai** — Role: **Editor** (or Viewer)
+   - **Also send us your numeric GA4 Property ID**: Admin > Property Settings (a 9-digit number like `123456789` — *not* the `G-XXXXXXX` measurement ID). We need this to report your real visitor and lead (call/form) numbers.
 
-3. **Google Business Profile** — Add kdoherty@practicerank.ai as a Manager
+3. **Google Tag Manager** — Add kdoherty@practicerank.ai with Publish access
+   - Go to Admin > User Management > Add user (Container permission: **Publish**)
+   - This lets us set up **lead tracking** — phone-call clicks and contact-form submissions — so your reports show actual patient leads, not just traffic. If you already track these in GA4, just tell us the event names.
+
+4. **Google Business Profile** — Add kdoherty@practicerank.ai as a Manager
    - Go to your Business Profile > People and access > Add
 
 **Website Platform Access ({cms_platform}):**

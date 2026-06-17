@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PracticeRank — Weekly Customer Report Spec</title>
+<style>
+  :root{
+    --maroon:#7a1f2b; --ink:#1a1a2e; --muted:#62707f; --line:#e6e8ec;
+    --bg:#f4f5f7; --card:#ffffff; --brand:#08080d; --accent:#16a34a;
+    --good:#16a34a; --good-bg:#e8f5ec; --warn:#d97706; --bad:#dc2626;
+    --radius:14px; --shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+  h1,h2,h3{line-height:1.2;margin:0}
+  h1{font-size:30px;letter-spacing:-.02em}
+  h2{font-size:21px;margin:36px 0 12px;letter-spacing:-.01em}
+  h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+  p{margin:10px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+  a{color:var(--accent);text-decoration:none}
+  .lead{color:var(--muted);font-size:16px;max-width:62ch}
+  .pill{display:inline-block;background:var(--maroon);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px 30px;box-shadow:var(--shadow);margin-bottom:26px}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .t-real{background:var(--good-bg);color:var(--good)}
+  .t-partial{background:#fdf3e3;color:var(--warn)}
+  .t-todo{background:#fdeaea;color:var(--bad)}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+  /* ===== Rendered report mockup ===== */
+  .report{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+  .r-head{background:var(--brand);color:#fff;padding:26px 30px}
+  .r-head .brand{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#4ade80}
+  .r-head h2{color:#fff;margin:6px 0 2px;font-size:24px}
+  .r-head .sub{opacity:.85;font-size:14px}
+  .r-body{padding:8px 30px 30px}
+  .r-sec{padding:22px 0;border-bottom:1px solid var(--line)}
+  .r-sec:last-child{border-bottom:0}
+  .r-sec h3{color:var(--brand);font-size:13px}
+  .summary{background:var(--good-bg);border:1px solid #c7e7d1;border-radius:12px;padding:18px 20px;margin:18px 0}
+  .summary p{margin:0;font-size:15.5px;color:#14532d}
+  .score-row{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .score-badge{width:104px;height:104px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
+  .score-badge b{font-size:34px;line-height:1}
+  .score-badge span{font-size:12px;opacity:.9}
+  .pillars{flex:1;min-width:260px}
+  .pillar{margin:7px 0}
+  .pillar .lbl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}
+  .bar{height:8px;background:#eef1f4;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px}
+  @media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .kpi .v{font-size:22px;font-weight:700}
+  .kpi .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .delta{font-size:12.5px;font-weight:600;margin-top:3px}
+  .up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--muted)}
+  .engines{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+  .chip{font-size:12px;background:#eef4f8;border:1px solid #d7e6ef;color:var(--brand);padding:4px 10px;border-radius:99px}
+  .chip.miss{background:#f6f7f8;color:var(--muted);border-color:var(--line)}
+  .wins li{margin:7px 0}
+  .r-foot{background:#f8fafc;padding:20px 30px;font-size:13px;color:var(--muted);text-align:center}
+  .mini{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="pill">SPEC · PLATFORM</span>
+  <h1 style="margin-top:14px">Weekly Customer Progress Report</h1>
+  <p class="lead">How PracticeRank produces and delivers a weekly client-facing report that shows SEO progress, keyword movement, visitor counts, AI search visibility, and wins — built entirely on data we already collect. This file is both the spec and a rendered mockup of the deliverable (scroll down).</p>
+  <p class="mini">Owner: Kody · Status: Draft v1 · Last updated 2026-06-17 · Lives in <code>specs/platform/</code></p>
+
+  <!-- ===================== PART 1: SPEC ===================== -->
+  <div class="doc">
+    <h2 style="margin-top:0">1. Goal &amp; principles</h2>
+    <p>Give every customer a recurring, branded touchpoint that proves we're moving the needle — without drowning them in metrics. Research is consistent on what makes client SEO reports work, and we follow it:</p>
+    <ul>
+      <li><b>Lead with the "wow," then the proof.</b> Open with a plain-English executive summary (the trailer), then the supporting KPIs, then the behind-the-scenes work. Founders care about progress toward goals, not raw numbers.</li>
+      <li><b>Explain <i>why</i> numbers moved.</b> Never just restate metrics — tie each change to a specific action we took or an external cause.</li>
+      <li><b>Avoid information overload.</b> The #1 reporting mistake is too many metrics. Core report stays scannable in &lt;2 minutes; deep data is linked, not inlined.</li>
+      <li><b>Show trend, not just snapshot.</b> Week-over-week deltas plus a rolling trend tell a far more convincing story than a single number.</li>
+      <li><b>Always close with next steps.</b> What we did, what's coming, and any decision we need from them.</li>
+      <li><b>One composite score for at-a-glance progress.</b> Our <b>PracticeRank Score (0–100)</b> is our "search visibility score" — the single number a client tracks over time.</li>
+    </ul>
+    <p class="mini">Sources: <a href="https://www.tapclicks.com/blog/seo-reporting-best-practices">TapClicks</a> · <a href="https://reportr.agency/blog/weekly-seo-report-guide">Reportr (weekly)</a> · <a href="https://www.earlyseo.com/blogs/seo-reporting-for-clients-template">EarlySEO</a> · <a href="https://nightwatch.io/blog/monthly-seo-report-template/">Nightwatch</a> · <a href="https://seosherpa.com/seo-client-report/">SEO Sherpa</a> · <a href="https://agencyanalytics.com/report-templates/local-seo-report">AgencyAnalytics (Local SEO)</a></p>
+
+    <div class="note" style="margin-top:16px">
+      <b>Cadence reality check.</b> SEO data moves slowly — most agencies report monthly with a live dashboard, because week-over-week organic numbers are noisy. Recommendation: <b>send the weekly report, but frame it as "activity + early signal," and keep the heavyweight analysis (rankings story, competitor gap, ROI) in the monthly report (<code>04-monthly-report.md</code>).</b> Smooth noisy metrics (AI mention rate) with a rolling 4-week average, which the scoring already does.
+    </div>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">2. Report structure</h2>
+    <p>Ten sections, in narrative order. Sections 6 (Leads) and 8 (Local listings) depend on the R3/R4 integrations below and render only when connected.</p>
+    <table>
+      <tr><th>#</th><th>Section</th><th>Purpose / contents</th></tr>
+      <tr><td>1</td><td><b>Executive summary</b></td><td>2–3 sentences in plain English: the week's single biggest win + headline number. AI-generated from the deltas.</td></tr>
+      <tr><td>2</td><td><b>PracticeRank Score</b></td><td>0–100 composite + grade, with week-over-week change and the 5 pillar sub-scores as bars. The "track this over time" number.</td></tr>
+      <tr><td>3</td><td><b>Search performance</b></td><td>Clicks, impressions, avg position, CTR — this week vs last (GSC). The visitor-count story.</td></tr>
+      <tr><td>4</td><td><b>Keywords</b></td><td>Top performing keywords table + movers (up/down by position). Where the traffic comes from.</td></tr>
+      <tr><td>5</td><td><b>AI search visibility</b></td><td>Our differentiator. Mention rate %, avg position in AI answers, per-engine breadth (ChatGPT/Claude/Perplexity/Google AIO/Bing). + llms.txt bot hits.</td></tr>
+      <tr><td>6</td><td><b>Leads</b> <span class="tag t-partial">R3</span></td><td>Calls + form submits + appointment requests from organic (GA4). The metric closest to revenue. Hidden until GA4 conversions configured.</td></tr>
+      <tr><td>7</td><td><b>Reviews &amp; reputation</b></td><td>Google rating + review count, week's new reviews, sentiment, gap vs nearest competitor <b>+ gap trend</b> (R2).</td></tr>
+      <tr><td>8</td><td><b>Local listings health</b> <span class="tag t-partial">R4</span></td><td>NAP consistency score + directories with issues (BrightLocal). Hidden until connected.</td></tr>
+      <tr><td>9</td><td><b>What we did (wins)</b></td><td>Published content, schema/llms.txt changes, resolved technical issues, alerts handled. Pulled from run history + content_recommendations.</td></tr>
+      <tr><td>10</td><td><b>What's next</b></td><td>Planned actions + any decision/asset we need from the client.</td></tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">3. Data mapping — what's real today</h2>
+    <p>Every field below comes from our existing stack. Tags mark what's wired vs. needs work, so we ship v1 with real data and degrade gracefully on the rest.</p>
+    <table>
+      <tr><th>Report field</th><th>Source</th><th>Status</th></tr>
+      <tr><td>PracticeRank Score + 5 pillars</td><td><code>geo_agent/practicerank_score.py</code> · <code>compute_practicerank_score()</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Clicks / impressions / position / CTR</td><td><code>gsc_daily</code> table (<code>gsc_client.py</code>)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>AI mention rate · avg position · per-engine</td><td><code>ai_mention_runs.engines_json</code> (4-wk rolling avg)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>llms.txt hits (total + per agent)</td><td><code>kpis</code> table via <code>kpi_tracker.py</code> (Cloudflare)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Google rating &amp; review count</td><td><code>google_places</code> table</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Review sentiment &amp; new reviews</td><td><code>reviews</code> table (sentiment, themes)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Published content / schema changes (wins)</td><td><code>content_recommendations</code> + <code>runs</code>/<code>run_steps</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Alerts handled</td><td><code>alerts</code> table</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Top keywords &amp; movers</td><td>New <code>gsc_query_daily</code> table — query-dimension GSC ingest</td><td><span class="tag t-partial">SPEC'D · R1</span></td></tr>
+      <tr><td>Competitor review-gap trend</td><td>New <code>competitor_snapshots</code> table — weekly Places refresh + history</td><td><span class="tag t-partial">SPEC'D · R2</span></td></tr>
+      <tr><td>Conversions / leads (calls, forms)</td><td>GA4 Data API → new <code>conversions_daily</code> table</td><td><span class="tag t-partial">SPEC'D · R3</span></td></tr>
+      <tr><td>Citations / NAP consistency</td><td>BrightLocal API → new <code>citations</code> table</td><td><span class="tag t-partial">SPEC'D · R4</span></td></tr>
+    </table>
+    <p class="mini">v1 ships REAL fields immediately. The four <b>SPEC'D</b> rows are now fully specified in <code>docs/requirements.md → Reporting &amp; Data-Completeness Requirements</code> (R0–R4) with data models + acceptance criteria. Build order: R0 → R1 → R3 → R2 → R4. Every section degrades gracefully — hidden when its data isn't connected, never a broken/zero block.</p>
+    <div class="note" style="margin-top:16px">
+      <b>Implementation status (2026-06-17) — built &amp; tested.</b> Pipeline: <code>geo_agent/weekly_report.py</code> assembles real DB fields, computes deltas, renders this branded HTML, snapshots to <code>report_snapshots</code> (schema <b>v9</b>). Ingest jobs all wired: <b>R1</b> <code>gsc_client.track_gsc_queries</code> and <b>R2</b> <code>google_places.refresh_competitor_snapshots</code> are functional on existing Google credentials; <b>R3</b> <code>ga4_client</code> and <b>R4</b> <code>brightlocal_client</code> are scaffolded and skip cleanly until their account/credential is configured. <b>Cron:</b> <code>scripts/weekly_reports.py</code> (Mondays 8am) runs every ingest then snapshots — <b>customer email is OFF</b> (<code>EMAIL_CUSTOMERS=False</code>). <b>Access:</b> internal login-gated <code>GET /report/&lt;id&gt;/weekly</code> (<code>?refresh=1</code> regenerates) + UI buttons on the customer page. <b>Customer link:</b> public <code>GET /r/&lt;token&gt;</code> — a 24-byte unguessable token mapping to one snapshot only (no IDs in URL, not enumerable, <code>noindex</code>/<code>no-store</code>); "Copy Customer Link" lives in the customer page's Reports menu.</div>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">4. Generation &amp; delivery</h2>
+    <div class="grid2">
+      <div>
+        <h3>Pipeline</h3>
+        <ul>
+          <li>A weekly job (Hangfire/cron on the droplet) iterates active customers (<code>onboarding_step IN live/content/monitoring</code>).</li>
+          <li>Pull this-week vs prior-week windows from the DB; compute deltas + score.</li>
+          <li>Claude writes the executive summary + "why it moved" lines from the deltas (brand voice per customer).</li>
+          <li>Render the HTML (this template) → store snapshot → email + dashboard download.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Delivery</h3>
+        <ul>
+          <li><b>Email:</b> inlined-CSS HTML, same content as below. Existing markdown lives in <code>templates/emails/07-weekly-seo-update.md</code> — this HTML supersedes it as the rendered version.</li>
+          <li><b>Dashboard:</b> new route <code>/report/&lt;customer_id&gt;/weekly</code> serving the latest snapshot + history.</li>
+          <li><b>Schedule:</b> same weekday/time each week (e.g. Monday 8am local) for consistency.</li>
+        </ul>
+      </div>
+    </div>
+    <h3 style="margin-top:18px">Template variables</h3>
+    <p class="mini">Reuses the existing placeholder names from <code>07-weekly-seo-update.md</code>: <code>{practice_name} {report_week} {weekly_clicks} {weekly_clicks_delta} {weekly_impressions} {weekly_avg_position} {weekly_ctr} {top_keywords_table} {keyword_movers} {ai_mentions} {ai_visibility_rate} {practicerank_score} {practicerank_grade} {practicerank_delta} {quick_wins_summary} {weekly_activity_summary} {weekly_next_steps}</code> plus new: <code>{exec_summary} {pillar_*} {rating} {review_count} {new_reviews} {llms_hits} {engine_chips}</code>.</p>
+  </div>
+
+  <!-- ===================== PART 2: RENDERED MOCKUP ===================== -->
+  <h2>5. Rendered sample — what the customer receives</h2>
+  <p class="lead">Sample data for Hilltop Family Dental. Numbers are illustrative.</p>
+
+  <div class="report">
+    <div class="r-head">
+      <div class="brand">PracticeRank · Weekly Report</div>
+      <h2>Hilltop Family Dental</h2>
+      <div class="sub">Week of June 9–15, 2026 · prepared for Dr. David Gallup</div>
+    </div>
+    <div class="r-body">
+
+      <!-- 1. Exec summary -->
+      <div class="r-sec">
+        <h3>The headline</h3>
+        <div class="summary">
+          <p>📈 <b>Strong week.</b> You're now showing up in <b>ChatGPT and Perplexity</b> for "emergency dentist Casper" — a query you were invisible for a month ago. Organic clicks rose <b>+18%</b> and your PracticeRank Score climbed to <b>78 (B)</b>, up 4 points. Two new 5-star reviews came in.</p>
+        </div>
+      </div>
+
+      <!-- 2. Score -->
+      <div class="r-sec">
+        <h3>PracticeRank Score</h3>
+        <div class="score-row">
+          <div class="score-badge" style="background:#65a30d">
+            <b>78</b><span>Grade B</span>
+          </div>
+          <div class="pillars">
+            <div class="pillar"><div class="lbl"><span>AI Visibility <span class="mini">(30%)</span></span><span class="up">71 ▲6</span></div><div class="bar"><i style="width:71%;background:#65a30d"></i></div></div>
+            <div class="pillar"><div class="lbl"><span>Search Growth <span class="mini">(25%)</span></span><span class="up">82 ▲5</span></div><div class="bar"><i style="width:82%;background:#16a34a"></i></div></div>
+            <div class="pillar"><div class="lbl"><span>Technical Health <span class="mini">(15%)</span></span><span class="flat">88 –</span></div><div class="bar"><i style="width:88%;background:#16a34a"></i></div></div>
+            <div class="pillar"><div class="lbl"><span>Content Velocity <span class="mini">(15%)</span></span><span class="up">74 ▲8</span></div><div class="bar"><i style="width:74%;background:#65a30d"></i></div></div>
+            <div class="pillar"><div class="lbl"><span>Reputation <span class="mini">(15%)</span></span><span class="up">69 ▲2</span></div><div class="bar"><i style="width:69%;background:#d97706"></i></div></div>
+          </div>
+        </div>
+        <p class="mini" style="margin-top:12px">Score rose on AI Visibility (new engine mentions) and Content Velocity (2 posts published). Reputation is the biggest opportunity — see reviews below.</p>
+      </div>
+
+      <!-- 3. Search performance -->
+      <div class="r-sec">
+        <h3>Search performance · last 7 days</h3>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Clicks</div><div class="v">312</div><div class="delta up">▲ +18% (264)</div></div>
+          <div class="kpi"><div class="k">Impressions</div><div class="v">9,840</div><div class="delta up">▲ +11% (8,860)</div></div>
+          <div class="kpi"><div class="k">Avg position</div><div class="v">8.4</div><div class="delta up">▲ from 9.7</div></div>
+          <div class="kpi"><div class="k">CTR</div><div class="v">3.2%</div><div class="delta up">▲ +0.2pt</div></div>
+        </div>
+        <p class="mini" style="margin-top:12px">Why it moved: the new "Emergency Dental Care in Casper" page (published June 10) started ranking and pulled in most of the click lift.</p>
+      </div>
+
+      <!-- 4. Keywords -->
+      <div class="r-sec">
+        <h3>Keywords</h3>
+        <table>
+          <tr><th>Query</th><th>Clicks</th><th>Position</th><th>Move</th></tr>
+          <tr><td>dentist casper wy</td><td>74</td><td>4.1</td><td class="up">▲ 1.2</td></tr>
+          <tr><td>emergency dentist casper</td><td>41</td><td>6.8</td><td class="up">▲ 3.5</td></tr>
+          <tr><td>teeth whitening casper</td><td>33</td><td>5.2</td><td class="up">▲ 0.9</td></tr>
+          <tr><td>family dentist near me</td><td>28</td><td>11.4</td><td class="down">▼ 0.6</td></tr>
+          <tr><td>dental implants casper</td><td>19</td><td>9.0</td><td class="flat">– 0.1</td></tr>
+        </table>
+      </div>
+
+      <!-- 5. AI visibility -->
+      <div class="r-sec">
+        <h3>AI search visibility</h3>
+        <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+          <div class="kpi"><div class="k">Mention rate</div><div class="v">38%</div><div class="delta up">▲ from 24%</div></div>
+          <div class="kpi"><div class="k">Avg position in answer</div><div class="v">2.1</div><div class="delta up">▲ from 3.0</div></div>
+          <div class="kpi"><div class="k">llms.txt bot hits</div><div class="v">146</div><div class="delta up">▲ +52</div></div>
+        </div>
+        <p class="mini" style="margin:12px 0 6px">Engines now mentioning you for tracked questions:</p>
+        <div class="engines">
+          <span class="chip">✓ ChatGPT</span>
+          <span class="chip">✓ Perplexity</span>
+          <span class="chip">✓ Google AI Overviews</span>
+          <span class="chip miss">Claude — not yet</span>
+          <span class="chip miss">Bing Copilot — not yet</span>
+        </div>
+      </div>
+
+      <!-- 6. Leads (R3) -->
+      <div class="r-sec">
+        <h3>Leads this week <span class="mini" style="text-transform:none;letter-spacing:0">· from organic search</span></h3>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Phone calls</div><div class="v">23</div><div class="delta up">▲ +4</div></div>
+          <div class="kpi"><div class="k">Form submits</div><div class="v">11</div><div class="delta up">▲ +3</div></div>
+          <div class="kpi"><div class="k">Appt requests</div><div class="v">6</div><div class="delta flat">– 0</div></div>
+          <div class="kpi"><div class="k">Total leads</div><div class="v">40</div><div class="delta up">▲ +18%</div></div>
+        </div>
+        <p class="mini" style="margin-top:12px">This is the number that maps to revenue. Conversions tracked via GA4 events (<code>phone_click</code>, <code>form_submit</code>). Section hidden until GA4 conversions are configured.</p>
+      </div>
+
+      <!-- 7. Reviews -->
+      <div class="r-sec">
+        <h3>Reviews &amp; reputation</h3>
+        <div class="kpis">
+          <div class="kpi"><div class="k">Google rating</div><div class="v">4.7★</div><div class="delta flat">– no change</div></div>
+          <div class="kpi"><div class="k">Total reviews</div><div class="v">128</div><div class="delta up">▲ +2</div></div>
+          <div class="kpi"><div class="k">New this week</div><div class="v">2</div><div class="delta up">both 5★</div></div>
+          <div class="kpi"><div class="k">vs. top competitor</div><div class="v">−41</div><div class="delta down">behind on volume</div></div>
+        </div>
+        <p class="mini" style="margin-top:12px">Sentiment on new reviews: 100% positive (themes: "friendly staff", "painless"). <b>Gap trend:</b> nearest competitor has 169 reviews — gap narrowed from −43 to −41 this week (closing ~2/week via review-request automation).</p>
+      </div>
+
+      <!-- 8. Local listings (R4) -->
+      <div class="r-sec">
+        <h3>Local listings health</h3>
+        <div class="score-row">
+          <div class="score-badge" style="background:#65a30d;width:88px;height:88px"><b style="font-size:28px">92%</b><span>NAP consistent</span></div>
+          <div class="pillars">
+            <p style="margin:0 0 6px">11 of 12 key directories have a consistent Name / Address / Phone. <b>1 issue to fix:</b></p>
+            <ul style="margin:4px 0">
+              <li><b>Healthgrades</b> — old phone number (points to previous office line). Fix queued.</li>
+            </ul>
+            <div class="engines">
+              <span class="chip">✓ Google</span><span class="chip">✓ Apple Maps</span><span class="chip">✓ Bing</span><span class="chip">✓ Yelp</span><span class="chip">✓ Zocdoc</span><span class="chip miss">✗ Healthgrades</span>
+            </div>
+          </div>
+        </div>
+        <p class="mini" style="margin-top:12px">Citations &amp; NAP audited monthly via BrightLocal; weekly report shows the latest cached result. Section hidden until BrightLocal is connected.</p>
+      </div>
+
+      <!-- 9. Wins -->
+      <div class="r-sec">
+        <h3>What we did this week</h3>
+        <ul class="wins">
+          <li>✅ Published <b>"Emergency Dental Care in Casper"</b> service page (now ranking #6.8).</li>
+          <li>✅ Published blog post <b>"What to Do If You Chip a Tooth"</b> with FAQ schema.</li>
+          <li>✅ Updated <code>llms.txt</code> + provider Person schema for Dr. Gallup and Dr. Lee.</li>
+          <li>✅ Resolved a technical issue: added missing <code>LocalBusiness</code> schema on 3 pages.</li>
+          <li>✅ Sent 14 post-visit review requests → 2 new 5-star reviews.</li>
+        </ul>
+      </div>
+
+      <!-- 8. Next -->
+      <div class="r-sec">
+        <h3>What's next</h3>
+        <ul>
+          <li>→ Build a neighborhood landing page for <b>"dentist near East Casper"</b>.</li>
+          <li>→ Target Claude &amp; Bing Copilot visibility by expanding the FAQ content block.</li>
+          <li>→ Continue review automation to close the competitor volume gap.</li>
+          <li><b>We need from you:</b> 2–3 patient testimonials we can feature on the new emergency page.</li>
+        </ul>
+      </div>
+
+    </div>
+    <div class="r-foot">
+      Questions about any of these metrics? Just reply to this email.<br>
+      <b>Kody Doherty · PracticeRank</b> · practicerank.ai
+    </div>
+  </div>
+
+  <p class="mini" style="margin-top:24px">End of spec. Next step: wire a weekly job to render this template per active customer from the DB fields in §3, then add the <code>/report/&lt;customer_id&gt;/weekly</code> dashboard route.</p>
+
+</div>
+</body>
+</html>

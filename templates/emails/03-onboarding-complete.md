@@ -16,10 +16,12 @@ Great news — we have everything we need and {practice_name} is fully onboarded
 
 **What to expect:**
 - Within the first week, we'll have your schema markup and llms.txt files live.
-- You'll receive weekly updates showing your SEO and AI search progress.
+- You'll receive **weekly progress reports** showing your search performance, keyword movement, AI-search visibility, reviews, and — once Google Analytics is connected — your actual **patient leads** (calls and form submissions).
 - Before any visible changes are published, you'll get a review email to approve them.
 
-**No action needed from you right now.** We'll reach out when we have the first batch of changes ready for your review.
+**One quick thing that powers your lead reporting:** if you haven't already, send us your **GA4 Property ID** (Admin > Property Settings) and confirm `kdoherty@practicerank.ai` has access. That's what lets your reports show real call/form numbers.
+
+**Otherwise, no action needed right now.** We'll reach out when we have the first batch of changes ready for your review.
 
 Best,
 Kody Doherty

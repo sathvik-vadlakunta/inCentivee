@@ -381,3 +381,49 @@ def track_gsc_metrics(db, customer_id: str) -> dict | None:
         "avg_ctr": round(avg_ctr, 4),
         "daily": daily_data,
     }
+
+
+def track_gsc_queries(db, customer_id: str, days: int = 14) -> int | None:
+    """R1: Ingest query-dimension GSC data into ``gsc_query_daily``.
+
+    Pulls the last ``days`` of (date, query) rows so the weekly report can show
+    top keywords and week-over-week position movers. Upserts per day.
+
+    Returns the number of (date, query) rows written, or None on failure.
+    """
+    customer = db.get_customer(customer_id)
+    if not customer:
+        logger.warning(f"Customer not found: {customer_id}")
+        return None
+
+    service = _build_service()
+    if service is None:
+        return None
+
+    site_url = _resolve_site_url(service, customer["domain"])
+    if site_url is None:
+        return None
+
+    today = datetime.now(timezone.utc)
+    end_date = (today - timedelta(days=1)).strftime("%Y-%m-%d")  # GSC lags ~2-3d
+    start_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    rows = fetch_search_metrics(site_url, start_date, end_date, dimensions=["date", "query"])
+    if rows is None:
+        logger.warning(f"Failed to fetch GSC query data for {customer_id} ({site_url})")
+        return None
+    if not rows:
+        logger.info(f"No GSC query data for {customer_id} ({site_url})")
+        return 0
+
+    # Group rows by date, then upsert each day's queries.
+    by_date: dict[str, list[dict]] = {}
+    for r in rows:
+        by_date.setdefault(r["date"], []).append(r)
+
+    written = 0
+    for date, day_rows in by_date.items():
+        written += db.save_gsc_query_daily(customer_id, date, day_rows)
+
+    logger.info(f"GSC queries tracked for {customer_id}: {written} rows across {len(by_date)} days")
+    return written

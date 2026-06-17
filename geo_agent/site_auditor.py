@@ -7,6 +7,7 @@ to generate VA-friendly audit reports with fix instructions.
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timezone
 
 import httpx
@@ -22,11 +23,21 @@ def _run_pagespeed(domain: str, strategy: str = "mobile") -> dict | None:
     urls = [f"https://{domain}", f"https://www.{domain}"]
     if domain.startswith("www."):
         urls = [f"https://{domain}", f"https://{domain.removeprefix('www.')}"]
+    api_key = os.environ.get("PAGESPEED_API_KEY", "")
     data = None
     try:
         with httpx.Client(timeout=30.0) as client:
             for url in urls:
-                resp = client.get(_PSI_URL, params={"url": url, "strategy": strategy})
+                # PSI returns only the performance category unless others are
+                # requested explicitly — ask for all four so SEO/a11y scores populate.
+                params = {
+                    "url": url,
+                    "strategy": strategy,
+                    "category": ["PERFORMANCE", "ACCESSIBILITY", "SEO", "BEST_PRACTICES"],
+                }
+                if api_key:  # keyless quota is near-zero; a free key gives ~25k/day
+                    params["key"] = api_key
+                resp = client.get(_PSI_URL, params=params)
                 if resp.status_code == 200:
                     data = resp.json()
                     break
@@ -181,19 +192,37 @@ def _check_robots_txt(domain: str) -> list[dict]:
                     "fix_instruction": "Run the agent to generate robots.txt, then publish via Cloudflare Worker.",
                 })
             else:
-                text = resp.text.lower()
-                if "disallow: /" in text and "disallow: / " not in text:
-                    # Check if it's blocking everything
-                    for line in text.split("\n"):
-                        line = line.strip()
-                        if line == "disallow: /":
-                            issues.append({
-                                "category": "seo", "severity": "critical",
-                                "title": "robots.txt blocks all crawlers",
-                                "description": "robots.txt contains 'Disallow: /' which blocks search engines from indexing the site.",
-                                "fix_instruction": "This usually means the site is still in development mode. Update robots.txt to allow crawling.",
-                            })
-                            break
+                # Only flag "blocks all crawlers" when `Disallow: /` applies to the
+                # wildcard agent (User-agent: *). A `Disallow: /` under a specific bot
+                # (e.g. GPTBot, ClaudeBot, Google-Extended) is our INTENTIONAL
+                # training-bot block, not a site-wide block — don't false-positive on it.
+                current_agents: list[str] = []
+                prev_was_agent = False
+                blocks_all = False
+                for raw in resp.text.split("\n"):
+                    line = raw.split("#", 1)[0].strip()
+                    if not line:
+                        continue
+                    low = line.lower()
+                    if low.startswith("user-agent:"):
+                        if not prev_was_agent:
+                            current_agents = []
+                        current_agents.append(line.split(":", 1)[1].strip())
+                        prev_was_agent = True
+                    elif low.startswith(("disallow:", "allow:")):
+                        prev_was_agent = False
+                        if low.startswith("disallow:"):
+                            path = line.split(":", 1)[1].strip()
+                            if path == "/" and "*" in current_agents:
+                                blocks_all = True
+                                break
+                if blocks_all:
+                    issues.append({
+                        "category": "seo", "severity": "critical",
+                        "title": "robots.txt blocks all crawlers",
+                        "description": "robots.txt contains 'Disallow: /' under 'User-agent: *', which blocks search engines from indexing the site.",
+                        "fix_instruction": "This usually means the site is still in development mode. Update robots.txt to allow crawling.",
+                    })
     except Exception:
         pass
     return issues

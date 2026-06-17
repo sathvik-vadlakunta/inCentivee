@@ -604,3 +604,166 @@ dental-marketing/
 - [Firecrawl llms.txt Generator](https://llmstxt.firecrawl.dev/)
 - [Schema for AI Search](https://georaiser.com/blog/schema-markup-ai) — 22% citation lift
 - [Content Freshness in AI](https://thedigitalbloom.com/learn/2025-ai-citation-llm-visibility-report/) — 13-week window
+
+---
+
+# Reporting & Data-Completeness Requirements
+
+> Added 2026-06-17 to support the **Weekly Customer Progress Report** (`specs/platform/weekly-customer-report.html`). The report is fully specced and ~80% of its fields already have real data sources. This section closes the four remaining gaps so every report section is data-backed, and defines the report generation pipeline itself. Each requirement lists the data model (real column names), the integration, the computation, and acceptance criteria.
+>
+> **Status (2026-06-17):** R0–R4 are **implemented**.
+> - **R0** — `geo_agent/weekly_report.py` (builder + branded renderer + snapshot); dashboard route `GET /report/<customer_id>/weekly`; schema **v9** added `report_snapshots`, `gsc_query_daily`, `competitor_snapshots`, `conversions_daily`.
+> - **R1** — `gsc_client.track_gsc_queries()` ingests (date, query) rows → `gsc_query_daily`. **Functional** (uses the already-wired GSC service account).
+> - **R2** — `google_places.refresh_competitor_snapshots()` + `fetch_place_details()` → `competitor_snapshots`. **Functional** (uses the existing `GOOGLE_PLACES_API_KEY`).
+> - **R3** — `ga4_client.track_conversions()` → `conversions_daily`. **Production-hardened** (read-only scope, retry+backoff on transient gRPC errors, pagination, property-id validation, idempotent upserts, per-customer configurable events, graceful skip). `google-analytics-data>=0.18.0` added to `requirements.txt`. Connection test wired into the dashboard integrations panel (`/api/customer/<id>/integrations/ga4/test`). Unit tests: `tests/unit/test_ga4_client.py`. Setup runbook: **`docs/ga4-setup.md`**. Remaining ops step is operational, not code: create the SA, grant Viewer on each property, set the credential env var, and enter each customer's `property_id`.
+> - **R4** — `brightlocal_client.track_citations()` → `citations`. **Scaffolded**; needs `BRIGHTLOCAL_API_KEY` + a per-customer `brightlocal` integration with `location_id`. Skips cleanly until configured.
+> - **Cron** — `scripts/weekly_reports.py` runs all ingests then snapshots reports for active customers. `0 8 * * 1 docker exec practicerank-dashboard python3 /app/scripts/weekly_reports.py`. **Customer email is intentionally OFF** (`EMAIL_CUSTOMERS = False`).
+> - **Customer access** — internal login-gated view + a public, unguessable **share link** `GET /r/<token>` (24-byte `secrets.token_urlsafe`, one token → one snapshot, no IDs in URL, `noindex`/`no-store`). Reachable from the customer detail page → Reports → *Copy Customer Link*.
+>
+> Two tables pre-existed and are reused rather than recreated: **`citations`** (columns `listed`/`nap_match`/`url_correct` — R4 maps to these, not the `nap_status` enum originally drafted below) and **`keyword_ranks`** (per-keyword history for manually-tracked keywords; R1's `gsc_query_daily` complements it by capturing *all* top queries, not just tracked ones).
+
+## R0. Weekly Report Generation Pipeline
+
+**Objective:** Render the 10-section weekly report (per `specs/platform/weekly-customer-report.html`) for each active customer and deliver via email + dashboard. Sections 6 (Leads, R3) and 8 (Local listings, R4) render only when their integration is connected.
+
+**Cadence policy:** Send weekly, framed as *"activity + early signal."* The heavyweight rankings/competitor/ROI narrative stays in the **monthly** report (`templates/emails/04-monthly-report.md`). Smooth noisy metrics (AI mention rate) with the existing 4-week rolling average. SEO numbers move slowly week-over-week — set client expectations accordingly in the report copy.
+
+**Pipeline:**
+1. Weekly job (cron on the droplet) selects customers where `onboarding_step IN ('live','content','monitoring')`.
+2. Pull two windows — current 7 days vs prior 7 days — from the DB; compute deltas + `compute_practicerank_score()`.
+3. Claude writes `{exec_summary}` and the per-section "why it moved" lines from the deltas, in the customer's `brand_voice`.
+4. Render the HTML template → persist a snapshot row → email (inlined CSS) + dashboard download.
+
+**New table — `report_snapshots`:**
+```sql
+CREATE TABLE IF NOT EXISTS report_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id),
+    report_type TEXT NOT NULL DEFAULT 'weekly',  -- weekly/monthly
+    period_start TEXT NOT NULL,                   -- YYYY-MM-DD
+    period_end TEXT NOT NULL,
+    score INTEGER NOT NULL DEFAULT 0,
+    payload_json TEXT NOT NULL DEFAULT '{}',      -- all rendered field values
+    html TEXT NOT NULL DEFAULT '',                -- rendered snapshot for re-serving
+    emailed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    UNIQUE(customer_id, report_type, period_end)
+);
+```
+**Dashboard route:** `GET /report/<customer_id>/weekly` serves the latest snapshot + a history list.
+
+**Acceptance:** Running the job for a customer with data produces a `report_snapshots` row, an email, and a viewable dashboard page. Customers with no data for a section render that section hidden (graceful degradation), never a broken/zero block.
+
+## R1. Keyword-Level Search Data (fixes "Top keywords & movers")
+
+**Gap:** `gsc_daily_metrics` is site-level only (clicks/impressions/ctr/position by date). There is **no per-query data** and the `tracked_keywords` table referenced elsewhere does not exist. The report's keyword table and movers cannot be populated.
+
+**Objective:** Ingest GSC query-dimension data and compute weekly top keywords + week-over-week position movers.
+
+**Integration:** GSC Search Analytics API (`gsc_client.py`) — request with `dimensions=['query']` (and optionally `['query','page']`), `rowLimit` 1000, per day. GSC data lags ~2–3 days; always pull a trailing window and upsert.
+
+**New table — `gsc_query_daily`:**
+```sql
+CREATE TABLE IF NOT EXISTS gsc_query_daily (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    query TEXT NOT NULL,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    ctr REAL NOT NULL DEFAULT 0.0,
+    position REAL NOT NULL DEFAULT 0.0,
+    UNIQUE(customer_id, date, query)
+);
+```
+**Computation:**
+- *Top keywords (this week):* sum clicks per query over current 7 days, order desc, take top 5–10; weighted-avg position by impressions.
+- *Movers:* avg position per query current week vs prior week; surface largest improvements/declines; flag new entrants (no prior-week data) and lost queries.
+- This also feeds the Search Growth pillar's `keyword_momentum` sub-score (currently thin).
+
+**Acceptance:** For a customer with GSC connected, the weekly report shows ≥5 real queries with clicks/position/move, and at least the top mover is correct vs the raw GSC UI for a spot-checked week.
+
+## R2. Competitor Snapshot History (fixes "Competitor review-gap refresh")
+
+**Gap:** `competitors` stores a single current `rating`/`review_count` with no history, so the report can show a gap number but not a *trend* ("closing ~2/week").
+
+**Objective:** Periodically refresh competitor rating/review_count from Google Places and retain history to compute the gap trend.
+
+**Integration:** `google_places.py` — refresh each row in `competitors` weekly (same Places call used for the customer's own profile). Reuse `place_id`.
+
+**New table — `competitor_snapshots`:**
+```sql
+CREATE TABLE IF NOT EXISTS competitor_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    competitor_id INTEGER NOT NULL REFERENCES competitors(id),
+    customer_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    rating REAL NOT NULL DEFAULT 0.0,
+    review_count INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(competitor_id, date)
+);
+```
+**Computation:** Identify the customer's primary competitor (highest `review_count` in the same area, or a manually pinned one). Report shows: customer review_count − competitor review_count (the gap), plus the gap delta vs last week and an estimated close rate. Feeds the Reputation pillar's `review_volume_vs_competitors` sub-score. Existing `overtake` alert can fire off snapshot diffs.
+
+**Acceptance:** Two consecutive weekly runs produce two `competitor_snapshots` rows per competitor; the report shows a gap value and a non-null week-over-week gap delta on the second run.
+
+## R3. Conversion Tracking — Calls & Forms (new section: "Leads")
+
+**Gap:** No conversions are tracked. Clicks/visitors are a proxy, but practices care about **patient leads** (calls + form submits). Industry best practice ranks call/form leads among the top client-facing KPIs.
+
+**Objective:** Track conversion events per customer and add a "Leads this week" block to the report (this is the metric that most directly maps to revenue and retention).
+
+**Integration:** GA4 Data API (`runReport`) — pull conversion events by day and channel. Standard events: `generate_lead`, `form_submit`, `click` on `tel:` links (configured as a GA4 conversion or via GTM). Requires GA4 property access (already part of onboarding per `CLAUDE.md`). Optional later: call-tracking provider (CallRail) for true call attribution.
+
+**New table — `conversions_daily`:**
+```sql
+CREATE TABLE IF NOT EXISTS conversions_daily (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    event_name TEXT NOT NULL,        -- form_submit/phone_click/appointment_request
+    channel TEXT NOT NULL DEFAULT 'organic',  -- organic/direct/referral/paid
+    count INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(customer_id, date, event_name, channel)
+);
+```
+**Computation:** Weekly totals per event_name, organic vs all-channels, week-over-week delta. Optionally add a `conversions` sub-score into the Search Growth pillar once data history is sufficient (gate behind ≥4 weeks of data to avoid noisy scoring).
+
+**Acceptance:** For a customer with GA4 connected and conversions configured, the report's Leads block shows real form + phone-click counts with a week-over-week delta. If GA4/conversions are not configured, the section is hidden (degrade gracefully) and an onboarding alert is raised.
+
+## R4. Citations & NAP Consistency (BrightLocal) (new section: "Local listings health")
+
+**Gap:** BrightLocal is referenced in this doc but not integrated. No citation or NAP (Name/Address/Phone) consistency data exists — a core Local SEO KPI.
+
+**Objective:** Audit citation presence and NAP consistency across key dental directories, and surface a NAP consistency score + listing issues in the report.
+
+**Integration:** BrightLocal API (Citation Tracker / Local Search Audit). Map the customer's canonical NAP from the `customers` table (name, address, phone). Run monthly (citations move slowly) and cache; the weekly report reads the latest cached result.
+
+**New table — `citations`:**
+```sql
+CREATE TABLE IF NOT EXISTS citations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL,
+    directory TEXT NOT NULL,         -- google/yelp/healthgrades/zocdoc/apple/bing/...
+    listing_url TEXT NOT NULL DEFAULT '',
+    nap_status TEXT NOT NULL DEFAULT 'unknown',  -- consistent/inconsistent/missing
+    issue TEXT NOT NULL DEFAULT '',  -- e.g. "phone mismatch", "old address"
+    last_checked TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now')),
+    UNIQUE(customer_id, directory)
+);
+```
+**Computation:** NAP consistency score = consistent / (consistent + inconsistent + missing) across tracked directories. Report shows the score, count of inconsistent/missing listings, and the top issues to fix. Feeds (optionally) a `citations` component into the Technical Health or Reputation pillar. Use the existing "Must-Have Citation Directories for Dental" list above as the tracked set.
+
+**Acceptance:** For a customer audited via BrightLocal, the report shows a NAP consistency score and a list of inconsistent/missing directories. Without BrightLocal configured, the section is hidden.
+
+## Status summary (report field → readiness after this section)
+
+| Report field | Before | After this spec |
+|---|---|---|
+| Top keywords & movers | PARTIAL | R1 — query-level GSC ingest |
+| Competitor review-gap trend | PARTIAL | R2 — snapshot history |
+| Conversions / leads (calls, forms) | TODO | R3 — GA4 Data API |
+| Citations / NAP consistency | TODO | R4 — BrightLocal |
+| Report generation + delivery | n/a | R0 — weekly pipeline + snapshots |
+
+**Suggested build order:** R0 (pipeline scaffold with REAL fields) → R1 (highest report value, no new vendor) → R3 (leads — closest to revenue) → R2 (competitor trend) → R4 (BrightLocal, new vendor + cost).

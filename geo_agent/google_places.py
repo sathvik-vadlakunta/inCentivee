@@ -603,3 +603,66 @@ def verify_customer(
         competitors = validate_competitors(competitors, business_type)
 
     return verified, competitors
+
+
+PLACE_DETAILS_URL = "https://places.googleapis.com/v1/places/"
+
+
+def fetch_place_details(place_id: str, api_key: str = "") -> dict | None:
+    """Fetch current rating + review count for a single place by place_id.
+
+    Returns {"rating": float, "review_count": int} or None on failure.
+    """
+    if not api_key:
+        try:
+            from geo_agent.secrets import get_secrets
+            api_key = get_secrets().get("GOOGLE_PLACES_API_KEY")
+        except Exception:
+            api_key = ""
+    if not api_key or not place_id:
+        return None
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(
+                PLACE_DETAILS_URL + place_id,
+                headers={
+                    "X-Goog-Api-Key": api_key,
+                    "X-Goog-FieldMask": "rating,userRatingCount",
+                },
+            )
+            resp.raise_for_status()
+            data = resp.json()
+    except Exception as e:
+        logger.debug(f"Places details failed for {place_id}: {e}")
+        return None
+    return {"rating": data.get("rating", 0.0), "review_count": data.get("userRatingCount", 0)}
+
+
+def refresh_competitor_snapshots(db, customer_id: str) -> int:
+    """R2: Refresh each competitor's rating/review_count and record a dated snapshot.
+
+    Updates the live ``competitors`` row and appends to ``competitor_snapshots``
+    so the weekly report can show a review-gap *trend*. Returns rows snapshotted.
+    """
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    count = 0
+    for comp in db.get_competitors(customer_id):
+        place_id = comp.get("place_id")
+        if not place_id:
+            continue
+        details = fetch_place_details(place_id)
+        if not details:
+            continue
+        db.conn.execute(
+            "UPDATE competitors SET rating = ?, review_count = ? WHERE id = ?",
+            (details["rating"], details["review_count"], comp["id"]),
+        )
+        db.save_competitor_snapshot(
+            comp["id"], customer_id, today,
+            details["rating"], details["review_count"],
+        )
+        count += 1
+    db.conn.commit()
+    logger.info(f"Competitor snapshots refreshed for {customer_id}: {count}")
+    return count

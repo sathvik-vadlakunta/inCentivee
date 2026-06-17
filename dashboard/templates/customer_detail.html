@@ -71,6 +71,21 @@
 
                 <div class="actions-divider"></div>
                 <div class="actions-label">Reports</div>
+                <a class="actions-item" href="{{ url_for('weekly_report_view', customer_id=customer.id) }}" target="_blank">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+                    View Weekly Report
+                </a>
+                <a class="actions-item" href="{{ url_for('weekly_report_view', customer_id=customer.id, refresh=1) }}" target="_blank">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                    Regenerate Weekly Report
+                </a>
+                {% if weekly_snapshot and weekly_snapshot.share_token %}
+                <button type="button" class="actions-item"
+                    onclick="navigator.clipboard.writeText(window.location.origin + '/r/{{ weekly_snapshot.share_token }}'); this.querySelector('span').textContent='Copied!';">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    <span>Copy Customer Link</span>
+                </button>
+                {% endif %}
                 <a class="actions-item" href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" target="_blank">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     View Case Study
@@ -537,25 +552,24 @@
 
             <!-- Staging / Approval -->
             {% if staged %}
-            <div class="card" style="border-color: {% if approved %}var(--success){% else %}#7c3aed{% endif %};">
+            <div class="card" id="staging-card" style="border-color: {% if approved %}var(--success){% else %}#7c3aed{% endif %};">
                 <div class="section-header">
-                    <h2>{% if approved %}Approved Changes{% else %}Staged Changes{% endif %}</h2>
+                    <h2 id="staging-card-title">{% if approved %}Approved Changes{% else %}Staged Changes{% endif %}</h2>
                     <div class="flex">
                         <a href="{{ url_for('staging_preview', customer_id=customer.id) }}" class="btn btn-sm btn-outline">Preview Files</a>
-                        {% if not approved %}
-                        <form method="POST" action="{{ url_for('approve_staging', customer_id=customer.id) }}">
+                        <form id="approve-form" style="{% if approved %}display:none;{% endif %}margin:0;"
+                              onsubmit="return approveStaging(event, '{{ customer.id }}')">
                             <button type="submit" class="btn btn-success btn-sm">Approve</button>
                         </form>
-                        {% else %}
-                        <form method="POST" action="{{ url_for('publish_staging', customer_id=customer.id) }}"
-                              onsubmit="return confirm('{% if webflow_connected %}Publish changes and push schema to Webflow?{% else %}Mark these changes as published?{% endif %}')">
+                        <form id="publish-form" style="{% if not approved %}display:none;{% endif %}margin:0;"
+                              onsubmit="return publishStaging(event, '{{ customer.id }}', {{ 'true' if webflow_connected else 'false' }})">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 {% if webflow_connected %}Publish to Webflow{% else %}Publish{% endif %}
                             </button>
                         </form>
-                        {% endif %}
                     </div>
                 </div>
+                <div id="staging-action-result" style="display:none;padding:0.4rem 0.6rem;border-radius:6px;font-size:0.85rem;margin:0.25rem 0;"></div>
                 {% if staged_files %}
                 <div style="margin-top: 0.5rem;">
                     {% for fname in staged_files %}
@@ -956,6 +970,37 @@
                 <div id="gsc-test-result" style="font-size:0.8rem;margin-top:0.5rem;display:none;"></div>
                 {% if gsc_integ and gsc_integ.last_error %}
                 <div style="font-size:0.8rem;color:var(--danger);margin-top:0.4rem;">Last error: {{ gsc_integ.last_error }}</div>
+                {% endif %}
+            </div>
+
+            <!-- GA4 Integration -->
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+                    <div>
+                        <strong>Google Analytics 4</strong>
+                        <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">Leads — calls &amp; form submits</span>
+                    </div>
+                    {% set ga4_integ = integrations | selectattr('integration', 'equalto', 'ga4') | first %}
+                    <span class="badge" style="background:{% if ga4_integ and ga4_integ.status == 'active' %}#d1fae5;color:#065f46{% elif ga4_integ and ga4_integ.status == 'configured' %}#fef3c7;color:#92400e{% elif ga4_integ and ga4_integ.status == 'error' %}#fee2e2;color:#991b1b{% else %}#f3f4f6;color:#6b7280{% endif %};">
+                        {{ (ga4_integ.status if ga4_integ else 'not configured') | replace('_', ' ') | title }}
+                    </span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
+                    Numeric GA4 <strong>Property ID</strong> (Admin → Property Settings — e.g. <code>123456789</code>, not the <code>G-XXXX</code> ID). The shared service account must have Viewer access to this property. See <code>docs/ga4-setup.md</code>.
+                </div>
+                <form onsubmit="saveGa4Integration(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.2rem;">GA4 Property ID</label>
+                        <input type="text" id="ga4-property-id" placeholder="123456789"
+                               value="{{ ga4_integ.config.property_id if ga4_integ and ga4_integ.config else '' }}"
+                               style="width:100%;padding:0.4rem 0.5rem;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap;">Save</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="testIntegration('{{ customer.id }}', 'ga4', 'ga4-test-result')" style="white-space:nowrap;">Test</button>
+                </form>
+                <div id="ga4-test-result" style="font-size:0.8rem;margin-top:0.5rem;display:none;"></div>
+                {% if ga4_integ and ga4_integ.last_error %}
+                <div style="font-size:0.8rem;color:var(--danger);margin-top:0.4rem;">Last error: {{ ga4_integ.last_error }}</div>
                 {% endif %}
             </div>
 
@@ -4043,13 +4088,71 @@ function saveGscIntegration(e, customerId) {
     });
 }
 
-function testIntegration(customerId, integration) {
-    showResult('gsc-test-result', 'Testing...', 'info');
+// --- Staging approve/publish (in-place, no full-page reload) ---
+function approveStaging(e, customerId) {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const orig = btn.textContent; btn.disabled = true; btn.textContent = 'Approving…';
+    fetch('/customer/' + customerId + '/approve', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(r => r.json()).then(d => {
+        btn.disabled = false; btn.textContent = orig;
+        if (d.ok) {
+            showResult('staging-action-result', d.message || 'Approved!', 'success');
+            document.getElementById('approve-form').style.display = 'none';
+            document.getElementById('publish-form').style.display = '';
+            const title = document.getElementById('staging-card-title');
+            if (title) title.textContent = 'Approved Changes';
+            const card = document.getElementById('staging-card');
+            if (card) card.style.borderColor = 'var(--success)';
+        } else {
+            showResult('staging-action-result', d.error || 'Approve failed', 'error');
+        }
+    }).catch(() => { btn.disabled = false; btn.textContent = orig; showResult('staging-action-result', 'Network error', 'error'); });
+    return false;
+}
+
+function publishStaging(e, customerId, isWebflow) {
+    e.preventDefault();
+    if (!confirm(isWebflow ? 'Publish changes and push schema to Webflow?' : 'Mark these changes as published?')) return false;
+    const btn = e.target.querySelector('button');
+    const orig = btn.textContent; btn.disabled = true; btn.textContent = 'Publishing…';
+    fetch('/customer/' + customerId + '/publish', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(r => r.json()).then(d => {
+        if (d.ok) {
+            const card = document.getElementById('staging-card');
+            if (card) card.innerHTML = '<div style="padding:1rem;color:var(--success);font-weight:600;">✓ ' +
+                (d.message || 'Published.') + '</div>';
+        } else {
+            btn.disabled = false; btn.textContent = orig;
+            showResult('staging-action-result', d.error || 'Publish failed', 'error');
+        }
+    }).catch(() => { btn.disabled = false; btn.textContent = orig; showResult('staging-action-result', 'Network error', 'error'); });
+    return false;
+}
+
+function saveGa4Integration(e, customerId) {
+    e.preventDefault();
+    const pid = document.getElementById('ga4-property-id').value.trim();
+    fetch('/api/customer/' + customerId + '/integrations', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({integration: 'ga4', config: {property_id: pid}})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) showResult('ga4-test-result', 'Saved! Click Test to verify.', 'success');
+        else showResult('ga4-test-result', data.error || 'Save failed', 'error');
+    });
+}
+
+function testIntegration(customerId, integration, resultEl) {
+    resultEl = resultEl || 'gsc-test-result';
+    showResult(resultEl, 'Testing...', 'info');
     fetch('/api/customer/' + customerId + '/integrations/' + integration + '/test', {method: 'POST'})
     .then(r => r.json()).then(data => {
-        if (data.ok) showResult('gsc-test-result', data.message || 'Connected!', 'success');
-        else showResult('gsc-test-result', data.error || 'Test failed', 'error');
-    }).catch(() => showResult('gsc-test-result', 'Network error', 'error'));
+        if (data.ok) showResult(resultEl, data.message || 'Connected!', 'success');
+        else showResult(resultEl, data.error || 'Test failed', 'error');
+    }).catch(() => showResult(resultEl, 'Network error', 'error'));
 }
 
 // --- Keywords ---
