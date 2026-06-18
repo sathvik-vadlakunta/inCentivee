@@ -222,6 +222,29 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
             "top_competitor": comp_das[0] if comp_das and comp_das[0] > 0 else None,
         }
 
+    # --- Authority work this period (FATJOE off-site, last 30 days) ---
+    try:
+        since30 = ds(end - timedelta(days=30))
+        osum = db.offsite_summary(customer_id, since=since30)
+        if osum["links"] or osum["citations"] or osum["mentions"]:
+            assets = [a for a in db.get_offsite_assets(customer_id)
+                      if (a.get("live_at") or "")[:10] >= since30]
+            link_da = [a for a in assets if a["asset_type"] == "link" and a.get("da") is not None]
+            top_link = max(link_da, key=lambda a: a["da"]) if link_da else None
+            mention = next((a for a in assets if a["asset_type"] == "mention"), None)
+            data["sections"]["offsite"] = {
+                "links": osum["links"],
+                "avg_link_da": osum["avg_link_da"],
+                "citations": osum["citations"],
+                "mentions": osum["mentions"],
+                "new_ref_domains": osum["ref_domains"],
+                "total_ref_domains": db.offsite_summary(customer_id)["ref_domains"],
+                "top_link": {"domain": top_link["domain"], "da": top_link["da"]} if top_link else None,
+                "mention_domain": mention["domain"] if mention else None,
+            }
+    except Exception:
+        pass
+
     data["sections"]["wins"] = {"published": published}
 
     # --- Sources now citing you (from grounded AI answers) ---
@@ -522,6 +545,28 @@ def render_html(data: dict) -> str:
             f'<div class="pillars"><p style="margin:0">Your site\'s link authority — a 0–100 measure of how '
             f'much Google trusts your domain.</p>{pills}{gap_html}</div>'
             f'</div></div>')
+
+    # 8c. Authority work this period (off-site / FATJOE)
+    if "offsite" in s:
+        o = s["offsite"]
+        items = []
+        if o["links"]:
+            top = ""
+            if o.get("top_link"):
+                top = f' — avg DA {o["avg_link_da"]}, highest <b>{e(o["top_link"]["domain"])}</b> DA {o["top_link"]["da"]}'
+            items.append(f'{o["links"]} new editorial link{"s" if o["links"] != 1 else ""} live{top}')
+        if o["citations"]:
+            items.append(f'{o["citations"]} local citations submitted &amp; NAP-consistent')
+        if o.get("mention_domain"):
+            items.append(f'Brand mention live at <b>{e(o["mention_domain"])}</b> — now eligible to be cited by AI')
+        elif o["mentions"]:
+            items.append(f'{o["mentions"]} brand mention{"s" if o["mentions"] != 1 else ""} live')
+        if o.get("new_ref_domains"):
+            items.append(f'Referring domains: <b>+{o["new_ref_domains"]}</b> this period ({o["total_ref_domains"]} total)')
+        lis = "".join(f'<li>{it}</li>' for it in items)
+        parts.append(
+            f'<div class="r-sec"><h3>Authority work · last 30 days</h3>'
+            f'<ul style="margin:6px 0 0;padding-left:18px">{lis}</ul></div>')
 
     # 9. Sources now citing you (from grounded AI answers)
     if "sources" in s and s["sources"]:

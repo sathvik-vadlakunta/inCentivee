@@ -479,6 +479,30 @@ def customer_detail(customer_id):
         except Exception:
             va_plan = None
 
+        # Off-site authority: orders ledger + anchor-mix + monthly link cadence.
+        offsite_orders = db.get_offsite_orders(customer_id)
+        offsite_assets = db.get_offsite_assets(customer_id)
+        link_orders = [o for o in offsite_orders if o["order_type"] == "link"]
+        _mix_counts = {"branded": 0, "url": 0, "generic": 0, "partial": 0, "exact": 0}
+        for o in link_orders:
+            at = (o.get("anchor_type") or "").lower()
+            if at in _mix_counts:
+                _mix_counts[at] += 1
+        _mix_total = sum(_mix_counts.values())
+        offsite_anchor_mix = {
+            "counts": _mix_counts,
+            "total": _mix_total,
+            "exact_pct": round(_mix_counts["exact"] / _mix_total * 100) if _mix_total else 0,
+        }
+        this_month = now_iso[:7]  # YYYY-MM
+        links_this_month = sum(1 for o in link_orders if (o.get("ordered_at") or "")[:7] == this_month)
+        da_val = (db.get_latest_kpi(customer_id, "domain_authority") or {}).get("value")
+        cadence_target = 2 if (da_val is None or da_val < 25) else 3
+        last_link_date = link_orders[0].get("ordered_at", "")[:10] if link_orders else ""
+        offsite_cadence = {
+            "this_month": links_this_month, "target": cadence_target, "last_link_date": last_link_date,
+        }
+
         return render_template(
             "customer_detail.html",
             customer=customer, providers=providers, contacts=contacts,
@@ -522,9 +546,11 @@ def customer_detail(customer_id):
             customer_services=db.get_services(customer_id),
             da_latest=db.get_latest_kpi(customer_id, "domain_authority"),
             da_history=list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12))),
-            offsite_orders=db.get_offsite_orders(customer_id),
-            offsite_assets=db.get_offsite_assets(customer_id),
+            offsite_orders=offsite_orders,
+            offsite_assets=offsite_assets,
             offsite_summary=db.offsite_summary(customer_id),
+            offsite_anchor_mix=offsite_anchor_mix,
+            offsite_cadence=offsite_cadence,
         )
     finally:
         db.close()
@@ -824,6 +850,31 @@ def add_offsite_asset_route(customer_id, order_id):
             db.update_offsite_order(order_id, status="delivered")
         audit_log("offsite_asset_added", customer_id=customer_id, details=f"#{order_id} {domain}")
         return jsonify({"ok": True, "da": da})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/offsite/<int:order_id>/import", methods=["POST"])
+@login_required
+def import_offsite_report_route(customer_id, order_id):
+    """Phase 2 — ingest a FATJOE CSV report against an order: parse columns,
+    dedupe, pull DA for link/mention domains, advance the order to delivered."""
+    db = get_db()
+    try:
+        order = db.get_offsite_order(order_id)
+        if not order or order["customer_id"] != customer_id:
+            return jsonify({"ok": False, "error": "Order not found"}), 404
+        f = request.files.get("report")
+        if not f or not f.filename:
+            return jsonify({"ok": False, "error": "No CSV uploaded"}), 400
+        try:
+            from geo_agent.fatjoe_import import import_report
+            result = import_report(db, order_id, f.read())
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({"ok": False, "error": f"Import failed: {exc}"}), 400
+        audit_log("offsite_report_imported", customer_id=customer_id,
+                  details=f"#{order_id} +{result['added']} assets")
+        return jsonify({"ok": True, **result})
     finally:
         db.close()
 

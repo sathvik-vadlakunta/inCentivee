@@ -2041,8 +2041,40 @@
       <div class="os-stat"><div class="os-v">${{ osum.spend_usd | round(0) | int }}</div><div class="os-k">Spend to date</div></div>
     </div>
 
+    {% set cad = offsite_cadence %}
+    <div class="os-cadence">
+      <span><b>Links this month: {{ cad.this_month }}</b> of ~{{ cad.target }} target</span>
+      {% if cad.last_link_date %}<span class="mini">· last link ordered {{ cad.last_link_date }}</span>{% endif %}
+      <div class="os-cad-bar"><div class="os-cad-fill" style="width:{{ ((cad.this_month / cad.target * 100) if cad.target else 0) | round | int }}%;{{ 'background:#dc2626;' if cad.this_month > cad.target }}"></div></div>
+      <span class="mini">{% if cad.this_month > cad.target %}Over cadence — slow down; for low-DR local sites a few relevant links beat a firehose.{% else %}Steady drip beats volume (anti-"10/month").{% endif %}</span>
+    </div>
+
+    {% set mix = offsite_anchor_mix %}
+    {% if mix.total %}
+    <div class="os-mix">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.78rem;font-weight:600;color:var(--muted);">Anchor mix ({{ mix.total }} links)</span>
+        {% if mix.exact_pct > 10 %}<span class="tag t-bm" style="background:#fee2e2;color:#991b1b;">⚠ exact-match {{ mix.exact_pct }}% (keep ≤10%)</span>{% endif %}
+      </div>
+      <div class="os-mix-bar">
+        {% for kind, color in [('branded','#2563eb'),('url','#0891b2'),('generic','#64748b'),('partial','#16a34a'),('exact','#dc2626')] %}
+          {% set c = mix.counts[kind] %}
+          {% if c %}<div class="os-mix-seg" style="width:{{ (c / mix.total * 100) | round(1) }}%;background:{{ color }};" title="{{ kind }}: {{ c }}"></div>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="os-mix-legend">
+        {% for kind, color in [('branded','#2563eb'),('url','#0891b2'),('generic','#64748b'),('partial','#16a34a'),('exact','#dc2626')] %}
+          {% if mix.counts[kind] %}<span><i style="background:{{ color }}"></i>{{ kind }} {{ mix.counts[kind] }}</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
     <!-- New-order form (hidden until toggled) -->
     <form id="offsite-new" hidden class="os-form" onsubmit="return submitOffsiteOrder(event)">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:-6px;">
+        <button type="button" class="va-howto" onclick="openOrderGuide()">📋 How to order this in FATJOE →</button>
+      </div>
       <div class="os-grid">
         <label>Type
           <select name="order_type" onchange="osTypeChange(this)">
@@ -2121,7 +2153,11 @@
             {% for a in oas[:3] %}<div><a href="{{ a.live_url }}" target="_blank" rel="noopener">{{ a.domain }}</a>{% if a.da is not none %} · DA {{ a.da }}{% endif %}</div>{% endfor %}
             {% if oas|length > 3 %}<div class="mini">+{{ oas|length - 3 }} more</div>{% endif %}
           {% else %}
-            <button class="btn btn-sm btn-outline" onclick="markOffsiteLive({{ o.id }}, '{{ o.order_type }}')">+ Mark live</button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-outline" onclick="markOffsiteLive({{ o.id }}, '{{ o.order_type }}')">+ Mark live</button>
+              <button class="btn btn-sm btn-outline" onclick="document.getElementById('os-import-{{ o.id }}').click()">⬆ Import CSV</button>
+              <input type="file" id="os-import-{{ o.id }}" accept=".csv" hidden onchange="importOffsiteReport({{ o.id }}, this)">
+            </div>
           {% endif %}
         </td>
         <td><button class="os-del" title="Delete" onclick="deleteOffsiteOrder({{ o.id }})">×</button></td>
@@ -2296,6 +2332,14 @@
 .lr-in_progress{background:#fef3c7;color:#92400e;}.lr-live{background:#dcfce7;color:#166534;}
 .lr-indexed{background:#dcfce7;color:#166534;}.lr-redo_requested{background:#fee2e2;color:#991b1b;}
 .lr-cancelled{background:#f1f5f9;color:#64748b;}.lr-ordered{background:#dbeafe;color:#1e40af;}
+.os-cadence{margin:12px 0 4px;font-size:0.84rem;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+.os-cad-bar{flex-basis:100%;height:6px;background:var(--border);border-radius:999px;overflow:hidden;}
+.os-cad-fill{height:100%;background:#16a34a;border-radius:999px;transition:width .3s;}
+.os-mix{margin:14px 0 4px;}
+.os-mix-bar{display:flex;height:14px;border-radius:6px;overflow:hidden;margin-top:6px;background:var(--border);}
+.os-mix-seg{height:100%;}
+.os-mix-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:0.74rem;color:var(--muted);}
+.os-mix-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle;}
 .lr-ongoing{background:#f1f5f9;color:#475569;}
 </style>
 
@@ -4964,6 +5008,30 @@ const STEP_GUIDES = {
     "Aim for a steady trickle (a few per week) rather than a one-time burst — recency and velocity both matter.",
     "<b>Reply to every review</b>, positive and negative, within a day or two.",
   ], tip: "Never buy reviews or use gift cards as incentive — Google filters and penalizes these." },
+  link_order: { sub: "FATJOE — order a blogger-outreach link", steps: [
+    "Confirm the client is due a link this month (the cadence bar shows \"links this month: N of ~target\"). Don't over-order — steady drip beats volume.",
+    "<b>Pick the target URL:</b> rotate across pages — roughly 40% homepage, 60% a money/city/service page. Don't always point at the homepage.",
+    "<b>DR tier:</b> new/low-authority local site = DR20–30. Don't buy DR50+ for a low-DA local site — it looks engineered and wastes margin.",
+    "<b>Anchor text:</b> follow the mix — ~40% branded, ~20% naked URL, ~20% generic, ~15% partial-match, <b>≤5% exact-match</b>. Never repeat an exact-match anchor. Match the anchor to the page.",
+    "<b>Niche:</b> closest to the client's vertical (dental→health, law→legal, gold buyer→finance). Notes: <code>\"US site preferred; topic relevant to {city} {service}.\"</code>",
+    "Let FATJOE write the content (included). Submit, then <b>Log FATJOE order</b> here with the target URL, anchor, DR tier, cost, and FATJOE order #.",
+    "On delivery (~14 days): QA the live link (do-follow, exact target+anchor, indexable, DA within ~5 of tier), then <b>Import CSV</b> or <b>Mark live</b> — the app pulls the page's DA from Moz.",
+  ], tip: "If a DR30 order lands on a DA8 page, set the order to redo_requested and claim FATJOE's lifetime guarantee." },
+  citation_order: { sub: "FATJOE — order local citations", steps: [
+    "Confirm the canonical NAP at the top of this tab is correct — citations copy it exactly.",
+    "In FATJOE choose <b>Local Citations</b> → pack size by tier (new local = 100; top-up = 50).",
+    "Fill the form with the canonical NAP character-for-character: name, full address incl. suite, phone in one format, website, primary category, 2–3 keywords, hours, a short description.",
+    "Notes: <code>\"Match NAP exactly as provided — do not reformat phone or abbreviate street.\"</code> Standard ~7-day turnaround.",
+    "Submit, then <b>Log FATJOE order</b> here as type <b>citation</b> with the qty + cost.",
+    "On delivery: <b>Import CSV</b> of submitted directories. Spot-check 5 random listings live for NAP accuracy before marking delivered.",
+  ], tip: "Citations have no anchor text — the only thing that matters is exact, consistent NAP across every directory." },
+  mention_order: { sub: "FATJOE — order a brand mention", steps: [
+    "Order ~quarterly for base clients, or on demand when selling the AI-Visibility add-on.",
+    "In FATJOE choose <b>Brand Mentions</b>, DR30–60 range.",
+    "Provide: business name, city, website, the 1–2 facts to surface (e.g. \"family-owned since 2004\"), and the vertical.",
+    "Notes: <code>\"Positive, natural mention in a listicle/roundup; include city; aimed at AI/LLM visibility.\"</code> Mixed follow/nofollow is fine.",
+    "Submit, then <b>Log FATJOE order</b> as type <b>mention</b>. On delivery, Import/Mark live — it becomes a candidate \"source now citing you.\"",
+  ], tip: "The goal is a citable mention for AI assistants, not link juice — don't sweat nofollow here." },
   publish_pages: { sub: "Publish local content pages", steps: [
     "Open the <b>Content</b> tab on this customer.",
     "Review each generated city/service page for accuracy — fix any wrong claim, hours, or service.",
@@ -4972,9 +5040,8 @@ const STEP_GUIDES = {
   ] },
 };
 
-function openGuide(btn) {
-  const key = btn.dataset.guide;
-  const title = btn.dataset.title;
+function openGuide(btn) { showGuide(btn.dataset.guide, btn.dataset.title); }
+function showGuide(key, title) {
   const g = STEP_GUIDES[key];
   if (!g) return;
   document.getElementById('gmTitle').textContent = title || 'How to';
@@ -4997,6 +5064,14 @@ function osTypeChange(sel) {
     const isLink = sel.value !== 'citation';
     document.querySelectorAll('#offsite-new .os-link-only').forEach(el => el.style.display = isLink ? '' : 'none');
     document.querySelectorAll('#offsite-new .os-dr').forEach(el => el.style.display = (sel.value === 'link') ? '' : 'none');
+}
+function openOrderGuide() {
+    const t = document.querySelector('#offsite-new select[name="order_type"]').value;
+    const map = {link: ['link_order', 'Order a blogger-outreach link'],
+                 citation: ['citation_order', 'Order local citations'],
+                 mention: ['mention_order', 'Order a brand mention']};
+    const [key, title] = map[t] || map.link;
+    showGuide(key, title);
 }
 function submitOffsiteOrder(e) {
     e.preventDefault();
@@ -5029,6 +5104,17 @@ function markOffsiteLive(orderId, type) {
     }).then(r => r.json()).then(d => {
         if (d.ok) { location.reload(); } else { alert(d.error || 'Failed'); }
     }).catch(() => alert('Network error'));
+}
+function importOffsiteReport(orderId, input) {
+    const file = input.files[0];
+    if (!file) return;
+    const fd = new FormData(); fd.append('report', file);
+    fetch('/customer/' + OFFSITE_CID + '/offsite/' + orderId + '/import', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: fd
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { alert('Imported ' + d.added + ' live URLs' + (d.skipped_dupes ? ' (' + d.skipped_dupes + ' dupes skipped)' : '') + (d.da_pulled ? ', ' + d.da_pulled + ' DA pulled' : '') + '.'); location.reload(); }
+        else { alert(d.error || 'Import failed'); input.value = ''; }
+    }).catch(() => { alert('Network error'); input.value = ''; });
 }
 function deleteOffsiteOrder(orderId) {
     if (!confirm('Delete this order and its recorded live links?')) return;
