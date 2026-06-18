@@ -203,6 +203,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Overview
     </button>
+    <button class="detail-nav-item" onclick="switchTab('account', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Account
+    </button>
 
     <div class="detail-nav-group">
         <button class="detail-nav-item has-children" onclick="switchTab('seo', this);">
@@ -350,9 +354,245 @@
         </div>
     </div>
 
-    <div class="grid grid-2">
-        <!-- Left Column: Practice Info -->
+    <div>
+        <!-- Right Column: Tasks & Status -->
         <div>
+            <!-- VA Todo List -->
+            {% if todos %}
+            <div class="card">
+                <div id="todo-list">
+                    {% include "partials/todo_list.html" %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Platform Access -->
+            <div class="card">
+                <h2>Platform Access</h2>
+                <div id="access-table">
+                    {% include "partials/access_table.html" %}
+                </div>
+            </div>
+
+            <!-- Staging / Approval -->
+            {% if staged %}
+            <div class="card" id="staging-card" style="border-color: {% if approved %}var(--success){% else %}#7c3aed{% endif %};">
+                <div class="section-header">
+                    <h2 id="staging-card-title">{% if approved %}Approved Changes{% else %}Staged Changes{% endif %}</h2>
+                    <div class="flex">
+                        <a href="{{ url_for('staging_preview', customer_id=customer.id) }}" class="btn btn-sm btn-outline">Preview Files</a>
+                        <form id="approve-form" style="{% if approved %}display:none;{% endif %}margin:0;"
+                              onsubmit="return approveStaging(event, '{{ customer.id }}')">
+                            <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                        </form>
+                        <form id="publish-form" style="{% if not approved %}display:none;{% endif %}margin:0;"
+                              onsubmit="return publishStaging(event, '{{ customer.id }}', {{ 'true' if webflow_connected else 'false' }})">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                {% if webflow_connected %}Publish to Webflow{% else %}Publish{% endif %}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div id="staging-action-result" style="display:none;padding:0.4rem 0.6rem;border-radius:6px;font-size:0.85rem;margin:0.25rem 0;"></div>
+                {% if staged_files %}
+                <div style="margin-top: 0.5rem;">
+                    {% for fname in staged_files %}
+                    <div style="padding: 0.3rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+                        <span>{% if fname.endswith('.html') %}🧩{% elif fname.endswith('.txt') %}📄{% else %}📋{% endif %} {{ fname }}</span>
+                        {% if fname == 'schema.html' and approved %}
+                        <button class="btn btn-sm btn-outline" onclick="copySchemaCode(this)" style="font-size:0.7rem;">Copy Schema</button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if approved %}
+                {% if webflow_connected %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #ecfdf5; border-radius: 6px; font-size: 0.8rem; color: #065f46;">
+                    <strong>Webflow connected</strong> — Click "Publish to Webflow" to auto-push schema markup and publish the site.
+                </div>
+                {% elif customer.platform == 'squarespace' %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
+                    <strong>Manual steps (Squarespace):</strong>
+                    <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
+                        <li>Click "Copy Schema" above → In Squarespace go to <strong>Website → Developer Tools → Code Injection → Header</strong> → paste</li>
+                        <li>llms.txt and robots.txt will deploy automatically via Cloudflare Worker</li>
+                        <li>Click <strong>Publish</strong> to mark complete</li>
+                    </ol>
+                </div>
+                {% else %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
+                    <strong>Manual steps:</strong>
+                    <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
+                        <li>Click "Copy Schema" above → paste into your site's <strong>Head Code / Custom Code</strong> section</li>
+                        <li>llms.txt and robots.txt will deploy automatically via Cloudflare</li>
+                        <li>Click <strong>Publish</strong> to mark complete</li>
+                    </ol>
+                    {% if customer.platform == 'webflow' %}
+                    <div style="margin-top: 0.5rem;">
+                        Or <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}">connect Webflow</a> to auto-publish.
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+                {% endif %}
+                {% if schema_content and approved %}
+                <textarea id="schema-code" style="display:none;">{{ schema_content }}</textarea>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- GEO Files Panel — always visible when published files exist -->
+            {% if geo_files %}
+            <div class="card" style="border-color: #6366f1;">
+                <div class="section-header">
+                    <h2 style="color: #6366f1;">GEO Files</h2>
+                    <form method="POST" action="{{ url_for('repush_worker', customer_id=customer.id) }}"
+                          onsubmit="return confirm('Re-push all GEO files to the Cloudflare Worker?')">
+                        <button type="submit" class="btn btn-sm" style="background:#6366f1;color:white;">Re-push to Worker</button>
+                    </form>
+                </div>
+
+                {% if worker_api_url %}
+                <div style="margin-top: 0.5rem;">
+                    {% for fname in geo_files %}
+                    <div style="padding: 0.35rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+                        <span>{% if fname.endswith('.html') %}🧩{% else %}📄{% endif %} {{ fname }}</span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            {% if fname == 'schema.html' %}
+                            <button class="btn btn-sm btn-outline" onclick="copyGeoSchema(this)" style="font-size:0.7rem;">Copy Schema</button>
+                            {% else %}
+                            <a href="{{ worker_api_url }}/geo/{{ customer.domain }}/{{ fname }}" target="_blank"
+                               style="font-size: 0.75rem; color: #6366f1;">Worker URL</a>
+                            <a href="https://{{ customer.domain }}/{{ fname }}" target="_blank"
+                               style="font-size: 0.75rem; color: var(--muted);">Live URL</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if customer.platform == 'squarespace' and 'schema.html' in geo_files %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f0fdf4; border-radius: 6px; font-size: 0.8rem; color: #166534;">
+                    <strong>Schema markup setup:</strong>
+                    <div style="margin-top: 0.3rem;">
+                        Click <b>"Copy Schema"</b> above → Go to Squarespace →
+                        <b>Website → Developer Tools → Code Injection → Header</b> → paste → <b>Save</b>
+                    </div>
+                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fefce8; border-radius: 4px; color: #854d0e; font-size: 0.75rem;">
+                        <strong>⚠️ Requires Business plan or higher.</strong> If you don't see "Code Injection" under Developer Tools,
+                        the site is on a Personal plan. Options:
+                        <br>• <b>Recommended:</b> Ask the client to upgrade to Business plan ($33/mo) — unlocks Code Injection site-wide
+                        <br>• <b>Workaround:</b> Add a Code Block on each page (page editor → + → Code → paste schema → uncheck "Display Source")
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if customer.platform == 'squarespace' %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eef2ff; border-radius: 6px; font-size: 0.8rem; color: #3730a3;">
+                    <strong>Squarespace redirect setup:</strong>
+                    <div style="margin-top: 0.5rem;">
+                        Go to <a href="https://www.squarespace.com/login" target="_blank">Squarespace</a> →
+                        <strong>Website → Developer Tools → URL Mappings</strong> and paste:
+                        <br><span style="color:#6b7280;font-size:0.72rem">(Older versions: Settings → Advanced → URL Mappings)</span>
+                    </div>
+                    <pre style="margin:0.5rem 0;padding:0.6rem;background:#1e1e1e;color:#d4d4d4;border-radius:6px;font-size:0.73rem;overflow-x:auto;cursor:pointer;user-select:all">/robots.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/robots.txt 301
+/llms.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/llms.txt 301
+/llms-full.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/llms-full.txt 301</pre>
+                    <div style="margin-top: 0.4rem;">
+                        <strong>Verify:</strong>
+                        <a href="https://{{ customer.domain }}/llms.txt" target="_blank">{{ customer.domain }}/llms.txt</a> •
+                        <a href="https://{{ customer.domain }}/robots.txt" target="_blank">robots.txt</a> •
+                        <a href="https://{{ customer.domain }}/llms-full.txt" target="_blank">llms-full.txt</a>
+                    </div>
+                </div>
+                {% elif customer.platform == 'webflow' and not webflow_connected %}
+                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eef2ff; border-radius: 6px; font-size: 0.8rem; color: #3730a3;">
+                    <strong>Webflow redirect setup:</strong> Go to <strong>Site Settings → Publishing → 301 Redirects</strong> and add redirects for
+                    <code>/llms.txt</code>, <code>/robots.txt</code>, and <code>/llms-full.txt</code> pointing to the Worker URLs above.
+                </div>
+                {% endif %}
+                {% if published_schema_content %}
+                <textarea id="geo-schema-code" style="display:none;">{{ published_schema_content }}</textarea>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Re-publish to Webflow (when no staged content but published files exist) -->
+            {% if not staged and has_published_schema and webflow_connected %}
+            <div class="card" style="border-color: var(--success);">
+                <div class="section-header">
+                    <h2>Published Content</h2>
+                    <form method="POST" action="{{ url_for('republish_webflow', customer_id=customer.id) }}"
+                          onsubmit="return confirm('Push published schema to Webflow?')">
+                        <button type="submit" class="btn btn-primary btn-sm">Re-publish to Webflow</button>
+                    </form>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">Push the current published schema markup to Webflow's Custom Code.</p>
+            </div>
+            {% endif %}
+
+            <!-- Active Alerts -->
+            {% if customer_alerts %}
+            <div class="card" style="border-color: var(--danger);">
+                <div class="section-header">
+                    <h2 style="color: var(--danger);">Alerts ({{ customer_alerts | length }})</h2>
+                    <a href="{{ url_for('alerts', customer=customer.id) }}" style="font-size: 0.8rem;">View All</a>
+                </div>
+                {% for alert in customer_alerts[:5] %}
+                <div style="padding: 0.4rem 0; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %} display: flex; align-items: start; gap: 0.5rem;">
+                    <span style="font-size: 0.7rem; padding: 0.1rem 0.35rem; border-radius: 4px; white-space: nowrap; background: {% if alert.severity == 'critical' %}#fee2e2; color: #991b1b{% elif alert.severity == 'warning' %}#fef3c7; color: #92400e{% else %}#dbeafe; color: #1e40af{% endif %};">{{ alert.severity[:4] | upper }}</span>
+                    <span style="font-size: 0.85rem;">{{ alert.message[:100] }}{% if alert.message | length > 100 %}...{% endif %}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- KPIs -->
+            {% if kpis.review_count or kpis.ai_mentions or kpis.llms_txt_hits %}
+            <div class="card">
+                <h2>KPI History</h2>
+                {% for metric_name, display_name in [('review_count', 'Reviews'), ('rating', 'Rating'), ('ai_mentions', 'AI Mentions'), ('llms_txt_hits', 'llms.txt Hits')] %}
+                    {% if kpis[metric_name] %}
+                    <div style="margin-bottom: 0.5rem;">
+                        <strong>{{ display_name }}:</strong>
+                        {% for k in kpis[metric_name][:3] %}
+                            <span style="font-size: 0.85rem;">{{ k.value }}{% if not loop.last %} &larr; {% endif %}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Recent Runs -->
+            {% if runs %}
+            <div class="card">
+                <h2>Recent Runs</h2>
+                <table>
+                    <thead><tr><th>Date</th><th>Status</th><th>Pages</th></tr></thead>
+                    <tbody>
+                    {% for r in runs %}
+                    <tr>
+                        <td>{{ r.run_date[:10] }}</td>
+                        <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+                        <td>{{ r.pages_crawled }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SEO & GEO TAB ==================== -->
+
+<!-- ==================== ACCOUNT TAB ==================== -->
+<div id="tab-account" class="tab-content">
+    <div style="max-width:920px;">
             <!-- Business Details -->
             <div class="card">
                 <div class="section-header">
@@ -663,242 +903,9 @@
                 </table>
             </div>
             {% endif %}
-        </div>
-
-        <!-- Right Column: Tasks & Status -->
-        <div>
-            <!-- VA Todo List -->
-            {% if todos %}
-            <div class="card">
-                <div id="todo-list">
-                    {% include "partials/todo_list.html" %}
-                </div>
-            </div>
-            {% endif %}
-
-            <!-- Platform Access -->
-            <div class="card">
-                <h2>Platform Access</h2>
-                <div id="access-table">
-                    {% include "partials/access_table.html" %}
-                </div>
-            </div>
-
-            <!-- Staging / Approval -->
-            {% if staged %}
-            <div class="card" id="staging-card" style="border-color: {% if approved %}var(--success){% else %}#7c3aed{% endif %};">
-                <div class="section-header">
-                    <h2 id="staging-card-title">{% if approved %}Approved Changes{% else %}Staged Changes{% endif %}</h2>
-                    <div class="flex">
-                        <a href="{{ url_for('staging_preview', customer_id=customer.id) }}" class="btn btn-sm btn-outline">Preview Files</a>
-                        <form id="approve-form" style="{% if approved %}display:none;{% endif %}margin:0;"
-                              onsubmit="return approveStaging(event, '{{ customer.id }}')">
-                            <button type="submit" class="btn btn-success btn-sm">Approve</button>
-                        </form>
-                        <form id="publish-form" style="{% if not approved %}display:none;{% endif %}margin:0;"
-                              onsubmit="return publishStaging(event, '{{ customer.id }}', {{ 'true' if webflow_connected else 'false' }})">
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                {% if webflow_connected %}Publish to Webflow{% else %}Publish{% endif %}
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <div id="staging-action-result" style="display:none;padding:0.4rem 0.6rem;border-radius:6px;font-size:0.85rem;margin:0.25rem 0;"></div>
-                {% if staged_files %}
-                <div style="margin-top: 0.5rem;">
-                    {% for fname in staged_files %}
-                    <div style="padding: 0.3rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
-                        <span>{% if fname.endswith('.html') %}🧩{% elif fname.endswith('.txt') %}📄{% else %}📋{% endif %} {{ fname }}</span>
-                        {% if fname == 'schema.html' and approved %}
-                        <button class="btn btn-sm btn-outline" onclick="copySchemaCode(this)" style="font-size:0.7rem;">Copy Schema</button>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% if approved %}
-                {% if webflow_connected %}
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #ecfdf5; border-radius: 6px; font-size: 0.8rem; color: #065f46;">
-                    <strong>Webflow connected</strong> — Click "Publish to Webflow" to auto-push schema markup and publish the site.
-                </div>
-                {% elif customer.platform == 'squarespace' %}
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
-                    <strong>Manual steps (Squarespace):</strong>
-                    <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
-                        <li>Click "Copy Schema" above → In Squarespace go to <strong>Website → Developer Tools → Code Injection → Header</strong> → paste</li>
-                        <li>llms.txt and robots.txt will deploy automatically via Cloudflare Worker</li>
-                        <li>Click <strong>Publish</strong> to mark complete</li>
-                    </ol>
-                </div>
-                {% else %}
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eff6ff; border-radius: 6px; font-size: 0.8rem; color: #1e40af;">
-                    <strong>Manual steps:</strong>
-                    <ol style="margin: 0.35rem 0 0 1.25rem; padding: 0;">
-                        <li>Click "Copy Schema" above → paste into your site's <strong>Head Code / Custom Code</strong> section</li>
-                        <li>llms.txt and robots.txt will deploy automatically via Cloudflare</li>
-                        <li>Click <strong>Publish</strong> to mark complete</li>
-                    </ol>
-                    {% if customer.platform == 'webflow' %}
-                    <div style="margin-top: 0.5rem;">
-                        Or <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}">connect Webflow</a> to auto-publish.
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-                {% endif %}
-                {% endif %}
-                {% if schema_content and approved %}
-                <textarea id="schema-code" style="display:none;">{{ schema_content }}</textarea>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- GEO Files Panel — always visible when published files exist -->
-            {% if geo_files %}
-            <div class="card" style="border-color: #6366f1;">
-                <div class="section-header">
-                    <h2 style="color: #6366f1;">GEO Files</h2>
-                    <form method="POST" action="{{ url_for('repush_worker', customer_id=customer.id) }}"
-                          onsubmit="return confirm('Re-push all GEO files to the Cloudflare Worker?')">
-                        <button type="submit" class="btn btn-sm" style="background:#6366f1;color:white;">Re-push to Worker</button>
-                    </form>
-                </div>
-
-                {% if worker_api_url %}
-                <div style="margin-top: 0.5rem;">
-                    {% for fname in geo_files %}
-                    <div style="padding: 0.35rem 0; font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
-                        <span>{% if fname.endswith('.html') %}🧩{% else %}📄{% endif %} {{ fname }}</span>
-                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                            {% if fname == 'schema.html' %}
-                            <button class="btn btn-sm btn-outline" onclick="copyGeoSchema(this)" style="font-size:0.7rem;">Copy Schema</button>
-                            {% else %}
-                            <a href="{{ worker_api_url }}/geo/{{ customer.domain }}/{{ fname }}" target="_blank"
-                               style="font-size: 0.75rem; color: #6366f1;">Worker URL</a>
-                            <a href="https://{{ customer.domain }}/{{ fname }}" target="_blank"
-                               style="font-size: 0.75rem; color: var(--muted);">Live URL</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-
-                {% if customer.platform == 'squarespace' and 'schema.html' in geo_files %}
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #f0fdf4; border-radius: 6px; font-size: 0.8rem; color: #166534;">
-                    <strong>Schema markup setup:</strong>
-                    <div style="margin-top: 0.3rem;">
-                        Click <b>"Copy Schema"</b> above → Go to Squarespace →
-                        <b>Website → Developer Tools → Code Injection → Header</b> → paste → <b>Save</b>
-                    </div>
-                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fefce8; border-radius: 4px; color: #854d0e; font-size: 0.75rem;">
-                        <strong>⚠️ Requires Business plan or higher.</strong> If you don't see "Code Injection" under Developer Tools,
-                        the site is on a Personal plan. Options:
-                        <br>• <b>Recommended:</b> Ask the client to upgrade to Business plan ($33/mo) — unlocks Code Injection site-wide
-                        <br>• <b>Workaround:</b> Add a Code Block on each page (page editor → + → Code → paste schema → uncheck "Display Source")
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if customer.platform == 'squarespace' %}
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eef2ff; border-radius: 6px; font-size: 0.8rem; color: #3730a3;">
-                    <strong>Squarespace redirect setup:</strong>
-                    <div style="margin-top: 0.5rem;">
-                        Go to <a href="https://www.squarespace.com/login" target="_blank">Squarespace</a> →
-                        <strong>Website → Developer Tools → URL Mappings</strong> and paste:
-                        <br><span style="color:#6b7280;font-size:0.72rem">(Older versions: Settings → Advanced → URL Mappings)</span>
-                    </div>
-                    <pre style="margin:0.5rem 0;padding:0.6rem;background:#1e1e1e;color:#d4d4d4;border-radius:6px;font-size:0.73rem;overflow-x:auto;cursor:pointer;user-select:all">/robots.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/robots.txt 301
-/llms.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/llms.txt 301
-/llms-full.txt -> {{ worker_api_url }}/geo/{{ customer.domain }}/llms-full.txt 301</pre>
-                    <div style="margin-top: 0.4rem;">
-                        <strong>Verify:</strong>
-                        <a href="https://{{ customer.domain }}/llms.txt" target="_blank">{{ customer.domain }}/llms.txt</a> •
-                        <a href="https://{{ customer.domain }}/robots.txt" target="_blank">robots.txt</a> •
-                        <a href="https://{{ customer.domain }}/llms-full.txt" target="_blank">llms-full.txt</a>
-                    </div>
-                </div>
-                {% elif customer.platform == 'webflow' and not webflow_connected %}
-                <div style="margin-top: 0.75rem; padding: 0.75rem; background: #eef2ff; border-radius: 6px; font-size: 0.8rem; color: #3730a3;">
-                    <strong>Webflow redirect setup:</strong> Go to <strong>Site Settings → Publishing → 301 Redirects</strong> and add redirects for
-                    <code>/llms.txt</code>, <code>/robots.txt</code>, and <code>/llms-full.txt</code> pointing to the Worker URLs above.
-                </div>
-                {% endif %}
-                {% if published_schema_content %}
-                <textarea id="geo-schema-code" style="display:none;">{{ published_schema_content }}</textarea>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            <!-- Re-publish to Webflow (when no staged content but published files exist) -->
-            {% if not staged and has_published_schema and webflow_connected %}
-            <div class="card" style="border-color: var(--success);">
-                <div class="section-header">
-                    <h2>Published Content</h2>
-                    <form method="POST" action="{{ url_for('republish_webflow', customer_id=customer.id) }}"
-                          onsubmit="return confirm('Push published schema to Webflow?')">
-                        <button type="submit" class="btn btn-primary btn-sm">Re-publish to Webflow</button>
-                    </form>
-                </div>
-                <p style="font-size: 0.85rem; color: var(--muted); margin: 0;">Push the current published schema markup to Webflow's Custom Code.</p>
-            </div>
-            {% endif %}
-
-            <!-- Active Alerts -->
-            {% if customer_alerts %}
-            <div class="card" style="border-color: var(--danger);">
-                <div class="section-header">
-                    <h2 style="color: var(--danger);">Alerts ({{ customer_alerts | length }})</h2>
-                    <a href="{{ url_for('alerts', customer=customer.id) }}" style="font-size: 0.8rem;">View All</a>
-                </div>
-                {% for alert in customer_alerts[:5] %}
-                <div style="padding: 0.4rem 0; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %} display: flex; align-items: start; gap: 0.5rem;">
-                    <span style="font-size: 0.7rem; padding: 0.1rem 0.35rem; border-radius: 4px; white-space: nowrap; background: {% if alert.severity == 'critical' %}#fee2e2; color: #991b1b{% elif alert.severity == 'warning' %}#fef3c7; color: #92400e{% else %}#dbeafe; color: #1e40af{% endif %};">{{ alert.severity[:4] | upper }}</span>
-                    <span style="font-size: 0.85rem;">{{ alert.message[:100] }}{% if alert.message | length > 100 %}...{% endif %}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- KPIs -->
-            {% if kpis.review_count or kpis.ai_mentions or kpis.llms_txt_hits %}
-            <div class="card">
-                <h2>KPI History</h2>
-                {% for metric_name, display_name in [('review_count', 'Reviews'), ('rating', 'Rating'), ('ai_mentions', 'AI Mentions'), ('llms_txt_hits', 'llms.txt Hits')] %}
-                    {% if kpis[metric_name] %}
-                    <div style="margin-bottom: 0.5rem;">
-                        <strong>{{ display_name }}:</strong>
-                        {% for k in kpis[metric_name][:3] %}
-                            <span style="font-size: 0.85rem;">{{ k.value }}{% if not loop.last %} &larr; {% endif %}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
-
-            <!-- Recent Runs -->
-            {% if runs %}
-            <div class="card">
-                <h2>Recent Runs</h2>
-                <table>
-                    <thead><tr><th>Date</th><th>Status</th><th>Pages</th></tr></thead>
-                    <tbody>
-                    {% for r in runs %}
-                    <tr>
-                        <td>{{ r.run_date[:10] }}</td>
-                        <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
-                        <td>{{ r.pages_crawled }}</td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-        </div>
     </div>
 </div>
 
-<!-- ==================== SEO & GEO TAB ==================== -->
 <div id="tab-seo" class="tab-content">
 
 
