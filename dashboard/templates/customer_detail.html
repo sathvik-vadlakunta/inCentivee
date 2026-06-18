@@ -1997,6 +1997,22 @@
   </div>
 
   <div class="card" style="margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+      <h3 style="margin:0;">Business services</h3>
+      <button class="btn btn-sm btn-outline" id="scrape-svc-btn" onclick="scrapeServices('{{ customer.id }}')">⟳ Scrape from site</button>
+    </div>
+    <p style="color:var(--muted);font-size:0.85rem;margin:0.3rem 0 0.6rem;">Used for the FAQ schema and the "{service} in {city}" pages — pulled from {{ customer.domain }}.</p>
+    <div class="sa-chips">
+      {% if customer_services %}
+        {% for s in customer_services %}<span class="sa-chip" style="background:#ecfdf5;color:#065f46;border-color:#a7f3d0;">{{ s.name }}</span>{% endfor %}
+      {% else %}
+        <span class="sa-empty">No services yet — click "Scrape from site".</span>
+      {% endif %}
+    </div>
+    <div id="scrape-svc-result" style="font-size:0.8rem;margin-top:0.45rem;color:var(--muted);"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:14px;">
     <h3 style="margin:0 0 6px;">Service-area cities</h3>
     <p style="color:var(--muted);font-size:0.85rem;margin:0 0 10px;">Nearby cities (~25-min drive) used for "{service} in {city}" pages and the GBP service area. Auto-discovered when <code>GEONAMES_USERNAME</code> is set; edit here anytime.</p>
     <div id="sa-chips" class="sa-chips"></div>
@@ -4511,6 +4527,22 @@ function saveGa4Integration(e, customerId) {
         if (data.ok) showResult('ga4-test-result', 'Saved! Click Test to verify.', 'success');
         else showResult('ga4-test-result', data.error || 'Save failed', 'error');
     });
+}
+
+// --- Business services scrape ---
+function scrapeServices(cid) {
+    const btn = document.getElementById('scrape-svc-btn');
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Scraping…';
+    fetch('/customer/' + cid + '/scrape-services', {method: 'POST'})
+        .then(r => r.json()).then(d => {
+            const el = document.getElementById('scrape-svc-result');
+            if (d.ok) {
+                el.style.color = 'var(--muted)';
+                el.textContent = 'Found ' + d.found.length + ' services' + (d.added.length ? ' (' + d.added.length + ' new). Reloading…' : '.');
+                setTimeout(() => location.reload(), 1200);
+            } else { el.style.color = 'var(--danger)'; el.textContent = d.error || 'Scrape failed'; btn.disabled = false; btn.textContent = orig; }
+        }).catch(() => { btn.disabled = false; btn.textContent = orig; });
 }
 
 // --- Service-area chips + map ---

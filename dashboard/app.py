@@ -519,6 +519,7 @@ def customer_detail(customer_id):
             report_history=db.get_report_snapshots(customer_id, "weekly", limit=26),
             customer_activities=db.get_customer_activities(customer_id, limit=100),
             va_plan=va_plan,
+            customer_services=db.get_services(customer_id),
         )
     finally:
         db.close()
@@ -673,6 +674,69 @@ def mark_citation(customer_id):
             db.delete_citation(customer_id, directory)
         audit_log("citation_marked", customer_id=customer_id, details=f"{directory}={'done' if done else 'reset'}")
         return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/scrape-services", methods=["POST"])
+@login_required
+def scrape_services(customer_id):
+    """Fetch the customer's site and extract its services with Claude, then save
+    them — powers the FAQ schema + the {service} in {city} pages."""
+    import json as _json
+    import os as _os
+    import re as _re
+
+    import anthropic
+    import httpx
+
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        domain = (customer.get("domain") or "").strip()
+        if not domain:
+            return jsonify({"ok": False, "error": "No domain on file"}), 400
+        url = domain if domain.startswith("http") else f"https://{domain}"
+        try:
+            with httpx.Client(timeout=20.0, follow_redirects=True,
+                              headers={"User-Agent": "Mozilla/5.0 (compatible; PracticeRankBot/1.0)"}) as cl:
+                html = cl.get(url).text
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({"ok": False, "error": f"Couldn't reach {url}: {exc}"}), 502
+
+        text = _re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=_re.S | _re.I)
+        text = _re.sub(r"<[^>]+>", " ", text)
+        text = _re.sub(r"\s+", " ", text).strip()[:6000]
+
+        prompt = (
+            f"This is the website text for a {customer.get('business_type', 'local business')} "
+            f"named '{customer.get('name', '')}'. List the specific services or products it offers, "
+            f"as short noun phrases a customer would search (e.g. \"Sell Gold\", \"Coin Appraisals\", "
+            f"\"Bullion Buying\"). Return ONLY a JSON array of 4-10 strings — no prose, no code fences.\n\n"
+            f"{text}"
+        )
+        try:
+            client = anthropic.Anthropic(api_key=_os.environ["ANTHROPIC_API_KEY"])
+            msg = client.messages.create(model="claude-sonnet-4-6", max_tokens=400,
+                                         messages=[{"role": "user", "content": prompt}])
+            raw = "".join(b.text for b in msg.content if b.type == "text").strip()
+            raw = _re.sub(r"^```(?:json)?|```$", "", raw).strip()
+            s, e = raw.find("["), raw.rfind("]")
+            services = _json.loads(raw[s:e + 1]) if s != -1 and e > s else []
+        except Exception as exc:  # noqa: BLE001
+            return jsonify({"ok": False, "error": f"Extraction failed: {exc}"}), 502
+
+        services = [str(x).strip() for x in services if str(x).strip()][:12]
+        existing = {s.get("name", "").lower() for s in (db.get_services(customer_id) or [])}
+        added = []
+        for name in services:
+            if name.lower() not in existing:
+                db.add_service(customer_id, name)
+                added.append(name)
+        audit_log("services_scraped", customer_id=customer_id, details=f"{len(added)} added")
+        return jsonify({"ok": True, "added": added, "found": services})
     finally:
         db.close()
 
