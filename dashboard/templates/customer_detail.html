@@ -45,8 +45,8 @@
   .va-progress-fill { height:100%; background:var(--success); border-radius:9999px; transition:width .35s ease; }
   .va-progress-label { font-size:0.78rem; color:var(--muted); white-space:nowrap; font-weight:600; }
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 {% endblock %}
 {% block breadcrumbs %}
 <a href="{{ url_for('index') }}">Dashboard</a>
@@ -4553,7 +4553,9 @@ function saveSaCities(cid) {
 // Leaflet map: business pin + ~18mi service ring + a geocoded dot per city (cached).
 let saMap, saCityLayer;
 function initSaMap() {
-    if (saMap || !window.SA_BIZ || typeof L === 'undefined' || !document.getElementById('sa-map')) return;
+    const el = document.getElementById('sa-map');
+    if (saMap || !window.SA_BIZ || !el) return;
+    if (typeof L === 'undefined') { el.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.85rem;">Map library didn\'t load — check the network/ad-blocker.</div>'; return; }
     saMap = L.map('sa-map').setView([SA_BIZ.lat, SA_BIZ.lng], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18, attribution: '© OpenStreetMap'}).addTo(saMap);
     L.circle([SA_BIZ.lat, SA_BIZ.lng], {radius: 28968, color: '#2563eb', weight: 1, fillColor: '#2563eb', fillOpacity: 0.07}).addTo(saMap);
@@ -4596,7 +4598,11 @@ function filterSteps(btn, f) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', renderSaChips);
+document.addEventListener('DOMContentLoaded', function () {
+    renderSaChips();
+    const m = document.getElementById('sa-map');
+    if (m && m.offsetParent !== null) showSaMap();  // landed straight on the Local SEO tab
+});
 
 function markCitation(cid, directory, done, btn) {
     const body = new FormData();
