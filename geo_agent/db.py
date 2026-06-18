@@ -1081,6 +1081,29 @@ class CustomerDB:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    def get_contact(self, contact_id: int) -> dict | None:
+        cur = self.conn.execute("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def update_contact(self, contact_id: int, **fields) -> bool:
+        allowed = {"name", "email", "phone", "role"}
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if not updates:
+            return False
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
+        self.conn.execute(
+            f"UPDATE contacts SET {set_clause} WHERE id = ?",
+            list(updates.values()) + [contact_id],
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
+    def delete_contact(self, contact_id: int) -> bool:
+        self.conn.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
     def get_email_customer_index(self) -> dict:
         """Build lookups for routing inbound email to a customer.
 

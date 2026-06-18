@@ -484,23 +484,93 @@
             <!-- Contacts & Providers -->
             <div class="card">
                 <h2>Contacts</h2>
-                {% if contacts %}
-                <table>
-                    <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+                <table id="contacts-table" {% if not contacts %}style="display:none;"{% endif %}>
+                    <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th></th></tr></thead>
                     <tbody>
                     {% for c in contacts %}
-                    <tr>
+                    <tr data-id="{{ c.id }}" data-name="{{ c.name }}" data-email="{{ c.email }}" data-phone="{{ c.phone }}" data-role="{{ c.role }}">
                         <td>{{ c.name }}</td>
-                        <td><a href="mailto:{{ c.email }}">{{ c.email }}</a></td>
-                        <td>{{ c.role | title }}</td>
+                        <td>{% if c.email %}<a href="mailto:{{ c.email }}">{{ c.email }}</a>{% endif %}</td>
+                        <td>{{ c.phone }}</td>
+                        <td>{{ c.role | replace('_', ' ') | title }}</td>
+                        <td style="white-space:nowrap; text-align:right;">
+                            <button type="button" class="btn-link" onclick="editContact(this)">Edit</button>
+                            <button type="button" class="btn-link" style="color:var(--danger,#dc2626);" onclick="deleteContact('{{ c.id }}')">Delete</button>
+                        </td>
                     </tr>
                     {% endfor %}
                     </tbody>
                 </table>
-                {% else %}
-                <p style="color: var(--muted);">No contacts added yet.</p>
-                {% endif %}
+                <p id="contacts-empty" style="color: var(--muted); {% if contacts %}display:none;{% endif %}">No contacts added yet.</p>
+
+                <form id="contact-form" onsubmit="return saveContact(event)" style="margin-top:0.75rem; display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; align-items:end;">
+                    <input type="hidden" id="ct-id" value="">
+                    <label style="font-size:0.8rem;">Name<input id="ct-name" required style="width:100%;"></label>
+                    <label style="font-size:0.8rem;">Email<input id="ct-email" type="email" style="width:100%;"></label>
+                    <label style="font-size:0.8rem;">Phone<input id="ct-phone" style="width:100%;"></label>
+                    <label style="font-size:0.8rem;">Role
+                        <select id="ct-role" style="width:100%;">
+                            <option value="owner">Owner</option>
+                            <option value="seo_manager">SEO Manager</option>
+                            <option value="office_manager">Office Manager</option>
+                            <option value="introducer">Introducer</option>
+                            <option value="billing">Billing</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </label>
+                    <div style="grid-column:1 / -1; display:flex; gap:0.5rem;">
+                        <button type="submit" class="btn" id="ct-save">Add contact</button>
+                        <button type="button" class="btn btn-secondary" id="ct-cancel" style="display:none;" onclick="resetContactForm()">Cancel</button>
+                    </div>
+                </form>
             </div>
+
+            <script>
+            (function () {
+                const CID = {{ customer.id | tojson }};
+                window.editContact = function (btn) {
+                    const tr = btn.closest('tr');
+                    document.getElementById('ct-id').value = tr.dataset.id;
+                    document.getElementById('ct-name').value = tr.dataset.name || '';
+                    document.getElementById('ct-email').value = tr.dataset.email || '';
+                    document.getElementById('ct-phone').value = tr.dataset.phone || '';
+                    document.getElementById('ct-role').value = tr.dataset.role || 'owner';
+                    document.getElementById('ct-save').textContent = 'Save changes';
+                    document.getElementById('ct-cancel').style.display = '';
+                    document.getElementById('ct-name').focus();
+                };
+                window.resetContactForm = function () {
+                    document.getElementById('contact-form').reset();
+                    document.getElementById('ct-id').value = '';
+                    document.getElementById('ct-save').textContent = 'Add contact';
+                    document.getElementById('ct-cancel').style.display = 'none';
+                };
+                window.saveContact = function (e) {
+                    e.preventDefault();
+                    const id = document.getElementById('ct-id').value;
+                    const body = new FormData();
+                    body.append('name', document.getElementById('ct-name').value.trim());
+                    body.append('email', document.getElementById('ct-email').value.trim());
+                    body.append('phone', document.getElementById('ct-phone').value.trim());
+                    body.append('role', document.getElementById('ct-role').value);
+                    const url = id
+                        ? `/customer/${CID}/contact/${id}/update`
+                        : `/customer/${CID}/contact/add`;
+                    fetch(url, { method: 'POST', body })
+                        .then(r => r.json())
+                        .then(d => { if (d.ok) location.reload(); else alert(d.error || 'Failed to save contact'); })
+                        .catch(() => alert('Failed to save contact'));
+                    return false;
+                };
+                window.deleteContact = function (id) {
+                    if (!confirm('Delete this contact?')) return;
+                    fetch(`/customer/${CID}/contact/${id}/delete`, { method: 'POST' })
+                        .then(r => r.json())
+                        .then(d => { if (d.ok) location.reload(); else alert(d.error || 'Failed to delete'); })
+                        .catch(() => alert('Failed to delete'));
+                };
+            })();
+            </script>
 
             {% if providers %}
             <div class="card">

@@ -567,6 +567,70 @@ def delete_all_reports(customer_id):
         db.close()
 
 
+# --- Contacts (add / edit / delete multiple contacts per customer) ---
+
+@app.route("/customer/<customer_id>/contact/add", methods=["POST"])
+@login_required
+def add_customer_contact(customer_id):
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            return jsonify({"ok": False, "error": "Name is required"}), 400
+        cid = db.add_contact(
+            customer_id,
+            name,
+            (request.form.get("email") or "").strip(),
+            (request.form.get("phone") or "").strip(),
+            (request.form.get("role") or "owner").strip(),
+        )
+        audit_log("contact_added", customer_id=customer_id, details=name)
+        return jsonify({"ok": True, "id": cid})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/contact/<int:contact_id>/update", methods=["POST"])
+@login_required
+def update_customer_contact(customer_id, contact_id):
+    db = get_db()
+    try:
+        c = db.get_contact(contact_id)
+        if not c or c.get("customer_id") != customer_id:
+            return jsonify({"ok": False, "error": "Contact not found"}), 404
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            return jsonify({"ok": False, "error": "Name is required"}), 400
+        db.update_contact(
+            contact_id,
+            name=name,
+            email=(request.form.get("email") or "").strip(),
+            phone=(request.form.get("phone") or "").strip(),
+            role=(request.form.get("role") or "owner").strip(),
+        )
+        audit_log("contact_updated", customer_id=customer_id, details=name)
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/contact/<int:contact_id>/delete", methods=["POST"])
+@login_required
+def delete_customer_contact(customer_id, contact_id):
+    db = get_db()
+    try:
+        c = db.get_contact(contact_id)
+        if not c or c.get("customer_id") != customer_id:
+            return jsonify({"ok": False, "error": "Contact not found"}), 404
+        db.delete_contact(contact_id)
+        audit_log("contact_deleted", customer_id=customer_id, details=c.get("name", ""))
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
 @app.route("/r/<token>")
 def public_report(token):
     """Public, login-free customer link. Security model: the token is an
