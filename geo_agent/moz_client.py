@@ -26,12 +26,16 @@ MOZ_API = "https://lsapi.seomoz.com/v2/url_metrics"
 
 
 def _auth_header() -> str | None:
+    # Preferred: a single pre-encoded token (base64 of "AccessID:SecretKey").
+    token = os.environ.get("MOZ_API_TOKEN", "").strip()
+    if token:
+        return f"Basic {token}"
+    # Or the raw pair.
     access_id = os.environ.get("MOZ_ACCESS_ID", "")
     secret_key = os.environ.get("MOZ_SECRET_KEY", "")
     if not access_id or not secret_key:
         return None
-    token = base64.b64encode(f"{access_id}:{secret_key}".encode()).decode()
-    return f"Basic {token}"
+    return f"Basic {base64.b64encode(f'{access_id}:{secret_key}'.encode()).decode()}"
 
 
 def get_domain_authority(domain: str) -> dict | None:
