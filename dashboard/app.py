@@ -638,6 +638,30 @@ def delete_customer_contact(customer_id, contact_id):
         db.close()
 
 
+@app.route("/customer/<customer_id>/service-areas", methods=["POST"])
+@login_required
+def update_service_areas(customer_id):
+    """Set the customer's service-area cities (drives Module 3 city pages + GBP)."""
+    import json as _json
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        seen, cities = set(), []
+        for part in re.split(r"[,\n]", request.form.get("cities", "")):
+            name = part.strip()
+            if name and name.lower() not in seen:
+                seen.add(name.lower())
+                cities.append(name)
+            if len(cities) >= 15:
+                break
+        db.update_customer(customer_id, service_areas=_json.dumps(cities))
+        audit_log("service_areas_updated", customer_id=customer_id, details=f"{len(cities)} cities")
+        return jsonify({"ok": True, "cities": cities})
+    finally:
+        db.close()
+
+
 @app.route("/r/<token>")
 def public_report(token):
     """Public, login-free customer link. Security model: the token is an

@@ -1961,6 +1961,16 @@
     <span class="lr-badge lr-verify">verify</span> check &amp; confirm ·
     <span class="lr-badge lr-ongoing">ongoing</span> recurring.</p>
 
+  <div class="card" style="margin-bottom:14px;">
+    <h3 style="margin:0 0 6px;">Service-area cities</h3>
+    <p style="color:var(--muted);font-size:0.85rem;margin:0 0 8px;">Nearby cities (~25-min drive) used to generate "{service} in {city}" pages and to set the GBP service area. Comma-separated. Auto-discovered when <code>GEONAMES_USERNAME</code> is set; otherwise edit here.</p>
+    <form onsubmit="return saveServiceAreas(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
+      <input id="service-areas-input" value="{{ (customer.service_areas or []) | join(', ') }}" placeholder="Alexandria, Fairfax, Arlington, Annandale" style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;">
+      <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap;">Save</button>
+    </form>
+    <div id="service-areas-result" style="font-size:0.8rem;margin-top:0.4rem;color:var(--muted);"></div>
+  </div>
+
   {% for g in va_plan.groups %}
   <div class="card" style="margin-bottom:14px;">
     <h3 style="margin:0 0 8px;">{{ g.group }}</h3>
@@ -4508,6 +4518,27 @@ function saveGa4Integration(e, customerId) {
         if (data.ok) showResult('ga4-test-result', 'Saved! Click Test to verify.', 'success');
         else showResult('ga4-test-result', data.error || 'Save failed', 'error');
     });
+}
+
+function saveServiceAreas(e, cid) {
+    e.preventDefault();
+    const body = new FormData();
+    body.append('cities', document.getElementById('service-areas-input').value);
+    fetch('/customer/' + cid + '/service-areas', {method: 'POST', body})
+        .then(r => r.json()).then(d => {
+            const el = document.getElementById('service-areas-result');
+            if (d.ok) {
+                el.style.color = 'var(--muted)';
+                el.textContent = 'Saved ' + d.cities.length + ' cities. They’ll generate city pages on the next engine run (monthly cron, or run it now).';
+            } else {
+                el.style.color = 'var(--danger)';
+                el.textContent = d.error || 'Save failed';
+            }
+        }).catch(() => {
+            const el = document.getElementById('service-areas-result');
+            el.style.color = 'var(--danger)'; el.textContent = 'Network error';
+        });
+    return false;
 }
 
 function saveBrightlocalIntegration(e, customerId) {
