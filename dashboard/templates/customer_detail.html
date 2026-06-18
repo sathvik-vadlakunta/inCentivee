@@ -1836,6 +1836,7 @@
             {% endif %}
             <button class="btn btn-outline btn-sm" onclick="downloadAllContent('{{ customer.id }}')">Download All (DOCX)</button>
             <button class="btn btn-outline btn-sm" onclick="markAllPublished('{{ customer.id }}')" id="mark-all-published-btn">Mark All Published</button>
+            <button class="btn btn-outline btn-sm" onclick="syncPublished('{{ customer.id }}')" id="sync-pub-btn" title="Detect which recommendations are already live on the site and auto-mark them Published">✓ Check Live &amp; Publish</button>
             {% endif %}
             <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-outline btn-sm">View All</a>
         </div>
@@ -4114,6 +4115,21 @@ function markAllPublished(customerId) {
         }
     })
     .catch(() => { if (btn) { btn.textContent = 'Network error'; btn.disabled = false; } });
+}
+
+function syncPublished(customerId) {
+    const btn = document.getElementById('sync-pub-btn');
+    const orig = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking the live site…'; }
+    fetch('/api/content/' + customerId + '/sync-published', {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            if (btn) btn.textContent = data.published + ' of ' + data.checked + ' now live';
+            setTimeout(() => location.reload(), 1500);
+        } else { alert(data.error || 'Check failed'); if (btn) { btn.disabled = false; btn.textContent = orig; } }
+    })
+    .catch(() => { alert('Network error'); if (btn) { btn.disabled = false; btn.textContent = orig; } });
 }
 
 function approveAll(customerId) {

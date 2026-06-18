@@ -26,6 +26,7 @@
         {% if counts.published < counts.total %}
         <button class="btn btn-outline btn-sm" onclick="markAllPublished('{{ customer.id }}')" id="mark-all-published-btn">Mark All Published</button>
         {% endif %}
+        <button class="btn btn-outline btn-sm" onclick="syncPublished('{{ customer.id }}')" id="sync-pub-btn" title="Detect which recommendations are already live on the site and auto-mark them Published">✓ Check Live &amp; Publish</button>
         <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">Generate New</button>
     </div>
 </div>
@@ -51,12 +52,16 @@
 </div>
 
 <!-- Filters -->
-<div class="flex" style="margin-bottom: 1rem; gap: 0.5rem;">
-    <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline{% endif %}">All</a>
-    <a href="{{ url_for('customer_content', customer_id=customer.id, status='pending') }}" class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %}">Pending</a>
-    <a href="{{ url_for('customer_content', customer_id=customer.id, status='approved') }}" class="btn btn-sm {% if status_filter == 'approved' %}btn-primary{% else %}btn-outline{% endif %}">Approved</a>
-    <a href="{{ url_for('customer_content', customer_id=customer.id, status='published') }}" class="btn btn-sm {% if status_filter == 'published' %}btn-primary{% else %}btn-outline{% endif %}">Published</a>
-    <a href="{{ url_for('customer_content', customer_id=customer.id, status='rejected') }}" class="btn btn-sm {% if status_filter == 'rejected' %}btn-primary{% else %}btn-outline{% endif %}">Rejected</a>
+<div class="flex" style="margin-bottom: 1rem; gap: 0.5rem; flex-wrap: wrap;">
+    <a href="{{ url_for('customer_content', customer_id=customer.id) }}" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-outline{% endif %}">All ({{ counts.total }})</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='pending') }}" class="btn btn-sm {% if status_filter == 'pending' %}btn-primary{% else %}btn-outline{% endif %}">Pending ({{ counts.pending }})</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='approved') }}" class="btn btn-sm {% if status_filter == 'approved' %}btn-primary{% else %}btn-outline{% endif %}">Approved ({{ counts.approved }})</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='published') }}" class="btn btn-sm {% if status_filter == 'published' %}btn-primary{% else %}btn-outline{% endif %}">Published ({{ counts.published }})</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='rejected') }}" class="btn btn-sm {% if status_filter == 'rejected' %}btn-primary{% else %}btn-outline{% endif %}">Rejected ({{ counts.rejected }})</a>
+    <a href="{{ url_for('customer_content', customer_id=customer.id, status='archived') }}" class="btn btn-sm {% if status_filter == 'archived' %}btn-primary{% else %}btn-outline{% endif %}">Archived ({{ counts.archived }})</a>
+    {% if status_filter == 'rejected' and counts.rejected %}
+    <button class="btn btn-sm btn-outline" style="margin-left:auto;" onclick="archiveAllStatus('{{ customer.id }}', 'rejected')">Archive all rejected</button>
+    {% endif %}
 </div>
 
 <!-- Grouped by type -->
@@ -96,10 +101,16 @@
                 {% endif %}
                 <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
                 {% elif rec.status == 'published' %}
-                <span class="badge badge-active">Published</span>
+                <span class="badge badge-active" style="margin-right: 0.5rem;">Published</span>
+                {% elif rec.status == 'archived' %}
+                <span class="badge badge-archived" style="margin-right: 0.5rem;">Archived</span>
+                <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'pending', this)">Restore</button>
                 {% else %}
                 <span class="badge badge-archived" style="margin-right: 0.5rem;">Rejected</span>
                 <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'pending', this)">Restore</button>
+                {% endif %}
+                {% if rec.status in ('approved', 'published', 'rejected') %}
+                <button class="btn btn-outline btn-sm" title="Hide from the active view" onclick="updateRecStatus('{{ rec.id }}', 'archived', this)">Archive</button>
                 {% endif %}
             </div>
         </div>
@@ -275,6 +286,29 @@ function updateRecStatus(recId, status, btn) {
     .then(data => {
         if (data.ok) location.reload();
     });
+}
+
+function syncPublished(customerId) {
+    const btn = document.getElementById('sync-pub-btn');
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Checking the live site…';
+    fetch('/api/content/' + customerId + '/sync-published', {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            btn.textContent = data.published + ' of ' + data.checked + ' now live';
+            setTimeout(() => location.reload(), 1500);
+        } else { alert(data.error || 'Check failed'); btn.disabled = false; btn.textContent = orig; }
+    })
+    .catch(() => { alert('Network error'); btn.disabled = false; btn.textContent = orig; });
+}
+
+function archiveAllStatus(customerId, status) {
+    if (!confirm('Archive all ' + status + ' recommendations? They move to the Archived tab and can be restored.')) return;
+    fetch('/api/content/' + customerId + '/archive-status', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({status: status})
+    }).then(r => r.json()).then(data => { if (data.ok) location.reload(); else alert(data.error || 'Failed'); });
 }
 
 function publishToWebflow(recId, btn) {

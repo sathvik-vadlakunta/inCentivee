@@ -5805,21 +5805,23 @@ def customer_content(customer_id):
             return redirect(url_for("index"))
 
         status_filter = request.args.get("status")
-        recs = db.get_content_recommendations(customer_id, status=status_filter)
+        all_recs = db.get_content_recommendations(customer_id, limit=500)
+        if status_filter:
+            recs = [r for r in all_recs if r["status"] == status_filter]
+        else:
+            recs = [r for r in all_recs if r["status"] != "archived"]  # default view hides archived
 
         # Group by type
         grouped = {}
         for r in recs:
-            rt = r["rec_type"]
-            if rt not in grouped:
-                grouped[rt] = []
-            grouped[rt].append(r)
+            grouped.setdefault(r["rec_type"], []).append(r)
 
+        def _c(s):
+            return sum(1 for r in all_recs if r["status"] == s)
         counts = {
-            "pending": db.get_pending_recommendations_count(customer_id),
-            "total": len(recs),
-            "approved": len([r for r in recs if r["status"] == "approved"]),
-            "published": len([r for r in recs if r["status"] == "published"]),
+            "pending": _c("pending"), "approved": _c("approved"),
+            "published": _c("published"), "rejected": _c("rejected"),
+            "archived": _c("archived"), "total": len(recs),
         }
 
         return render_template(
@@ -5941,6 +5943,58 @@ def api_content_mark_all_published():
         audit_log("content_mark_all_published", customer_id=customer_id,
                   details=f"marked {published} recs published (confirmed)")
         return jsonify({"ok": True, "published": published, "total": len(targets)})
+    finally:
+        db.close()
+
+
+@app.route("/api/content/<customer_id>/sync-published", methods=["POST"])
+@login_required
+def api_content_sync_published(customer_id):
+    """Auto-detect which recommendations are actually live on the site and mark
+    them published. Reuses the reconciler's fuzzy content-live check, so the VA
+    doesn't have to manually verify+flip each one."""
+    db = get_db()
+    try:
+        customer = db.get_customer(customer_id)
+        if not customer:
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        from geo_agent.status_checker import _content_is_live
+        domain = customer.get("domain", "")
+        recs = db.get_content_recommendations(customer_id, limit=500)
+        candidates = [r for r in recs if r.get("status") in ("approved", "pending")]
+        cache, published = {}, []
+        for r in candidates:
+            try:
+                if _content_is_live(domain, r, cache):
+                    db.update_content_recommendation_status(r["id"], "published")
+                    published.append(r.get("title") or r["id"])
+            except Exception:  # noqa: BLE001
+                continue
+        audit_log("content_sync_published", customer_id=customer_id,
+                  details=f"{len(published)}/{len(candidates)} detected live")
+        return jsonify({"ok": True, "checked": len(candidates),
+                        "published": len(published), "titles": published[:25]})
+    finally:
+        db.close()
+
+
+@app.route("/api/content/<customer_id>/archive-status", methods=["POST"])
+@login_required
+def api_content_archive_status(customer_id):
+    """Bulk-archive every recommendation in a given status (e.g. archive all
+    'rejected' or all 'published' to declutter)."""
+    db = get_db()
+    try:
+        target_status = (request.get_json(silent=True) or {}).get("status", "")
+        if target_status not in ("rejected", "published", "approved", "pending"):
+            return jsonify({"ok": False, "error": "invalid status"}), 400
+        recs = db.get_content_recommendations(customer_id, status=target_status, limit=500)
+        n = 0
+        for r in recs:
+            if db.update_content_recommendation_status(r["id"], "archived"):
+                n += 1
+        audit_log("content_bulk_archived", customer_id=customer_id, details=f"{n} {target_status}")
+        return jsonify({"ok": True, "archived": n})
     finally:
         db.close()
 
