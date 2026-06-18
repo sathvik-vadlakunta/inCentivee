@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lever B — Local Citations / NAP (Implementation Spec)</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:940px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:21px;margin:32px 0 12px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+  p{margin:10px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,Menlo,monospace}
+  pre{background:#0d1117;color:#e6edf3;padding:14px 16px;border-radius:10px;overflow:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:72ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 30px;box-shadow:var(--shadow);margin-bottom:24px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  ul{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  ol{margin:8px 0;padding-left:22px}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .have{background:#e8f5ec;color:var(--accent)} .build{background:#fdf3e3;color:var(--warn)} .va{background:#eef4f8;color:#0f3d5c}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e}
+  .mini{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · LEVER B</span>
+  <h1>Local Citations / NAP — Implementation</h1>
+  <p class="lead">Make every customer's Name/Address/Phone <b>consistent and present</b> across the directories AI engines pull from, on autopilot, and surface a NAP-consistency score in the one weekly report. Builds on the BrightLocal R4 scaffold we already shipped.</p>
+  <p class="mini">Owner: Kody · Status: Spec (ready to build) · 2026-06-17 · pairs with <code>specs/active/geo-levers-ops-plan.html</code></p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">0. Why (verified) + what we already have</h2>
+    <p>For local AI queries the top citation sources are the business's own site (~58%) + consistent directory/NAP presence (BrightLocal). This is the <b>most automatable</b> lever — a citation platform does ~90% on autopilot.</p>
+    <p><b>Already shipped (R4 scaffold):</b></p>
+    <ul>
+      <li><code>geo_agent/brightlocal_client.py</code> — <code>track_citations(db, customer_id)</code> (guarded; no-ops until configured). <span class="tag have">HAVE</span></li>
+      <li><code>citations</code> table — <code>directory, listed, nap_match, url_correct, listing_url, last_checked</code>. <span class="tag have">HAVE</span></li>
+      <li>Weekly report <b>"Local listings health"</b> section + score (renders when <code>citations</code> has data). <span class="tag have">HAVE</span></li>
+      <li>Integration test wired (<code>/api/customer/&lt;id&gt;/integrations/brightlocal/test</code>) + <code>brightlocal</code> integration config (<code>location_id</code>). <span class="tag have">HAVE</span></li>
+    </ul>
+    <p>So the remaining work is real account setup + wiring the actual BrightLocal API + the build/monitor workflow.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">1. Tool decision — BrightLocal</h2>
+    <p>Use <b>BrightLocal</b> (reuse the R4 scaffold). It has both halves we need + an API:</p>
+    <ul>
+      <li><b>Citation Tracker / Local Search Audit</b> — audits where the business is listed + flags NAP inconsistencies. → fills our <code>citations</code> table.</li>
+      <li><b>Citation Builder</b> — builds/submits missing citations to aggregators + niche dirs. → the "do the work" half.</li>
+      <li><b>API</b> — programmatic location create + audit fetch, so PracticeRank pulls results automatically.</li>
+    </ul>
+    <p class="mini">Alternative: Moz Local (~$129/yr/location, simpler auto-sync, fewer niche dirs). Recommend BrightLocal because we've already scaffolded it and it does building + vertical directories. Cost: platform ~$39–49/mo (shared) + Citation Builder ~$2–4/citation.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">2. The canonical NAP (single source of truth)</h2>
+    <p>Everything keys off one canonical record per customer — we already store it on <code>customers</code>:</p>
+    <pre>name, address, city, state, zip, phone, domain</pre>
+    <p>Add a <b>NAP lock</b> step at onboarding: confirm the exact legal name + display name, the exact address format, and the primary tracking-free phone. Store canonical strings; <b>nothing</b> downstream may vary from these.</p>
+    <div class="note">Order-of-operations (ties to the score warnings): <b>Google Business Profile must be verified first</b> — it's the anchor every directory and AI cross-checks. Don't build citations against an unverified/incorrect GBP.</div>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">3. Directory targets (per vertical)</h2>
+    <p>Build/monitor the directories AI actually cites for local, + the vertical-specific ones (reuse the checklist verticals).</p>
+    <table>
+      <tr><th>Tier</th><th>Directories</th><th>Applies to</th></tr>
+      <tr><td><b>Core (all)</b></td><td>Google Business Profile, Apple Maps/Business Connect, Bing Places, Yelp, Facebook, data aggregators (Data Axle, Foursquare, Neustar)</td><td>every vertical</td></tr>
+      <tr><td>practice</td><td>Healthgrades, Zocdoc, Vitals, WebMD, RateMDs</td><td>dental/medical</td></tr>
+      <tr><td>legal</td><td>Avvo, Justia, FindLaw, Lawyers.com, Martindale</td><td>law firms</td></tr>
+      <tr><td>local_retail (metals/jewelers)</td><td>coin/gold-buyer directories, Yelp categories, BBB, local chamber, jeweler associations</td><td>Paradigm et al.</td></tr>
+      <tr><td>professional_services</td><td>Clutch, chamber of commerce, industry associations</td><td>consulting/advisory</td></tr>
+    </table>
+    <p class="mini">Wire this as a per-vertical target list (mirror <code>BUSINESS_TYPE_VERTICAL</code>); BrightLocal's citation sets cover most. The R4 detector maps results into <code>citations.directory</code>.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">4. The automated workflow</h2>
+    <table>
+      <tr><th>Step</th><th>What</th><th>Who</th></tr>
+      <tr><td>1. Account</td><td>BrightLocal agency account + API key in droplet <code>.env</code> (<code>BRIGHTLOCAL_API_KEY</code>)</td><td><span class="tag build">SETUP (once)</span></td></tr>
+      <tr><td>2. Onboard customer</td><td>Create a BrightLocal <b>location</b> from the canonical NAP via API; store the returned <code>location_id</code> in the <code>brightlocal</code> integration config</td><td><span class="tag build">AUTO + verify</span></td></tr>
+      <tr><td>3. Audit</td><td><code>track_citations()</code> calls Citation Tracker → upserts <code>citations</code> rows (listed / nap_match / url_correct). Compute NAP-consistency score</td><td><span class="tag have">AUTO (R4)</span></td></tr>
+      <tr><td>4. Build</td><td>Order Citation Builder for missing core + vertical dirs (the ~90% the tool can submit)</td><td><span class="tag build">AUTO order</span></td></tr>
+      <tr><td>5. VA cleanup</td><td>One-time: claim/fix the long-tail + vertical dirs the tool can't auto-submit (flagged <code>nap_match=0</code>)</td><td><span class="tag va">SUBCONTRACT ~$20–60 once</span></td></tr>
+      <tr><td>6. Monitor</td><td>Monthly re-audit (cron) → re-pull into <code>citations</code> → alert on any NAP drift → report</td><td><span class="tag have">AUTO (cron)</span></td></tr>
+    </table>
+    <h3>Cron</h3>
+    <pre>0 5 1 * * docker exec practicerank-dashboard python3 /app/scripts/monthly_citations.py   <span style="color:#7d8590"># 1st of month</span></pre>
+    <p class="mini">New script <code>scripts/monthly_citations.py</code>: loop active customers with a <code>brightlocal</code> integration → <code>track_citations()</code> → raise an alert on drift. (Citations move slowly → monthly is enough; the weekly report reads the cached result.)</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">5. Reporting (already built — confirm it lights up)</h2>
+    <ul>
+      <li>NAP-consistency score = <code>consistent / (consistent + inconsistent + missing)</code> across tracked dirs.</li>
+      <li>Weekly report <b>"Local listings health"</b>: the % score + count of inconsistent/missing + the specific directories to fix. (Section renders once <code>citations</code> has rows.)</li>
+      <li>Monthly deliverable line: <i>"NAP kept 100% consistent across N directories; fixed X this month."</i> — recurring proof.</li>
+      <li>Score v2: optionally feed NAP-consistency into the GEO Foundation pillar as a supporting item.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">6. Build steps &amp; acceptance</h2>
+    <ol>
+      <li>Stand up BrightLocal agency account; add <code>BRIGHTLOCAL_API_KEY</code>.</li>
+      <li>Implement <code>create_brightlocal_location(customer)</code> (API) + store <code>location_id</code>; confirm the exact Citation Tracker results endpoint/fields in <code>brightlocal_client.py</code> (the scaffold has the shape, marked TODO).</li>
+      <li>Add the per-vertical directory target list.</li>
+      <li>Add <code>scripts/monthly_citations.py</code> + the cron.</li>
+      <li>Add the VA cleanup checklist (the <code>nap_match=0</code> rows) to the customer page.</li>
+    </ol>
+    <p><b>Acceptance:</b> for a configured customer, the audit fills <code>citations</code>, the weekly report shows a NAP score + the dirs to fix, the monthly cron re-audits, and a NAP-drift raises an alert. VA cleanup closes the long-tail.</p>
+    <h3>Cost (per customer/mo)</h3>
+    <p class="mini">~$12–18 platform (amortized) + one-time Citation Builder (~$2–4 × missing dirs) + one-time VA ~$20–60. Ongoing ~$12–18/mo — the cheapest lever.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">7. …and how Lever A (digital PR) gets automated — the handoff</h2>
+    <p>Lever A is <b>subcontracted</b> (white-label per-placement / The AEO Collective off-site-mentions), but PracticeRank automates the <b>handoff + the loop</b>:</p>
+    <ol>
+      <li><b>Auto-brief:</b> monthly job → Claude drafts a newsworthy local angle + press-release/HARO-pitch draft from the customer's <i>verified</i> facts (reuse the content generator's "never fabricate" guardrails).</li>
+      <li><b>Auto-order:</b> create the order with the white-label provider — via their API if available, else auto-email/Zapier the brief to the subcontractor; store an order id.</li>
+      <li><b>Auto-track the loop:</b> when a placement lands, the URL shows up in our grounded AI runs' <b>"sources now citing you"</b> — tie placements to citations, so we double down on outlets AI actually cites and report "N earned mentions this month."</li>
+    </ol>
+    <p class="mini">So we don't build the PR labor — we automate brief-generation, order-creation, and attribution; the provider does the outreach. Spec that as its own small build after Lever B lands.</p>
+  </div>
+</div>
+</body>
+</html>
