@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GEO Levers — Automate vs Subcontract (Ops + Cost Plan)</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:21px;margin:32px 0 12px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+  p{margin:10px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:72ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 30px;box-shadow:var(--shadow);margin-bottom:24px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  ul{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .auto{background:#e8f5ec;color:var(--accent)} .sub{background:#eef4f8;color:#0f3d5c} .hybrid{background:#fdf3e3;color:var(--warn)}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e}
+  .mini{font-size:12px;color:var(--muted)}
+  .best{background:#ecfdf5;border:1px solid #a7e3bf;border-radius:12px;padding:16px 18px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · OPS / COST</span>
+  <h1>GEO Levers — Automate vs Subcontract</h1>
+  <p class="lead">How to operationalize the two highest-impact AI-visibility levers we're <b>not</b> doing yet — <b>earned mentions / digital PR</b> and <b>local citations / NAP consistency</b> — by automating what scales and subcontracting what doesn't, inside the ~$3k/mo PracticeRank margin (85%+ automated).</p>
+  <p class="mini">Owner: Kody · Status: Plan (draft) · 2026-06-17 · costs are market estimates to confirm.</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Why these two (verified research)</h2>
+    <ul>
+      <li><b>Off-site branded mentions</b> = the strongest lever — ~0.67 correlation with AI Overview appearance, ~3× backlinks (Ahrefs, 75k brands). We do <b>none</b> of this today.</li>
+      <li><b>For local queries, the business website (~58%) + consistent directory/NAP presence</b> are the top AI citation sources (BrightLocal). We have the BrightLocal R4 scaffold but it isn't wired.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Lever A — Earned mentions / Digital PR</h2>
+    <p>Get the business named on third-party pages AI engines retrieve: local news, niche/industry blogs, "best X in {city}" roundups, podcasts, community threads.</p>
+    <table>
+      <tr><th>Approach</th><th>What</th><th>Cost (per customer/mo unless noted)</th><th>Mode</th></tr>
+      <tr><td>AI-drafted PR + wire</td><td>Claude drafts a monthly local-angle press release; distribute via a wire that syndicates to local-news/AI-cited sites</td><td>EIN Presswire ~$100–300/release · we draft = ~$0 labor</td><td><span class="tag auto">AUTOMATE</span></td></tr>
+      <tr><td>HARO / Connectively / Featured</td><td>Reply to journalist queries to earn real editorial mentions; Claude drafts responses from the customer's verified facts</td><td>$0–99/mo (shared across customers)</td><td><span class="tag auto">AUTOMATE</span></td></tr>
+      <tr><td>"Best of {city}" roundup outreach</td><td>Find existing local roundup lists; pitch inclusion</td><td>VA ~$6–12/hr, ~2–3 hrs/customer/mo ≈ $15–35</td><td><span class="tag sub">SUBCONTRACT</span></td></tr>
+      <tr><td>Podcast guesting</td><td>Book the owner on local/niche podcasts (transcripts get cited)</td><td>PodMatch ~$50/mo shared</td><td><span class="tag hybrid">HYBRID</span></td></tr>
+      <tr><td>Full digital-PR agency</td><td>White-label retainer doing all of the above</td><td>$500–2,000/mo per client (kills margin)</td><td><span class="tag sub">SUBCONTRACT</span></td></tr>
+    </table>
+    <p class="mini"><b>Automatable in-house:</b> the drafting (Claude), HARO monitoring/matching, roundup discovery (search), and tracking which mentions AI then cites (we already capture cited-domains from grounded AI runs — close the loop). <b>Needs a human:</b> sending pitches, relationship replies, podcast booking — a shared VA, not a per-client hire.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Lever B — Local citations / NAP consistency</h2>
+    <p>Claim + standardize Name/Address/Phone across the directories AI pulls from (GBP, Apple, Bing, Yelp, Facebook, + vertical ones like Healthgrades/Avvo/coin-dealer dirs).</p>
+    <table>
+      <tr><th>Approach</th><th>What</th><th>Cost</th><th>Mode</th></tr>
+      <tr><td>Moz Local / Whitespark</td><td>Push + monitor NAP to 50+ directories; auto-sync changes</td><td>~$11–14/customer/mo (Moz Local ~$129/yr/location)</td><td><span class="tag auto">AUTOMATE</span></td></tr>
+      <tr><td>BrightLocal</td><td>Citation Tracker + Builder (our R4 scaffold) — audit NAP + build missing</td><td>Platform ~$39–49/mo shared + ~$2–4/citation built</td><td><span class="tag auto">AUTOMATE</span></td></tr>
+      <tr><td>Yext / Uberall</td><td>Real-time aggregator network, broadest reach</td><td>~$199–999/yr/location (premium; usually overkill)</td><td><span class="tag auto">AUTOMATE</span></td></tr>
+      <tr><td>VA manual cleanup</td><td>One-time: claim listings, fix inconsistent NAP the tools miss</td><td>VA ~$6–12/hr, ~3–5 hrs once ≈ $20–60 one-time</td><td><span class="tag sub">SUBCONTRACT</span></td></tr>
+    </table>
+    <p class="mini">This is the most automatable lever — a citation aggregator (Moz Local or BrightLocal) does ~90% on autopilot; a VA handles the long-tail/vertical directories once.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">The best plan — hybrid (automate-first, thin VA layer)</h2>
+    <div class="best">
+      <p style="margin:0"><b>Automate the scalable 85%, subcontract the relationship 15%, to one shared part-time VA — not a per-client agency.</b></p>
+    </div>
+    <h3>Stack</h3>
+    <ul>
+      <li><b>Citations/NAP:</b> Moz Local or BrightLocal (wire our R4) — set-and-monitor. + VA one-time cleanup per new customer.</li>
+      <li><b>Digital PR:</b> in-house Claude drafting (PR + HARO responses + roundup pitches) → one shared VA sends/follows up across all customers (~10–15 hrs/wk total) → EIN Presswire for monthly distribution.</li>
+      <li><b>Loop:</b> the weekly report's "Sources now citing you" already shows which earned mentions AI picked up → prioritize what works.</li>
+    </ul>
+    <h3>Per-customer monthly cost (estimate)</h3>
+    <table>
+      <tr><th>Item</th><th>~Cost / customer / mo</th></tr>
+      <tr><td>Citation tool (Moz Local/BrightLocal, amortized)</td><td>$12–18</td></tr>
+      <tr><td>HARO/Featured + PodMatch (shared)</td><td>$3–8</td></tr>
+      <tr><td>PR wire distribution (1 release/mo)</td><td>$25–60 (or batch quarterly)</td></tr>
+      <tr><td>Shared VA (pitches/follow-up/cleanup), ~12 hrs/wk ÷ book of ~20</td><td>$30–60</td></tr>
+      <tr><td>Claude drafting</td><td>~$2–5</td></tr>
+      <tr><td><b>Total added COGS</b></td><td><b>~$72–151 / customer / mo</b></td></tr>
+    </table>
+    <p class="mini">Against ~$3,000/mo pricing that's ~2.5–5% of revenue — well within the 85%+-automated model. Scales: tools + Claude are fixed-ish; the VA layer grows slowly with the book (1 VA per ~15–25 customers).</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">How it makes the offer stickier</h2>
+    <ul>
+      <li>Add to the monthly deliverable: <b>"N new earned mentions + NAP kept 100% consistent across M directories"</b> — concrete, recurring proof alongside the weekly report's climbing AI Share-of-Voice.</li>
+      <li>These levers <b>compound</b> (mentions + citations accrue), so churning means losing accumulated visibility — the retention hook.</li>
+      <li>Reporting: surface "sources now citing you" growth + citation-consistency score in the one weekly report.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Rollout</h2>
+    <ol>
+      <li>Pick the citation tool (Moz Local vs BrightLocal — we already scaffolded BrightLocal R4); wire it + auto-pull into the report's "Local listings health".</li>
+      <li>Stand up the digital-PR loop: Claude prompt templates for PR/HARO/roundup pitches + a tracking sheet; hire 1 shared VA; pick a wire.</li>
+      <li>Close the loop: tie earned mentions to the "sources now citing you" data so we double down on what AI actually cites.</li>
+      <li>Add both as line items to the service spec + client offer.</li>
+    </ol>
+    <h3>Decisions for you</h3>
+    <ul>
+      <li>Citation tool: <b>BrightLocal</b> (reuse R4 scaffold) vs Moz Local (cheaper/simpler)?</li>
+      <li>PR cadence: monthly release per client vs quarterly + continuous HARO (cheaper)?</li>
+      <li>VA: hire now, or start with HARO + citations only and add the VA at ~10 customers?</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
