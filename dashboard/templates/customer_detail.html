@@ -2054,11 +2054,16 @@
       <button class="btn btn-sm btn-outline" id="scrape-svc-btn" onclick="scrapeServices('{{ customer.id }}')">⟳ Scrape from site</button>
     </div>
     <p style="color:var(--muted);font-size:0.85rem;margin:0.3rem 0 0.6rem;">Used for the FAQ schema and the "{service} in {city}" pages — pulled from {{ customer.domain }}.</p>
-    <div class="sa-chips">
+    <div style="display:flex;gap:0.5rem;">
+      <input id="svc-add" placeholder="Add a service, e.g. Teeth Whitening" style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;"
+             onkeydown="if(event.key==='Enter'){addService('{{ customer.id }}');return false;}">
+      <button type="button" class="btn btn-sm btn-outline" onclick="addService('{{ customer.id }}')">+ Add</button>
+    </div>
+    <div class="sa-chips" style="margin-top:0.7rem;">
       {% if customer_services %}
-        {% for s in customer_services %}<span class="sa-chip" style="background:#ecfdf5;color:#065f46;border-color:#a7f3d0;">{{ s.name }}</span>{% endfor %}
+        {% for s in customer_services %}<span class="sa-chip" style="background:#ecfdf5;color:#065f46;border-color:#a7f3d0;">{{ s.name }}<button title="Remove" onclick="deleteService('{{ customer.id }}', {{ s.id }})" style="color:#16a34a;">×</button></span>{% endfor %}
       {% else %}
-        <span class="sa-empty">No services yet — click "Scrape from site".</span>
+        <span class="sa-empty">No services yet — add one or click "Scrape from site".</span>
       {% endif %}
     </div>
     <div id="scrape-svc-result" style="font-size:0.8rem;margin-top:0.45rem;color:var(--muted);"></div>
@@ -4600,6 +4605,20 @@ function refreshDA(cid, btn) {
             if (d.ok) { btn.textContent = 'DA ' + Math.round(d.da); setTimeout(() => location.reload(), 1000); }
             else { alert(d.error || 'Refresh failed'); btn.disabled = false; btn.textContent = orig; }
         }).catch(() => { btn.disabled = false; btn.textContent = orig; });
+}
+
+// --- Business services: add / remove chips ---
+function addService(cid) {
+    const inp = document.getElementById('svc-add');
+    const v = (inp.value || '').trim();
+    if (!v) return;
+    const body = new FormData(); body.append('name', v);
+    fetch('/customer/' + cid + '/service/add', {method: 'POST', body})
+        .then(r => r.json()).then(d => { if (d.ok) location.reload(); else alert(d.error || 'Failed'); });
+}
+function deleteService(cid, id) {
+    fetch('/customer/' + cid + '/service/' + id + '/delete', {method: 'POST'})
+        .then(r => r.json()).then(d => { if (d.ok) location.reload(); });
 }
 
 // --- Business services scrape ---

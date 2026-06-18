@@ -697,6 +697,37 @@ def api_refresh_da(customer_id):
         db.close()
 
 
+@app.route("/customer/<customer_id>/service/add", methods=["POST"])
+@login_required
+def add_service_route(customer_id):
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            return jsonify({"ok": False, "error": "Name required"}), 400
+        existing = {s.get("name", "").lower() for s in (db.get_services(customer_id) or [])}
+        if name.lower() not in existing:
+            db.add_service(customer_id, name)
+            audit_log("service_added", customer_id=customer_id, details=name)
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/service/<int:service_id>/delete", methods=["POST"])
+@login_required
+def delete_service_route(customer_id, service_id):
+    db = get_db()
+    try:
+        db.delete_service(customer_id, service_id)
+        audit_log("service_deleted", customer_id=customer_id, details=str(service_id))
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
 @app.route("/customer/<customer_id>/scrape-services", methods=["POST"])
 @login_required
 def scrape_services(customer_id):

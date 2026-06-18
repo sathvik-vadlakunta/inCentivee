@@ -1070,6 +1070,14 @@ class CustomerDB:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    def delete_service(self, customer_id: str, service_id: int) -> bool:
+        self.conn.execute(
+            "DELETE FROM services WHERE id = ? AND customer_id = ?",
+            (service_id, customer_id),
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
     # --- Contacts ---
 
     def add_contact(
