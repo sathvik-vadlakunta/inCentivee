@@ -204,13 +204,21 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     # --- Domain Authority + competitor gap (Moz; renders only when tracked) ---
     da_latest = db.get_latest_kpi(customer_id, "domain_authority")
     if da_latest:
-        da_hist = list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12)))
+        da_hist = list(reversed(db.get_kpis(customer_id, "domain_authority", limit=60)))
         comp_das = sorted(
             (c.get("domain_authority") or 0 for c in (db.get_competitor_domains(customer_id) or [])),
             reverse=True)
+
+        def _da_at_or_before(target_date: str):
+            """Latest DA value recorded on/before target_date (None if none old enough)."""
+            prior = [h for h in da_hist if (h.get("date") or "")[:10] <= target_date]
+            return prior[-1]["value"] if prior else None
+
         data["sections"]["authority"] = {
             "da": da_latest["value"],
             "first": da_hist[0]["value"] if da_hist else da_latest["value"],
+            "week_prev": _da_at_or_before(ds(end - timedelta(days=7))),
+            "month_prev": _da_at_or_before(ds(end - timedelta(days=28))),
             "top_competitor": comp_das[0] if comp_das and comp_das[0] > 0 else None,
         }
 
@@ -478,8 +486,28 @@ def render_html(data: dict) -> str:
     if "authority" in s:
         a = s["authority"]
         da = round(a["da"])
-        delta = da - round(a["first"])
-        trend = f' <span style="color:#16a34a;font-weight:600">▲ +{delta} since we started</span>' if delta > 0 else ""
+
+        def _da_pill(prev, label):
+            """A '+N vs <label>' chip; None/no-change → ''."""
+            if prev is None:
+                return ""
+            d = da - round(prev)
+            if d > 0:
+                return (f'<span class="da-pill" style="background:#dcfce7;color:#166534">'
+                        f'▲ +{d} vs {label}</span>')
+            if d < 0:
+                return (f'<span class="da-pill" style="background:#fee2e2;color:#991b1b">'
+                        f'▼ {d} vs {label}</span>')
+            return f'<span class="da-pill" style="background:#f1f5f9;color:#475569">flat vs {label}</span>'
+
+        pills = "".join(p for p in (
+            _da_pill(a.get("week_prev"), "last week"),
+            _da_pill(a.get("month_prev"), "last month"),
+        ) if p)
+        started = da - round(a["first"])
+        started_html = (f'<span class="da-pill" style="background:#eff6ff;color:#1e40af">'
+                        f'▲ +{started} since we started</span>') if started > 0 else ""
+        pills = f'<div class="da-pills">{pills}{started_html}</div>' if (pills or started_html) else ""
         gap_html = ""
         if a.get("top_competitor"):
             top = round(a["top_competitor"])
@@ -491,7 +519,8 @@ def render_html(data: dict) -> str:
             f'<div class="r-sec"><h3>Domain Authority</h3>'
             f'<div class="score-row"><div class="score-badge" style="background:#16a34a;width:88px;height:88px">'
             f'<b style="font-size:26px">{da}</b><span>of 100</span></div>'
-            f'<div class="pillars"><p style="margin:0">Your site\'s link authority{trend}.</p>{gap_html}</div>'
+            f'<div class="pillars"><p style="margin:0">Your site\'s link authority — a 0–100 measure of how '
+            f'much Google trusts your domain.</p>{pills}{gap_html}</div>'
             f'</div></div>')
 
     # 9. Sources now citing you (from grounded AI answers)
@@ -559,6 +588,8 @@ def render_html(data: dict) -> str:
   .score-badge{{width:104px;height:104px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}}
   .score-badge b{{font-size:34px;line-height:1}} .score-badge span{{font-size:12px;opacity:.9}}
   .pillars{{flex:1;min-width:240px}}
+  .da-pills{{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}}
+  .da-pill{{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}}
   .pillar{{margin:7px 0}} .pillar .lbl{{display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px}}
   .bar{{height:8px;background:#eef1f4;border-radius:99px;overflow:hidden}} .bar i{{display:block;height:100%;border-radius:99px}}
   .kpis{{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}}

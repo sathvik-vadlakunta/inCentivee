@@ -2111,6 +2111,7 @@
       <div style="flex:1;">
         <div style="font-weight:600;">{{ s.title }}{% if s.link %} · <a href="{{ s.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}</div>
         {% if s.instruction %}<div style="color:var(--muted);font-size:0.85rem;margin-top:2px;">{{ s.instruction }}</div>{% endif %}
+        {% if s.guide %}<button type="button" class="va-howto" onclick="openGuide('{{ s.guide }}', {{ s.title|tojson }})">📋 How to do this →</button>{% endif %}
       </div>
       {% if s.mark %}
         {% if s.status == 'done' %}
@@ -2127,11 +2128,42 @@
   <p style="color:var(--muted);">Local SEO actions apply to local (foot-traffic / service-area) businesses only.</p>
   {% endif %}
 </div>
+
+<!-- How-to walkthrough modal (filled by openGuide) -->
+<div id="guideModal" onclick="if(event.target===this)closeGuide()">
+  <div class="gm-card">
+    <div class="gm-head">
+      <div>
+        <h3 id="gmTitle">How to</h3>
+        <div class="gm-sub" id="gmSub">Step-by-step for the VA</div>
+      </div>
+      <button class="gm-x" onclick="closeGuide()" aria-label="Close">×</button>
+    </div>
+    <div class="gm-body" id="gmBody"></div>
+  </div>
+</div>
 <style>
 .lr-badge{display:inline-block;font-size:0.66rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
 .lr-done{background:#dcfce7;color:#166534;}
 .lr-todo{background:#fef3c7;color:#92400e;}
 .lr-verify{background:#dbeafe;color:#1e40af;}
+.va-howto{margin-top:6px;background:none;border:none;padding:0;color:var(--primary,#2563eb);font-size:0.8rem;font-weight:600;cursor:pointer;}
+.va-howto:hover{text-decoration:underline;}
+#guideModal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;}
+#guideModal.open{display:flex;}
+#guideModal .gm-card{background:#fff;border-radius:14px;max-width:560px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.3);overflow:hidden;}
+#guideModal .gm-head{display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border);}
+#guideModal .gm-head h3{margin:0;font-size:1.02rem;line-height:1.3;}
+#guideModal .gm-head .gm-sub{color:var(--muted);font-size:0.8rem;margin-top:3px;}
+#guideModal .gm-x{margin-left:auto;background:none;border:none;font-size:1.4rem;line-height:1;cursor:pointer;color:var(--muted);}
+#guideModal .gm-body{padding:8px 20px 20px;max-height:62vh;overflow-y:auto;}
+#guideModal ol.gm-steps{margin:12px 0 0;padding-left:0;list-style:none;counter-reset:gm;}
+#guideModal ol.gm-steps>li{counter-increment:gm;position:relative;padding:10px 0 10px 38px;border-top:1px solid var(--border);font-size:0.9rem;line-height:1.5;}
+#guideModal ol.gm-steps>li:first-child{border-top:none;}
+#guideModal ol.gm-steps>li::before{content:counter(gm);position:absolute;left:0;top:9px;width:24px;height:24px;border-radius:999px;background:#eff6ff;color:#2563eb;font-weight:700;font-size:0.8rem;display:flex;align-items:center;justify-content:center;}
+#guideModal .gm-tip{margin-top:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:0.83rem;color:#92400e;}
+#guideModal .gm-steps b{color:var(--text);}
+#guideModal .gm-steps code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:0.85em;}
 .lr-ongoing{background:#f1f5f9;color:#475569;}
 </style>
 
@@ -4721,6 +4753,109 @@ function filterSteps(btn, f) {
         group.style.display = any ? '' : 'none';
     });
 }
+
+// ---- VA "How to" walkthroughs: click-by-click steps per task ----
+const NAP_HINT = "Use the EXACT business name, address, phone & website shown at the top of the Local SEO tab — they must match on every listing.";
+const STEP_GUIDES = {
+  gbp_claim: { sub: "Google Business Profile — claim & verify", steps: [
+    "Go to <b>business.google.com</b> and sign in with the Google account that should own the listing (use the client's, or one you've been given).",
+    "Search for the business by name + address. If it appears with <b>“Own this business?”</b> or <b>“Claim this business”</b>, click it. If nothing shows, click <b>“Add your business to Google”</b> and enter the details.",
+    "Enter the business name and address <b>exactly</b> as the canonical info above.",
+    "Choose how to verify: <b>postcard</b> (mailed code, 5–14 days), <b>phone/text</b>, <b>email</b>, or <b>video</b> — Google picks what's available. Pick the fastest offered.",
+    "When the code arrives, enter it under <b>Verify now</b>. The listing is live once the badge says <b>Verified</b>.",
+  ], tip: "If someone else already claimed it, request access via the “Request access” button — the current owner has 7 days to respond before you can claim it." },
+  gbp_primary: { sub: "Set the primary category", steps: [
+    "In the profile, click <b>Edit profile → Business category</b> (or the pencil by the category).",
+    "Set the <b>Primary category</b> to the most specific accurate match shown in the step title. Start typing and pick the closest Google option.",
+    "Do NOT pick a broad category if a specific one fits — the primary category is the #1 thing Google uses to decide which searches you rank for.",
+    "Click <b>Save</b>.",
+  ], tip: "Only ONE primary category. Everything else goes under additional categories (next step)." },
+  gbp_categories: { sub: "Add additional categories", steps: [
+    "Same screen: <b>Edit profile → Business category → Additional categories</b>.",
+    "Add 3–4 categories that match real services the business offers (e.g. a specific service line or product type).",
+    "Don't stuff unrelated categories — Google can suppress listings that look spammy.",
+    "Click <b>Save</b>.",
+  ] },
+  gbp_pin: { sub: "Fix the map pin", steps: [
+    "Open <b>Google Maps</b> and find the business.",
+    "In the profile, go to <b>Edit profile → Location</b> → <b>Adjust map pin / Edit pin location</b>.",
+    "Drag the pin onto the actual building entrance — not the street, parking lot, or center of the block.",
+    "Click <b>Save</b>. Accurate location improves the proximity ranking signal.",
+  ] },
+  gbp_service_areas: { sub: "Set service-area cities", steps: [
+    "Go to <b>Edit profile → Service area</b>.",
+    "Add each nearby city listed in the step (these are pre-computed for this customer).",
+    "Add them one at a time; Google matches them to known regions.",
+    "Click <b>Save</b>. (If the business serves customers only at its address, you can skip this — but most local businesses benefit from listing nearby cities.)",
+  ] },
+  gbp_complete: { sub: "Complete the profile", steps: [
+    "<b>Hours:</b> set regular hours + any special/holiday hours.",
+    "<b>Services:</b> add every service with a short description (mirror the Business services chips on this page).",
+    "<b>Attributes:</b> check all that apply (wheelchair accessible, appointments, payment types, etc.).",
+    "<b>Photos:</b> upload at least <b>10 real photos</b> — exterior, interior, team, and work/products. Name files descriptively before uploading.",
+    "<b>Description:</b> write 1–2 sentences with the main service + city. Click <b>Save</b> on each section.",
+  ], tip: "Photos and complete fields lift conversion AND prominence. Avoid stock photos." },
+  apple_claim: { sub: "Apple Business Connect — claim", steps: [
+    "Go to <b>business.apple.com</b> and sign in with an <b>Apple ID</b> (create a free one if needed).",
+    "Search for the business. If it exists, click <b>Claim</b>; if not, click <b>Add a business / location</b>.",
+    "Verify ownership — Apple uses a phone call, document upload, or D-U-N-S number.",
+    "Once approved, you can edit the listing (next steps).",
+  ], tip: "Apple Maps powers Siri, Apple Maps, and many iPhone searches — worth doing even though it's smaller than Google." },
+  apple_nap: { sub: "Match the business info", steps: [
+    "In Apple Business Connect, open the location.",
+    "Set the <b>name, address, and phone</b> to match the canonical info above exactly.",
+    "Add the <b>website</b> URL.",
+    "Save. " + NAP_HINT,
+  ] },
+  apple_category: { sub: "Apple category + photos", steps: [
+    "Open the location → <b>Categories</b>.",
+    "Pick the Apple category closest to the primary category in the step title.",
+    "Upload the <b>same photos</b> you used on Google (logo, cover, interior/exterior).",
+    "Save.",
+  ] },
+  bing_claim: { sub: "Bing Places", steps: [
+    "Go to <b>bingplaces.com</b> and sign in with a Microsoft account.",
+    "Click <b>Import from Google Business Profile</b> and connect the Google account — this copies everything over in one step.",
+    "Review the imported listing and fix any field so the <b>NAP matches exactly</b>.",
+    "Request verification (usually phone or email) and submit.",
+  ], tip: "Importing from Google saves ~20 minutes vs. entering by hand. Bing also feeds some AI assistants." },
+  citation_fix: { sub: "Directory citation", steps: [
+    "Open the directory (use the <b>open ↗</b> link on the step if present).",
+    "Search for the business. If it <b>already exists</b>, claim/edit it; if not, create a new listing.",
+    "Set <b>name, address, phone, website</b> to match the canonical info above <b>character-for-character</b> (incl. “St” vs “Street”, suite format, phone formatting).",
+    "Add categories, hours, and a photo if the directory allows.",
+    "Save/submit. Then click <b>“Mark listed ✓”</b> on this step so we track it.",
+  ], tip: NAP_HINT + " Inconsistent listings are the #1 thing that hurts local ranking." },
+  reviews: { sub: "Get fresh reviews", steps: [
+    "Copy the Google review short-link (the <b>open ↗</b> link on this step, or get it from GBP → <b>Ask for reviews</b>).",
+    "Text or email it to <b>recent, happy customers</b> — personal and one at a time works best.",
+    "Aim for a steady trickle (a few per week) rather than a one-time burst — recency and velocity both matter.",
+    "<b>Reply to every review</b>, positive and negative, within a day or two.",
+  ], tip: "Never buy reviews or use gift cards as incentive — Google filters and penalizes these." },
+  publish_pages: { sub: "Publish local content pages", steps: [
+    "Open the <b>Content</b> tab on this customer.",
+    "Review each generated city/service page for accuracy — fix any wrong claim, hours, or service.",
+    "Approve, then publish (auto-syncs to the site where connected, otherwise follow the manual publish steps).",
+    "Mark it published so it leaves the queue.",
+  ] },
+};
+
+function openGuide(key, title) {
+  const g = STEP_GUIDES[key];
+  if (!g) return;
+  document.getElementById('gmTitle').textContent = title || 'How to';
+  document.getElementById('gmSub').textContent = g.sub || 'Step-by-step for the VA';
+  let html = '<ol class="gm-steps">' + g.steps.map(s => '<li>' + s + '</li>').join('') + '</ol>';
+  if (g.tip) html += '<div class="gm-tip">💡 ' + g.tip + '</div>';
+  document.getElementById('gmBody').innerHTML = html;
+  document.getElementById('guideModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeGuide() {
+  document.getElementById('guideModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGuide(); });
 
 document.addEventListener('DOMContentLoaded', function () {
     renderSaChips();

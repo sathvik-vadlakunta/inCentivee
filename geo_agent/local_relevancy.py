@@ -209,9 +209,10 @@ def local_relevancy_view(db, customer: dict) -> dict | None:
     }
 
 
-def _step(title: str, instruction: str, status: str, link: str = "") -> dict:
+def _step(title: str, instruction: str, status: str, link: str = "", guide: str = "") -> dict:
     # status ∈ done | todo | verify | ongoing
-    return {"title": title, "instruction": instruction, "status": status, "link": link}
+    # guide: id of a click-by-click walkthrough rendered in the "How to" modal
+    return {"title": title, "instruction": instruction, "status": status, "link": link, "guide": guide}
 
 
 def va_action_plan(db, customer: dict) -> dict | None:
@@ -253,36 +254,40 @@ def va_action_plan(db, customer: dict) -> dict | None:
         _step("Claim & verify the Google Business Profile",
               "Go to business.google.com. If it's unclaimed, claim it and complete verification "
               "(postcard, phone, or video). This is the single most important local listing.",
-              "done" if claimed else "todo", "https://business.google.com"),
+              "done" if claimed else "todo", "https://business.google.com", guide="gbp_claim"),
         _step(f"Set the PRIMARY category to '{primary_cat}'",
               "Edit profile → category. The primary category is the strongest Google Maps ranking "
-              "signal — make sure it's the most specific accurate match.", "verify"),
+              "signal — make sure it's the most specific accurate match.", "verify", guide="gbp_primary"),
         _step("Add 3–4 relevant ADDITIONAL categories",
-              "Add secondary categories that match the services offered (don't over-stuff).", "verify"),
+              "Add secondary categories that match the services offered (don't over-stuff).", "verify",
+              guide="gbp_categories"),
         _step("Confirm the map pin is on the exact location",
-              "On Google Maps, drag the pin to the real building/entrance so proximity is correct.", "verify"),
+              "On Google Maps, drag the pin to the real building/entrance so proximity is correct.", "verify",
+              guide="gbp_pin"),
         _step("Set the service-area cities",
               ("Add these nearby cities as service areas: " + (", ".join(cities) if cities
                else "(none yet — run the engine or set them on the customer to populate).")),
-              "verify" if cities else "todo"),
+              "verify" if cities else "todo", guide="gbp_service_areas"),
         _step("Complete services, hours, attributes, and 10+ real photos",
-              "Fill every field. Add genuine photos (exterior, interior, team) — these help conversion.", "verify"),
+              "Fill every field. Add genuine photos (exterior, interior, team) — these help conversion.", "verify",
+              guide="gbp_complete"),
     ]})
 
     groups.append({"group": "2 · Apple Maps (Apple Business Connect)", "steps": [
         _step("Claim the business at business.apple.com",
               "Sign in with an Apple ID, search for the business, claim it, and verify.",
-              "todo", "https://business.apple.com"),
+              "todo", "https://business.apple.com", guide="apple_claim"),
         _step("Match the NAP to the exact business info above",
-              "Name, address, and phone must match the canonical info exactly.", "todo"),
+              "Name, address, and phone must match the canonical info exactly.", "todo", guide="apple_nap"),
         _step(f"Set the category close to '{primary_cat}' and add photos",
-              "Pick the closest Apple category and upload the same photos used on Google.", "todo"),
+              "Pick the closest Apple category and upload the same photos used on Google.", "todo",
+              guide="apple_category"),
     ]})
 
     groups.append({"group": "3 · Bing Places", "steps": [
         _step("Claim at bingplaces.com (import from Google to save time)",
               "Use 'Import from Google Business Profile', then verify the NAP matches exactly.",
-              "todo", "https://www.bingplaces.com"),
+              "todo", "https://www.bingplaces.com", guide="bing_claim"),
     ]})
 
     cit_steps = []
@@ -294,7 +299,7 @@ def va_action_plan(db, customer: dict) -> dict | None:
             st, instr = "todo", "Listed but the NAP is WRONG — edit it to match the exact business info above."
         else:
             st, instr = "todo", "Not listed — create a listing using the exact business info above."
-        step = _step(d["name"], instr, st, row.get("listing_url", "") if row else "")
+        step = _step(d["name"], instr, st, row.get("listing_url", "") if row else "", guide="citation_fix")
         step["mark"] = d["name"]  # enables the manual "mark listed" control (Path B)
         cit_steps.append(step)
     groups.append({
@@ -313,13 +318,13 @@ def va_action_plan(db, customer: dict) -> dict | None:
             rv.get("action", "Request fresh Google reviews"),
             ("Text/email this review link to recent happy customers: " + review_link) if review_link
             else "Use the GBP 'Get more reviews' short link.",
-            "todo" if rv.get("status") == "below_threshold" else "ongoing", review_link)]
+            "todo" if rv.get("status") == "below_threshold" else "ongoing", review_link, guide="reviews")]
     groups.append({"group": "5 · Reviews", "steps": review_steps})
 
     groups.append({"group": "6 · Local content pages", "steps": [
         _step(f"Review & publish {len(sa_pending)} pending city/service page(s)",
               "Open the Content tab, review each generated page for accuracy, approve, and publish.",
-              "todo" if sa_pending else "done"),
+              "todo" if sa_pending else "done", guide="publish_pages"),
     ]})
 
     total = sum(len(g["steps"]) for g in groups)
