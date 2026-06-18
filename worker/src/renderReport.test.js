@@ -610,7 +610,7 @@ describe("index.html source lint", () => {
   beforeEach(async () => {
     const fs = await import("fs");
     const html = fs.readFileSync(
-      new URL("../../public/index.html", import.meta.url),
+      new URL("../../deploy/index.html", import.meta.url),
       "utf-8",
     );
     // Extract the renderReport function body

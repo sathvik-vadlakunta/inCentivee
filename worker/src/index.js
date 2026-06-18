@@ -364,7 +364,7 @@ export default {
         },
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
-          max_tokens: 2500,
+          max_tokens: 8000,
           messages: [{ role: "user", content: prompt }],
         }),
       });
@@ -379,7 +379,16 @@ export default {
       }
 
       const raw = data.content.map((b) => b.text || "").join("");
-      const cleaned = raw.replace(/```json|```/g, "").trim();
+      let cleaned = raw.replace(/```json|```/g, "").trim();
+      // Tolerate any leading/trailing prose the model adds around the JSON object.
+      if (!cleaned.startsWith("{")) {
+        const s = cleaned.indexOf("{");
+        const e = cleaned.lastIndexOf("}");
+        if (s !== -1 && e > s) cleaned = cleaned.slice(s, e + 1);
+      }
+      if (data.stop_reason === "max_tokens") {
+        console.error("Audit: response hit max_tokens — JSON likely truncated");
+      }
       let report = JSON.parse(cleaned);
 
       // ── Step 5: Post-validate — override Claude's guesses with verified data ──

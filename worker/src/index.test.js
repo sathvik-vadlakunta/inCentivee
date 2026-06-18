@@ -396,10 +396,11 @@ describe("findBestMatch", () => {
     expect(match.id).toBe("place1");
   });
 
-  it("falls back to first result when no strong match", () => {
+  it("returns null when no strong match (never guesses a wrong place)", () => {
     const match = findBestMatch(results, "Unknown Practice", "unknown.com", "", "Chicago");
-    // Should return first result since no match scores >= 2
-    expect(match).not.toBeNull();
+    // No result scores >= 3, so findBestMatch returns null rather than a wrong
+    // fallback — returning a random competitor as the practice would corrupt the audit.
+    expect(match).toBeNull();
   });
 
   it("handles empty results", () => {
