@@ -33,7 +33,20 @@
   .crec-why .why-body { color:var(--primary); margin:0.4rem 0 0; padding:0.5rem 0.7rem; background:rgba(37,99,235,.05); border-radius:6px; }
   .crec-foot { display:flex; flex-wrap:wrap; align-items:center; gap:0.9rem; font-size:0.75rem; color:var(--muted); margin-top:0.55rem; padding-top:0.5rem; border-top:1px solid var(--border); }
   .crec-actions { display:flex; gap:0.3rem; flex-shrink:0; align-items:flex-start; }
+  /* ===== Service-area chips + map ===== */
+  .sa-chips { display:flex; flex-wrap:wrap; gap:0.4rem; }
+  .sa-chip { display:inline-flex; align-items:center; gap:0.4rem; background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; border-radius:9999px; padding:0.25rem 0.4rem 0.25rem 0.7rem; font-size:0.82rem; }
+  .sa-chip button { background:none; border:none; color:#6366f1; cursor:pointer; font-size:1rem; line-height:1; padding:0 0.1rem; }
+  .sa-chip button:hover { color:var(--danger); }
+  .sa-empty { color:var(--muted); font-size:0.85rem; }
+  /* ===== VA plan progress + filters ===== */
+  .va-toolbar { display:flex; align-items:center; gap:0.75rem; margin:0.5rem 0 0.3rem; }
+  .va-progress { flex:1; height:8px; background:var(--border); border-radius:9999px; overflow:hidden; }
+  .va-progress-fill { height:100%; background:var(--success); border-radius:9999px; transition:width .35s ease; }
+  .va-progress-label { font-size:0.78rem; color:var(--muted); white-space:nowrap; font-weight:600; }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 {% endblock %}
 {% block breadcrumbs %}
 <a href="{{ url_for('index') }}">Dashboard</a>
@@ -220,7 +233,7 @@
     </button>
 
     {% if va_plan %}
-    <button class="detail-nav-item" onclick="switchTab('local-seo', this)">
+    <button class="detail-nav-item" onclick="switchTab('local-seo', this); showSaMap()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         Local SEO
         {% if va_plan.open_steps %}
@@ -1970,18 +1983,44 @@
     <span class="lr-badge lr-verify">verify</span> check &amp; confirm ·
     <span class="lr-badge lr-ongoing">ongoing</span> recurring.</p>
 
-  <div class="card" style="margin-bottom:14px;">
-    <h3 style="margin:0 0 6px;">Service-area cities</h3>
-    <p style="color:var(--muted);font-size:0.85rem;margin:0 0 8px;">Nearby cities (~25-min drive) used to generate "{service} in {city}" pages and to set the GBP service area. Comma-separated. Auto-discovered when <code>GEONAMES_USERNAME</code> is set; otherwise edit here.</p>
-    <form onsubmit="return saveServiceAreas(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
-      <input id="service-areas-input" value="{{ (customer.service_areas or []) | join(', ') }}" placeholder="Alexandria, Fairfax, Arlington, Annandale" style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;">
-      <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap;">Save</button>
-    </form>
-    <div id="service-areas-result" style="font-size:0.8rem;margin-top:0.4rem;color:var(--muted);"></div>
+  {% set _done = va_plan.total_steps - va_plan.open_steps %}
+  <div class="va-toolbar">
+    <div class="va-progress"><div class="va-progress-fill" style="width:{{ ((_done / va_plan.total_steps * 100) | round) if va_plan.total_steps else 0 }}%"></div></div>
+    <div class="va-progress-label">{{ _done }} / {{ va_plan.total_steps }} handled</div>
+  </div>
+  <div class="crec-bar va-filter">
+    <button class="crec-chip active" onclick="filterSteps(this,'all')">All</button>
+    <button class="crec-chip" onclick="filterSteps(this,'todo')">To do</button>
+    <button class="crec-chip" onclick="filterSteps(this,'verify')">Verify</button>
+    <button class="crec-chip" onclick="filterSteps(this,'done')">Done</button>
+    <button class="crec-chip" onclick="filterSteps(this,'ongoing')">Ongoing</button>
   </div>
 
-  {% for g in va_plan.groups %}
   <div class="card" style="margin-bottom:14px;">
+    <h3 style="margin:0 0 6px;">Service-area cities</h3>
+    <p style="color:var(--muted);font-size:0.85rem;margin:0 0 10px;">Nearby cities (~25-min drive) used for "{service} in {city}" pages and the GBP service area. Auto-discovered when <code>GEONAMES_USERNAME</code> is set; edit here anytime.</p>
+    <div id="sa-chips" class="sa-chips"></div>
+    <div style="display:flex;gap:0.5rem;margin-top:0.65rem;">
+      <input id="sa-add" placeholder="Add a city, e.g. Fairfax VA" style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;"
+             onkeydown="if(event.key==='Enter'){addSaCity();return false;}">
+      <button type="button" class="btn btn-sm btn-outline" onclick="addSaCity()">+ Add</button>
+      <button type="button" class="btn btn-sm btn-primary" id="sa-save-btn" onclick="saveSaCities('{{ customer.id }}')">Save</button>
+    </div>
+    <div id="sa-result" style="font-size:0.8rem;margin-top:0.45rem;color:var(--muted);"></div>
+    {% if places and places.lat and places.lng %}
+    <div id="sa-map" style="height:300px;border-radius:10px;margin-top:0.85rem;border:1px solid var(--border);"></div>
+    <p style="font-size:0.72rem;color:var(--muted);margin:0.35rem 0 0;">🔵 Business · service-radius ring · 🟢 service-area cities</p>
+    {% endif %}
+  </div>
+  <script>
+    window.SA_CITIES = {{ (customer.service_areas or []) | tojson }};
+    {% if places and places.lat and places.lng %}
+    window.SA_BIZ = { lat: {{ places.lat }}, lng: {{ places.lng }}, name: {{ customer.name | tojson }} };
+    {% endif %}
+  </script>
+
+  {% for g in va_plan.groups %}
+  <div class="card va-group" style="margin-bottom:14px;">
     <h3 style="margin:0 0 8px;">{{ g.group }}</h3>
     {% if g.intro %}<p style="color:var(--muted);margin:0 0 10px;">{{ g.intro }}</p>{% endif %}
     {% if g.nap %}
@@ -1994,7 +2033,7 @@
     {% endif %}
     {% if g.note %}<p style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:0.82rem;margin:10px 0 6px;">{{ g.note }}</p>{% endif %}
     {% for s in g.steps %}
-    <div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);align-items:flex-start;">
+    <div class="va-step" data-step-status="{{ s.status }}" style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);align-items:flex-start;">
       <span class="lr-badge lr-{{ s.status }}" style="flex-shrink:0;margin-top:2px;">{{ s.status }}</span>
       <div style="flex:1;">
         <div style="font-weight:600;">{{ s.title }}{% if s.link %} · <a href="{{ s.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}</div>
@@ -4474,26 +4513,90 @@ function saveGa4Integration(e, customerId) {
     });
 }
 
-function saveServiceAreas(e, cid) {
-    e.preventDefault();
+// --- Service-area chips + map ---
+function escapeHtml(s) { return (s || '').replace(/[&<>"]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+function renderSaChips() {
+    const box = document.getElementById('sa-chips');
+    if (!box) return;
+    const cities = window.SA_CITIES || [];
+    if (!cities.length) { box.innerHTML = '<span class="sa-empty">No cities yet — add some below.</span>'; return; }
+    box.innerHTML = cities.map((c, i) =>
+        '<span class="sa-chip">' + escapeHtml(c) + '<button title="Remove" onclick="removeSaCity(' + i + ')">×</button></span>').join('');
+}
+function addSaCity() {
+    const inp = document.getElementById('sa-add');
+    const v = (inp.value || '').trim();
+    if (v && !(window.SA_CITIES || []).some(c => c.toLowerCase() === v.toLowerCase())) {
+        window.SA_CITIES.push(v); renderSaChips(); refreshSaMap();
+    }
+    inp.value = '';
+}
+function removeSaCity(i) { window.SA_CITIES.splice(i, 1); renderSaChips(); refreshSaMap(); }
+function saveSaCities(cid) {
+    const btn = document.getElementById('sa-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
     const body = new FormData();
-    body.append('cities', document.getElementById('service-areas-input').value);
+    body.append('cities', (window.SA_CITIES || []).join(', '));
     fetch('/customer/' + cid + '/service-areas', {method: 'POST', body})
         .then(r => r.json()).then(d => {
-            const el = document.getElementById('service-areas-result');
+            btn.disabled = false; btn.textContent = 'Save';
+            const el = document.getElementById('sa-result');
             if (d.ok) {
+                window.SA_CITIES = d.cities; renderSaChips(); refreshSaMap();
                 el.style.color = 'var(--muted)';
-                el.textContent = 'Saved ' + d.cities.length + ' cities. They’ll generate city pages on the next engine run (monthly cron, or run it now).';
-            } else {
-                el.style.color = 'var(--danger)';
-                el.textContent = d.error || 'Save failed';
-            }
-        }).catch(() => {
-            const el = document.getElementById('service-areas-result');
-            el.style.color = 'var(--danger)'; el.textContent = 'Network error';
-        });
-    return false;
+                el.textContent = 'Saved ' + d.cities.length + ' cities. New city pages generate on the next engine run.';
+            } else { el.style.color = 'var(--danger)'; el.textContent = d.error || 'Save failed'; }
+        }).catch(() => { btn.disabled = false; btn.textContent = 'Save'; });
 }
+
+// Leaflet map: business pin + ~18mi service ring + a geocoded dot per city (cached).
+let saMap, saCityLayer;
+function initSaMap() {
+    if (saMap || !window.SA_BIZ || typeof L === 'undefined' || !document.getElementById('sa-map')) return;
+    saMap = L.map('sa-map').setView([SA_BIZ.lat, SA_BIZ.lng], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 18, attribution: '© OpenStreetMap'}).addTo(saMap);
+    L.circle([SA_BIZ.lat, SA_BIZ.lng], {radius: 28968, color: '#2563eb', weight: 1, fillColor: '#2563eb', fillOpacity: 0.07}).addTo(saMap);
+    L.marker([SA_BIZ.lat, SA_BIZ.lng]).addTo(saMap).bindPopup('<b>' + escapeHtml(SA_BIZ.name) + '</b><br>Business location');
+    saCityLayer = L.layerGroup().addTo(saMap);
+    refreshSaMap();
+}
+function showSaMap() { setTimeout(() => { saMap ? saMap.invalidateSize() : initSaMap(); }, 60); }
+function saGeoCache() { try { return JSON.parse(localStorage.getItem('sa_geo_v1') || '{}'); } catch (e) { return {}; } }
+async function refreshSaMap() {
+    if (!saMap || !saCityLayer) return;
+    saCityLayer.clearLayers();
+    const cache = saGeoCache();
+    for (const city of (window.SA_CITIES || [])) {
+        const key = city.toLowerCase();
+        let pt = cache[key];
+        if (!pt) {
+            try {
+                const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(city));
+                const d = await r.json();
+                if (d && d[0]) { pt = {lat: +d[0].lat, lng: +d[0].lon}; cache[key] = pt; localStorage.setItem('sa_geo_v1', JSON.stringify(cache)); await new Promise(res => setTimeout(res, 1100)); }
+            } catch (e) {}
+        }
+        if (pt) L.circleMarker([pt.lat, pt.lng], {radius: 6, color: '#16a34a', weight: 2, fillColor: '#16a34a', fillOpacity: 0.9}).addTo(saCityLayer).bindPopup(escapeHtml(city));
+    }
+}
+
+// VA plan status filter
+function filterSteps(btn, f) {
+    document.querySelectorAll('#tab-local-seo .va-filter .crec-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#tab-local-seo .va-group').forEach(group => {
+        let any = false;
+        group.querySelectorAll('.va-step').forEach(st => {
+            const show = (f === 'all' || st.dataset.stepStatus === f);
+            st.style.display = show ? '' : 'none';
+            if (show) any = true;
+        });
+        group.style.display = any ? '' : 'none';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', renderSaChips);
 
 function markCitation(cid, directory, done, btn) {
     const body = new FormData();
