@@ -349,3 +349,58 @@ class TestImportFromJson:
 
         # New customer should be added
         assert db.get_customer("new-one") is not None
+
+
+# --- Off-site authority ledger (FATJOE orders + assets) ---
+
+def test_offsite_order_lifecycle(populated_db):
+    db = populated_db
+    cid = "hilltop-dental"
+    oid = db.add_offsite_order(
+        cid, "link", target_url="https://hilltopdental.com/implants-austin",
+        anchor_text="dental implants in Austin", anchor_type="partial",
+        dr_tier=30, cost_usd=120.0, vendor_order_id="FJ-42",
+    )
+    assert oid > 0
+    order = db.get_offsite_order(oid)
+    assert order["status"] == "ordered"
+    assert order["dr_tier"] == 30
+    assert order["customer_id"] == cid
+
+    # Adding an asset advances nothing automatically here, but delivered sets stamp.
+    db.update_offsite_order(oid, status="delivered")
+    assert db.get_offsite_order(oid)["delivered_at"]
+
+
+def test_offsite_assets_dedup_and_summary(populated_db):
+    db = populated_db
+    cid = "hilltop-dental"
+    oid = db.add_offsite_order(cid, "link", cost_usd=120.0)
+    db.add_offsite_asset(oid, cid, "https://blog.example.com/post",
+                         asset_type="link", domain="blog.example.com", da=27)
+    # Duplicate live_url is ignored (UNIQUE constraint).
+    db.add_offsite_asset(oid, cid, "https://blog.example.com/post",
+                         asset_type="link", domain="blog.example.com", da=99)
+    assets = db.get_offsite_assets(cid)
+    assert len(assets) == 1
+    assert assets[0]["da"] == 27
+
+    cit = db.add_offsite_order(cid, "citation", quantity=100, cost_usd=120.0)
+    db.add_offsite_asset(cit, cid, "https://yelp.com/biz/x", asset_type="citation", domain="yelp.com")
+
+    s = db.offsite_summary(cid)
+    assert s["links"] == 1
+    assert s["citations"] == 1
+    assert s["ref_domains"] == 1          # only link/mention domains count
+    assert s["avg_link_da"] == 27
+    assert s["spend_usd"] == 240.0
+
+
+def test_offsite_delete_cascades_assets(populated_db):
+    db = populated_db
+    cid = "hilltop-dental"
+    oid = db.add_offsite_order(cid, "link")
+    db.add_offsite_asset(oid, cid, "https://x.com/a", asset_type="link", domain="x.com")
+    assert db.delete_offsite_order(oid) is True
+    assert db.get_offsite_assets(cid) == []
+    assert db.get_offsite_order(oid) is None

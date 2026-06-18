@@ -2025,6 +2025,115 @@
   </div>
   {% endif %}
 
+  <!-- Off-site authority: FATJOE orders ledger (Phase 1, manual) -->
+  <div class="card" style="margin-bottom:12px;" id="offsite-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h3 style="margin:0;">Off-site authority — link building &amp; citations</h3>
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('offsite-new').toggleAttribute('hidden')">+ Log FATJOE order</button>
+    </div>
+    {% set osum = offsite_summary %}
+    <div class="os-stats">
+      <div class="os-stat"><div class="os-v">{{ osum.links }}</div><div class="os-k">Links live</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.avg_link_da if osum.avg_link_da is not none else '—' }}</div><div class="os-k">Avg link DA</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.ref_domains }}</div><div class="os-k">Ref. domains</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.citations }}</div><div class="os-k">Citations</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.mentions }}</div><div class="os-k">Mentions</div></div>
+      <div class="os-stat"><div class="os-v">${{ osum.spend_usd | round(0) | int }}</div><div class="os-k">Spend to date</div></div>
+    </div>
+
+    <!-- New-order form (hidden until toggled) -->
+    <form id="offsite-new" hidden class="os-form" onsubmit="return submitOffsiteOrder(event)">
+      <div class="os-grid">
+        <label>Type
+          <select name="order_type" onchange="osTypeChange(this)">
+            <option value="link">Blogger outreach link</option>
+            <option value="citation">Local citations</option>
+            <option value="mention">Brand mention</option>
+          </select>
+        </label>
+        <label class="os-dr">DR tier
+          <select name="dr_tier"><option value="">—</option>
+            <option>20</option><option>30</option><option>40</option><option>50</option><option>60</option>
+          </select>
+        </label>
+        <label class="os-qty">Qty
+          <input type="number" name="quantity" value="1" min="1" style="width:70px;">
+        </label>
+        <label>Our cost ($)
+          <input type="number" name="cost_usd" step="0.01" placeholder="120" style="width:100px;">
+        </label>
+        <label>FATJOE order #
+          <input type="text" name="vendor_order_id" placeholder="FJ-…">
+        </label>
+      </div>
+      <div class="os-grid os-link-only">
+        <label style="flex:2;">Target URL
+          <input type="text" name="target_url" placeholder="https://site.com/sell-gold-springfield">
+        </label>
+        <label>Anchor text
+          <input type="text" name="anchor_text" placeholder="sell gold in Springfield">
+        </label>
+        <label>Anchor type
+          <select name="anchor_type">
+            <option value="branded">branded</option>
+            <option value="url">naked URL</option>
+            <option value="generic">generic</option>
+            <option value="partial" selected>partial-match</option>
+            <option value="exact">exact-match</option>
+          </select>
+        </label>
+      </div>
+      <label style="display:block;">Notes
+        <input type="text" name="notes" placeholder="US site preferred; topic relevant to {city} {service}" style="width:100%;">
+      </label>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button type="submit" class="btn btn-sm btn-primary">Save order</button>
+        <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('offsite-new').setAttribute('hidden','')">Cancel</button>
+      </div>
+    </form>
+
+    <!-- Orders -->
+    {% if offsite_orders %}
+    <table class="os-table">
+      <thead><tr><th>Type</th><th>Target / details</th><th>DR</th><th>Cost</th><th>Status</th><th>Live URL</th><th></th></tr></thead>
+      <tbody>
+      {% for o in offsite_orders %}
+      <tr data-order="{{ o.id }}">
+        <td><span class="tag t-{{ 'cit' if o.order_type=='citation' else ('bm' if o.order_type=='mention' else 'link') }}">{{ o.order_type }}</span></td>
+        <td>
+          {% if o.order_type == 'citation' %}{{ o.quantity }} citations
+          {% else %}<div class="os-target">{{ o.target_url or '—' }}</div>
+            {% if o.anchor_text %}<div class="os-anchor">“{{ o.anchor_text }}” <span class="mini">({{ o.anchor_type }})</span></div>{% endif %}
+          {% endif %}
+        </td>
+        <td>{{ o.dr_tier or '—' }}</td>
+        <td>{{ ('$%.0f' % o.cost_usd) if o.cost_usd else '—' }}</td>
+        <td>
+          <select class="os-status lr-{{ o.status }}" onchange="setOffsiteStatus({{ o.id }}, this.value)">
+            {% for st in ['ordered','in_progress','delivered','live','indexed','redo_requested','cancelled'] %}
+            <option value="{{ st }}" {{ 'selected' if o.status==st }}>{{ st.replace('_',' ') }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          {% set oas = offsite_assets | selectattr('order_id','equalto',o.id) | list %}
+          {% if oas %}
+            {% for a in oas[:3] %}<div><a href="{{ a.live_url }}" target="_blank" rel="noopener">{{ a.domain }}</a>{% if a.da is not none %} · DA {{ a.da }}{% endif %}</div>{% endfor %}
+            {% if oas|length > 3 %}<div class="mini">+{{ oas|length - 3 }} more</div>{% endif %}
+          {% else %}
+            <button class="btn btn-sm btn-outline" onclick="markOffsiteLive({{ o.id }}, '{{ o.order_type }}')">+ Mark live</button>
+          {% endif %}
+        </td>
+        <td><button class="os-del" title="Delete" onclick="deleteOffsiteOrder({{ o.id }})">×</button></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="mini" style="margin:12px 0 0;">No off-site orders logged yet. Click <b>+ Log FATJOE order</b> after placing one in the FATJOE dashboard. See the playbook spec <code>fatjoe-va-ops-and-tracking</code> for ordering rules.</p>
+    {% endif %}
+  </div>
+
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <h2 style="margin:0;">Local SEO — VA Action Plan</h2>
     <span style="color:var(--muted);font-size:0.85rem;">{{ va_plan.open_steps }} open of {{ va_plan.total_steps }} steps</span>
@@ -2164,6 +2273,29 @@
 #guideModal .gm-tip{margin-top:14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 12px;font-size:0.83rem;color:#92400e;}
 #guideModal .gm-steps b{color:var(--text);}
 #guideModal .gm-steps code{background:#f1f5f9;padding:1px 5px;border-radius:4px;font-size:0.85em;}
+/* Off-site authority panel */
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.t-cit{background:#dcfce7;color:#166534;}.t-link{background:#dbeafe;color:#1e40af;}.t-bm{background:#fae8ff;color:#86198f;}
+.os-stats{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0 4px;}
+.os-stat{flex:1;min-width:88px;background:var(--bg,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:8px 10px;text-align:center;}
+.os-stat .os-v{font-size:1.25rem;font-weight:700;}
+.os-stat .os-k{font-size:0.66rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+.os-form{margin-top:12px;padding:12px;border:1px dashed var(--border);border-radius:10px;background:#fbfcfe;}
+.os-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
+.os-form label{font-size:0.72rem;font-weight:600;color:var(--muted);display:flex;flex-direction:column;gap:3px;}
+.os-form input,.os-form select{font-size:0.85rem;padding:5px 7px;border:1px solid var(--border);border-radius:6px;}
+.os-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:0.84rem;}
+.os-table th{text-align:left;font-size:0.64rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:6px 8px;border-bottom:1px solid var(--border);}
+.os-table td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top;}
+.os-target{word-break:break-all;font-size:0.8rem;}
+.os-anchor{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+.os-status{font-size:0.72rem;font-weight:700;border:none;border-radius:999px;padding:2px 8px;text-transform:uppercase;cursor:pointer;}
+.os-del{background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;line-height:1;}
+.os-del:hover{color:var(--bad,#dc2626);}
+.lr-ongoing{background:#ede9fe;color:#5b21b6;}
+.lr-in_progress{background:#fef3c7;color:#92400e;}.lr-live{background:#dcfce7;color:#166534;}
+.lr-indexed{background:#dcfce7;color:#166534;}.lr-redo_requested{background:#fee2e2;color:#991b1b;}
+.lr-cancelled{background:#f1f5f9;color:#64748b;}.lr-ordered{background:#dbeafe;color:#1e40af;}
 .lr-ongoing{background:#f1f5f9;color:#475569;}
 </style>
 
@@ -4856,6 +4988,55 @@ function closeGuide() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeGuide(); });
+
+// ---- Off-site authority (FATJOE orders ledger) ----
+const OFFSITE_CID = {{ customer.id|tojson }};
+function osTypeChange(sel) {
+    const isLink = sel.value !== 'citation';
+    document.querySelectorAll('#offsite-new .os-link-only').forEach(el => el.style.display = isLink ? '' : 'none');
+    document.querySelectorAll('#offsite-new .os-dr').forEach(el => el.style.display = (sel.value === 'link') ? '' : 'none');
+}
+function submitOffsiteOrder(e) {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    fetch('/customer/' + OFFSITE_CID + '/offsite/order', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: fd
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { location.reload(); } else { alert(d.error || 'Failed to save order'); }
+    }).catch(() => alert('Network error'));
+    return false;
+}
+function setOffsiteStatus(orderId, status) {
+    const fd = new FormData(); fd.append('status', status);
+    fetch('/customer/' + OFFSITE_CID + '/offsite/' + orderId + '/status', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: fd
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { const sel = document.querySelector('tr[data-order="' + orderId + '"] .os-status');
+            if (sel) sel.className = 'os-status lr-' + status; }
+        else { alert(d.error || 'Failed'); }
+    });
+}
+function markOffsiteLive(orderId, type) {
+    const url = prompt(type === 'citation'
+        ? 'Paste a directory URL (import the full CSV in Phase 2):'
+        : 'Paste the LIVE link URL (we\'ll pull its DA from Moz):');
+    if (!url) return;
+    const fd = new FormData(); fd.append('live_url', url.trim());
+    fetch('/customer/' + OFFSITE_CID + '/offsite/' + orderId + '/asset', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}, body: fd
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { location.reload(); } else { alert(d.error || 'Failed'); }
+    }).catch(() => alert('Network error'));
+}
+function deleteOffsiteOrder(orderId) {
+    if (!confirm('Delete this order and its recorded live links?')) return;
+    fetch('/customer/' + OFFSITE_CID + '/offsite/' + orderId + '/delete', {
+        method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
+    }).then(r => r.json()).then(d => {
+        if (d.ok) { const tr = document.querySelector('tr[data-order="' + orderId + '"]'); if (tr) tr.remove(); }
+        else { alert(d.error || 'Failed'); }
+    });
+}
 
 document.addEventListener('DOMContentLoaded', function () {
     renderSaChips();

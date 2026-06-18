@@ -522,6 +522,9 @@ def customer_detail(customer_id):
             customer_services=db.get_services(customer_id),
             da_latest=db.get_latest_kpi(customer_id, "domain_authority"),
             da_history=list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12))),
+            offsite_orders=db.get_offsite_orders(customer_id),
+            offsite_assets=db.get_offsite_assets(customer_id),
+            offsite_summary=db.offsite_summary(customer_id),
         )
     finally:
         db.close()
@@ -693,6 +696,146 @@ def api_refresh_da(customer_id):
         comps = track_competitor_da(db, customer_id)
         audit_log("domain_authority_refreshed", customer_id=customer_id, details=f"{da} (+{len(comps)} competitors)")
         return jsonify({"ok": True, "da": da, "competitors": len(comps)})
+    finally:
+        db.close()
+
+
+def _domain_of(url):
+    """Bare hostname from a URL, lowercased, no www/scheme — for DA lookups."""
+    s = (url or "").strip().lower()
+    s = re.sub(r"^https?://", "", s)
+    s = s.split("/")[0]
+    return s[4:] if s.startswith("www.") else s
+
+
+# --- Off-site authority (FATJOE orders ledger — Phase 1, manual) ---
+
+@app.route("/customer/<customer_id>/offsite/order", methods=["POST"])
+@login_required
+def add_offsite_order_route(customer_id):
+    """Log a new FATJOE order (citation / link / mention)."""
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        f = request.form
+        order_type = (f.get("order_type") or "link").strip()
+        if order_type not in ("citation", "link", "mention"):
+            return jsonify({"ok": False, "error": "bad order_type"}), 400
+        try:
+            dr_tier = int(f["dr_tier"]) if f.get("dr_tier") else None
+        except ValueError:
+            dr_tier = None
+        try:
+            qty = int(f.get("quantity") or 1)
+        except ValueError:
+            qty = 1
+        try:
+            cost = float(f.get("cost_usd") or 0)
+        except ValueError:
+            cost = 0.0
+        oid = db.add_offsite_order(
+            customer_id, order_type,
+            quantity=qty, dr_tier=dr_tier,
+            target_url=(f.get("target_url") or "").strip(),
+            anchor_text=(f.get("anchor_text") or "").strip(),
+            anchor_type=(f.get("anchor_type") or "").strip(),
+            cost_usd=cost,
+            vendor_order_id=(f.get("vendor_order_id") or "").strip(),
+            notes=(f.get("notes") or "").strip(),
+            status=(f.get("status") or "ordered").strip(),
+        )
+        audit_log("offsite_order_added", customer_id=customer_id, details=f"{order_type} #{oid}")
+        return jsonify({"ok": True, "order_id": oid})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/offsite/<int:order_id>/status", methods=["POST"])
+@login_required
+def update_offsite_order_route(customer_id, order_id):
+    db = get_db()
+    try:
+        order = db.get_offsite_order(order_id)
+        if not order or order["customer_id"] != customer_id:
+            return jsonify({"ok": False, "error": "Order not found"}), 404
+        status = (request.form.get("status") or "").strip()
+        if status not in ("ordered", "in_progress", "delivered", "live",
+                          "indexed", "redo_requested", "cancelled"):
+            return jsonify({"ok": False, "error": "bad status"}), 400
+        db.update_offsite_order(order_id, status=status)
+        audit_log("offsite_order_status", customer_id=customer_id, details=f"#{order_id}={status}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/offsite/<int:order_id>/delete", methods=["POST"])
+@login_required
+def delete_offsite_order_route(customer_id, order_id):
+    db = get_db()
+    try:
+        order = db.get_offsite_order(order_id)
+        if not order or order["customer_id"] != customer_id:
+            return jsonify({"ok": False, "error": "Order not found"}), 404
+        db.delete_offsite_order(order_id)
+        audit_log("offsite_order_deleted", customer_id=customer_id, details=f"#{order_id}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/offsite/<int:order_id>/asset", methods=["POST"])
+@login_required
+def add_offsite_asset_route(customer_id, order_id):
+    """Record a delivered live URL (the 'Mark live' action). For link/mention
+    assets, best-effort pulls the live page's domain DA via Moz so the table can
+    show authority immediately."""
+    db = get_db()
+    try:
+        order = db.get_offsite_order(order_id)
+        if not order or order["customer_id"] != customer_id:
+            return jsonify({"ok": False, "error": "Order not found"}), 404
+        live_url = (request.form.get("live_url") or "").strip()
+        if not live_url:
+            return jsonify({"ok": False, "error": "live_url required"}), 400
+        domain = _domain_of(live_url)
+        atype = order["order_type"]
+        is_dofollow = (request.form.get("is_dofollow") or "1") != "0"
+        da, da_at = None, None
+        if atype in ("link", "mention"):
+            try:
+                from geo_agent.moz_client import get_domain_authority
+                m = get_domain_authority(domain)
+                if m and m.get("da") is not None:
+                    da = round(m["da"])
+                    da_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            except Exception:
+                pass
+        db.add_offsite_asset(
+            order_id, customer_id, live_url,
+            asset_type=atype, domain=domain,
+            anchor_text=(request.form.get("anchor_text") or order["anchor_text"]).strip(),
+            is_dofollow=1 if is_dofollow else 0,
+            da=da, da_checked_at=da_at,
+        )
+        # First delivered asset advances the order to 'delivered'.
+        if order["status"] in ("ordered", "in_progress"):
+            db.update_offsite_order(order_id, status="delivered")
+        audit_log("offsite_asset_added", customer_id=customer_id, details=f"#{order_id} {domain}")
+        return jsonify({"ok": True, "da": da})
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/offsite/asset/<int:asset_id>/indexed", methods=["POST"])
+@login_required
+def toggle_offsite_indexed_route(customer_id, asset_id):
+    db = get_db()
+    try:
+        indexed = (request.form.get("indexed") or "1") != "0"
+        db.update_offsite_asset(asset_id, indexed=1 if indexed else 0)
+        return jsonify({"ok": True})
     finally:
         db.close()
 

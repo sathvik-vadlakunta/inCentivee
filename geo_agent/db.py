@@ -827,6 +827,49 @@ class CustomerDB:
                 UNIQUE(customer_id, date, event_name, channel)
             );
             CREATE INDEX IF NOT EXISTS idx_conversions_daily ON conversions_daily(customer_id, date);
+
+            -- Off-site authority work (FATJOE link building, citations, brand
+            -- mentions). offsite_orders = one row per order we place; the status
+            -- lifecycle is ordered -> in_progress -> delivered -> live -> indexed
+            -- (or redo_requested / cancelled). See specs fatjoe-va-ops-and-tracking.
+            CREATE TABLE IF NOT EXISTS offsite_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                vendor TEXT NOT NULL DEFAULT 'fatjoe',
+                order_type TEXT NOT NULL DEFAULT 'link',   -- citation | link | mention
+                status TEXT NOT NULL DEFAULT 'ordered',
+                quantity INTEGER NOT NULL DEFAULT 1,
+                dr_tier INTEGER,                           -- links only (20/30/40…)
+                target_url TEXT NOT NULL DEFAULT '',
+                anchor_text TEXT NOT NULL DEFAULT '',
+                anchor_type TEXT NOT NULL DEFAULT '',       -- branded|url|generic|partial|exact
+                cost_usd REAL NOT NULL DEFAULT 0,
+                vendor_order_id TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',
+                ordered_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                delivered_at TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_offsite_orders ON offsite_orders(customer_id, id DESC);
+
+            -- Delivered live URLs from an order (a citation order yields ~100, a
+            -- link order yields 1). da is pulled via moz_client per unique domain.
+            CREATE TABLE IF NOT EXISTS offsite_assets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER NOT NULL REFERENCES offsite_orders(id),
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                asset_type TEXT NOT NULL DEFAULT 'link',   -- citation | link | mention
+                live_url TEXT NOT NULL DEFAULT '',
+                domain TEXT NOT NULL DEFAULT '',
+                anchor_text TEXT NOT NULL DEFAULT '',
+                is_dofollow INTEGER NOT NULL DEFAULT 1,
+                da INTEGER,
+                da_checked_at TEXT,
+                indexed INTEGER NOT NULL DEFAULT 0,
+                live_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                UNIQUE(customer_id, live_url)
+            );
+            CREATE INDEX IF NOT EXISTS idx_offsite_assets ON offsite_assets(customer_id, id DESC);
+            CREATE INDEX IF NOT EXISTS idx_offsite_assets_order ON offsite_assets(order_id);
         """)
 
         # share_token may be missing on report_snapshots created before it was added.
@@ -2965,6 +3008,133 @@ class CustomerDB:
         )
         self.conn.commit()
         return self.conn.total_changes > 0
+
+    # --- Off-site authority (FATJOE orders + delivered assets) ---
+
+    _OFFSITE_ORDER_COLS = (
+        "vendor", "order_type", "status", "quantity", "dr_tier", "target_url",
+        "anchor_text", "anchor_type", "cost_usd", "vendor_order_id", "notes",
+    )
+
+    def add_offsite_order(self, customer_id, order_type, **fields):
+        """Create an off-site order. Returns the new order id."""
+        data = {"order_type": order_type}
+        data.update({k: v for k, v in fields.items() if k in self._OFFSITE_ORDER_COLS})
+        cols = ["customer_id"] + list(data.keys())
+        ph = ", ".join("?" for _ in cols)
+        cur = self.conn.execute(
+            f"INSERT INTO offsite_orders ({', '.join(cols)}) VALUES ({ph})",
+            [customer_id] + list(data.values()),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_offsite_order(self, order_id):
+        row = self.conn.execute(
+            "SELECT * FROM offsite_orders WHERE id = ?", (order_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_offsite_orders(self, customer_id):
+        rows = self.conn.execute(
+            "SELECT * FROM offsite_orders WHERE customer_id = ? ORDER BY id DESC",
+            (customer_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def update_offsite_order(self, order_id, **fields):
+        allowed = set(self._OFFSITE_ORDER_COLS) | {"delivered_at"}
+        sets = {k: v for k, v in fields.items() if k in allowed}
+        if not sets:
+            return
+        if sets.get("status") == "delivered" and "delivered_at" not in sets:
+            sets["delivered_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        clause = ", ".join(f"{k} = ?" for k in sets)
+        self.conn.execute(
+            f"UPDATE offsite_orders SET {clause} WHERE id = ?",
+            list(sets.values()) + [order_id],
+        )
+        self.conn.commit()
+
+    def delete_offsite_order(self, order_id):
+        self.conn.execute("DELETE FROM offsite_assets WHERE order_id = ?", (order_id,))
+        self.conn.execute("DELETE FROM offsite_orders WHERE id = ?", (order_id,))
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
+    def add_offsite_asset(self, order_id, customer_id, live_url, **fields):
+        """Record a delivered live URL. Idempotent on (customer_id, live_url)."""
+        cols = ["order_id", "customer_id", "live_url"]
+        vals = [order_id, customer_id, live_url]
+        for k in ("asset_type", "domain", "anchor_text", "is_dofollow",
+                  "da", "da_checked_at", "indexed"):
+            if k in fields:
+                cols.append(k)
+                vals.append(fields[k])
+        ph = ", ".join("?" for _ in cols)
+        self.conn.execute(
+            f"INSERT OR IGNORE INTO offsite_assets ({', '.join(cols)}) VALUES ({ph})",
+            vals,
+        )
+        self.conn.commit()
+
+    def get_offsite_assets(self, customer_id, order_id=None):
+        if order_id is not None:
+            rows = self.conn.execute(
+                "SELECT * FROM offsite_assets WHERE order_id = ? ORDER BY da DESC, id DESC",
+                (order_id,),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM offsite_assets WHERE customer_id = ? ORDER BY da DESC, id DESC",
+                (customer_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def update_offsite_asset(self, asset_id, **fields):
+        allowed = {"da", "da_checked_at", "indexed", "is_dofollow", "anchor_text"}
+        sets = {k: v for k, v in fields.items() if k in allowed}
+        if not sets:
+            return
+        clause = ", ".join(f"{k} = ?" for k in sets)
+        self.conn.execute(
+            f"UPDATE offsite_assets SET {clause} WHERE id = ?",
+            list(sets.values()) + [asset_id],
+        )
+        self.conn.commit()
+
+    def offsite_summary(self, customer_id, since: str | None = None):
+        """Roll-up for the panel + weekly report. Counts live assets by type,
+        distinct referring domains, avg link DA, and total spend. `since` filters
+        assets by live_at (ISO date) for period reporting."""
+        a_where = "customer_id = ?"
+        a_args: list = [customer_id]
+        if since:
+            a_where += " AND live_at >= ?"
+            a_args.append(since)
+        row = self.conn.execute(
+            f"""SELECT
+                  SUM(CASE WHEN asset_type='link' THEN 1 ELSE 0 END) AS links,
+                  SUM(CASE WHEN asset_type='citation' THEN 1 ELSE 0 END) AS citations,
+                  SUM(CASE WHEN asset_type='mention' THEN 1 ELSE 0 END) AS mentions,
+                  COUNT(DISTINCT CASE WHEN asset_type IN ('link','mention') THEN domain END) AS ref_domains,
+                  AVG(CASE WHEN asset_type='link' AND da IS NOT NULL THEN da END) AS avg_link_da
+                FROM offsite_assets WHERE {a_where}""",
+            a_args,
+        ).fetchone()
+        spend = self.conn.execute(
+            "SELECT COALESCE(SUM(cost_usd),0) FROM offsite_orders WHERE customer_id = ?",
+            (customer_id,),
+        ).fetchone()[0]
+        d = dict(row) if row else {}
+        return {
+            "links": d.get("links") or 0,
+            "citations": d.get("citations") or 0,
+            "mentions": d.get("mentions") or 0,
+            "ref_domains": d.get("ref_domains") or 0,
+            "avg_link_da": round(d["avg_link_da"]) if d.get("avg_link_da") else None,
+            "spend_usd": round(spend or 0, 2),
+        }
 
     # --- Migration helper: import from customers.json ---
 
