@@ -294,7 +294,9 @@ def va_action_plan(db, customer: dict) -> dict | None:
             st, instr = "todo", "Listed but the NAP is WRONG — edit it to match the exact business info above."
         else:
             st, instr = "todo", "Not listed — create a listing using the exact business info above."
-        cit_steps.append(_step(d["name"], instr, st, row.get("listing_url", "") if row else ""))
+        step = _step(d["name"], instr, st, row.get("listing_url", "") if row else "")
+        step["mark"] = d["name"]  # enables the manual "mark listed" control (Path B)
+        cit_steps.append(step)
     groups.append({
         "group": "4 · Directory citations (NAP consistency)",
         "note": ("Once BrightLocal is connected it auto-audits/fixes most of these. Until then, "

@@ -1987,10 +1987,17 @@
     {% for s in g.steps %}
     <div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);align-items:flex-start;">
       <span class="lr-badge lr-{{ s.status }}" style="flex-shrink:0;margin-top:2px;">{{ s.status }}</span>
-      <div>
+      <div style="flex:1;">
         <div style="font-weight:600;">{{ s.title }}{% if s.link %} · <a href="{{ s.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}</div>
         {% if s.instruction %}<div style="color:var(--muted);font-size:0.85rem;margin-top:2px;">{{ s.instruction }}</div>{% endif %}
       </div>
+      {% if s.mark %}
+        {% if s.status == 'done' %}
+        <button type="button" class="btn btn-sm btn-outline" style="flex-shrink:0;" onclick="markCitation('{{ customer.id }}', {{ s.mark|tojson }}, false, this)">undo</button>
+        {% else %}
+        <button type="button" class="btn btn-sm btn-primary" style="flex-shrink:0;white-space:nowrap;" onclick="markCitation('{{ customer.id }}', {{ s.mark|tojson }}, true, this)">Mark listed ✓</button>
+        {% endif %}
+      {% endif %}
     </div>
     {% endfor %}
   </div>
@@ -4539,6 +4546,18 @@ function saveServiceAreas(e, cid) {
             el.style.color = 'var(--danger)'; el.textContent = 'Network error';
         });
     return false;
+}
+
+function markCitation(cid, directory, done, btn) {
+    const body = new FormData();
+    body.append('directory', directory);
+    body.append('done', done ? 'true' : 'false');
+    btn.disabled = true;
+    fetch('/customer/' + cid + '/citation/mark', {method: 'POST', body})
+        .then(r => r.json()).then(d => {
+            if (d.ok) location.reload();
+            else { alert(d.error || 'Failed'); btn.disabled = false; }
+        }).catch(() => { alert('Network error'); btn.disabled = false; });
 }
 
 function saveBrightlocalIntegration(e, customerId) {

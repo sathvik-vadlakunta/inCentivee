@@ -32,18 +32,72 @@ def _api_key() -> str:
     return os.environ.get("BRIGHTLOCAL_API_KEY", "")
 
 
+def provision_location(db, customer_id: str) -> str | None:
+    """Create a BrightLocal Citation Tracker location for a customer and store its
+    id — the per-customer 'sign-up' that scales. Idempotent + dormant.
+
+    Returns the existing location_id if already set, the new one on success, or
+    None when no API key is configured (or provisioning fails). This is what lets
+    onboarding a new customer require ZERO manual BrightLocal setup once the
+    agency account + API key exist.
+    """
+    api_key = _api_key()
+    if not api_key:
+        return None
+    integ = db.get_integration(customer_id, "brightlocal")
+    existing = (integ or {}).get("config", {}).get("location_id") if integ else None
+    if existing:
+        return existing
+    customer = db.get_customer(customer_id)
+    if not customer:
+        return None
+
+    from geo_agent.directory_profiles import canonical_nap
+    nap = canonical_nap(customer)
+
+    # TODO(account): confirm the exact Citation Tracker location-create endpoint +
+    # field names against the live BrightLocal account (shape follows v4 docs).
+    try:
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(f"{BRIGHTLOCAL_API_BASE}/ct", data={
+                "api-key": api_key,
+                "business-name": nap["name"],
+                "address": nap["address"],
+                "telephone": nap["phone"],
+                "url": nap["url"],
+                "country": "USA",
+            })
+            resp.raise_for_status()
+            data = resp.json()
+        location_id = str(data.get("location-id") or data.get("id") or "")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"BrightLocal provisioning failed for {customer_id}: {exc}")
+        return None
+
+    if location_id:
+        cfg = dict((integ or {}).get("config", {}) or {})
+        cfg["location_id"] = location_id
+        db.save_integration(customer_id, "brightlocal", cfg, status="configured")
+        logger.info(f"BrightLocal location provisioned for {customer_id}: {location_id}")
+    return location_id or None
+
+
 def track_citations(db, customer_id: str) -> int | None:
     """R4: Pull citation/NAP status into ``citations``. Returns directories written.
 
-    No-op (returns None) unless both a BrightLocal API key and a per-customer
-    ``location_id`` are configured.
+    No-op (returns None) unless a BrightLocal API key is configured. If the key
+    is set but the customer has no location_id yet, auto-provisions one first.
     """
     api_key = _api_key()
+    if not api_key:
+        logger.info(f"BrightLocal API key not set — skipping citations for {customer_id}")
+        return None
     integ = db.get_integration(customer_id, "brightlocal")
     location_id = (integ or {}).get("config", {}).get("location_id") if integ else None
-
-    if not api_key or not location_id:
-        logger.info(f"BrightLocal not configured for {customer_id} — skipping citations")
+    if not location_id:
+        location_id = provision_location(db, customer_id)  # auto-sign-up this customer
+    if not location_id:
+        logger.info(f"BrightLocal location unavailable for {customer_id} — skipping citations")
         return None
 
     # TODO(account): confirm the exact Citation Tracker results endpoint + field

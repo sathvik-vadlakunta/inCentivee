@@ -2923,6 +2923,14 @@ class CustomerDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def delete_citation(self, customer_id, directory):
+        self.conn.execute(
+            "DELETE FROM citations WHERE customer_id = ? AND directory = ?",
+            (customer_id, directory),
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
     # --- GBP Audit ---
 
     def save_gbp_audit(self, customer_id, score, details):

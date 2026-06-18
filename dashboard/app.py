@@ -662,6 +662,30 @@ def update_service_areas(customer_id):
         db.close()
 
 
+@app.route("/customer/<customer_id>/citation/mark", methods=["POST"])
+@login_required
+def mark_citation(customer_id):
+    """Manually mark a directory listed+consistent (Path B — no BrightLocal API),
+    or undo it. Feeds directory breadth + the NAP-consistency score the same way
+    the API would."""
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            return jsonify({"ok": False, "error": "Customer not found"}), 404
+        directory = (request.form.get("directory") or "").strip()
+        if not directory:
+            return jsonify({"ok": False, "error": "directory required"}), 400
+        done = (request.form.get("done") or "true").lower() != "false"
+        if done:
+            db.save_citation(customer_id, directory, listed=True, nap_match=True, url_correct=True)
+        else:
+            db.delete_citation(customer_id, directory)
+        audit_log("citation_marked", customer_id=customer_id, details=f"{directory}={'done' if done else 'reset'}")
+        return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
 @app.route("/r/<token>")
 def public_report(token):
     """Public, login-free customer link. Security model: the token is an
