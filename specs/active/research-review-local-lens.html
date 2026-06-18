@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Review — Local-Business Lens</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:940px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:21px;margin:32px 0 12px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+  p{margin:10px 0}
+  a{color:var(--accent)}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:74ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:24px 28px;box-shadow:var(--shadow);margin-bottom:22px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  ul{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .direct{background:#e8f5ec;color:var(--accent)} .caveat{background:#fdf3e3;color:var(--warn)} .weak{background:#fdeaea;color:var(--bad)}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e}
+  .mini{font-size:12px;color:var(--muted)}
+  .big{background:#ecfdf5;border:1px solid #a7e3bf;border-radius:12px;padding:16px 18px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">REVIEW · LOCAL LENS</span>
+  <h1>AI-Search Research — Local-Business Review</h1>
+  <p class="lead">Re-reading the verified findings through the lens of our actual clients: single-location (or few-location) <b>dental practices, law firms, and local retail</b> (e.g., a gold/silver buyer) serving a city + ~25-min radius — not national brands. Which findings transfer, which were national-skewed, and how to re-prioritize.</p>
+  <p class="mini">Owner: Kody · Companion to the deep-research report + the levers/ops specs · 2026-06-18</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">The lens (why this matters)</h2>
+    <p>Most AI-search/GEO studies pool <b>all brands</b> (often national B2B/SaaS with real brand-search volume and PR budgets). A local dentist or coin shop behaves differently: tiny brand-search volume, no national press, a handful of pages, and customers asking <b>"near me / in {city}"</b>. So we weight the <b>local-specific</b> evidence highest and treat national-brand findings as directional.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Finding-by-finding — does it transfer to local?</h2>
+    <table>
+      <tr><th>Verified finding</th><th>Source type</th><th>Local applicability</th><th>How it changes for local</th></tr>
+      <tr>
+        <td><b>Business website is the #1 AI citation source (~58%) for LOCAL queries; press ~27%, directories ~15%</b></td>
+        <td>BrightLocal — <b>local-specific</b></td>
+        <td><span class="tag direct">DIRECT</span></td>
+        <td>Anchor finding. The client's own optimized site + accurate directory presence is the foundation. Exactly our Foundation + Lever B work.</td>
+      </tr>
+      <tr>
+        <td><b>45% now use AI for local recommendations; ChatGPT + Google AI Mode lead</b></td>
+        <td>BrightLocal LCRS — <b>local-specific</b></td>
+        <td><span class="tag direct">DIRECT</span></td>
+        <td>The headline for the sales pitch. Prioritize ChatGPT + Google AI Mode in our tracking/optimization.</td>
+      </tr>
+      <tr>
+        <td><b>Off-site branded mentions ≈3× backlinks (~0.67 corr.)</b></td>
+        <td>Ahrefs, 75k brands — <b>all-brand (national-skewed)</b></td>
+        <td><span class="tag caveat">DIRECTIONAL</span></td>
+        <td>Lever holds, but for local the mentions come from <b>local press, regional blogs, "best-{city}" roundups, and local directories</b> — not national PR. The brand-search-volume component is weak for tiny businesses, so don't over-index on it.</td>
+      </tr>
+      <tr>
+        <td><b>Freshness window ~1–2 years; monthly/quarterly cadence</b></td>
+        <td>Seer — general (not local)</td>
+        <td><span class="tag caveat">DIRECTIONAL</span></td>
+        <td>Freshness matters, but a small local site has few pages and slow-changing facts. <b>Quarterly refresh is likely sufficient</b>; monthly is overkill except for a few money pages (hours, pricing, "is now a good time to sell gold"). Don't promise/charge for monthly churn you don't need.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">⭐ The lever the national research UNDER-weights: REVIEWS</h2>
+    <div class="big">
+      <p style="margin:0">For <b>local</b> businesses, Google review <b>volume, rating, and recency</b> are a top AI-recommendation signal — and a local-specific one the all-brand studies barely capture. AI assistants lean on review trust for "best/near me" local queries.</p>
+    </div>
+    <ul>
+      <li>This validates keeping <b>Reputation</b> in the Score (rating + review growth) — but for local it's arguably co-equal with off-site mentions, not a 10% afterthought.</li>
+      <li>Actionable: a <b>review-generation motion</b> (post-visit/post-transaction review requests) is a high-ROI local lever we should run alongside earned mentions — and it's cheap/automatable.</li>
+      <li>Recency matters: a steady drip of fresh reviews beats a stale pile — pairs with the review-growth-trend signal we already score.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Refuted findings — even less relevant for local</h2>
+    <ul>
+      <li><b>Reddit / Wikipedia dominance</b> — national/B2B phenomenon. A local dentist or coin shop won't (and shouldn't try to) rank via Reddit threads or get a Wikipedia page. Skip entirely for local.</li>
+      <li><b>Princeton "+22%/+37%" format lifts, comparative-listicle %s</b> — general/national and unverified. The tactics (quotes, stats, FAQ) are still fine qualitatively; the numbers aren't.</li>
+      <li><b>"13-week freshness rule"</b> — unverified and, for local, contradicted by the lighter cadence local sites actually need.</li>
+      <li><b>Specific niche directories (Three Best Rated, Expertise)</b> — unverified ranking; for local, prioritize Google/Apple/Yelp/Bing + the <b>vertical</b> dirs (Healthgrades/Zocdoc, Avvo/Justia, BBB/coin-dealer dirs) instead.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Re-prioritized LOCAL lever stack</h2>
+    <p>For a local dental / legal / retail client, in order of impact:</p>
+    <table>
+      <tr><th>#</th><th>Lever</th><th>Why (local)</th><th>Our status</th></tr>
+      <tr><td>1</td><td><b>Google Business Profile + local citation / NAP consistency</b></td><td>The anchor AI + everything cross-checks for local; the #1 directory layer</td><td>Lever B (BrightLocal R4) — build next</td></tr>
+      <tr><td>2</td><td><b>Reviews</b> — volume, rating, recency + a generation motion</td><td>Top local AI-recommendation signal; underweighted by national studies</td><td>Scored (Reputation); add a review-request motion</td></tr>
+      <tr><td>3</td><td><b>On-site: location/service-area pages + FAQ + answer-first content</b></td><td>The business site is the #1 local citation source (58%)</td><td>Done (content engine + Score Foundation/Content)</td></tr>
+      <tr><td>4</td><td><b>Local earned mentions</b> — local press, regional blogs, "best-{city}" roundups, HARO local angles</td><td>Press is ~27% of local citations; achievable locally, not national PR</td><td>Lever A (HARO automation + per-placement, local-focused)</td></tr>
+      <tr><td>5</td><td><b>Freshness</b> — quarterly refresh of money pages</td><td>Matters, but lighter cadence than national content sites</td><td>Scored (freshness) + reconciler</td></tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Implications for PracticeRank</h2>
+    <ul>
+      <li><b>Lead the offer with the BrightLocal-backed local facts</b> (website = #1 local citation source; 45% use AI for local recs) — these are local-specific and defensible.</li>
+      <li><b>Add a review-generation motion</b> as a first-class lever for local clients (high ROI, cheap, automatable) — don't treat reviews as a minor score input.</li>
+      <li><b>Scope earned mentions to LOCAL outlets</b> (local press / regional / niche), and tell vendors so (question #8 in the vendor spec). National placements are wasted spend for a local business.</li>
+      <li><b>Lighten the content-refresh cadence to quarterly</b> for most local clients (money pages excepted) — saves cost and matches the evidence.</li>
+      <li><b>Drop Reddit/Wikipedia ambitions for local</b> — not worth the effort for single-location businesses.</li>
+    </ul>
+    <p class="mini">Net: the local-specific evidence (BrightLocal) reinforces our Foundation + Lever B + reviews; the national-skewed findings (Ahrefs mentions, Seer cadence) still apply but get re-scoped to local outlets and a lighter cadence. Reviews deserve a promotion.</p>
+  </div>
+</div>
+</body>
+</html>
