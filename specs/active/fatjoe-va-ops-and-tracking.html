@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FATJOE — VA Operations & Results Tracking Spec</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:29px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:20px;margin:30px 0 12px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px}
+  p{margin:9px 0}
+  a{color:var(--accent)}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:78ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow);margin-bottom:20px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  ul,ol{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:13px 15px;font-size:13.5px;color:#7a5b1e}
+  .ok{background:#ecfdf5;border:1px solid #a7e3bf;border-radius:10px;padding:13px 15px;font-size:13.5px}
+  .bad{background:#fef2f2;border:1px solid #f4c0c0;border-radius:10px;padding:13px 15px;font-size:13.5px;color:#7a1e1e}
+  .mini{font-size:12px;color:var(--muted)}
+  .big{font-weight:700;color:var(--accent)}
+  .step{counter-increment:st;position:relative;padding-left:34px;margin:12px 0}
+  .step::before{content:counter(st);position:absolute;left:0;top:-2px;width:24px;height:24px;border-radius:999px;background:#eff6ff;color:#1e40af;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .steps{counter-reset:st}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .t-cit{background:#dcfce7;color:#166534}.t-link{background:#dbeafe;color:#1e40af}.t-bm{background:#fae8ff;color:#86198f}
+  pre{background:#0f1117;color:#e6e8ec;border-radius:10px;padding:14px 16px;overflow:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace}
+  kbd{background:#1a1a2e;color:#fff;border-radius:4px;padding:1px 6px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · OPS + TRACKING</span>
+  <h1>FATJOE — VA Operations &amp; Results Tracking</h1>
+  <p class="lead">The operational layer on top of the pricing spec: exactly how a VA places, QAs, and records FATJOE orders; how we ingest FATJOE's unbranded reports; and how we track the authority lift back to DA, referring domains, rankings, and AI citations so we can prove ROI in the weekly report.</p>
+  <p class="mini">Owner: Kody · Vendor: FATJOE (white-label reseller) · companion to <code>link-building-pricing.html</code>, <code>local-relevancy-engine.html</code>, <code>lever-b-citations-nap.html</code> · 2026-06-18</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Scope &amp; goal</h2>
+    <p>The pricing spec decided <em>what</em> we buy and bundle. This spec decides <em>who does it, how, and how we measure it</em>. Three outcomes:</p>
+    <ul>
+      <li><strong>A repeatable VA playbook</strong> — a VA with no SEO background can place every FATJOE order correctly (right target URL, right anchor, right DR tier, right cadence) from the Local SEO tab.</li>
+      <li><strong>A results ledger in the app</strong> — every order is a tracked row from <code>ordered → delivered → live → indexed</code>, with cost, the live URL, and that URL's DA.</li>
+      <li><strong>Report ingestion + ROI proof</strong> — FATJOE's CSV report uploads into the customer record, auto-pulls each live link's DA via Moz, and feeds the weekly report's authority section (which already shows the DA week/month/started deltas).</li>
+    </ul>
+    <div class="note">Client-facing rule: the client only ever sees <strong>PracticeRank</strong>. FATJOE reports are unbranded; we never forward their CSV — we ingest it and re-present it as our own "Authority work this period."</div>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">The three FATJOE products → our jobs</h2>
+    <table>
+      <tr><th>Product</th><th>Tag</th><th>Cadence</th><th>Fulfils</th><th>Our cost (from pricing spec)</th></tr>
+      <tr><td>Local citations</td><td><span class="tag t-cit">citations</span></td><td>One-time at onboarding + top-ups</td><td>Local SEO tab → Directory citations (Lever B / NAP)</td><td>50=$90 · 100=$120 · 300=$288</td></tr>
+      <tr><td>Blogger outreach (links)</td><td><span class="tag t-link">link</span></td><td>1–2/mo drip (tier-dependent)</td><td>Lever A off-site authority → DA growth</td><td>DR20 $96 · DR30 $120 · DR40 $216</td></tr>
+      <tr><td>Brand mentions</td><td><span class="tag t-bm">mention</span></td><td>~Quarterly</td><td>AI visibility → "sources now citing you"</td><td>$336/placement</td></tr>
+    </table>
+    <p class="mini">Cadence by client tier is governed by the pricing spec's "anti-10/month" table — new/low-DR clients get a citation burst + 1–2 relevant links/mo, not a firehose.</p>
+  </div>
+
+  <h2>Part 1 — VA Playbook (full instructions)</h2>
+
+  <div class="doc">
+    <h3><span class="tag t-cit">citations</span> &nbsp;A · Local citation order (onboarding + top-ups)</h3>
+    <div class="steps">
+      <div class="step">Open the customer's <strong>Local SEO</strong> tab. Confirm the canonical NAP block at the top is correct and complete (name, address, phone, website). <strong>Everything downstream copies this — fix it first if wrong.</strong></div>
+      <div class="step">In the FATJOE reseller dashboard, choose <strong>Local Citations</strong> → package size per the client tier (new local = 100; competitive top-up = 50).</div>
+      <div class="step">Fill the order form with the canonical NAP <em>character-for-character</em>: business name, full address incl. suite, phone in one consistent format, website URL, primary category, 2–3 service keywords, business hours, a 1–2 sentence description, and (if asked) a logo + one photo URL.</div>
+      <div class="step">Set turnaround to standard (~7 days). In order notes: <code>"Match NAP exactly as provided — do not reformat phone or abbreviate street."</code></div>
+      <div class="step">Submit, then in the app open <strong>Off-site → New order</strong>, log it as type <code>citation</code>, qty, cost, status <code>ordered</code>. (Or click "Order citations" on the citation step once ordering is wired — Phase 3.)</div>
+      <div class="step"><strong>On delivery:</strong> FATJOE returns a CSV of submitted directories + screenshots. Upload it via <strong>Off-site → Import report</strong> (Part 3). Spot-check 5 random listings live for NAP accuracy before marking <code>delivered</code>.</div>
+    </div>
+    <div class="note">Citations are NAP submissions, not editorial links — there's no anchor text. The only thing that matters is exact, consistent NAP. One wrong suite number across 100 dirs actively hurts ranking.</div>
+  </div>
+
+  <div class="doc">
+    <h3><span class="tag t-link">link</span> &nbsp;B · Blogger outreach link (monthly drip)</h3>
+    <div class="steps">
+      <div class="step">Confirm the client is due a link this month per their tier (the Off-site panel shows "links this month: 1 of 2"). Don't over-order — natural velocity beats volume.</div>
+      <div class="step"><strong>Pick the target URL.</strong> Rotate across the pages that need authority, not always the homepage:
+        <ul>
+          <li>Money pages: a core service page or a top city/service page (e.g. <code>/sell-gold-springfield</code>).</li>
+          <li>~40% homepage, ~60% deep pages over time — see anchor/target strategy below.</li>
+        </ul>
+      </div>
+      <div class="step"><strong>Choose the DR tier</strong> from the tier table — new local = DR20–30. Don't buy DR50+ for a low-authority local site; it looks engineered and wastes margin.</div>
+      <div class="step"><strong>Set the anchor text</strong> per the ratio rules (next card). When unsure, use a branded or URL anchor — never an exact-match commercial anchor two months running.</div>
+      <div class="step"><strong>Niche/topic:</strong> pick the closest niche to the client's vertical (dental → health; law → legal/finance; gold buyer → finance/lifestyle). In notes: <code>"US-based site preferred; topic relevant to {city} {service}."</code></div>
+      <div class="step">Let FATJOE write the content (included). Submit. Log in the app as type <code>link</code>, with target URL, anchor, DR tier, cost, status <code>ordered</code>.</div>
+      <div class="step"><strong>On delivery (~14 days)</strong> QA the live URL (next-but-one card), then import the link report. The app pulls the live page's DA via Moz and stores it on the link row.</div>
+    </div>
+  </div>
+
+  <div class="doc">
+    <h3>Anchor text &amp; target-URL rules (the part VAs get wrong)</h3>
+    <p>Spammy anchors are the fastest way to make cheap links backfire. Hand the VA this fixed distribution — aim for roughly, over each client's running link history:</p>
+    <table>
+      <tr><th>Anchor type</th><th>Share</th><th>Example for a Springfield gold buyer</th></tr>
+      <tr><td>Branded</td><td>~40%</td><td>"Springfield Gold &amp; Coin", "Springfield Gold"</td></tr>
+      <tr><td>Naked URL</td><td>~20%</td><td>springfieldgold.com</td></tr>
+      <tr><td>Generic / natural</td><td>~20%</td><td>"this local gold buyer", "read more", "here"</td></tr>
+      <tr><td>Partial-match</td><td>~15%</td><td>"sell gold in Springfield", "Springfield coin shop"</td></tr>
+      <tr><td>Exact-match commercial</td><td>≤5%</td><td>"sell gold Springfield" (use sparingly, never repeat)</td></tr>
+    </table>
+    <ul>
+      <li>Never the same exact-match anchor twice for one client.</li>
+      <li>Match the anchor to the target page (city/service anchor → that city/service page, not the homepage).</li>
+      <li>The app should <strong>warn</strong> when a new order's anchor type would push the client's exact-match share over 10% (Phase 2 nicety).</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h3><span class="tag t-bm">mention</span> &nbsp;C · Brand mention (quarterly / AI-visibility add-on)</h3>
+    <div class="steps">
+      <div class="step">Order ~quarterly for base clients, or on demand when selling the "AI Visibility pack" add-on.</div>
+      <div class="step">In FATJOE choose <strong>Brand Mentions</strong>, DR30–60 range. Provide: business name, city, website, the 1–2 facts you want surfaced (e.g. "family-owned since 2004", "same-day gold appraisals"), and the vertical.</div>
+      <div class="step">Notes: <code>"Positive, natural mention in a listicle/roundup; include city; aimed at AI/LLM visibility."</code> Mixed follow/nofollow is fine — the goal is a citable mention, not link juice.</div>
+      <div class="step">Log as type <code>mention</code>. On delivery, import the report; the live URL becomes a candidate "source now citing you" once it shows up in grounded AI answers.</div>
+    </div>
+  </div>
+
+  <div class="doc">
+    <h3>Deliverable QA checklist (every link before it's marked live)</h3>
+    <ul>
+      <li>✅ Link is <strong>live</strong> and loads (not 404 / not "coming soon").</li>
+      <li>✅ Link is <strong>do-follow</strong> for blogger-outreach orders (check page source for <code>rel="nofollow"</code> — citations/mentions may be nofollow, that's fine).</li>
+      <li>✅ Points to the <strong>exact target URL</strong> we ordered, with the <strong>exact anchor</strong>.</li>
+      <li>✅ Surrounding content is on-topic and reads like a real post (not a thin link farm; no obvious PBN footprint).</li>
+      <li>✅ Page is <strong>indexable</strong> (no <code>noindex</code>) — paste the URL into Google in ~2 weeks to confirm it's indexed.</li>
+      <li>✅ The live page's DA (pulled by the app via Moz) is within ~5 of the tier we paid for. If a DR30 order lands on a DA8 page, raise a redo with FATJOE (lifetime guarantee covers it).</li>
+    </ul>
+    <div class="bad">If any check fails, do <strong>not</strong> mark it live — set status <code>redo_requested</code> and file the guarantee claim with FATJOE. Track the redo on the same order row.</div>
+  </div>
+
+  <h2>Part 2 — Tracking results (data model)</h2>
+
+  <div class="doc">
+    <h3>New table: <code>offsite_orders</code></h3>
+    <p>One row per FATJOE order. Lives in <code>geo_agent/db.py</code> alongside <code>citations</code> / <code>kpis</code>.</p>
+<pre>offsite_orders
+  id              INTEGER PK
+  customer_id     TEXT  FK
+  vendor          TEXT  DEFAULT 'fatjoe'
+  order_type      TEXT  -- citation | link | mention
+  status          TEXT  -- ordered | in_progress | delivered | live | indexed | redo_requested | cancelled
+  quantity        INTEGER       -- citations: pack size; links: 1
+  dr_tier         INTEGER       -- links only (20/30/40…)
+  target_url      TEXT          -- page we pointed the link at
+  anchor_text     TEXT
+  anchor_type     TEXT          -- branded | url | generic | partial | exact
+  cost_usd        REAL          -- our wholesale cost
+  vendor_order_id TEXT          -- FATJOE order ref
+  ordered_at      TEXT
+  delivered_at    TEXT
+  notes           TEXT</pre>
+    <h3>New table: <code>offsite_assets</code> (delivered live URLs)</h3>
+    <p>A citation order yields ~100 assets; a link order yields 1. This is what powers the live-links table and the report.</p>
+<pre>offsite_assets
+  id            INTEGER PK
+  order_id      INTEGER FK -> offsite_orders
+  customer_id   TEXT FK
+  asset_type    TEXT   -- citation | link | mention
+  live_url      TEXT
+  domain        TEXT
+  anchor_text   TEXT
+  is_dofollow   INTEGER
+  da            INTEGER       -- pulled via moz_client.get_domain_authority(domain)
+  da_checked_at TEXT
+  indexed       INTEGER       -- verified in Google
+  live_at       TEXT</pre>
+    <div class="note">DA per asset reuses the existing <code>geo_agent/moz_client.py</code>. Batch the lookups (one Moz call per unique domain) to stay inside the API plan — cache by domain across customers.</div>
+  </div>
+
+  <div class="doc">
+    <h3>KPIs we derive (feed the score + report)</h3>
+    <table>
+      <tr><th>KPI</th><th>Source</th><th>Where it shows</th></tr>
+      <tr><td>Domain Authority (already tracked)</td><td>Moz on the client's own domain</td><td>Weekly report DA pills (week/month/started) — already shipped</td></tr>
+      <tr><td>Referring domains (count of live link/mention assets)</td><td><code>offsite_assets</code> distinct domains</td><td>Local SEO tab + report "authority work"</td></tr>
+      <tr><td>Avg DR of links built</td><td>avg <code>offsite_assets.da</code> where type=link</td><td>Report — shows quality not just count</td></tr>
+      <tr><td>Citations live</td><td>count assets where type=citation</td><td>Citation step + Local Visibility pillar of the Score</td></tr>
+      <tr><td>Spend &amp; margin</td><td>sum <code>offsite_orders.cost_usd</code> vs what we billed</td><td>Internal-only ops view</td></tr>
+    </table>
+    <p>Record monthly snapshots into the existing <code>kpis</code> table (<code>metric = 'referring_domains'</code>, <code>'links_live'</code>) so they get the same week/month delta treatment as DA.</p>
+  </div>
+
+  <h2>Part 3 — Ingesting FATJOE's reports</h2>
+
+  <div class="doc">
+    <h3>Import flow</h3>
+    <div class="steps">
+      <div class="step">VA downloads the unbranded CSV from the FATJOE order (links report or citation report).</div>
+      <div class="step">In the app: <strong>Local SEO tab → Off-site panel → Import report</strong>, picks the matching open order, drops the CSV.</div>
+      <div class="step">Parser (<code>geo_agent/fatjoe_import.py</code>) maps FATJOE's columns → <code>offsite_assets</code>. Column maps are stored per report type because FATJOE's headers differ between citations and links.</div>
+      <div class="step">For each asset: normalize the domain, dedupe against existing assets for that customer, and queue a Moz DA lookup (batched by domain).</div>
+      <div class="step">Order auto-advances <code>ordered → delivered</code>; assets land as <code>live</code>; the VA QAs and flips verified ones to <code>indexed</code> later.</div>
+    </div>
+<pre># geo_agent/fatjoe_import.py  (sketch)
+COLUMN_MAPS = {
+  "link":     {"Live URL": "live_url", "Anchor": "anchor_text", "DR": "_dr"},
+  "citation": {"Directory URL": "live_url", "Directory": "domain"},
+  "mention":  {"Published URL": "live_url", "Anchor": "anchor_text"},
+}
+def import_report(db, order_id, csv_bytes):
+    order = db.get_offsite_order(order_id)
+    rows = parse_csv(csv_bytes, COLUMN_MAPS[order["order_type"]])
+    for r in dedupe(rows, db, order["customer_id"]):
+        r["da"] = moz_da_cached(domain_of(r["live_url"]))
+        db.add_offsite_asset(order_id, order["customer_id"], **r)
+    db.update_offsite_order(order_id, status="delivered",
+                            delivered_at=now_iso())</pre>
+    <div class="note">Keep the raw CSV in <code>data/offsite_reports/{customer}/{order_id}.csv</code> for audit, but never expose it client-side. We re-present the data, not the vendor's file.</div>
+  </div>
+
+  <div class="doc">
+    <h3>Dashboard UI — "Off-site / Authority" panel (Local SEO tab)</h3>
+    <ul>
+      <li><strong>Cadence tracker:</strong> "Links this month: 1 of 2 · last link 9 days ago" with a small bar — enforces the anti-firehose cadence visually.</li>
+      <li><strong>Order queue:</strong> open orders with status chips (ordered / in&nbsp;progress / delivered), "Import report" + "Mark live" actions.</li>
+      <li><strong>Live links table:</strong> live_url · anchor · DA · do-follow? · indexed? · date — sortable by DA.</li>
+      <li><strong>Anchor mix bar:</strong> branded/url/generic/partial/exact distribution vs the target ratios (red if exact &gt; 10%).</li>
+      <li><strong>"New order" + per-step "Order via FATJOE":</strong> reuses the <code>📋 How to</code> modal pattern we just shipped — each FATJOE action gets a walkthrough card (<code>citation_order</code>, <code>link_order</code>, <code>mention_order</code>) so the VA never guesses the form.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h3>Weekly report integration</h3>
+    <p>Add an "Authority work this period" block under the existing Domain Authority section (which already shows the DA week/month/started pills):</p>
+    <div class="ok">
+      <strong>Authority work · last 30 days</strong><br>
+      • 2 new editorial links live — avg DA 27 (highest: <code>healthline-adjacent.com</code> DA 41)<br>
+      • 100 local citations submitted, 96 live &amp; NAP-consistent<br>
+      • 1 brand mention live at <code>bestofspringfield.com</code> — now eligible to be cited by AI<br>
+      • Referring domains: <strong>14 → 19</strong> (▲ +5 vs last month)
+    </div>
+    <p class="mini">All numbers come straight from <code>offsite_assets</code> filtered to the report window — no manual entry. Ties the spend to the DA movement the client sees at the top of the same section.</p>
+  </div>
+
+  <h2>Part 4 — Proving ROI (attribution)</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Signal</th><th>Measured by</th><th>Checkpoint</th></tr>
+      <tr><td>Domain Authority lift</td><td>Moz on client domain (DA pills)</td><td>30 / 60 / 90 days after first batch</td></tr>
+      <tr><td>Referring domains growth</td><td>distinct <code>offsite_assets</code> domains</td><td>Monthly</td></tr>
+      <tr><td>Target-page ranking movement</td><td>rank tracking on the pages we pointed links at</td><td>30 / 60 days per target URL</td></tr>
+      <tr><td>AI citations</td><td>existing <code>get_citation_domains</code> — does a mention/link domain start appearing in grounded answers?</td><td>Monthly</td></tr>
+      <tr><td>Local pack / GBP</td><td>citations → NAP consistency → Local Visibility pillar</td><td>30 / 60 days</td></tr>
+    </table>
+    <div class="note">Honest framing (per the pricing spec): for low-DR local clients, links get them <em>off zero authority</em> — GBP + citations + reviews still do most of the local-pack lifting. Report links as authority growth, not as the cause of every ranking move.</div>
+  </div>
+
+  <h2>Build plan</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Phase</th><th>Deliverable</th><th>Touches</th></tr>
+      <tr><td>1 — Ledger</td><td><code>offsite_orders</code> + <code>offsite_assets</code> tables, CRUD, manual "New order" + "Mark live" in the Off-site panel</td><td><code>db.py</code>, <code>customer_detail.html</code>, <code>app.py</code></td></tr>
+      <tr><td>2 — Import + DA</td><td><code>fatjoe_import.py</code> CSV parser, batched Moz DA per asset, live-links table, anchor-mix bar</td><td><code>fatjoe_import.py</code>, <code>moz_client.py</code></td></tr>
+      <tr><td>3 — VA UX</td><td>"How to" modal cards (citation/link/mention order), cadence tracker, per-step "Order via FATJOE"</td><td><code>local_relevancy.py</code>, <code>customer_detail.html</code></td></tr>
+      <tr><td>4 — Report</td><td>"Authority work this period" block + referring-domains KPI deltas</td><td><code>weekly_report.py</code></td></tr>
+      <tr><td>5 — Automate (later)</td><td>place orders directly via FATJOE reseller API; auto-poll order status; auto-import on completion</td><td>new <code>fatjoe_client.py</code></td></tr>
+    </table>
+    <p class="mini">Phases 1–4 are all in-app and need no FATJOE API — the VA orders in FATJOE's dashboard and records/imports here. Phase 5 removes the VA from the loop once FATJOE API access is confirmed.</p>
+  </div>
+
+  <h2>Open decisions</h2>
+  <div class="doc">
+    <ul>
+      <li><strong>BrightLocal vs FATJOE for citation <em>building</em></strong> — pricing spec left this open; FATJOE is cheaper to build, BrightLocal better for tracking/audit. Likely: BrightLocal tracks, FATJOE builds. Decide once both accounts exist.</li>
+      <li><strong>Rank tracking source</strong> for target-page movement (BrightLocal local rank tracker vs another) — needed for the ROI checkpoint row.</li>
+      <li><strong>FATJOE reseller API</strong> — confirm it exists + scope before committing to Phase 5; until then Phases 1–4 stand alone.</li>
+      <li><strong>Who QAs</strong> — VA does first-pass QA; do we want a second-set-of-eyes gate before a link is marked live to the client report?</li>
+    </ul>
+  </div>
+
+  <p class="mini" style="margin-top:30px">Bottom line: VA orders the three FATJOE products from the Local SEO tab using fixed anchor/target/cadence rules and per-task "How to" modals; every order is a tracked row that resolves into live assets with DA; FATJOE's CSV imports and auto-pulls DA; and the weekly report turns that spend into a visible "authority work + DA lift" story for the client. Ship Phases 1–4 with the VA in the loop, automate with FATJOE's API later.</p>
+</div>
+</body>
+</html>
