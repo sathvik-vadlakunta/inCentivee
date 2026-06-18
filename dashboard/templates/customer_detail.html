@@ -5131,6 +5131,11 @@ document.addEventListener('DOMContentLoaded', function () {
     renderDASpark();
     const m = document.getElementById('sa-map');
     if (m && m.offsetParent !== null) showSaMap();  // landed straight on the Local SEO tab
+    // Move the How-to modal to <body> so its position:fixed is relative to the
+    // viewport, not a transformed/animated ancestor (.container animates a
+    // transform, which would otherwise clip the modal to the content box).
+    const gm = document.getElementById('guideModal');
+    if (gm && gm.parentElement !== document.body) document.body.appendChild(gm);
 });
 
 function markCitation(cid, directory, done, btn) {
