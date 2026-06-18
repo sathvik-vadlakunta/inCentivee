@@ -269,3 +269,51 @@ def test_content_schema_and_service_terms():
     assert content_schema("precious_metals_buyer") == "Store"
     assert "Sell Gold" in default_service_terms("precious_metals_buyer")
     assert default_service_terms("ecommerce") == ["Our Services"]  # default fallback
+
+
+# ── VA action plan (the dashboard Local SEO tab) ────────────────────
+
+def test_local_relevancy_view_none_for_non_local(db):
+    db.add_customer(id="e", name="E", domain="e.com", business_type="saas")
+    from geo_agent.local_relevancy import local_relevancy_view
+    assert local_relevancy_view(db, db.get_customer("e")) is None
+
+
+def test_va_action_plan_structure_and_nap_first(db):
+    db.add_customer(id="dds", name="Bright Smile", domain="brightsmile.com",
+                    business_type="dental", city="Reno", state="NV",
+                    address="100 Oak St", zip="89501", phone="775-555-1234")
+    db.upsert_google_places("dds", place_id="GP1", rating=4.6, review_count=5, match_confidence="high")
+    from geo_agent.local_relevancy import va_action_plan
+    plan = va_action_plan(db, db.get_customer("dds"))
+    assert plan is not None
+    # NAP group first, with the exact canonical NAP.
+    assert plan["groups"][0]["group"].startswith("0 ")
+    assert plan["groups"][0]["nap"]["phone"] == "775-555-1234"
+    titles = [g["group"] for g in plan["groups"]]
+    assert any("Google Business Profile" in t for t in titles)
+    assert any("Apple Maps" in t for t in titles)
+    assert any("citations" in t.lower() for t in titles)
+    # Dental primary category suggested.
+    assert plan["primary_category"] == "Dentist"
+    # GBP claimed -> that step is 'done'.
+    gbp = next(g for g in plan["groups"] if "Google Business Profile" in g["group"])
+    assert gbp["steps"][0]["status"] == "done"
+    # Review step targets the 10-review threshold (count is 5).
+    rev = next(g for g in plan["groups"] if g["group"].startswith("5 "))
+    assert "GP1" in rev["steps"][0]["link"]
+    assert plan["total_steps"] > 0
+
+
+def test_va_action_plan_citations_reflect_status(db):
+    db.add_customer(id="law2", name="Law Two", domain="law2.com", business_type="legal",
+                    city="Reno", state="NV", phone="775-000-0000")
+    db.save_citation("law2", directory="Google Business Profile", listed=True, nap_match=True)
+    db.save_citation("law2", directory="Avvo", listed=True, nap_match=False)  # wrong NAP
+    from geo_agent.local_relevancy import va_action_plan
+    plan = va_action_plan(db, db.get_customer("law2"))
+    cit_group = next(g for g in plan["groups"] if "citations" in g["group"].lower())
+    by_title = {s["title"]: s for s in cit_group["steps"]}
+    assert by_title["Google Business Profile"]["status"] == "done"
+    assert by_title["Avvo"]["status"] == "todo"  # listed but NAP wrong
+    assert "WRONG" in by_title["Avvo"]["instruction"]

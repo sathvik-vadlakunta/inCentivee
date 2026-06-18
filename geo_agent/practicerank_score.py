@@ -382,6 +382,16 @@ def compute_technical_health(db: CustomerDB, customer_id: str) -> dict | None:
     if perf:  # tiny bonus when we have a real (non-zero) perf score; never a penalty
         score = min(100.0, score + min(5.0, perf / 20.0))
 
+    # Citation / NAP consistency (Local Relevancy Engine, Module 1). Gated on
+    # having audited citations — dormant until BrightLocal is configured, so no
+    # current scores move. Bonus-only (up to +8), never a penalty.
+    nap_pct = None
+    citations = db.get_citations(customer_id)
+    tracked = [c for c in (citations or []) if c.get("listed")]
+    if tracked:
+        nap_pct = sum(1 for c in tracked if c.get("nap_match")) / len(tracked)
+        score = min(100.0, score + nap_pct * 8.0)
+
     return {
         "score": round(score),
         "detail": {
@@ -389,6 +399,7 @@ def compute_technical_health(db: CustomerDB, customer_id: str) -> dict | None:
             "deliverables_total": len(_FOUNDATION_ITEMS),
             "critical_issues": critical_open,
             "lighthouse_performance": perf,
+            "nap_consistency": round(nap_pct * 100) if nap_pct is not None else None,
             "sub_scores": {PILLAR_LABELS["technical_health"]: round(score, 1)},
             "items": {k: bool(v) for k, v in done.items()},
         },

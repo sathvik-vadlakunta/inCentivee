@@ -184,6 +184,16 @@
         {% endif %}
     </button>
 
+    {% if va_plan %}
+    <button class="detail-nav-item" onclick="switchTab('local-seo', this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Local SEO
+        {% if va_plan.open_steps %}
+            <span class="nav-badge" style="background:#dcfce7;color:#166534;">{{ va_plan.open_steps }}</span>
+        {% endif %}
+    </button>
+    {% endif %}
+
     <button class="detail-nav-item" onclick="switchTab('ai-mentions', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         AI Mentions
@@ -1906,6 +1916,55 @@
     </div>
     {% endif %}
 </div>
+
+<!-- ==================== LOCAL SEO TAB ==================== -->
+<div id="tab-local-seo" class="tab-content">
+  {% if va_plan %}
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <h2 style="margin:0;">Local SEO — VA Action Plan</h2>
+    <span style="color:var(--muted);font-size:0.85rem;">{{ va_plan.open_steps }} open of {{ va_plan.total_steps }} steps</span>
+  </div>
+  <p style="color:var(--muted);margin-top:0;">Work top to bottom — each item says exactly what to do.
+    <span class="lr-badge lr-done">done</span> complete ·
+    <span class="lr-badge lr-todo">to&nbsp;do</span> action needed ·
+    <span class="lr-badge lr-verify">verify</span> check &amp; confirm ·
+    <span class="lr-badge lr-ongoing">ongoing</span> recurring.</p>
+
+  {% for g in va_plan.groups %}
+  <div class="card" style="margin-bottom:14px;">
+    <h3 style="margin:0 0 8px;">{{ g.group }}</h3>
+    {% if g.intro %}<p style="color:var(--muted);margin:0 0 10px;">{{ g.intro }}</p>{% endif %}
+    {% if g.nap %}
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:0.9rem;line-height:1.7;">
+        <div><b>Name:</b> {{ g.nap.name }}</div>
+        <div><b>Address:</b> {{ g.nap.address or '— (add to customer record)' }}</div>
+        <div><b>Phone:</b> {{ g.nap.phone or '— (add to customer record)' }}</div>
+        <div><b>Website:</b> {{ g.nap.url or '—' }}</div>
+      </div>
+    {% endif %}
+    {% if g.note %}<p style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:0.82rem;margin:10px 0 6px;">{{ g.note }}</p>{% endif %}
+    {% for s in g.steps %}
+    <div style="display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);align-items:flex-start;">
+      <span class="lr-badge lr-{{ s.status }}" style="flex-shrink:0;margin-top:2px;">{{ s.status }}</span>
+      <div>
+        <div style="font-weight:600;">{{ s.title }}{% if s.link %} · <a href="{{ s.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}</div>
+        {% if s.instruction %}<div style="color:var(--muted);font-size:0.85rem;margin-top:2px;">{{ s.instruction }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <p style="color:var(--muted);">Local SEO actions apply to local (foot-traffic / service-area) businesses only.</p>
+  {% endif %}
+</div>
+<style>
+.lr-badge{display:inline-block;font-size:0.66rem;font-weight:700;padding:2px 8px;border-radius:999px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+.lr-done{background:#dcfce7;color:#166534;}
+.lr-todo{background:#fef3c7;color:#92400e;}
+.lr-verify{background:#dbeafe;color:#1e40af;}
+.lr-ongoing{background:#f1f5f9;color:#475569;}
+</style>
 
 <!-- ==================== AI MENTIONS TAB ==================== -->
 <div id="tab-ai-mentions" class="tab-content">

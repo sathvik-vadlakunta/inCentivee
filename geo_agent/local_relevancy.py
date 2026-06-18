@@ -193,6 +193,139 @@ def _module_5_gbp_completeness(db, customer):
     }
 
 
+def local_relevancy_view(db, customer: dict) -> dict | None:
+    """Read-only snapshot of the local-relevancy signals — no API calls, no rec
+    creation. Used by the weekly report and the VA action tab. None if non-local.
+    """
+    bt = customer.get("business_type")
+    if not is_local(bt):
+        return None
+    return {
+        "breadth": directory_breadth(db, customer["id"], bt),
+        "reviews": _module_4_review_recency(db, customer),
+        "gbp": _module_5_gbp_completeness(db, customer),
+        "nap": canonical_nap(customer),
+        "profile": directory_profile(bt) or [],
+    }
+
+
+def _step(title: str, instruction: str, status: str, link: str = "") -> dict:
+    # status ∈ done | todo | verify | ongoing
+    return {"title": title, "instruction": instruction, "status": status, "link": link}
+
+
+def va_action_plan(db, customer: dict) -> dict | None:
+    """Crystal-clear, per-customer VA steps for the local-relevancy work.
+
+    Translates the engine's signals into explicit, ordered actions across the
+    canonical NAP, Google Business Profile / Maps, Apple Maps, Bing, directory
+    citations, reviews, and the local content pages. None if non-local.
+    """
+    from geo_agent.directory_profiles import gbp_primary_category
+
+    view = local_relevancy_view(db, customer)
+    if not view:
+        return None
+
+    cid = customer["id"]
+    bt = customer.get("business_type")
+    nap = view["nap"]
+    primary_cat = gbp_primary_category(bt)
+    place = db.get_google_places(cid)
+    claimed = bool(place and place.get("place_id"))
+    review_link = view["reviews"].get("review_link", "")
+    cities = customer.get("service_areas") or []
+    sa_pending = [r for r in (db.get_content_recommendations(cid, status="pending", limit=200) or [])
+                  if r.get("category") == "service_area"]
+    cit = {(c.get("directory") or "").lower(): c for c in (db.get_citations(cid) or [])}
+
+    groups: list[dict] = []
+
+    groups.append({
+        "group": "0 · Use this EXACT business info everywhere",
+        "intro": ("Every listing below must match this exactly — name, address, phone, website. "
+                  "Inconsistent info is the #1 thing that hurts local ranking and AI trust."),
+        "nap": nap,
+        "steps": [],
+    })
+
+    groups.append({"group": "1 · Google Business Profile + Google Maps", "steps": [
+        _step("Claim & verify the Google Business Profile",
+              "Go to business.google.com. If it's unclaimed, claim it and complete verification "
+              "(postcard, phone, or video). This is the single most important local listing.",
+              "done" if claimed else "todo", "https://business.google.com"),
+        _step(f"Set the PRIMARY category to '{primary_cat}'",
+              "Edit profile → category. The primary category is the strongest Google Maps ranking "
+              "signal — make sure it's the most specific accurate match.", "verify"),
+        _step("Add 3–4 relevant ADDITIONAL categories",
+              "Add secondary categories that match the services offered (don't over-stuff).", "verify"),
+        _step("Confirm the map pin is on the exact location",
+              "On Google Maps, drag the pin to the real building/entrance so proximity is correct.", "verify"),
+        _step("Set the service-area cities",
+              ("Add these nearby cities as service areas: " + (", ".join(cities) if cities
+               else "(none yet — run the engine or set them on the customer to populate).")),
+              "verify" if cities else "todo"),
+        _step("Complete services, hours, attributes, and 10+ real photos",
+              "Fill every field. Add genuine photos (exterior, interior, team) — these help conversion.", "verify"),
+    ]})
+
+    groups.append({"group": "2 · Apple Maps (Apple Business Connect)", "steps": [
+        _step("Claim the business at business.apple.com",
+              "Sign in with an Apple ID, search for the business, claim it, and verify.",
+              "todo", "https://business.apple.com"),
+        _step("Match the NAP to the exact business info above",
+              "Name, address, and phone must match the canonical info exactly.", "todo"),
+        _step(f"Set the category close to '{primary_cat}' and add photos",
+              "Pick the closest Apple category and upload the same photos used on Google.", "todo"),
+    ]})
+
+    groups.append({"group": "3 · Bing Places", "steps": [
+        _step("Claim at bingplaces.com (import from Google to save time)",
+              "Use 'Import from Google Business Profile', then verify the NAP matches exactly.",
+              "todo", "https://www.bingplaces.com"),
+    ]})
+
+    cit_steps = []
+    for d in view["profile"]:
+        row = cit.get(d["name"].lower())
+        if row and row.get("listed") and row.get("nap_match"):
+            st, instr = "done", "Listed and NAP matches — no action."
+        elif row and row.get("listed"):
+            st, instr = "todo", "Listed but the NAP is WRONG — edit it to match the exact business info above."
+        else:
+            st, instr = "todo", "Not listed — create a listing using the exact business info above."
+        cit_steps.append(_step(d["name"], instr, st, row.get("listing_url", "") if row else ""))
+    groups.append({
+        "group": "4 · Directory citations (NAP consistency)",
+        "note": ("Once BrightLocal is connected it auto-audits/fixes most of these. Until then, "
+                 "do the core directories (top of the list) manually."),
+        "steps": cit_steps,
+    })
+
+    rv = view["reviews"]
+    if rv.get("status") == "no_gbp":
+        review_steps = [_step("Match the Google Business Profile first",
+                              "Reviews can't be tracked until the GBP is claimed/matched (step 1).", "todo")]
+    else:
+        review_steps = [_step(
+            rv.get("action", "Request fresh Google reviews"),
+            ("Text/email this review link to recent happy customers: " + review_link) if review_link
+            else "Use the GBP 'Get more reviews' short link.",
+            "todo" if rv.get("status") == "below_threshold" else "ongoing", review_link)]
+    groups.append({"group": "5 · Reviews", "steps": review_steps})
+
+    groups.append({"group": "6 · Local content pages", "steps": [
+        _step(f"Review & publish {len(sa_pending)} pending city/service page(s)",
+              "Open the Content tab, review each generated page for accuracy, approve, and publish.",
+              "todo" if sa_pending else "done"),
+    ]})
+
+    total = sum(len(g["steps"]) for g in groups)
+    todo = sum(1 for g in groups for s in g["steps"] if s["status"] in ("todo", "verify"))
+    return {"nap": nap, "groups": groups, "total_steps": total, "open_steps": todo,
+            "primary_category": primary_cat}
+
+
 def run_local_relevancy(db, customer_id: str, recompute: bool = True) -> dict:
     """Run all available local-relevancy modules for one customer.
 

@@ -189,9 +189,12 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
         consistent = sum(1 for c in tracked if c.get("nap_match"))
         issues = [c for c in tracked if not c.get("nap_match")]
         denom = len(tracked) or 1
+        from geo_agent.directory_profiles import profile_target_count
+        target = profile_target_count(customer.get("business_type"))
         data["sections"]["listings"] = {
             "score": round(consistent / denom * 100),
             "consistent": consistent, "total": len(tracked),
+            "target": target,  # per-vertical directory profile size (breadth denominator)
             "issues": issues[:5],
         }
 
@@ -455,7 +458,7 @@ def render_html(data: dict) -> str:
         parts.append(f"""<div class="r-sec"><h3>Local listings health</h3>
           <div class="score-row">
             <div class="score-badge" style="background:{color};width:88px;height:88px"><b style="font-size:26px">{ls['score']}%</b><span>NAP consistent</span></div>
-            <div class="pillars"><p style="margin:0 0 6px">{ls['consistent']} of {ls['total']} key directories consistent.</p><ul style="margin:4px 0">{issues}</ul></div>
+            <div class="pillars"><p style="margin:0 0 6px">{ls['consistent']} of {ls['total']} tracked directories consistent{f" — building toward {ls['target']} key local directories for your industry" if ls.get('target') else ''}.</p><ul style="margin:4px 0">{issues}</ul></div>
           </div></div>""")
 
     # 9. Sources now citing you (from grounded AI answers)

@@ -478,6 +478,12 @@ def customer_detail(customer_id):
             ).fetchall()
         ]
 
+        try:
+            from geo_agent.local_relevancy import va_action_plan
+            va_plan = va_action_plan(db, customer)
+        except Exception:
+            va_plan = None
+
         return render_template(
             "customer_detail.html",
             customer=customer, providers=providers, contacts=contacts,
@@ -521,6 +527,7 @@ def customer_detail(customer_id):
             weekly_snapshot=db.get_latest_report_snapshot(customer_id, "weekly"),
             report_history=db.get_report_snapshots(customer_id, "weekly", limit=26),
             customer_activities=db.get_customer_activities(customer_id, limit=100),
+            va_plan=va_plan,
         )
     finally:
         db.close()
