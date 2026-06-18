@@ -1773,6 +1773,16 @@ class CustomerDB:
         )
         row = cur.fetchone()
         if not row:
+            # Fall back to the latest run of any prompt set (e.g. a customer that
+            # only has a 'comprehensive' run and no benchmark run yet).
+            cur = self.conn.execute(
+                """SELECT total_mentions, total_queries, mention_rate
+                   FROM ai_mention_runs WHERE customer_id = ?
+                   ORDER BY run_date DESC LIMIT 1""",
+                (customer_id,),
+            )
+            row = cur.fetchone()
+        if not row:
             return None
         return {
             "mention_count": row["total_mentions"],

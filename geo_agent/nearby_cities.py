@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_RADIUS_MILES = 18.0
 DEFAULT_LIMIT = 8
 _NOMINATIM = "https://nominatim.openstreetmap.org/search"
-_GEONAMES = "http://api.geonames.org/findNearbyPlaceNameJSON"
+_OVERPASS = "https://overpass-api.de/api/interpreter"
 _UA = "PracticeRank/1.0 (local-relevancy)"
 
 
@@ -104,31 +104,30 @@ def fetch_nearby_candidates(
     lat: float, lon: float, radius_miles: float = DEFAULT_RADIUS_MILES,
     *, client: httpx.Client | None = None,
 ) -> list[dict]:
-    """Fetch nearby populated places via GeoNames. [] if GEONAMES_USERNAME unset."""
-    username = os.environ.get("GEONAMES_USERNAME", "")
-    if not username:
-        logger.info("GEONAMES_USERNAME not set — nearby-city discovery disabled")
-        return []
+    """Fetch nearby cities/towns via Overpass (OpenStreetMap) — no API key."""
+    radius_m = int(radius_miles * 1609.34)
+    query = ("[out:json][timeout:25];"
+             f'(node["place"~"^(city|town)$"](around:{radius_m},{lat},{lon}););'
+             "out body;")
     owns = client is None
-    client = client or httpx.Client(timeout=15.0, headers={"User-Agent": _UA})
+    client = client or httpx.Client(timeout=30.0, headers={"User-Agent": _UA})
     try:
-        resp = client.get(_GEONAMES, params={
-            "lat": lat, "lng": lon,
-            "radius": min(round(radius_miles * 1.60934), 300),  # km, GeoNames caps at 300
-            "maxRows": 50, "cities": "cities1000",
-            "username": username,
-        })
+        resp = client.post(_OVERPASS, data={"data": query})
         resp.raise_for_status()
         out = []
-        for g in resp.json().get("geonames", []):
-            out.append({
-                "name": g.get("name") or g.get("toponymName"),
-                "lat": g.get("lat"), "lon": g.get("lng"),
-                "population": g.get("population") or 0,
-            })
+        for el in resp.json().get("elements", []):
+            tags = el.get("tags", {})
+            name = tags.get("name")
+            if not name:
+                continue
+            try:
+                pop = int(str(tags.get("population", "0")).replace(",", "") or 0)
+            except ValueError:
+                pop = 0
+            out.append({"name": name, "lat": el.get("lat"), "lon": el.get("lon"), "population": pop})
         return out
     except Exception as exc:  # noqa: BLE001
-        logger.info("GeoNames lookup failed: %s", exc)
+        logger.info("Overpass lookup failed: %s", exc)
         return []
     finally:
         if owns:
