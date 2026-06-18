@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Relevancy Engine — Implementation Spec</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:30px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:21px;margin:30px 0 12px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px}
+  p{margin:9px 0}
+  a{color:var(--accent)}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:78ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow);margin-bottom:20px}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  ul{margin:8px 0;padding-left:20px}li{margin:4px 0}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:13px 15px;font-size:13.5px;color:#7a5b1e}
+  .ok{background:#ecfdf5;border:1px solid #a7e3bf;border-radius:10px;padding:13px 15px;font-size:13.5px}
+  .mini{font-size:12px;color:var(--muted)}
+  .tag{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap}
+  .have{background:#e8f5ec;color:var(--accent)} .new{background:#fdeaea;color:var(--bad)} .part{background:#fdf3e3;color:var(--warn)}
+  pre{background:#0d1117;color:#e6edf3;padding:14px 16px;border-radius:10px;overflow:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · PLATFORM</span>
+  <h1>Local Relevancy Engine</h1>
+  <p class="lead">One automated monthly module, run per customer and tailored to each customer's domain + business type, that drives the <b>verified local-relevancy levers</b> (citations/NAP, directory breadth, service-area content, review recency, GBP completeness) — the signals our research proved move both Google local-pack rank and AI local recommendations. Everything flows into the PracticeRank Score and the weekly report.</p>
+  <p class="mini">Owner: Kody · Builds on <code>specs/active/lever-b-citations-nap.html</code> · grounded in <code>docs/Local-AI-Search-Playbook.docx</code> + <code>research-review-local-lens.html</code> · 2026-06-18</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Why this, why now (verified)</h2>
+    <ul>
+      <li><b>The proven local levers are relevancy signals, not backlinks.</b> National digital-PR/earned-mention tactics (Lever A) were national-skewed and unproven for local; what the evidence supports for local is GBP + citations/NAP + reviews + local on-site content + broad third-party directory presence.</li>
+      <li><b>3-pack rank ≠ AI recommendation.</b> AI local packs surface only ~32% as many businesses as Google's 3-pack, and AI cites directories/Yelp heavily — so <b>broad, consistent local directory presence</b> is the lever that wins both channels.</li>
+      <li>All five levers are <b>API-automatable and inherently local</b> (per-domain NAP, per-city pages, per-vertical directories) — ideal for our "automate 85%" model.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">What we already have (don't rebuild)</h2>
+    <table>
+      <tr><th>Asset</th><th>Status</th><th>Use</th></tr>
+      <tr><td><code>citations</code> table (directory, listed, nap_match, url_correct, listing_url, last_checked) + <code>save_*</code></td><td><span class="tag have">HAVE</span></td><td>Module 1 storage — already wired into report</td></tr>
+      <tr><td><code>geo_agent/brightlocal_client.py</code> — <code>track_citations()</code> scaffold (no-op until configured)</td><td><span class="tag part">SCAFFOLD</span></td><td>Module 1 — finish the v4 endpoint/field wiring + per-vertical profile</td></tr>
+      <tr><td><code>customers.service_areas</code> (JSON list) + <code>business_type</code> + <code>vertical_for()</code></td><td><span class="tag have">HAVE</span></td><td>Per-customer targeting inputs</td></tr>
+      <tr><td>Content engine (recommender → staging → publish via CMS API) + checklist</td><td><span class="tag have">HAVE</span></td><td>Module 3 — generates the city/service pages</td></tr>
+      <tr><td>PracticeRank Score v2 (GEO Foundation, Content, Reputation pillars) + weekly report</td><td><span class="tag have">HAVE</span></td><td>All modules feed these</td></tr>
+      <tr><td>Nearby-cities / drive-time helper</td><td><span class="tag new">NEW</span></td><td>Module 3 — geocode city → towns within ~25 min</td></tr>
+      <tr><td>Per-business-type directory profiles + review-recency motion + GBP completeness audit</td><td><span class="tag new">NEW</span></td><td>Modules 1, 4, 5</td></tr>
+      <tr><td>Orchestrator <code>geo_agent/local_relevancy.py</code> + monthly cron</td><td><span class="tag new">NEW</span></td><td>Runs all 5 per customer, staggered</td></tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Per-customer customization — everything derives from the customer record</h2>
+    <p>No per-customer hand-config beyond what onboarding already captures. The engine derives all targeting from the customer's own domain + record:</p>
+    <table>
+      <tr><th>Input (from <code>customers</code>)</th><th>Drives</th></tr>
+      <tr><td><b>domain</b> + verified GBP name/address/phone</td><td>The <b>canonical NAP</b> (single source of truth) every directory is checked/fixed against</td></tr>
+      <tr><td><b>business_type</b> → directory profile (table below)</td><td>Which directories to build/audit + which on-site content schema to use</td></tr>
+      <tr><td><b>city</b> + <b>state</b> + <b>service_areas[]</b></td><td>Nearby-city page generation (~25-min radius) + GBP service-area config</td></tr>
+      <tr><td><b>providers / services</b> (already stored)</td><td>Per-page content (procedures / practice areas / conditions / "we buy X")</td></tr>
+    </table>
+    <div class="note"><b>Canonical NAP rule:</b> pick ONE format (the GBP-verified name/address/phone) and store it as the customer's canonical NAP. Every Module-1 directory check compares against it; every generated page renders it identically. Inconsistent NAP is the #1 thing that tanks local trust (verified: 11/13 errored citations → 28/100).</div>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">⭐ Per-business-type directory + signal profiles</h2>
+    <p>The crux of "tailored to each customer." A <code>DIRECTORY_PROFILES</code> map keyed by <code>business_type</code> (falling back to the vertical, then a universal set). Dental and medical both map to the <code>practice</code> vertical but get <b>distinct directory sets</b> — that distinction lives here, finer-grained than <code>vertical_for()</code>.</p>
+
+    <h3>Universal local set (every local business gets these)</h3>
+    <p>Google Business Profile, Apple Business Connect, Bing Places, Yelp, Facebook, Better Business Bureau, Nextdoor, local Chamber of Commerce — plus the <b>data aggregators</b> that syndicate everywhere: Data Axle, Foursquare, Localeze/Neustar (BrightLocal Citation Builder pushes to these).</p>
+
+    <table>
+      <tr><th>business_type</th><th>Vertical</th><th>Vertical-specific directories (added to universal set)</th><th>Place type</th><th>On-site content schema</th></tr>
+      <tr>
+        <td><b>dental</b> / practice</td><td>practice</td>
+        <td>Healthgrades, Zocdoc, Vitals, RateMDs, 1-800-Dentist, ADA Find-a-Dentist, Wellness.com, DentalPlans, CareDash</td>
+        <td>dentist</td>
+        <td>Dentist + MedicalProcedure + FAQ; pages per procedure (implants, Invisalign, crowns…) × city</td>
+      </tr>
+      <tr>
+        <td><b>medical</b> / doctor</td><td>practice</td>
+        <td>Healthgrades, Vitals, Zocdoc, WebMD, RateMDs, Doximity, Sharecare, US News Doctors, CareDash, + payer/insurance provider directories</td>
+        <td>doctor, hospital</td>
+        <td>Physician + MedicalClinic + MedicalCondition/Procedure + FAQ; condition/treatment pages × city; insurance-accepted page</td>
+      </tr>
+      <tr>
+        <td><b>legal</b></td><td>legal</td>
+        <td>Avvo, Justia, FindLaw, Lawyers.com, Martindale-Hubbell, Super Lawyers, Nolo, LegalMatch, state bar directory</td>
+        <td>lawyer</td>
+        <td>Attorney/LegalService + FAQ; practice-area pages (DUI, family, PI…) × city</td>
+      </tr>
+      <tr>
+        <td><b>precious_metals_buyer</b> / jeweler / retail</td><td>local_retail</td>
+        <td>BBB (accredited), Yelp, Pawn/coin-dealer dirs, PNG (Professional Numismatists Guild), ICTA, JBT (Jewelers Board of Trade), "we buy gold" local dirs, Chamber</td>
+        <td>jewelry_store</td>
+        <td>Store/LocalBusiness + Product/Service + FAQ; "Sell your gold/silver/coins in {city}" pages × city; seller-intent FAQ</td>
+      </tr>
+      <tr>
+        <td><b>professional_services</b> (consulting / agency / finance)</td><td>professional_services</td>
+        <td>Clutch, UpCity, Chamber; finance → NAPFA / CPA / BBB; agency → Clutch/G2-local</td>
+        <td>(text-search fallback)</td>
+        <td>ProfessionalService + FAQ; service × city pages</td>
+      </tr>
+      <tr>
+        <td><b>default</b> / other local</td><td>default</td>
+        <td>Universal set + local Chamber + niche dirs discovered via category</td>
+        <td>(text-search fallback)</td>
+        <td>LocalBusiness + FAQ; service-area pages × city</td>
+      </tr>
+    </table>
+    <p class="mini">Non-local verticals (<code>ecommerce</code>, <code>saas</code>) are excluded from Modules 1–5 (they're not in <code>LOCAL_VERTICALS</code>) — the engine no-ops for them and logs why.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">The five modules</h2>
+
+    <h3>Module 1 — Citation / NAP audit + fix <span class="tag part">build first · scaffold exists</span></h3>
+    <ul>
+      <li>Finish <code>brightlocal_client.track_citations()</code> against a live account; confirm the v4 Citation Tracker endpoint + fields (TODO in the file). Per customer = one BrightLocal location, stored as the <code>brightlocal</code> integration's <code>location_id</code>.</li>
+      <li>Seed the customer's BrightLocal location targets from its <b>directory profile</b> (above). Audit each: listed? NAP matches canonical? URL correct? → write to <code>citations</code>.</li>
+      <li>Auto-fix via BrightLocal Citation Builder where supported; queue manual-fix tasks (VA) for the rest into the checklist/todos.</li>
+      <li><b>Feeds:</b> GEO Foundation pillar (NAP-consistency component) + report "Local listings" section (already built — confirm it lights up once configured).</li>
+      <li>Full detail: <code>specs/active/lever-b-citations-nap.html</code>.</li>
+    </ul>
+
+    <h3>Module 2 — Directory-breadth tracking <span class="tag new">new (thin)</span></h3>
+    <ul>
+      <li>From the same <code>citations</code> data, compute <b>breadth</b> = correctly-listed count ÷ profile target count. This is the verified "broad third-party presence" lever AI uses for local.</li>
+      <li><b>Feeds:</b> report "broad presence" stat + a GEO-Foundation sub-signal. No new storage — it's an aggregation over <code>citations</code>.</li>
+    </ul>
+
+    <h3>Module 3 — Service-area / nearby-city page generation <span class="tag new">new</span></h3>
+    <ul>
+      <li><b>NEW helper</b> <code>geo_agent/nearby_cities.py</code>: geocode the customer's city (free Nominatim / or Google Geocoding if keyed), find towns within ~25-min drive (radius heuristic ≈ 15–20 mi, or a drive-time matrix if available), rank by population, cap at N (e.g. 8). Persist to <code>customers.service_areas</code> if empty.</li>
+      <li>Feed nearby cities + the customer's <b>services/procedures</b> into the existing content recommender → generate <b>{service} in {city}</b> pages with the vertical's local schema (table above). Push via the existing staging → CMS-publish flow (human-approve gate stays).</li>
+      <li>Guard against thin/duplicate pages: each page needs unique local context (directions, neighborhoods, local FAQ) — not templated boilerplate.</li>
+      <li><b>Feeds:</b> Content pillar + the AI city-coverage check (so the new city pages get checked in the AI-mention runs — closes the gap where we added city links but didn't verify them).</li>
+    </ul>
+
+    <h3>Module 4 — Review-recency motion <span class="tag new">new</span></h3>
+    <ul>
+      <li>Verified targets: <b>~10+ native Google reviews with text</b>, then a <b>steady recent drip</b> (74% of consumers want reviews &lt;3 months old). Track count, rating, and recency from the existing Google Places pull.</li>
+      <li>Automate review requests: generate per-customer review-request copy + the GBP review short-link; surface a monthly "request N reviews" task (or wire to Grade.us if/when configured). Detect staleness (no review in 60–90 days) → flag.</li>
+      <li>Do <b>not</b> score on debunked signals (review <i>velocity</i> &gt; count, keyword-stuffed reviews, 3-week-gap penalty).</li>
+      <li><b>Feeds:</b> Reputation pillar (rating + recency) + report reviews section.</li>
+    </ul>
+
+    <h3>Module 5 — GBP completeness check <span class="tag new">new</span></h3>
+    <ul>
+      <li>Audit GBP: correct <b>primary category</b> + ~4 relevant <b>additional categories</b> (from the profile), services, hours, attributes, service-area set, photos present. Output recommendations, not vanity tasks.</li>
+      <li>Explicitly exclude debunked "ranking" tactics (geo-tagged photos, post/Q&A quantity, keyword review-responses) — frame those as conversion aids if surfaced at all.</li>
+      <li><b>Feeds:</b> GEO Foundation pillar + checklist items.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Orchestration</h2>
+    <pre>geo_agent/local_relevancy.py
+  run_local_relevancy(db, customer_id):
+    cust = db.get_customer(customer_id)
+    if vertical_for(cust.business_type) not in LOCAL_VERTICALS:
+        log("non-local vertical — skipping"); return
+    profile = directory_profile(cust.business_type)      # per-business-type
+    nap     = canonical_nap(cust)                          # single source of truth
+    m1 = citations_audit_fix(db, cust, profile, nap)       # Module 1 (BrightLocal)
+    m2 = directory_breadth(db, cust, profile)              # Module 2
+    m3 = generate_service_area_pages(db, cust, profile)    # Module 3 (-> staging)
+    m4 = review_recency_motion(db, cust)                   # Module 4
+    m5 = gbp_completeness(db, cust, profile)               # Module 5
+    recompute_score(db, customer_id)                       # pillars refresh
+    return summary(m1..m5)
+
+scripts/monthly_local_relevancy.py  --all --stagger        # cron, 1×/month
+  - staggered per customer (avoid API bursts, like the AI-check runner)
+  - --customer &lt;id&gt; for a single run; respects existing no-email rule
+  - writes a weekly-report snapshot so progress shows up</pre>
+    <p class="mini">Cron cadence: monthly for citations/GBP (slow-moving), but review-recency + new-city checks can ride the existing weekly cadence. Stagger customers (reuse the AI-check stagger pattern) so BrightLocal/geocode APIs aren't bursted.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">How it flows into Score + report</h2>
+    <table>
+      <tr><th>Module</th><th>Score pillar</th><th>Weekly-report section</th></tr>
+      <tr><td>1 Citations/NAP</td><td>GEO Foundation (NAP-consistency)</td><td>Local listings (built)</td></tr>
+      <tr><td>2 Directory breadth</td><td>GEO Foundation (presence)</td><td>"Sources/directories citing you" / broad presence</td></tr>
+      <tr><td>3 Service-area pages</td><td>Content &amp; Coverage</td><td>What we shipped + city coverage</td></tr>
+      <tr><td>4 Review recency</td><td>Reputation</td><td>Reviews</td></tr>
+      <tr><td>5 GBP completeness</td><td>GEO Foundation</td><td>Foundation checklist</td></tr>
+    </table>
+    <p class="mini">Pillars/sections already exist — wiring is mostly populating data, not new UI. Keep the data-readiness warnings ("missing GBP/citation context") when a module is unconfigured.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Data model</h2>
+    <ul>
+      <li><span class="tag have">HAVE</span> <code>citations</code> (Module 1/2), <code>customers.service_areas</code> (Module 3), reviews data (Module 4).</li>
+      <li><span class="tag new">NEW</span> <code>DIRECTORY_PROFILES</code> config (code-level dict, keyed by business_type) — no migration.</li>
+      <li><span class="tag new">NEW</span> <code>customers.canonical_nap</code> (JSON: name/address/phone/url) — small ALTER, defaults derived from GBP.</li>
+      <li><span class="tag new">NEW</span> optional <code>local_relevancy_runs</code> (customer_id, ts, module summaries) for history — or reuse the report-snapshot mechanism.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Build phases &amp; acceptance</h2>
+    <ol>
+      <li><b>Phase 1 — Module 1 (Lever B) live.</b> Finish BrightLocal wiring against a real account for one pilot customer per vertical (one dental, one legal, one local_retail). <i>Accept:</i> <code>citations</code> populates, report "Local listings" lights up, GEO Foundation reflects NAP consistency.</li>
+      <li><b>Phase 2 — Directory profiles + Module 2.</b> Add <code>DIRECTORY_PROFILES</code> for dental/medical/legal/local_retail/professional_services/default; breadth stat in report. <i>Accept:</i> each vertical audits against its correct directory set.</li>
+      <li><b>Phase 3 — Module 3 (nearby-cities + content).</b> Build <code>nearby_cities.py</code>; generate city×service pages into staging with correct vertical schema; feed new cities into AI-mention checks. <i>Accept:</i> ≥1 reviewed city page published per pilot; AI checks cover the new cities.</li>
+      <li><b>Phase 4 — Modules 4 + 5.</b> Review-recency motion + GBP completeness audit into Reputation/Foundation + checklist. <i>Accept:</i> stale-review flag fires; GBP category gaps surface.</li>
+      <li><b>Phase 5 — Orchestrate.</b> <code>local_relevancy.py</code> + <code>monthly_local_relevancy.py --all --stagger</code> cron; per-run report snapshot. <i>Accept:</i> one monthly run updates score + report for all local customers without manual steps.</li>
+    </ol>
+    <div class="ok"><b>Net:</b> we redirect the (unproven, national) Lever-A spend into the proven, automatable, hyper-local stack. Each customer's engine is shaped by its own domain, business type, city, and service area — dental/medical/legal/retail each hit the directories and content schema that actually matter for them.</div>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Open decisions</h2>
+    <ul>
+      <li>BrightLocal vs Moz Local for Citation Builder auto-push (Lever-B spec leans BrightLocal — confirm account tier covers Citation Builder, not just Tracker).</li>
+      <li>Geocoding source for nearby-cities: free Nominatim (rate-limited) vs Google Geocoding (keyed, we have <code>PAGESPEED_API_KEY</code>-style keys) vs a static metro→towns table.</li>
+      <li>Review-request channel: built-in task + GBP short-link now, Grade.us later (per the tech-stack plan).</li>
+      <li>Medical insurance-directory listings often need manual/credentialed submission — likely a VA task, not API.</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
