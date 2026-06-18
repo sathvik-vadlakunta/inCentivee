@@ -231,7 +231,7 @@ def main():
 
     doc.add_paragraph().add_run("2. Add Expert Quotes from Professor Frederico (Priority: HIGH)").bold = True
     doc.add_paragraph(
-        "AI search engines cite pages with expert quotes 37-40% more often. Add 2-3 quotes per service page "
+        "AI search engines strongly favor pages with credentialed expert quotes. Add 2-3 quotes per service page "
         "from Professor Frederico about training philosophy, safety, or the benefits of BJJ/Muay Thai."
     )
     doc.add_paragraph(

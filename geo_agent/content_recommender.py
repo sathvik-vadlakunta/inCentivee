@@ -145,7 +145,7 @@ class ContentRecommendation:
         return asdict(self)
 
 
-# Shared GEO rules appended to EVERY system prompt below (Princeton GEO study +
+# Shared GEO rules appended to EVERY system prompt below (based on verified
 # 2025-2026 AI-citation research). Defined once so wording stays consistent
 # across business types — do not duplicate these inside the per-type prompts.
 _SHARED_GEO_RULES = """\
@@ -181,7 +181,7 @@ Key GEO principles that MUST guide your output:
 2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
 3. Authoritative voice: Write in the practice's voice ("Our team...", "At [Practice Name]...") WITHOUT fabricating quotes
 4. FAQ format: The most-cited content structure by AI systems
-5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+5. Content freshness: AI favors recent content -- include current-year references and recently-updated data
 6. Structured data: Schema-ready content with clear headings and semantic HTML
 
 CRITICAL — NEVER FABRICATE:
@@ -240,7 +240,7 @@ Key GEO principles that MUST guide your output:
 2. Statistics: ONLY use statistics from the "Available Industry Statistics" list provided — do NOT invent numbers
 3. Thought leadership: Write in the company's authoritative voice WITHOUT fabricating quotes from individuals
 4. FAQ format: The most-cited content structure by AI systems
-5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+5. Content freshness: AI favors recent content -- include current-year references and recently-updated data
 6. Industry authority: Position the company as an expert without revealing proprietary technology details
 
 CRITICAL — NEVER FABRICATE:
@@ -298,7 +298,7 @@ Key GEO principles that MUST guide your output:
 2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
 3. Authoritative voice: Write in the brand's voice WITHOUT fabricating quotes
 4. FAQ format: The most-cited content structure by AI systems
-5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+5. Content freshness: AI favors recent content -- include current-year references and recently-updated data
 6. Product education: Help buyers understand products, use cases, and quality differentiators
 
 CRITICAL — NEVER FABRICATE:
@@ -349,7 +349,7 @@ Key GEO principles that MUST guide your output:
 2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
 3. Authoritative voice: Write in the firm's voice ("Our attorneys...", "At [Firm Name]...") WITHOUT fabricating quotes
 4. FAQ format: The most-cited content structure by AI systems
-5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+5. Content freshness: AI favors recent content -- include current-year references and recently-updated data
 6. E-E-A-T signals: Demonstrate attorney expertise, experience, authoritativeness, and trustworthiness
 
 LEGAL-SPECIFIC RULES:
@@ -413,7 +413,7 @@ Key GEO principles that MUST guide your output:
 2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
 3. Authoritative voice: Write in the practice's voice ("Our providers...", "At [Practice Name]...") WITHOUT fabricating quotes
 4. FAQ format: The most-cited content structure by AI systems
-5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+5. Content freshness: AI favors recent content -- include current-year references and recently-updated data
 6. E-E-A-T signals: Demonstrate provider expertise, credentials, and medical authority
 
 MEDICAL-SPECIFIC RULES:
@@ -479,7 +479,7 @@ Key GEO principles that MUST guide your output:
 2. Statistics: ONLY use statistics from the "Available Research Statistics" list provided — do NOT invent numbers
 3. Authoritative voice: Write in the company's voice WITHOUT fabricating quotes
 4. FAQ format: The most-cited content structure by AI systems
-5. Content freshness: 50% of AI-cited content is <13 weeks old -- include current year references
+5. Content freshness: AI favors recent content -- include current-year references and recently-updated data
 6. Local authority: Establish the business as the go-to provider in their area
 
 CRITICAL — NEVER FABRICATE:

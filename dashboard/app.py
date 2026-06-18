@@ -2374,7 +2374,7 @@ SEO_GEO_TASKS = [
          ),
      }},
     # Content Optimization
-    {"key": "seo_expert_quotes", "task": "Expert quotes on all service pages (+37-40% AI citation lift)", "category": "Content Optimization",
+    {"key": "seo_expert_quotes", "task": "Expert quotes on key pages", "category": "Content Optimization",
      "guide": {
          "_default": (
              "<b>What:</b> Each service page needs 2-3 expert quotes from the practice's dentists."
@@ -2386,10 +2386,10 @@ SEO_GEO_TASKS = [
              "<li>Review and <b>Approve</b> the expert_quote recommendations</li>"
              "<li>Download the DOCX or publish directly to the site</li>"
              "</ol>"
-             "<b>Why:</b> Pages with expert quotes get 37-40% more citations from AI search engines."
+             "<b>Why:</b> AI search engines strongly favor pages with credentialed expert quotes."
          ),
      }},
-    {"key": "seo_stats_embedded", "task": "Statistics embedded every 150-200 words (+22% lift)", "category": "Content Optimization",
+    {"key": "seo_stats_embedded", "task": "Statistics with sources embedded in content", "category": "Content Optimization",
      "guide": {
          "_default": (
              "<b>What:</b> Real statistics and data points should be sprinkled throughout service pages."

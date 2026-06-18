@@ -43,11 +43,11 @@ that will help new {customer_term} find this business through:
 
 Key principles:
 - Content must lead with direct answers (TLDR-first, first 40-60 words answer the query)
-- Include statistics every 150-200 words
-- Expert quotes with provider name and credentials increase AI citation by 37-40%
-- FAQ format is the most-cited content structure by AI systems
-- Content freshness matters: 50% of AI-cited content is less than 13 weeks old
-- Schema markup ({schema_type}, FAQPage, Service) gives a 22% citation lift
+- Include verifiable statistics with sources where relevant
+- Expert quotes with provider name and credentials are strongly favored by AI engines
+- FAQ format is a highly-cited content structure for AI systems
+- Content freshness matters: AI favors recent content — use current-year references
+- Schema markup ({schema_type}, FAQPage, Service) helps AI engines parse the page
 - Every service page needs at least 4-5 FAQ entries
 
 Focus on driving new {customer_term} acquisition. Every recommendation should connect to

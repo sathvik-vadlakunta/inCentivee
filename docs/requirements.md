@@ -73,7 +73,7 @@ This is a powerful, non-obvious tactic that directly influences how AI assistant
 - **Claude (with web access)**: Reads llms.txt, structured markdown, schema markup
 - **Grok**: Uses X/Twitter signals + web content
 - **Microsoft Copilot**: Bing index, structured data, schema markup
-- Sites cited across **4+ AI platforms** are **2.8x more likely** to appear in ChatGPT responses
+- Presence across multiple AI platforms reinforces visibility (be consistently citable everywhere AI retrieves)
 
 ## Schema Markup Requirements
 
@@ -187,9 +187,9 @@ Sitemap: https://example.com/sitemap.xml
 
 ## Content Freshness (Research Finding)
 
-- **50% of content cited in AI answers is less than 13 weeks old**
-- AI platforms prefer content that is 25.7% fresher than what traditional search cites
-- GEO citations decay — stale content gets dropped from AI answers
+- **The freshness window is roughly 1–2 years** — most AI-cited content is under 1–2 years old (Seer Interactive, 2025).
+- **Cadence: quarterly baseline, monthly for ChatGPT/Perplexity-heavy verticals.** Monthly refresh fits dental/legal/local-retail retention.
+- GEO citations decay — stale content gets dropped from AI answers, so keep dates/stats current.
 - **This is the core justification for monthly agent runs** — refreshing content every 4 weeks keeps it within the citation window
 - Refresh strategy: update statistics, dates, expert quotes, add new FAQ entries
 
@@ -219,12 +219,13 @@ Sitemap: https://example.com/sitemap.xml
 
 ### 3. Content Structure for AI Discoverability (Research-Backed)
 
-**What makes LLMs cite a source (Princeton GEO research + 2026 studies):**
-- **Expert quotations with name/title**: +37-40% AI visibility (single highest factor)
-- **Statistics and data points**: +22% citation likelihood
-- **Structured data / schema markup**: +22% citation lift
-- **Branded web mentions** have strongest correlation (0.664) with AI Overview appearances
-- 44.2% of all LLM citations come from the first 30% of text (the intro)
+**What makes LLMs cite a source (verified 2025-2026 research — see Sources):**
+- **Off-site branded mentions** are the strongest lever — ~0.67 correlation with AI Overview appearance, ~3x stronger than backlinks (Ahrefs, 75k brands). This is earned-mention / digital-PR work, not just on-site.
+- **For local queries, the business's own website is the top AI citation source (~58%)**, then press (~27%), then directories (~15%) (BrightLocal). NAP + review consistency across GBP / Apple Maps / Yelp / Bing / Facebook matters.
+- **Credentialed expert quotes, verifiable statistics, FAQ structure, and schema markup** are favored by AI engines (qualitative best practice — avoid quoting the widely-repeated but unverified "+22%/+37%" lift figures).
+- **Lead with the answer** — AI engines retrieve passages, so the first sentence of each section should state the citable claim.
+
+> ⚠️ Removed (failed adversarial verification, do not cite): the Princeton "+22%/+37%" lifts, the "13-week / 50% of citations <13 weeks" rule, "2.8x across 4+ platforms", "325% earned-media", and format-specific lift figures.
 
 **Content structure rules:**
 - **TLDR-first**: First 40-60 words must directly answer the query (not build up to it)
@@ -577,7 +578,7 @@ dental-marketing/
 3. **python:3.12-slim** — ~150MB base, Debian-based, all deps work, widest compatibility
 4. **Jinja2 templates** for llms.txt — consistent format, easy to customize per practice
 5. **Cloudflare Worker** for hosting llms.txt — bypasses Webflow's limitations on serving raw files
-6. **Monthly cron** — content must refresh every 8-12 weeks to stay within AI citation window (50% of cited content is <13 weeks old)
+6. **Monthly cron** — refresh content monthly (quarterly minimum) to stay within the ~1-2 year AI citation freshness window
 7. **Claude 4.6 via Anthropic API** — best reasoning for content analysis and generation
 8. **robots.txt management** — block training bots, allow retrieval bots per customer
 9. **Stripe-style Instructions block** in llms.txt — directly tells AI how to recommend the practice
@@ -596,14 +597,15 @@ dental-marketing/
 
 - [llmstxt.org — Official Spec](https://llmstxt.org/) by Jeremy Howard
 - [Stripe's llms.txt Instructions pattern](https://dev.to/apideck/stripes-llmstxt-has-an-instructions-section-thats-a-bigger-deal-than-it-sounds-8ad)
-- [Princeton GEO Research](https://arxiv.org/html/2311.09735v3) — statistics +22%, expert quotes +37-40%
+- [Ahrefs — Branded mentions vs AI Overviews](https://ahrefs.com/blog/ai-overview-brand-correlation) — off-site brand mentions ~0.67 correlation (~3x backlinks)
+- [BrightLocal — ChatGPT Search sources](https://www.brightlocal.com/research/uncovering-chatgpt-search-sources/) — for local queries the business website is the top citation source (~58%)
+- [BrightLocal LCRS 2026](https://www.brightlocal.com/research/lcrs-ai-trust/) — 45% use AI for local recs; ChatGPT + Google AI Mode lead
+- [Seer Interactive — AI brand visibility & content recency](https://www.seerinteractive.com/insights/study-ai-brand-visibility-and-content-recency) — ~1-2 year freshness window
 - [Anthropic Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) — hybrid search recommendation
-- [BrightLocal 2025](https://www.brightlocal.com/) — citation impact data
-- [Apple Business 2026](https://gmbapi.com/news/apple-business-2026-local-search-dominance/) — 58% unclaimed
 - [AI User Agent Landscape 2026](https://nohacks.co/blog/ai-user-agents-landscape-2026) — crawler tiers
 - [Firecrawl llms.txt Generator](https://llmstxt.firecrawl.dev/)
-- [Schema for AI Search](https://georaiser.com/blog/schema-markup-ai) — 22% citation lift
-- [Content Freshness in AI](https://thedigitalbloom.com/learn/2025-ai-citation-llm-visibility-report/) — 13-week window
+
+> Note: earlier drafts cited Princeton "+22%/+37%" lifts, a "13-week" freshness rule, and "2.8x across platforms" — these failed adversarial verification and were removed.
 
 ---
 

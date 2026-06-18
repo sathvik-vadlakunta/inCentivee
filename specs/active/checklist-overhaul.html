@@ -111,8 +111,8 @@ def vertical_for(bt): return BUSINESS_TYPE_VERTICAL.get((bt or "").lower(), "def
     <table>
       <tr><th>Task key</th><th>Label</th><th>Auto-ticks when…</th></tr>
       <tr><td><code>seo_faq_sections</code></td><td>FAQ entries on key/service pages</td><td>a published <code>faq_update</code> rec exists</td></tr>
-      <tr><td><code>seo_expert_quotes</code></td><td>Expert quotes embedded (+37–40% AI citation lift)</td><td>published <code>expert_quote</code> rec</td></tr>
-      <tr><td><code>seo_stats_embedded</code></td><td>Statistics with sources embedded (+22% lift)</td><td>published <code>stat_injection</code> rec</td></tr>
+      <tr><td><code>seo_expert_quotes</code></td><td>Expert quotes embedded (AI engines favor credentialed quotes)</td><td>published <code>expert_quote</code> rec</td></tr>
+      <tr><td><code>seo_stats_embedded</code></td><td>Statistics with sources embedded</td><td>published <code>stat_injection</code> rec</td></tr>
       <tr><td><code>seo_content_depth</code></td><td>In-depth pages (2,000+ words) with structured headings</td><td>published <code>new_page</code> rec + headings detected live</td></tr>
       <tr><td><code>seo_blog_cadence</code></td><td>Blog posts targeting key questions</td><td>≥1 published <code>blog_post</code> rec</td></tr>
       <tr><td><code>seo_fresh_content</code></td><td>Content refreshed in last 90 days</td><td>a <code>freshness_update</code> published &lt;90d ago</td></tr>

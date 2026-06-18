@@ -140,7 +140,7 @@ White-labeled review management via **Grade.us** ($40/location on Agency plan) +
 
 ### How to Add Expert Quotes to Every Service Page
 
-This is the single highest-impact GEO tactic: **+37-40% AI citation lift**.
+This is a high-impact GEO tactic — AI engines strongly favor credentialed expert quotes.
 
 **Process:**
 1. GEO Agent analyzes each service page
@@ -167,7 +167,7 @@ This is the single highest-impact GEO tactic: **+37-40% AI citation lift**.
 
 ### How to Add Statistics to Every Page
 
-Stats give a **+22% AI citation lift**. Include one every 150-200 words.
+Verifiable statistics with sources help AI engines cite you. Include them where relevant.
 
 **Where to get stats:**
 - ADA (American Dental Association) reports
@@ -204,7 +204,7 @@ Stats give a **+22% AI citation lift**. Include one every 150-200 words.
 Every service page needs 4-6 FAQ entries. These drive:
 - Google "People Also Ask" boxes
 - AI assistant citations (FAQ is the most-cited content structure)
-- FAQPage schema markup (+22% citation lift from schema alone)
+- FAQPage schema markup (helps AI engines parse Q&A content)
 
 **The GEO Agent already generates these.** Here's the monthly update cycle:
 
@@ -248,7 +248,7 @@ Every service page needs 4-6 FAQ entries. These drive:
 
 ### Content Freshness Strategy (Why Monthly Matters)
 
-**Key research finding:** 50% of content cited by AI systems is less than 13 weeks old.
+**Key research finding:** AI engines favor recent content — the citation freshness window is roughly 1–2 years, so refresh monthly (quarterly minimum).
 
 **Monthly refresh targets:**
 1. **Update stats** — Replace old numbers with current data
