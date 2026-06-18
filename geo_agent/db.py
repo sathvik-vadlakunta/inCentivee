@@ -3182,7 +3182,7 @@ class CustomerDB:
 
             # Set up platform access tracking
             platform = "webflow" if c.get("webflow_site_id") else "unknown"
-            access_platforms = ["gsc", "ga", "gbp", "cloudflare"]
+            access_platforms = ["gsc", "ga", "gtm", "gbp", "cloudflare"]
             if platform in ("webflow", "squarespace", "wordpress"):
                 access_platforms.append(platform)
             for ap in access_platforms:

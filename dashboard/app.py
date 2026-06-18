@@ -331,7 +331,7 @@ def customer_detail(customer_id):
         email_kwargs = dict(
             kpis=kpis, runs=runs, places=places, diff_report=diff_report,
             content_recs=content_recs, competitors=competitors,
-            ai_run_summary=ai_run_summary,
+            ai_run_summary=ai_run_summary, access=access, checklist=checklist,
         )
         for t in raw_templates:
             raw = _render_email_template(t["content"], customer, contacts, **email_kwargs)
@@ -1155,7 +1155,7 @@ def add_customer():
                 logger.warning(f"Hosting detection failed for {domain}: {e}")
 
             # Set up platform access tracking
-            access_platforms = ["gsc", "ga", "gbp", "cloudflare"]
+            access_platforms = ["gsc", "ga", "gtm", "gbp", "cloudflare"]
             if platform in ("webflow", "squarespace", "wordpress", "shopify"):
                 access_platforms.append(platform)
             for p in access_platforms:
@@ -2073,12 +2073,98 @@ def _content_rec_summary(recs: list[dict]) -> str:
     return "\n".join(lines)
 
 
+# Everything we need from a client to onboard, in send order. `access_key` ties
+# an item to a platform_access row (granted/not_needed → satisfied); items with no
+# access_key are info/asset asks satisfied by a va_checklist flag. `how` is the
+# client-facing "how to grant it" copy (may use {placeholders} — substituted in
+# the normal replacements pass). Built dynamically so the email only lists what's
+# still outstanding. See specs onboarding + local-relevancy work.
+ONBOARDING_REQUIREMENTS = [
+    {"access_key": "gsc", "label": "Google Search Console — Full user",
+     "how": "Search Console → Settings → Users and permissions → Add user → "
+            "**kdoherty@practicerank.ai**, permission **Full**."},
+    {"access_key": "ga", "label": "Google Analytics 4 — Editor + Property ID",
+     "how": "Admin → Property Access Management → Add **kdoherty@practicerank.ai** as **Editor**. "
+            "**Also send your numeric GA4 Property ID** (Admin → Property Settings — a 9-digit number, "
+            "*not* the `G-XXXXXXX` measurement ID). This is what lets your reports show real call/form leads."},
+    {"access_key": "gtm", "label": "Google Tag Manager — Publish access",
+     "how": "Admin → User Management → Add **kdoherty@practicerank.ai** with **Publish** access. "
+            "Lets us track phone-call clicks and contact-form submissions as leads. "
+            "(Already tracking these in GA4? Just tell us the event names instead.)"},
+    {"access_key": "gbp", "label": "Google Business Profile — Manager",
+     "how": "Your Business Profile → Business Profile settings → People and access → Add → "
+            "**kdoherty@practicerank.ai** as **Manager**. This is the single most important listing "
+            "for Google Maps and local ranking."},
+    {"access_key": "__cms__", "label": "Website access ({cms_platform})",
+     "how": None},  # filled from the platform-specific access_steps
+    {"access_key": "cloudflare", "label": "DNS access ({dns_registrar})",
+     "how": "We set up Cloudflare (free — faster loading, security, and AI discoverability, no change to "
+            "your site). Either add **kdoherty@practicerank.ai** as a delegate in **{dns_registrar}**, "
+            "or share DNS login so we can point your nameservers."},
+    {"checklist_key": "nap_confirmed", "label": "Confirm your exact business info (name, address, phone, hours)",
+     "how": "Reply confirming the **exact** business name, street address (incl. suite/unit), phone, and hours "
+            "you want shown everywhere. We list you across dozens of directories and even tiny differences "
+            "(\"Ste 200\" vs \"#200\") hurt local ranking — so we lock one canonical version."},
+    {"checklist_key": "brand_assets_received", "label": "Send your logo + 10 real photos",
+     "how": "Email us your **logo** and **10+ genuine photos** (exterior, interior, team, and your work/products). "
+            "We use these to complete your Google, Apple, and Bing listings — complete profiles with real photos "
+            "rank and convert noticeably better than empty ones."},
+    {"checklist_key": "services_confirmed", "label": "Confirm services & service-area cities",
+     "how": "We've drafted your list of services and the nearby cities you serve from your website and will send "
+            "it to confirm. Reply with anything to add, remove, or fix so your local pages target the right terms."},
+]
+
+
+def _onboarding_blocks(customer: dict, access: list[dict] | None,
+                       checklist: dict | None, access_steps: str) -> tuple[str, str]:
+    """Build the (full_checklist, pending_only) markdown for onboarding emails.
+
+    full_checklist marks satisfied items with ✓ and pending ones with ☐ (for the
+    initial request). pending_only lists just the outstanding items (for the
+    follow-up). Both include each item's "how to grant it" copy.
+    """
+    access = access or []
+    checklist = checklist or {}
+    platform = (customer.get("platform") or "").lower()
+    status_by_platform = {a.get("platform"): a.get("status") for a in access}
+
+    full_lines, pending_lines = [], []
+    n = 0
+    for req in ONBOARDING_REQUIREMENTS:
+        ak = req.get("access_key")
+        if ak == "__cms__":
+            # Website/CMS access — satisfied when the CMS access row is granted.
+            satisfied = status_by_platform.get(platform) in ("granted", "not_needed")
+            how = access_steps
+        elif ak:
+            st = status_by_platform.get(ak)
+            satisfied = st in ("granted", "not_needed")
+            how = req["how"]
+        else:
+            satisfied = bool(checklist.get(req["checklist_key"]))
+            how = req["how"]
+
+        label, how = req["label"], how or req["how"] or ""
+        if satisfied:
+            full_lines.append(f"- ✓ **{label}** — received, thank you!")
+        else:
+            n += 1
+            full_lines.append(f"**{n}. {label}**\n   - {how}")
+            pending_lines.append(f"**{label}**\n   - {how}")
+
+    if not pending_lines:
+        pending_lines.append("- ✓ Everything's in — no outstanding items. Thank you!")
+    return "\n\n".join(full_lines), "\n\n".join(pending_lines)
+
+
 def _render_email_template(content: str, customer: dict, contacts: list[dict],
                            kpis: dict | None = None, runs: list[dict] | None = None,
                            places: dict | None = None, diff_report: str = "",
                            content_recs: list[dict] | None = None,
                            competitors: list[dict] | None = None,
-                           ai_run_summary: dict | None = None) -> str:
+                           ai_run_summary: dict | None = None,
+                           access: list[dict] | None = None,
+                           checklist: dict | None = None) -> str:
     """Replace template variables with real customer data from DB."""
     contact_name = contacts[0]["name"] if contacts else "there"
     contact_email = contacts[0].get("email", "") if contacts else ""
@@ -2109,6 +2195,9 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "shopify": "**Shopify** — Create a custom app for API access\n   - Go to Settings > Apps and sales channels > Develop apps\n   - Click \"Allow custom app development\" (if not already enabled)\n   - Click \"Create an app\" — name it \"PracticeRank\"\n   - Under Configuration > Admin API integration, click Configure and enable:\n     - `read_themes` / `write_themes`\n     - `read_content` / `write_content`\n     - `read_products` / `write_products`\n     - `read_online_store_pages` / `write_online_store_pages`\n   - Click Install app, then send us the Admin API access token",
     }
     access_steps = platform_steps.get(platform, f"**{platform.title()}** — Please share login or collaborator access")
+
+    # Dynamic onboarding checklist — only what we still need, with how-to copy.
+    onboarding_full, onboarding_pending = _onboarding_blocks(customer, access, checklist, access_steps)
 
     # KPI data for monthly reports
     kpis = kpis or {}
@@ -2374,6 +2463,9 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{contact_email}": contact_email,
         "{platform}": platform.title(),
         "{platform_access_steps}": access_steps,
+        # Dynamic onboarding checklist (only outstanding items + how to grant)
+        "{access_checklist}": onboarding_full,
+        "{pending_access_list}": onboarding_pending,
         "{city}": customer.get("city", ""),
         "{state}": customer.get("state", ""),
         "{domain}": customer.get("domain", ""),
@@ -2530,6 +2622,11 @@ def _get_va_todos(customer: dict, access: list[dict], contacts: list[dict],
             add(f"access_{a['platform']}", f"Get {a['platform'].upper()} access", auto_done=is_done, phase="access")
 
         add("places_verified", "Verify Google Places data", auto_done=places is not None)
+        # Client-supplied info/assets the onboarding email asks for. Checking these
+        # off drops them from the dynamic access-request / follow-up emails.
+        add("nap_confirmed", "Client confirmed exact NAP (name / address / phone / hours)", phase="access")
+        add("brand_assets_received", "Received logo + 10 photos from client", phase="access")
+        add("services_confirmed", "Client confirmed services & service-area cities", phase="access")
         add("gsc_setup", "Add your Google account as Full user in customer's Search Console, then save property URL in Integrations tab")
         add("followup_sent", "Send access follow-up email (if needed)")
         add("first_audit", "Run first site audit", auto_done=bool(runs))
@@ -3542,6 +3639,8 @@ def customer_emails(customer_id):
         email_kwargs = dict(
             places=places, competitors=competitors,
             ai_run_summary=ai_run_summary,
+            access=db.get_platform_access(customer_id),
+            checklist=db.get_checklist(customer_id),
         )
 
         # Render each template with customer data, convert markdown to HTML
