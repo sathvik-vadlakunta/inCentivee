@@ -554,8 +554,8 @@
                         <td>{{ c.phone }}</td>
                         <td>{{ c.role | replace('_', ' ') | title }}</td>
                         <td style="white-space:nowrap; text-align:right;">
-                            <button type="button" class="btn-link" onclick="editContact(this)">Edit</button>
-                            <button type="button" class="btn-link" style="color:var(--danger,#dc2626);" onclick="deleteContact('{{ c.id }}')">Delete</button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="editContact(this)">Edit</button>
+                            <button type="button" class="btn btn-sm btn-outline" style="color:var(--danger);margin-left:4px;" onclick="deleteContact('{{ c.id }}')">Delete</button>
                         </td>
                     </tr>
                     {% endfor %}

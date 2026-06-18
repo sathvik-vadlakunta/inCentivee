@@ -201,6 +201,19 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     # --- Wins (REAL) ---
     published = [r for r in db.get_content_recommendations(customer_id, status="published", limit=50)
                  if (r.get("published_at") or "")[:10] >= ds(cur_start)]
+    # --- Domain Authority + competitor gap (Moz; renders only when tracked) ---
+    da_latest = db.get_latest_kpi(customer_id, "domain_authority")
+    if da_latest:
+        da_hist = list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12)))
+        comp_das = sorted(
+            (c.get("domain_authority") or 0 for c in (db.get_competitor_domains(customer_id) or [])),
+            reverse=True)
+        data["sections"]["authority"] = {
+            "da": da_latest["value"],
+            "first": da_hist[0]["value"] if da_hist else da_latest["value"],
+            "top_competitor": comp_das[0] if comp_das and comp_das[0] > 0 else None,
+        }
+
     data["sections"]["wins"] = {"published": published}
 
     # --- Sources now citing you (from grounded AI answers) ---
@@ -460,6 +473,26 @@ def render_html(data: dict) -> str:
             <div class="score-badge" style="background:{color};width:88px;height:88px"><b style="font-size:26px">{ls['score']}%</b><span>NAP consistent</span></div>
             <div class="pillars"><p style="margin:0 0 6px">{ls['consistent']} of {ls['total']} tracked directories consistent{f" — building toward {ls['target']} key local directories for your industry" if ls.get('target') else ''}.</p><ul style="margin:4px 0">{issues}</ul></div>
           </div></div>""")
+
+    # 8b. Domain Authority + competitor gap
+    if "authority" in s:
+        a = s["authority"]
+        da = round(a["da"])
+        delta = da - round(a["first"])
+        trend = f' <span style="color:#16a34a;font-weight:600">▲ +{delta} since we started</span>' if delta > 0 else ""
+        gap_html = ""
+        if a.get("top_competitor"):
+            top = round(a["top_competitor"])
+            gap = max(0, top - da)
+            gap_html = (f'<p style="margin:8px 0 0">Your top competitor sits at <b>{top}</b> — '
+                        f'a <b>{gap}-point</b> authority gap. Closing it is exactly what our off-site '
+                        f'link &amp; citation work targets.</p>')
+        parts.append(
+            f'<div class="r-sec"><h3>Domain Authority</h3>'
+            f'<div class="score-row"><div class="score-badge" style="background:#16a34a;width:88px;height:88px">'
+            f'<b style="font-size:26px">{da}</b><span>of 100</span></div>'
+            f'<div class="pillars"><p style="margin:0">Your site\'s link authority{trend}.</p>{gap_html}</div>'
+            f'</div></div>')
 
     # 9. Sources now citing you (from grounded AI answers)
     if "sources" in s and s["sources"]:
