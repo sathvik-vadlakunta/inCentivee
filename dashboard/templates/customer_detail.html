@@ -228,7 +228,7 @@
             <button class="detail-nav-sub" onclick="switchSeoSubtab('audit', this)">Audit
                 {% if audit_issues %}<span class="nav-badge-sm" style="background:#fee2e2;color:#991b1b;">{{ audit_issues | length }}</span>{% endif %}
             </button>
-            <button class="detail-nav-sub" onclick="switchSeoSubtab('backlinks', this)">Backlinks</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('backlinks', this)">Backlinks &amp; Authority</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('competitors', this)">Competitors</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('reviews', this)">Reviews</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('integrations', this)">Integrations</button>
@@ -1485,9 +1485,193 @@
 
     <!-- ===== BACKLINKS SUB-TAB ===== -->
     <div id="seo-sub-backlinks" class="seo-sub-content" style="display:none;">
+
+  <div class="card" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;">Domain Authority</div>
+      <div style="font-size:2rem;font-weight:700;line-height:1.1;">{{ da_latest.value | int if da_latest else '—' }}</div>
+      <div style="font-size:0.74rem;color:var(--muted);">{% if da_latest %}as of {{ da_latest.date }} · tracks link-building progress{% else %}Connect Moz to track (set MOZ_ACCESS_ID / MOZ_SECRET_KEY){% endif %}</div>
+    </div>
+    {% if da_history and da_history|length > 1 %}<canvas id="da-spark" width="220" height="56" style="max-width:260px;"></canvas>{% endif %}
+    <button class="btn btn-sm btn-outline" onclick="refreshDA('{{ customer.id }}', this)">↻ Refresh</button>
+  </div>
+  <script>
+    {% if da_history and da_history|length > 1 %}
+    window.DA_HISTORY = {{ da_history | map(attribute='value') | list | tojson }};
+    window.DA_DATES = {{ da_history | map(attribute='date') | list | tojson }};
+    {% endif %}
+  </script>
+
+  {% set comps_da = (competitor_domains or []) | selectattr('domain_authority', 'gt', 0) | sort(attribute='domain_authority', reverse=True) | list %}
+  {% if comps_da %}
+  {% set you_da = (da_latest.value if da_latest else 0) %}
+  {% set max_da = ([you_da] + (comps_da | map(attribute='domain_authority') | list)) | max %}
+  <div class="card" style="margin-bottom:12px;">
+    <h3 style="margin:0 0 10px;">Domain Authority vs competitors</h3>
+    <div class="da-bar-row">
+      <span class="da-bar-label"><b>You — {{ customer.name }}</b></span>
+      <div class="da-bar-track"><div class="da-bar-fill you" style="width:{{ (you_da / max_da * 100) if max_da else 0 }}%"></div></div>
+      <span class="da-bar-val">{{ you_da | int }}</span>
+    </div>
+    {% for c in comps_da[:5] %}
+    <div class="da-bar-row">
+      <span class="da-bar-label" title="{{ c.competitor_domain }}">{{ c.competitor_name or c.competitor_domain }}</span>
+      <div class="da-bar-track"><div class="da-bar-fill" style="width:{{ (c.domain_authority / max_da * 100) if max_da else 0 }}%"></div></div>
+      <span class="da-bar-val">{{ c.domain_authority | int }}</span>
+    </div>
+    {% endfor %}
+    <p style="font-size:0.78rem;color:var(--muted);margin:10px 0 0;">The gap between your bar and the top competitor is the authority link building closes.</p>
+  </div>
+  {% endif %}
+
+  <!-- Off-site authority: FATJOE orders ledger -->
+  <div class="card" style="margin-bottom:12px;" id="offsite-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h3 style="margin:0;">Off-site authority — link building &amp; citations</h3>
+      <button class="btn btn-sm btn-primary" onclick="document.getElementById('offsite-new').toggleAttribute('hidden')">+ Log FATJOE order</button>
+    </div>
+    {% set osum = offsite_summary %}
+    <div class="os-stats">
+      <div class="os-stat"><div class="os-v">{{ osum.links }}</div><div class="os-k">Links live</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.avg_link_da if osum.avg_link_da is not none else '—' }}</div><div class="os-k">Avg link DA</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.ref_domains }}</div><div class="os-k">Ref. domains</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.citations }}</div><div class="os-k">Citations</div></div>
+      <div class="os-stat"><div class="os-v">{{ osum.mentions }}</div><div class="os-k">Mentions</div></div>
+      <div class="os-stat"><div class="os-v">${{ osum.spend_usd | round(0) | int }}</div><div class="os-k">Spend to date</div></div>
+    </div>
+
+    {% set cad = offsite_cadence %}
+    <div class="os-cadence">
+      <span><b>Links this month: {{ cad.this_month }}</b> of ~{{ cad.target }} target</span>
+      {% if cad.last_link_date %}<span class="mini">· last link ordered {{ cad.last_link_date }}</span>{% endif %}
+      <div class="os-cad-bar"><div class="os-cad-fill" style="width:{{ ((cad.this_month / cad.target * 100) if cad.target else 0) | round | int }}%;{{ 'background:#dc2626;' if cad.this_month > cad.target }}"></div></div>
+      <span class="mini">{% if cad.this_month > cad.target %}Over cadence — slow down; for low-DR local sites a few relevant links beat a firehose.{% else %}Steady drip beats volume (anti-"10/month").{% endif %}</span>
+    </div>
+
+    {% set mix = offsite_anchor_mix %}
+    {% if mix.total %}
+    <div class="os-mix">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.78rem;font-weight:600;color:var(--muted);">Anchor mix ({{ mix.total }} links)</span>
+        {% if mix.exact_pct > 10 %}<span class="tag t-bm" style="background:#fee2e2;color:#991b1b;">⚠ exact-match {{ mix.exact_pct }}% (keep ≤10%)</span>{% endif %}
+      </div>
+      <div class="os-mix-bar">
+        {% for kind, color in [('branded','#2563eb'),('url','#0891b2'),('generic','#64748b'),('partial','#16a34a'),('exact','#dc2626')] %}
+          {% set c = mix.counts[kind] %}
+          {% if c %}<div class="os-mix-seg" style="width:{{ (c / mix.total * 100) | round(1) }}%;background:{{ color }};" title="{{ kind }}: {{ c }}"></div>{% endif %}
+        {% endfor %}
+      </div>
+      <div class="os-mix-legend">
+        {% for kind, color in [('branded','#2563eb'),('url','#0891b2'),('generic','#64748b'),('partial','#16a34a'),('exact','#dc2626')] %}
+          {% if mix.counts[kind] %}<span><i style="background:{{ color }}"></i>{{ kind }} {{ mix.counts[kind] }}</span>{% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- New-order form (hidden until toggled) -->
+    <form id="offsite-new" hidden class="os-form" onsubmit="return submitOffsiteOrder(event)">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:-6px;">
+        <button type="button" class="va-howto" onclick="openOrderGuide()">📋 How to order this in FATJOE →</button>
+      </div>
+      <div class="os-grid">
+        <label>Type
+          <select name="order_type" onchange="osTypeChange(this)">
+            <option value="link">Blogger outreach link</option>
+            <option value="citation">Local citations</option>
+            <option value="mention">Brand mention</option>
+          </select>
+        </label>
+        <label class="os-dr">DR tier
+          <select name="dr_tier"><option value="">—</option>
+            <option>20</option><option>30</option><option>40</option><option>50</option><option>60</option>
+          </select>
+        </label>
+        <label class="os-qty">Qty
+          <input type="number" name="quantity" value="1" min="1" style="width:70px;">
+        </label>
+        <label>Our cost ($)
+          <input type="number" name="cost_usd" step="0.01" placeholder="120" style="width:100px;">
+        </label>
+        <label>FATJOE order #
+          <input type="text" name="vendor_order_id" placeholder="FJ-…">
+        </label>
+      </div>
+      <div class="os-grid os-link-only">
+        <label style="flex:2;">Target URL
+          <input type="text" name="target_url" placeholder="https://site.com/sell-gold-springfield">
+        </label>
+        <label>Anchor text
+          <input type="text" name="anchor_text" placeholder="sell gold in Springfield">
+        </label>
+        <label>Anchor type
+          <select name="anchor_type">
+            <option value="branded">branded</option>
+            <option value="url">naked URL</option>
+            <option value="generic">generic</option>
+            <option value="partial" selected>partial-match</option>
+            <option value="exact">exact-match</option>
+          </select>
+        </label>
+      </div>
+      <label style="display:block;">Notes
+        <input type="text" name="notes" placeholder="US site preferred; topic relevant to {city} {service}" style="width:100%;">
+      </label>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button type="submit" class="btn btn-sm btn-primary">Save order</button>
+        <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('offsite-new').setAttribute('hidden','')">Cancel</button>
+      </div>
+    </form>
+
+    <!-- Orders -->
+    {% if offsite_orders %}
+    <table class="os-table">
+      <thead><tr><th>Type</th><th>Target / details</th><th>DR</th><th>Cost</th><th>Status</th><th>Live URL</th><th></th></tr></thead>
+      <tbody>
+      {% for o in offsite_orders %}
+      <tr data-order="{{ o.id }}">
+        <td><span class="tag t-{{ 'cit' if o.order_type=='citation' else ('bm' if o.order_type=='mention' else 'link') }}">{{ o.order_type }}</span></td>
+        <td>
+          {% if o.order_type == 'citation' %}{{ o.quantity }} citations
+          {% else %}<div class="os-target">{{ o.target_url or '—' }}</div>
+            {% if o.anchor_text %}<div class="os-anchor">“{{ o.anchor_text }}” <span class="mini">({{ o.anchor_type }})</span></div>{% endif %}
+          {% endif %}
+        </td>
+        <td>{{ o.dr_tier or '—' }}</td>
+        <td>{{ ('$%.0f' % o.cost_usd) if o.cost_usd else '—' }}</td>
+        <td>
+          <select class="os-status lr-{{ o.status }}" onchange="setOffsiteStatus({{ o.id }}, this.value)">
+            {% for st in ['ordered','in_progress','delivered','live','indexed','redo_requested','cancelled'] %}
+            <option value="{{ st }}" {{ 'selected' if o.status==st }}>{{ st.replace('_',' ') }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>
+          {% set oas = offsite_assets | selectattr('order_id','equalto',o.id) | list %}
+          {% if oas %}
+            {% for a in oas[:3] %}<div><a href="{{ a.live_url }}" target="_blank" rel="noopener">{{ a.domain }}</a>{% if a.da is not none %} · DA {{ a.da }}{% endif %}</div>{% endfor %}
+            {% if oas|length > 3 %}<div class="mini">+{{ oas|length - 3 }} more</div>{% endif %}
+          {% else %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-outline" onclick="markOffsiteLive({{ o.id }}, '{{ o.order_type }}')">+ Mark live</button>
+              <button class="btn btn-sm btn-outline" onclick="document.getElementById('os-import-{{ o.id }}').click()">⬆ Import CSV</button>
+              <input type="file" id="os-import-{{ o.id }}" accept=".csv" hidden onchange="importOffsiteReport({{ o.id }}, this)">
+            </div>
+          {% endif %}
+        </td>
+        <td><button class="os-del" title="Delete" onclick="deleteOffsiteOrder({{ o.id }})">×</button></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="mini" style="margin:12px 0 0;">No off-site orders logged yet. Click <b>+ Log FATJOE order</b> after placing one in the FATJOE dashboard. See the playbook spec <code>fatjoe-va-ops-and-tracking</code> for ordering rules.</p>
+    {% endif %}
+  </div>
+
         <div class="card">
             <div class="section-header" style="margin-bottom:0.75rem;">
-                <h2>Backlinks</h2>
+                <h2>Backlinks (Google Search Console)</h2>
                 <button class="btn btn-sm btn-primary" onclick="pullBacklinks('{{ customer.id }}')">Pull from GSC</button>
             </div>
 
@@ -1987,189 +2171,6 @@
 <!-- ==================== LOCAL SEO TAB ==================== -->
 <div id="tab-local-seo" class="tab-content">
   {% if va_plan %}
-  <div class="card" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
-    <div>
-      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;">Domain Authority</div>
-      <div style="font-size:2rem;font-weight:700;line-height:1.1;">{{ da_latest.value | int if da_latest else '—' }}</div>
-      <div style="font-size:0.74rem;color:var(--muted);">{% if da_latest %}as of {{ da_latest.date }} · tracks link-building progress{% else %}Connect Moz to track (set MOZ_ACCESS_ID / MOZ_SECRET_KEY){% endif %}</div>
-    </div>
-    {% if da_history and da_history|length > 1 %}<canvas id="da-spark" width="220" height="56" style="max-width:260px;"></canvas>{% endif %}
-    <button class="btn btn-sm btn-outline" onclick="refreshDA('{{ customer.id }}', this)">↻ Refresh</button>
-  </div>
-  <script>
-    {% if da_history and da_history|length > 1 %}
-    window.DA_HISTORY = {{ da_history | map(attribute='value') | list | tojson }};
-    window.DA_DATES = {{ da_history | map(attribute='date') | list | tojson }};
-    {% endif %}
-  </script>
-
-  {% set comps_da = (competitor_domains or []) | selectattr('domain_authority', 'gt', 0) | sort(attribute='domain_authority', reverse=True) | list %}
-  {% if comps_da %}
-  {% set you_da = (da_latest.value if da_latest else 0) %}
-  {% set max_da = ([you_da] + (comps_da | map(attribute='domain_authority') | list)) | max %}
-  <div class="card" style="margin-bottom:12px;">
-    <h3 style="margin:0 0 10px;">Domain Authority vs competitors</h3>
-    <div class="da-bar-row">
-      <span class="da-bar-label"><b>You — {{ customer.name }}</b></span>
-      <div class="da-bar-track"><div class="da-bar-fill you" style="width:{{ (you_da / max_da * 100) if max_da else 0 }}%"></div></div>
-      <span class="da-bar-val">{{ you_da | int }}</span>
-    </div>
-    {% for c in comps_da[:5] %}
-    <div class="da-bar-row">
-      <span class="da-bar-label" title="{{ c.competitor_domain }}">{{ c.competitor_name or c.competitor_domain }}</span>
-      <div class="da-bar-track"><div class="da-bar-fill" style="width:{{ (c.domain_authority / max_da * 100) if max_da else 0 }}%"></div></div>
-      <span class="da-bar-val">{{ c.domain_authority | int }}</span>
-    </div>
-    {% endfor %}
-    <p style="font-size:0.78rem;color:var(--muted);margin:10px 0 0;">The gap between your bar and the top competitor is the authority link building closes.</p>
-  </div>
-  {% endif %}
-
-  <!-- Off-site authority: FATJOE orders ledger (Phase 1, manual) -->
-  <div class="card" style="margin-bottom:12px;" id="offsite-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-      <h3 style="margin:0;">Off-site authority — link building &amp; citations</h3>
-      <button class="btn btn-sm btn-primary" onclick="document.getElementById('offsite-new').toggleAttribute('hidden')">+ Log FATJOE order</button>
-    </div>
-    {% set osum = offsite_summary %}
-    <div class="os-stats">
-      <div class="os-stat"><div class="os-v">{{ osum.links }}</div><div class="os-k">Links live</div></div>
-      <div class="os-stat"><div class="os-v">{{ osum.avg_link_da if osum.avg_link_da is not none else '—' }}</div><div class="os-k">Avg link DA</div></div>
-      <div class="os-stat"><div class="os-v">{{ osum.ref_domains }}</div><div class="os-k">Ref. domains</div></div>
-      <div class="os-stat"><div class="os-v">{{ osum.citations }}</div><div class="os-k">Citations</div></div>
-      <div class="os-stat"><div class="os-v">{{ osum.mentions }}</div><div class="os-k">Mentions</div></div>
-      <div class="os-stat"><div class="os-v">${{ osum.spend_usd | round(0) | int }}</div><div class="os-k">Spend to date</div></div>
-    </div>
-
-    {% set cad = offsite_cadence %}
-    <div class="os-cadence">
-      <span><b>Links this month: {{ cad.this_month }}</b> of ~{{ cad.target }} target</span>
-      {% if cad.last_link_date %}<span class="mini">· last link ordered {{ cad.last_link_date }}</span>{% endif %}
-      <div class="os-cad-bar"><div class="os-cad-fill" style="width:{{ ((cad.this_month / cad.target * 100) if cad.target else 0) | round | int }}%;{{ 'background:#dc2626;' if cad.this_month > cad.target }}"></div></div>
-      <span class="mini">{% if cad.this_month > cad.target %}Over cadence — slow down; for low-DR local sites a few relevant links beat a firehose.{% else %}Steady drip beats volume (anti-"10/month").{% endif %}</span>
-    </div>
-
-    {% set mix = offsite_anchor_mix %}
-    {% if mix.total %}
-    <div class="os-mix">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.78rem;font-weight:600;color:var(--muted);">Anchor mix ({{ mix.total }} links)</span>
-        {% if mix.exact_pct > 10 %}<span class="tag t-bm" style="background:#fee2e2;color:#991b1b;">⚠ exact-match {{ mix.exact_pct }}% (keep ≤10%)</span>{% endif %}
-      </div>
-      <div class="os-mix-bar">
-        {% for kind, color in [('branded','#2563eb'),('url','#0891b2'),('generic','#64748b'),('partial','#16a34a'),('exact','#dc2626')] %}
-          {% set c = mix.counts[kind] %}
-          {% if c %}<div class="os-mix-seg" style="width:{{ (c / mix.total * 100) | round(1) }}%;background:{{ color }};" title="{{ kind }}: {{ c }}"></div>{% endif %}
-        {% endfor %}
-      </div>
-      <div class="os-mix-legend">
-        {% for kind, color in [('branded','#2563eb'),('url','#0891b2'),('generic','#64748b'),('partial','#16a34a'),('exact','#dc2626')] %}
-          {% if mix.counts[kind] %}<span><i style="background:{{ color }}"></i>{{ kind }} {{ mix.counts[kind] }}</span>{% endif %}
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- New-order form (hidden until toggled) -->
-    <form id="offsite-new" hidden class="os-form" onsubmit="return submitOffsiteOrder(event)">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:-6px;">
-        <button type="button" class="va-howto" onclick="openOrderGuide()">📋 How to order this in FATJOE →</button>
-      </div>
-      <div class="os-grid">
-        <label>Type
-          <select name="order_type" onchange="osTypeChange(this)">
-            <option value="link">Blogger outreach link</option>
-            <option value="citation">Local citations</option>
-            <option value="mention">Brand mention</option>
-          </select>
-        </label>
-        <label class="os-dr">DR tier
-          <select name="dr_tier"><option value="">—</option>
-            <option>20</option><option>30</option><option>40</option><option>50</option><option>60</option>
-          </select>
-        </label>
-        <label class="os-qty">Qty
-          <input type="number" name="quantity" value="1" min="1" style="width:70px;">
-        </label>
-        <label>Our cost ($)
-          <input type="number" name="cost_usd" step="0.01" placeholder="120" style="width:100px;">
-        </label>
-        <label>FATJOE order #
-          <input type="text" name="vendor_order_id" placeholder="FJ-…">
-        </label>
-      </div>
-      <div class="os-grid os-link-only">
-        <label style="flex:2;">Target URL
-          <input type="text" name="target_url" placeholder="https://site.com/sell-gold-springfield">
-        </label>
-        <label>Anchor text
-          <input type="text" name="anchor_text" placeholder="sell gold in Springfield">
-        </label>
-        <label>Anchor type
-          <select name="anchor_type">
-            <option value="branded">branded</option>
-            <option value="url">naked URL</option>
-            <option value="generic">generic</option>
-            <option value="partial" selected>partial-match</option>
-            <option value="exact">exact-match</option>
-          </select>
-        </label>
-      </div>
-      <label style="display:block;">Notes
-        <input type="text" name="notes" placeholder="US site preferred; topic relevant to {city} {service}" style="width:100%;">
-      </label>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <button type="submit" class="btn btn-sm btn-primary">Save order</button>
-        <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('offsite-new').setAttribute('hidden','')">Cancel</button>
-      </div>
-    </form>
-
-    <!-- Orders -->
-    {% if offsite_orders %}
-    <table class="os-table">
-      <thead><tr><th>Type</th><th>Target / details</th><th>DR</th><th>Cost</th><th>Status</th><th>Live URL</th><th></th></tr></thead>
-      <tbody>
-      {% for o in offsite_orders %}
-      <tr data-order="{{ o.id }}">
-        <td><span class="tag t-{{ 'cit' if o.order_type=='citation' else ('bm' if o.order_type=='mention' else 'link') }}">{{ o.order_type }}</span></td>
-        <td>
-          {% if o.order_type == 'citation' %}{{ o.quantity }} citations
-          {% else %}<div class="os-target">{{ o.target_url or '—' }}</div>
-            {% if o.anchor_text %}<div class="os-anchor">“{{ o.anchor_text }}” <span class="mini">({{ o.anchor_type }})</span></div>{% endif %}
-          {% endif %}
-        </td>
-        <td>{{ o.dr_tier or '—' }}</td>
-        <td>{{ ('$%.0f' % o.cost_usd) if o.cost_usd else '—' }}</td>
-        <td>
-          <select class="os-status lr-{{ o.status }}" onchange="setOffsiteStatus({{ o.id }}, this.value)">
-            {% for st in ['ordered','in_progress','delivered','live','indexed','redo_requested','cancelled'] %}
-            <option value="{{ st }}" {{ 'selected' if o.status==st }}>{{ st.replace('_',' ') }}</option>
-            {% endfor %}
-          </select>
-        </td>
-        <td>
-          {% set oas = offsite_assets | selectattr('order_id','equalto',o.id) | list %}
-          {% if oas %}
-            {% for a in oas[:3] %}<div><a href="{{ a.live_url }}" target="_blank" rel="noopener">{{ a.domain }}</a>{% if a.da is not none %} · DA {{ a.da }}{% endif %}</div>{% endfor %}
-            {% if oas|length > 3 %}<div class="mini">+{{ oas|length - 3 }} more</div>{% endif %}
-          {% else %}
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-sm btn-outline" onclick="markOffsiteLive({{ o.id }}, '{{ o.order_type }}')">+ Mark live</button>
-              <button class="btn btn-sm btn-outline" onclick="document.getElementById('os-import-{{ o.id }}').click()">⬆ Import CSV</button>
-              <input type="file" id="os-import-{{ o.id }}" accept=".csv" hidden onchange="importOffsiteReport({{ o.id }}, this)">
-            </div>
-          {% endif %}
-        </td>
-        <td><button class="os-del" title="Delete" onclick="deleteOffsiteOrder({{ o.id }})">×</button></td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p class="mini" style="margin:12px 0 0;">No off-site orders logged yet. Click <b>+ Log FATJOE order</b> after placing one in the FATJOE dashboard. See the playbook spec <code>fatjoe-va-ops-and-tracking</code> for ordering rules.</p>
-    {% endif %}
-  </div>
-
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <h2 style="margin:0;">Local SEO — VA Action Plan</h2>
     <span style="color:var(--muted);font-size:0.85rem;">{{ va_plan.open_steps }} open of {{ va_plan.total_steps }} steps</span>
