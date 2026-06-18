@@ -1609,29 +1609,6 @@
             {% endif %}
         </div>
 
-        <!-- GBP Audit -->
-        {% if gbp_audit %}
-        <div class="card" style="margin-top:1rem;">
-            <div class="section-header" style="margin-bottom:0.5rem;">
-                <h2>Google Business Profile Audit</h2>
-                <div style="font-size:1.5rem;font-weight:700;color:{% if gbp_audit.score >= 70 %}var(--success){% elif gbp_audit.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
-                    {{ gbp_audit.score }}/100
-                </div>
-            </div>
-            {% if gbp_audit.details %}
-            <div style="display:grid;gap:0.3rem;">
-                {% for field, info in gbp_audit.details.items() %}
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid var(--border);font-size:0.85rem;">
-                    <span>{{ field | replace('_', ' ') | title }}</span>
-                    <span style="color:{% if info.score > 0 %}var(--success){% else %}var(--danger){% endif %};font-weight:600;">
-                        {% if info.score > 0 %}Pass{% else %}Missing{% endif %}
-                    </span>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
     </div>
 
     <!-- ===== REVIEWS SUB-TAB ===== -->

@@ -164,8 +164,8 @@ def _check_ai_visibility(
             impact="medium",
             effort="medium",
             est_score_boost=4,
-            action_url=f"{base_url}?tab=ai-readiness",
-            action_label="View AI Readiness",
+            action_url=f"{base_url}?tab=ai-mentions",
+            action_label="View AI Mentions",
         ))
 
     # Check for declining trend
@@ -285,49 +285,6 @@ def _check_technical(
             action_label="View Issues",
             details={"issues": [i.get("title") for i in critical[:3]]},
         ))
-
-    # Check schema / llms.txt via AI readiness
-    ai_readiness = db.get_latest_ai_readiness(customer_id)
-    if ai_readiness:
-        breakdown = ai_readiness.get("breakdown", {})
-        if not breakdown.get("faq_schema"):
-            wins.append(QuickWin(
-                id="ai_no_faq_schema",
-                title="Add FAQ schema to service pages",
-                description="FAQ schema helps AI engines cite your answers directly. It's the #1 most-cited content format.",
-                pillar="ai_visibility",
-                impact="high",
-                effort="low",
-                est_score_boost=8,
-                action_url=f"{base_url}?tab=ai-readiness",
-                action_label="View AI Readiness",
-                auto_actionable=True,
-            ))
-        if not breakdown.get("llms_txt"):
-            wins.append(QuickWin(
-                id="ai_no_llms_txt",
-                title="Create llms.txt file",
-                description="llms.txt is the standard way to tell AI engines about your business. Without it, they're guessing.",
-                pillar="ai_visibility",
-                impact="high",
-                effort="low",
-                est_score_boost=6,
-                action_url=f"{base_url}?tab=ai-readiness",
-                action_label="View AI Readiness",
-                auto_actionable=True,
-            ))
-        if not breakdown.get("person_schema") and not breakdown.get("author_schema"):
-            wins.append(QuickWin(
-                id="ai_no_person_schema",
-                title="Add author credentials to content",
-                description="Content with expert credentials gets cited more by AI engines.",
-                pillar="ai_visibility",
-                impact="medium",
-                effort="low",
-                est_score_boost=3,
-                action_url=f"{base_url}?tab=ai-readiness",
-                action_label="View AI Readiness",
-            ))
 
 
 # ---------------------------------------------------------------------------

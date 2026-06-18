@@ -441,7 +441,6 @@ def customer_detail(customer_id):
         citations = db.get_citations(customer_id)
         review_list = db.get_reviews(customer_id, limit=20)
         review_stats = db.get_review_stats(customer_id)
-        gbp_audit = db.get_latest_gbp_audit(customer_id)
 
 
         # Check if there are previously published files (for re-publish button)
@@ -515,7 +514,6 @@ def customer_detail(customer_id):
             citations=citations,
             review_list=review_list,
             review_stats=review_stats,
-            gbp_audit=gbp_audit,
             landing_reports=landing_reports,
             weekly_snapshot=db.get_latest_report_snapshot(customer_id, "weekly"),
             report_history=db.get_report_snapshots(customer_id, "weekly", limit=26),
