@@ -327,6 +327,19 @@ def va_action_plan(db, customer: dict) -> dict | None:
               "todo" if sa_pending else "done", guide="publish_pages"),
     ]})
 
+    # Give each non-citation step a stable checklist key and let the VA mark it
+    # done manually. A checked item shows as done even if the auto-signal can't
+    # confirm it (e.g. "set the primary category" — we can't read GBP). Citation
+    # steps keep their own "Mark listed" control, so they're left alone.
+    checklist = db.get_checklist(cid) or {}
+    for g in groups:
+        for s in g["steps"]:
+            if s.get("guide") and not s.get("mark"):
+                key = "va_" + s["guide"]
+                s["key"] = key
+                if checklist.get(key):
+                    s["status"] = "done"
+
     total = sum(len(g["steps"]) for g in groups)
     todo = sum(1 for g in groups for s in g["steps"] if s["status"] in ("todo", "verify"))
     return {"nap": nap, "groups": groups, "total_steps": total, "open_steps": todo,

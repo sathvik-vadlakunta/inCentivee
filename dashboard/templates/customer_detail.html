@@ -2265,6 +2265,12 @@
         {% else %}
         <button type="button" class="btn btn-sm btn-primary" style="flex-shrink:0;white-space:nowrap;" onclick="markCitation('{{ customer.id }}', {{ s.mark|tojson }}, true, this)">Mark listed ✓</button>
         {% endif %}
+      {% elif s.key %}
+        {% if s.status == 'done' %}
+        <button type="button" class="btn btn-sm btn-outline" style="flex-shrink:0;" onclick="markVaStep('{{ customer.id }}','{{ s.key }}',false,this)">undo</button>
+        {% else %}
+        <button type="button" class="btn btn-sm btn-primary" style="flex-shrink:0;white-space:nowrap;" onclick="markVaStep('{{ customer.id }}','{{ s.key }}',true,this)">Mark done ✓</button>
+        {% endif %}
       {% endif %}
     </div>
     {% endfor %}
@@ -5149,6 +5155,18 @@ function markCitation(cid, directory, done, btn) {
             if (d.ok) location.reload();
             else { alert(d.error || 'Failed'); btn.disabled = false; }
         }).catch(() => { alert('Network error'); btn.disabled = false; });
+}
+
+// Mark a VA action-plan step done/undone via the shared checklist API.
+function markVaStep(cid, key, done, btn) {
+    btn.disabled = true;
+    fetch('/api/checklist', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: cid, task_key: key, completed: done})
+    }).then(r => r.json()).then(d => {
+        if (d.error) { alert(d.error); btn.disabled = false; }
+        else location.reload();
+    }).catch(() => { alert('Network error'); btn.disabled = false; });
 }
 
 function saveBrightlocalIntegration(e, customerId) {
