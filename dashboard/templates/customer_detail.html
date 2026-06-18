@@ -2220,7 +2220,7 @@
       <div style="flex:1;">
         <div style="font-weight:600;">{{ s.title }}{% if s.link %} · <a href="{{ s.link }}" target="_blank" rel="noopener">open ↗</a>{% endif %}</div>
         {% if s.instruction %}<div style="color:var(--muted);font-size:0.85rem;margin-top:2px;">{{ s.instruction }}</div>{% endif %}
-        {% if s.guide %}<button type="button" class="va-howto" onclick="openGuide('{{ s.guide }}', {{ s.title|tojson }})">📋 How to do this →</button>{% endif %}
+        {% if s.guide %}<button type="button" class="va-howto" data-guide="{{ s.guide }}" data-title="{{ s.title|e }}" onclick="openGuide(this)">📋 How to do this →</button>{% endif %}
       </div>
       {% if s.mark %}
         {% if s.status == 'done' %}
@@ -4972,7 +4972,9 @@ const STEP_GUIDES = {
   ] },
 };
 
-function openGuide(key, title) {
+function openGuide(btn) {
+  const key = btn.dataset.guide;
+  const title = btn.dataset.title;
   const g = STEP_GUIDES[key];
   if (!g) return;
   document.getElementById('gmTitle').textContent = title || 'How to';
