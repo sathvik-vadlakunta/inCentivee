@@ -199,11 +199,6 @@
         AI Mentions
     </button>
 
-    <button class="detail-nav-item" onclick="switchTab('ai-readiness', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        AI Readiness
-    </button>
-
     <button class="detail-nav-item" onclick="switchTab('emails', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Emails
@@ -2106,104 +2101,6 @@
     <div id="ai-sub-history" style="display:none;">
         <div id="ai-runs-table">Loading...</div>
     </div>
-</div>
-
-<!-- ==================== AI READINESS TAB ==================== -->
-<div id="tab-ai-readiness" class="tab-content">
-    <div class="card">
-        <div class="section-header" style="margin-bottom:0.75rem;">
-            <h2>AI Search Readiness</h2>
-            {% if ai_readiness %}
-            <div style="font-size:2rem;font-weight:700;color:{% if ai_readiness.score >= 70 %}var(--success){% elif ai_readiness.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
-                {{ ai_readiness.score }}/100
-            </div>
-            {% endif %}
-        </div>
-
-        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">How well optimized this site is for AI search engines (ChatGPT, Claude, Perplexity, Google AI Overviews).</p>
-
-        {% if ai_readiness and ai_readiness.breakdown %}
-        <div style="display:grid;gap:0.4rem;">
-            {% for check_name, check_info in ai_readiness.breakdown.items() %}
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.6rem;border:1px solid var(--border);border-radius:6px;">
-                <div>
-                    <span style="font-size:0.85rem;font-weight:500;">{{ check_name | replace('_', ' ') | title }}</span>
-                    {% if check_info.note %}
-                    <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">{{ check_info.note }}</span>
-                    {% endif %}
-                </div>
-                <div style="display:flex;align-items:center;gap:0.5rem;">
-                    <span style="font-size:0.8rem;font-weight:600;color:{% if check_info.score > 0 %}var(--success){% else %}var(--danger){% endif %};">
-                        {{ check_info.score }}/{{ check_info.max }}
-                    </span>
-                    <div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;">
-                        <div style="width:{{ (check_info.score / check_info.max * 100) if check_info.max > 0 else 0 }}%;height:100%;background:{% if check_info.score > 0 %}var(--success){% else %}var(--danger){% endif %};border-radius:3px;"></div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% else %}
-        <div class="empty-state" style="padding:2rem;">
-            <p style="color:var(--muted);">No AI readiness data yet. Run a site audit to generate the AI readiness score.</p>
-        </div>
-        {% endif %}
-    </div>
-
-    <!-- Content Scores -->
-    {% if page_scores %}
-    <div class="card" style="margin-top:1rem;">
-        <h2 style="margin-bottom:0.5rem;">Content Quality Scores</h2>
-        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.75rem;">Per-page content analysis — word count, structure, and optimization.</p>
-        <table>
-            <thead>
-                <tr>
-                    <th>Page</th>
-                    <th style="text-align:right;">Score</th>
-                    <th style="text-align:right;">Words</th>
-                    <th style="text-align:right;">Readability</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for ps in page_scores[:20] %}
-            <tr>
-                <td style="font-size:0.8rem;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ ps.page_url }}">
-                    {{ ps.page_url | replace('https://', '') | replace('http://', '') | truncate(40) }}
-                </td>
-                <td style="text-align:right;font-weight:600;color:{% if ps.score >= 70 %}var(--success){% elif ps.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};">{{ ps.score }}</td>
-                <td style="text-align:right;">{{ ps.word_count }}</td>
-                <td style="text-align:right;">{% if ps.readability_grade %}Grade {{ "%.0f"|format(ps.readability_grade) }}{% else %}--{% endif %}</td>
-                <td style="font-size:0.75rem;color:var(--muted);">{{ ps.date }}</td>
-            </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% endif %}
-
-    <!-- Topic Clusters -->
-    {% if topic_clusters %}
-    <div class="card" style="margin-top:1rem;">
-        <h2 style="margin-bottom:0.5rem;">Topic Clusters</h2>
-        <div style="display:grid;gap:0.75rem;">
-            {% for cluster in topic_clusters %}
-            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:6px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
-                    <h3 style="font-size:0.9rem;margin:0;">{{ cluster.cluster_name | title }}</h3>
-                    <span style="font-size:0.75rem;color:var(--muted);">{{ cluster.keywords | length }} keywords</span>
-                </div>
-                {% if cluster.pillar_page_url %}
-                <div style="font-size:0.8rem;color:var(--primary);margin-bottom:0.25rem;">Pillar: {{ cluster.pillar_page_url }}</div>
-                {% endif %}
-                {% if cluster.gap_pages %}
-                <div style="font-size:0.75rem;color:var(--danger);margin-top:0.25rem;">{{ cluster.gap_pages | length }} content gaps identified</div>
-                {% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 <!-- ==================== EMAILS TAB ==================== -->

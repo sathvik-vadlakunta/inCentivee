@@ -443,10 +443,6 @@ def customer_detail(customer_id):
         review_stats = db.get_review_stats(customer_id)
         gbp_audit = db.get_latest_gbp_audit(customer_id)
 
-        # Tier 3 data
-        page_scores = db.get_page_scores(customer_id)
-        topic_clusters = db.get_topic_clusters(customer_id)
-        ai_readiness = db.get_latest_ai_readiness(customer_id)
 
         # Check if there are previously published files (for re-publish button)
         published_schema = Path(DATA_DIR) / "published" / customer_id / "schema.html"
@@ -520,9 +516,6 @@ def customer_detail(customer_id):
             review_list=review_list,
             review_stats=review_stats,
             gbp_audit=gbp_audit,
-            page_scores=page_scores,
-            topic_clusters=topic_clusters,
-            ai_readiness=ai_readiness,
             landing_reports=landing_reports,
             weekly_snapshot=db.get_latest_report_snapshot(customer_id, "weekly"),
             report_history=db.get_report_snapshots(customer_id, "weekly", limit=26),
