@@ -482,9 +482,30 @@
         .metric-card .metric-change.negative { color: var(--danger); }
         .metric-card .metric-change.neutral { color: var(--muted); }
 
-        /* Smooth page transitions */
-        .tab-content { animation: fadeIn 0.15s ease-in; }
-        .seo-sub-content { animation: fadeIn 0.15s ease-in; }
+        /* ===== Smooth page + tab transitions ===== */
+        /* Cross-document view transitions (Chromium/Safari TP): full-page
+           navigations crossfade instead of hard-flashing. Pure CSS, no JS. */
+        @view-transition { navigation: auto; }
+
+        /* Gentle fade/rise on every load — masks the font swap + any per-page
+           component styles, and is the fallback where view transitions aren't
+           supported. (Animates .container, not .main-content, so the sticky
+           top-bar is unaffected.) */
+        @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+        .container { animation: pageIn 0.22s ease-out both; }
+
+        .tab-content { animation: fadeIn 0.18s ease-out; }
+        .seo-sub-content { animation: fadeIn 0.18s ease-out; }
+
+        /* Snappier interactive feedback */
+        .card { transition: box-shadow 0.15s ease, border-color 0.15s ease; }
+        .sidebar-link, .detail-nav-item, .btn { transition: background 0.13s ease, color 0.13s ease, box-shadow 0.13s ease, transform 0.08s ease; }
+        .btn:active { transform: translateY(1px); }
+
+        @media (prefers-reduced-motion: reduce) {
+            @view-transition { navigation: none; }
+            .container, .tab-content, .seo-sub-content { animation: none; }
+        }
 
         /* Better scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -510,6 +531,7 @@
         .htmx-added { animation: fadeIn 0.2s ease-in; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
     {% if session.get('logged_in') %}
