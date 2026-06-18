@@ -20,6 +20,15 @@ def db(tmp_path):
     d.close()
 
 
+@pytest.fixture(autouse=True)
+def _no_network(monkeypatch):
+    # Keep Module 0 (data-ensure) off the network in unit tests. Tests that
+    # exercise scraping/discovery override these with their own monkeypatch.
+    from geo_agent import nearby_cities, service_scraper
+    monkeypatch.setattr(service_scraper, "scrape_services", lambda *a, **k: [])
+    monkeypatch.setattr(nearby_cities, "geocode_city", lambda *a, **k: None)
+
+
 # ── Directory profiles ──────────────────────────────────────────────
 
 def test_dental_and_medical_get_distinct_profiles():
@@ -364,3 +373,14 @@ def test_track_competitor_da_noop_unkeyed(db, monkeypatch):
     monkeypatch.setattr(moz_client, "_auth_header", lambda: None)
     db.add_customer(id="c2", name="C2", domain="c2.com", business_type="legal")
     assert moz_client.track_competitor_da(db, "c2") == []
+
+
+def test_ensure_services_only_when_empty(db, monkeypatch):
+    from geo_agent import service_scraper
+    db.add_customer(id="s1", name="S1", domain="s1.com", business_type="dental")
+    monkeypatch.setattr(service_scraper, "scrape_services", lambda d, n, b: ["Implants", "Whitening"])
+    assert service_scraper.ensure_services(db, "s1") == ["Implants", "Whitening"]
+    assert {s["name"] for s in db.get_services("s1")} == {"Implants", "Whitening"}
+    # second call: already populated -> no re-scrape
+    monkeypatch.setattr(service_scraper, "scrape_services", lambda d, n, b: ["SHOULD_NOT"])
+    assert "SHOULD_NOT" not in service_scraper.ensure_services(db, "s1")

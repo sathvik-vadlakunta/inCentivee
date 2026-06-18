@@ -343,6 +343,17 @@ def run_local_relevancy(db, customer_id: str, recompute: bool = True) -> dict:
         logger.info("local_relevancy: %s is non-local (%s) — skipping", customer_id, business_type)
         return {"customer_id": customer_id, "skipped": f"non-local business_type: {business_type}"}
 
+    # Module 0 — ensure services + service-area cities exist (auto-backfill for
+    # existing + new customers). Idempotent: only scrapes/discovers when empty.
+    try:
+        from geo_agent.nearby_cities import ensure_service_areas
+        from geo_agent.service_scraper import ensure_services
+        ensure_services(db, customer_id)
+        ensure_service_areas(db, customer_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("local_relevancy: data-ensure skipped for %s: %s", customer_id, exc)
+
+    customer = db.get_customer(customer_id)  # re-read (services/areas may have changed)
     nap = canonical_nap(customer)
     summary: dict = {
         "customer_id": customer_id,

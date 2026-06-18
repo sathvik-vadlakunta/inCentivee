@@ -731,62 +731,26 @@ def delete_service_route(customer_id, service_id):
 @app.route("/customer/<customer_id>/scrape-services", methods=["POST"])
 @login_required
 def scrape_services(customer_id):
-    """Fetch the customer's site and extract its services with Claude, then save
-    them — powers the FAQ schema + the {service} in {city} pages."""
-    import json as _json
-    import os as _os
-    import re as _re
-
-    import anthropic
-    import httpx
-
+    """Fetch the customer's site, extract its services with Claude, save the new
+    ones — powers the FAQ schema + the {service} in {city} pages."""
+    from geo_agent.service_scraper import scrape_services as _scrape
     db = get_db()
     try:
         customer = db.get_customer(customer_id)
         if not customer:
             return jsonify({"ok": False, "error": "Customer not found"}), 404
-        domain = (customer.get("domain") or "").strip()
-        if not domain:
+        if not (customer.get("domain") or "").strip():
             return jsonify({"ok": False, "error": "No domain on file"}), 400
-        url = domain if domain.startswith("http") else f"https://{domain}"
-        try:
-            with httpx.Client(timeout=20.0, follow_redirects=True,
-                              headers={"User-Agent": "Mozilla/5.0 (compatible; PracticeRankBot/1.0)"}) as cl:
-                html = cl.get(url).text
-        except Exception as exc:  # noqa: BLE001
-            return jsonify({"ok": False, "error": f"Couldn't reach {url}: {exc}"}), 502
-
-        text = _re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=_re.S | _re.I)
-        text = _re.sub(r"<[^>]+>", " ", text)
-        text = _re.sub(r"\s+", " ", text).strip()[:6000]
-
-        prompt = (
-            f"This is the website text for a {customer.get('business_type', 'local business')} "
-            f"named '{customer.get('name', '')}'. List the specific services or products it offers, "
-            f"as short noun phrases a customer would search (e.g. \"Sell Gold\", \"Coin Appraisals\", "
-            f"\"Bullion Buying\"). Return ONLY a JSON array of 4-10 strings — no prose, no code fences.\n\n"
-            f"{text}"
-        )
-        try:
-            client = anthropic.Anthropic(api_key=_os.environ["ANTHROPIC_API_KEY"])
-            msg = client.messages.create(model="claude-sonnet-4-6", max_tokens=400,
-                                         messages=[{"role": "user", "content": prompt}])
-            raw = "".join(b.text for b in msg.content if b.type == "text").strip()
-            raw = _re.sub(r"^```(?:json)?|```$", "", raw).strip()
-            s, e = raw.find("["), raw.rfind("]")
-            services = _json.loads(raw[s:e + 1]) if s != -1 and e > s else []
-        except Exception as exc:  # noqa: BLE001
-            return jsonify({"ok": False, "error": f"Extraction failed: {exc}"}), 502
-
-        services = [str(x).strip() for x in services if str(x).strip()][:12]
+        found = _scrape(customer.get("domain", ""), customer.get("name", ""),
+                        customer.get("business_type", "local business"))
+        if not found:
+            return jsonify({"ok": False, "error": "Couldn't extract services (site unreachable or no ANTHROPIC key)."}), 502
         existing = {s.get("name", "").lower() for s in (db.get_services(customer_id) or [])}
-        added = []
-        for name in services:
-            if name.lower() not in existing:
-                db.add_service(customer_id, name)
-                added.append(name)
+        added = [n for n in found if n.lower() not in existing]
+        for nm in added:
+            db.add_service(customer_id, nm)
         audit_log("services_scraped", customer_id=customer_id, details=f"{len(added)} added")
-        return jsonify({"ok": True, "added": added, "found": services})
+        return jsonify({"ok": True, "added": added, "found": found})
     finally:
         db.close()
 
@@ -1050,6 +1014,23 @@ def add_customer():
                     logger.info(f"Auto-started first AI mention check for {customer_id} (run_id={first_run_id})")
             except Exception as e:
                 logger.warning(f"Failed to auto-start AI check for {customer_id}: {e}")
+
+            # Auto-populate business services + service-area cities in the background
+            try:
+                def _populate_local(cid):
+                    bdb = get_db()
+                    try:
+                        from geo_agent.nearby_cities import ensure_service_areas
+                        from geo_agent.service_scraper import ensure_services
+                        ensure_services(bdb, cid)
+                        ensure_service_areas(bdb, cid)
+                    except Exception as ex:  # noqa: BLE001
+                        logger.warning(f"populate local data failed for {cid}: {ex}")
+                    finally:
+                        bdb.close()
+                threading.Thread(target=_populate_local, args=(customer_id,), daemon=True).start()
+            except Exception as e:
+                logger.warning(f"Failed to start local-data populate for {customer_id}: {e}")
 
             audit_log("customer_created", customer_id=customer_id, details=f"Created '{name}' ({domain}), platform={platform}, type={business_type}")
             flash(f"Customer '{name}' added successfully! First AI mention check running in background.", "success")
