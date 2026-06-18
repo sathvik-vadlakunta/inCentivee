@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 def build_benchmark_prompts(
     practice_name: str, city: str, state: str, specialties: list[str],
     business_type: str = "practice", competitors: list[str] | None = None,
-    services: list[str] | None = None,
+    services: list[str] | None = None, service_areas: list[str] | None = None,
 ) -> list[dict]:
     """Build a fixed set of high-signal prompts for scheduled mention tracking.
 
@@ -189,17 +189,34 @@ def build_benchmark_prompts(
                 add(f"{practice_name} vs {comp}", "comparison")
         add(f"is {practice_name} a good medical practice", "reputation")
 
+    elif business_type == "precious_metals_buyer":
+        # SELLER-intent (they want people looking to sell gold/silver to them).
+        add("how do I sell my gold", "general")
+        add("how do I sell my silver coins", "general")
+        if city:
+            add(f"best place to sell gold in {city} {state}", "location")
+            add(f"who buys gold and silver near {city}", "location")
+            add(f"cash for gold {city}", "location")
+            add(f"recommend a gold buyer in {city} {state}", "recommendation")
+            add(f"where to sell jewelry in {city}", "service")
+        for area in (service_areas or [])[:3]:
+            add(f"best place to sell gold in {area}", "location")
+        add(f"is {practice_name} legit", "reputation")
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+
     else:
-        # Generic business type. Humanize the type token for natural phrasing —
-        # nobody searches "best precious_metals_buyer", they search "best
-        # precious metals buyer". Matching logic above still uses the raw type.
-        bt = business_type.replace("_", " ")
+        # Generic business type — humanize the type token for natural phrasing.
+        bt = business_label(business_type)
         add(f"best {bt} in {city} {state}", "general")
         add(f"top {bt} companies", "general")
         add(f"find a {bt} in {city} {state}", "general")
 
         for svc in all_services[:8]:
             add(f"best {svc.lower()}", "service")
+        for area in (service_areas or [])[:3]:
+            add(f"best {bt} in {area}", "location")
 
         add(f"recommend a {bt} in {city} {state}", "recommendation")
         if competitors:

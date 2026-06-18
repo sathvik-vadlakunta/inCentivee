@@ -103,6 +103,7 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
         business_type=customer.get("business_type", "practice"),
         competitors=competitor_names,
         services=service_names,
+        service_areas=customer.get("service_areas", []),
     )
 
     # Create initial run record (needed for FK constraint on results)
@@ -127,8 +128,9 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
     # Query the 5 engines CONCURRENTLY per prompt (each a different provider, so
     # one concurrent call each — no single-provider rate pressure). HTTP runs in the
     # worker threads; DB writes stay on this main thread via as_completed.
+    from scripts.weekly_ai_check import _recompute_and_save_run
     with ThreadPoolExecutor(max_workers=len(ENGINES)) as executor:
-        for pdef in prompt_defs:
+        for prompt_idx, pdef in enumerate(prompt_defs):
             prompt = pdef["prompt"]
             category = pdef["category"]
             futures = {
@@ -184,6 +186,11 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
                     "position": agg["position"],
                     "quality_score": agg["quality_score"],
                 })
+
+            # Persist incrementally so an interruption (deploy/kill) never leaves
+            # the run at 0/0 — it always reflects the results saved so far.
+            if (prompt_idx + 1) % 4 == 0:
+                _recompute_and_save_run(db, run_id, customer_id, today, "benchmark")
 
     # Compute final stats. The rate is the AVERAGED fraction across all samples
     # (rock-solid), not a binary per-cell count.

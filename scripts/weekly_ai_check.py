@@ -36,18 +36,70 @@ ENGINES = [
 ]
 
 
+# Cost control: cap each run to the highest-value queries (surgical, not spammy).
+# Categories are kept in this priority order; we take the top MAX_PROMPTS overall.
+_CATEGORY_PRIORITY = {
+    "recommendation": 0, "location": 1, "service": 2, "brand": 3,
+    "general": 4, "reputation": 5, "comparison": 6,
+}
+MAX_PROMPTS = 16
+
+
+def _prune_prompts(prompt_defs: list[dict]) -> list[dict]:
+    """Keep only the highest-value prompts (cap the per-run cost)."""
+    ranked = sorted(prompt_defs, key=lambda p: _CATEGORY_PRIORITY.get(p.get("category"), 9))
+    return ranked[:MAX_PROMPTS]
+
+
+def _recompute_and_save_run(db: CustomerDB, run_id: str, customer_id: str,
+                            today: str, prompt_set: str = "comprehensive") -> None:
+    """(Re)build the run summary FROM the persisted results — robust to a run that
+    gets interrupted mid-loop (deploy/kill/timeout) instead of leaving it at 0/0."""
+    rows = db.conn.execute(
+        "SELECT engine, mentioned, position, samples, samples_mentioned "
+        "FROM ai_mention_results WHERE run_id = ?",
+        (run_id,),
+    ).fetchall()
+    engines: dict = {}
+    mentions = 0
+    positions = []
+    total_samples = 0
+    samples_mentioned = 0
+    for engine, mentioned, position, samples, sm in rows:
+        s = engines.setdefault(engine, {"status": "active", "mentions": 0, "total": 0})
+        s["total"] += 1
+        total_samples += (samples or 1)
+        samples_mentioned += (sm if sm is not None else (1 if mentioned else 0))
+        if mentioned:
+            s["mentions"] += 1
+            mentions += 1
+            if position:
+                positions.append(position)
+    total = sum(s["total"] for s in engines.values())
+    # Sample-averaged rate (benchmark runs sample each cell); falls back to the
+    # binary cell rate when samples aren't recorded.
+    rate = (samples_mentioned / total_samples) if total_samples else 0.0
+    db.save_ai_mention_run({
+        "id": run_id, "customer_id": customer_id, "run_date": today,
+        "total_mentions": mentions, "total_queries": total,
+        "mention_rate": rate,
+        "avg_position": (sum(positions) / len(positions)) if positions else None,
+        "engines": engines, "prompt_set": prompt_set,
+    })
+
+
 def run_check(db: CustomerDB, customer: dict) -> dict:
     """Run comprehensive AI mention check for a single customer."""
     customer_id = customer["id"]
     competitors = json.loads(customer.get("competitors_json", "[]")) if customer.get("competitors_json") else []
 
-    prompt_defs = build_comprehensive_prompts(
+    prompt_defs = _prune_prompts(build_comprehensive_prompts(
         customer["name"], customer.get("city", ""), customer.get("state", ""),
         customer.get("specialties", []),
         business_type=customer.get("business_type", "practice"),
         competitors=competitors,
         service_areas=customer.get("service_areas", []),
-    )
+    ))
 
     results = []
     mention_count = 0
@@ -68,7 +120,7 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
         "prompt_set": "comprehensive",
     })
 
-    for pdef in prompt_defs:
+    for prompt_idx, pdef in enumerate(prompt_defs):
         prompt = pdef["prompt"]
         category = pdef["category"]
         for ai_name, query_fn in ENGINES:
@@ -115,24 +167,17 @@ def run_check(db: CustomerDB, customer: dict) -> dict:
                 "context": result["context"][:150] if result.get("context") else "",
             })
 
-    # Compute stats
+        # Persist the summary incrementally so an interruption (deploy/kill/timeout)
+        # never leaves the run at 0/0 — it always reflects results saved so far.
+        if (prompt_idx + 1) % 4 == 0:
+            _recompute_and_save_run(db, run_id, customer_id, today)
+
+    # Final summary — rebuilt from the persisted results (robust).
+    _recompute_and_save_run(db, run_id, customer_id, today)
     total_queries = sum(s["total"] for s in engine_stats.values())
     mention_rate = mention_count / total_queries if total_queries > 0 else 0.0
     positions = [r["position"] for r in results if r["mentioned"] and r["position"]]
     avg_pos = sum(positions) / len(positions) if positions else None
-
-    # Save run summary
-    db.save_ai_mention_run({
-        "id": run_id,
-        "customer_id": customer_id,
-        "run_date": today,
-        "total_mentions": mention_count,
-        "total_queries": total_queries,
-        "mention_rate": mention_rate,
-        "avg_position": avg_pos,
-        "engines": engine_stats,
-        "prompt_set": "comprehensive",
-    })
 
     # Also save to KPI for backward compat
     db.record_kpi(customer_id, "ai_mentions", mention_count, today)
