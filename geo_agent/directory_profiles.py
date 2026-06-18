@@ -153,6 +153,40 @@ def profile_target_count(business_type: str | None) -> int:
     return len(profile) if profile else 0
 
 
+# schema.org type for service-area / on-site pages, by profile key.
+CONTENT_SCHEMA: dict[str, str] = {
+    "dental": "Dentist",
+    "medical": "Physician",
+    "legal": "Attorney",
+    "precious_metals": "Store",
+    "local_retail": "Store",
+    "professional_services": "ProfessionalService",
+    "finance": "FinancialService",
+    "default": "LocalBusiness",
+}
+
+# Fallback "service" terms used to build {service} in {city} pages when the
+# customer has no explicit services on file.
+_DEFAULT_SERVICE_TERMS: dict[str, list[str]] = {
+    "dental": ["Dental Implants", "Invisalign", "Teeth Whitening", "Emergency Dentist"],
+    "medical": ["Primary Care", "Urgent Care", "Telehealth Visits"],
+    "legal": ["Free Consultation", "Personal Injury", "Family Law"],
+    "precious_metals": ["Sell Gold", "Sell Silver", "Sell Coins", "Jewelry Buyer"],
+    "local_retail": ["Shop Local", "Our Services"],
+    "professional_services": ["Consulting Services"],
+    "finance": ["Financial Planning", "Tax Preparation"],
+    "default": ["Our Services"],
+}
+
+
+def content_schema(business_type: str | None) -> str:
+    return CONTENT_SCHEMA.get(profile_key(business_type), "LocalBusiness")
+
+
+def default_service_terms(business_type: str | None) -> list[str]:
+    return _DEFAULT_SERVICE_TERMS.get(profile_key(business_type), ["Our Services"])
+
+
 def canonical_nap(customer: dict) -> dict:
     """The single source of truth every directory is checked/rendered against.
 

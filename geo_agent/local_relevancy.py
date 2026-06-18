@@ -13,16 +13,27 @@ See specs/active/local-relevancy-engine.html.
 from __future__ import annotations
 
 import logging
+import re
 
 from geo_agent import brightlocal_client
 from geo_agent.directory_profiles import (
     canonical_nap,
+    content_schema,
+    default_service_terms,
     directory_profile,
     is_local,
     profile_target_count,
 )
+from geo_agent.nearby_cities import ensure_service_areas
 
 logger = logging.getLogger(__name__)
+
+# Cap service-area pages created per run so we don't flood the review queue.
+MAX_SERVICE_AREA_PAGES = 12
+
+
+def _slugify(s: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", (s or "").lower()).strip("-")
 
 
 def directory_breadth(db, customer_id: str, business_type: str | None) -> dict:
@@ -56,8 +67,67 @@ def directory_breadth(db, customer_id: str, business_type: str | None) -> dict:
     }
 
 
-def _module_3_service_area_pages(db, customer):  # TODO Phase 3
-    return {"status": "not_built", "module": "service_area_pages"}
+def _module_3_service_area_pages(db, customer):
+    """Module 3 — plan {service} in {city} pages and queue them for review.
+
+    Discovers/uses the customer's service-area cities (nearby towns within
+    ~25 min), pairs them with the customer's services (or vertical defaults),
+    and creates pending ``new_page`` recommendations with the right vertical
+    schema. HTML is filled by the existing content-generation/publish flow.
+    Idempotent: stable rec ids + title de-dupe avoid duplicates across runs.
+    """
+    cid = customer["id"]
+    cities = ensure_service_areas(db, cid)
+    if not cities:
+        return {"status": "no_service_areas", "module": "service_area_pages",
+                "note": "no city/service_areas and GEONAMES_USERNAME unset"}
+
+    try:
+        services = [s.get("name") for s in (db.get_services(cid) or []) if s.get("name")]
+    except Exception:  # noqa: BLE001
+        services = []
+    if not services:
+        services = default_service_terms(customer.get("business_type"))
+
+    schema = content_schema(customer.get("business_type"))
+    nap = canonical_nap(customer)
+    existing = {(r.get("title") or "").lower()
+                for r in (db.get_content_recommendations(cid, limit=500) or [])}
+
+    pairs = [(s, c) for s in services for c in cities][:MAX_SERVICE_AREA_PAGES]
+    created = 0
+    for service, city in pairs:
+        title = f"{service} in {city}"
+        if title.lower() in existing:
+            continue
+        slug = _slugify(f"{service}-in-{city}")
+        db.add_content_recommendation({
+            "id": f"sa-{cid}-{slug}",
+            "customer_id": cid,
+            "rec_type": "new_page",
+            "target_page": f"/{slug}",
+            "title": title,
+            "category": "service_area",
+            "priority": 2,
+            "status": "pending",
+            "description": (
+                f"Create a localized service page for '{service}' targeting {city}. "
+                f"Use {schema} + FAQPage schema, lead with a direct answer, and include the "
+                f"business NAP ({nap['name']}, {nap['phone']}), local neighborhoods/landmarks, "
+                f"directions, and a {city}-specific FAQ. Each city page must have UNIQUE local "
+                f"context — no templated boilerplate."
+            ),
+            "ai_impact_reason": (
+                f"Captures local '{service} near me / in {city}' intent. The business website is the "
+                f"#1 AI citation source for local queries; a unique {city} page supplies the "
+                f"service-area + proximity relevance AI uses to recommend local businesses."
+            ),
+        })
+        created += 1
+
+    return {"status": "ok", "module": "service_area_pages",
+            "cities": cities, "services": services[:5],
+            "planned": len(pairs), "created": created}
 
 
 def _module_4_review_recency(db, customer):  # TODO Phase 4
