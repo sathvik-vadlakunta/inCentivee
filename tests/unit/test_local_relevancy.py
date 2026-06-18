@@ -317,3 +317,27 @@ def test_va_action_plan_citations_reflect_status(db):
     assert by_title["Google Business Profile"]["status"] == "done"
     assert by_title["Avvo"]["status"] == "todo"  # listed but NAP wrong
     assert "WRONG" in by_title["Avvo"]["instruction"]
+
+
+# ── Moz Domain Authority tracking ───────────────────────────────────
+
+def test_moz_no_creds_is_noop(monkeypatch):
+    monkeypatch.delenv("MOZ_ACCESS_ID", raising=False)
+    monkeypatch.delenv("MOZ_SECRET_KEY", raising=False)
+    from geo_agent import moz_client
+    assert moz_client.get_domain_authority("example.com") is None
+
+
+def test_track_da_records_kpi(db, monkeypatch):
+    from geo_agent import moz_client
+    db.add_customer(id="d", name="D", domain="d.com", business_type="dental")
+    monkeypatch.setattr(moz_client, "get_domain_authority", lambda dom: {"da": 14, "pa": 20, "spam": 1})
+    assert moz_client.track_domain_authority(db, "d") == 14.0
+    assert db.get_latest_kpi("d", "domain_authority")["value"] == 14.0
+
+
+def test_track_da_noop_without_data(db, monkeypatch):
+    from geo_agent import moz_client
+    db.add_customer(id="d2", name="D2", domain="d2.com", business_type="legal")
+    monkeypatch.setattr(moz_client, "get_domain_authority", lambda dom: None)
+    assert moz_client.track_domain_authority(db, "d2") is None

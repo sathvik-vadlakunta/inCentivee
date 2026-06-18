@@ -1973,6 +1973,22 @@
 <!-- ==================== LOCAL SEO TAB ==================== -->
 <div id="tab-local-seo" class="tab-content">
   {% if va_plan %}
+  <div class="card" style="margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;">Domain Authority</div>
+      <div style="font-size:2rem;font-weight:700;line-height:1.1;">{{ da_latest.value | int if da_latest else '—' }}</div>
+      <div style="font-size:0.74rem;color:var(--muted);">{% if da_latest %}as of {{ da_latest.date }} · tracks link-building progress{% else %}Connect Moz to track (set MOZ_ACCESS_ID / MOZ_SECRET_KEY){% endif %}</div>
+    </div>
+    {% if da_history and da_history|length > 1 %}<canvas id="da-spark" width="220" height="56" style="max-width:260px;"></canvas>{% endif %}
+    <button class="btn btn-sm btn-outline" onclick="refreshDA('{{ customer.id }}', this)">↻ Refresh</button>
+  </div>
+  <script>
+    {% if da_history and da_history|length > 1 %}
+    window.DA_HISTORY = {{ da_history | map(attribute='value') | list | tojson }};
+    window.DA_DATES = {{ da_history | map(attribute='date') | list | tojson }};
+    {% endif %}
+  </script>
+
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <h2 style="margin:0;">Local SEO — VA Action Plan</h2>
     <span style="color:var(--muted);font-size:0.85rem;">{{ va_plan.open_steps }} open of {{ va_plan.total_steps }} steps</span>
@@ -4529,6 +4545,27 @@ function saveGa4Integration(e, customerId) {
     });
 }
 
+// --- Domain Authority (Moz) ---
+function renderDASpark() {
+    if (!window.DA_HISTORY || typeof Chart === 'undefined') return;
+    const el = document.getElementById('da-spark');
+    if (!el || el.dataset.drawn) return;
+    el.dataset.drawn = '1';
+    new Chart(el, {
+        type: 'line',
+        data: {labels: window.DA_DATES, datasets: [{data: window.DA_HISTORY, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,.12)', fill: true, tension: 0.3, pointRadius: 2}]},
+        options: {responsive: false, plugins: {legend: {display: false}}, scales: {x: {display: false}, y: {display: false}}}
+    });
+}
+function refreshDA(cid, btn) {
+    const orig = btn.textContent; btn.disabled = true; btn.textContent = 'Checking…';
+    fetch('/api/customer/' + cid + '/refresh-da', {method: 'POST'})
+        .then(r => r.json()).then(d => {
+            if (d.ok) { btn.textContent = 'DA ' + Math.round(d.da); setTimeout(() => location.reload(), 1000); }
+            else { alert(d.error || 'Refresh failed'); btn.disabled = false; btn.textContent = orig; }
+        }).catch(() => { btn.disabled = false; btn.textContent = orig; });
+}
+
 // --- Business services scrape ---
 function scrapeServices(cid) {
     const btn = document.getElementById('scrape-svc-btn');
@@ -4632,6 +4669,7 @@ function filterSteps(btn, f) {
 
 document.addEventListener('DOMContentLoaded', function () {
     renderSaChips();
+    renderDASpark();
     const m = document.getElementById('sa-map');
     if (m && m.offsetParent !== null) showSaMap();  // landed straight on the Local SEO tab
 });

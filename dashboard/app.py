@@ -520,6 +520,8 @@ def customer_detail(customer_id):
             customer_activities=db.get_customer_activities(customer_id, limit=100),
             va_plan=va_plan,
             customer_services=db.get_services(customer_id),
+            da_latest=db.get_latest_kpi(customer_id, "domain_authority"),
+            da_history=list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12))),
         )
     finally:
         db.close()
@@ -674,6 +676,22 @@ def mark_citation(customer_id):
             db.delete_citation(customer_id, directory)
         audit_log("citation_marked", customer_id=customer_id, details=f"{directory}={'done' if done else 'reset'}")
         return jsonify({"ok": True})
+    finally:
+        db.close()
+
+
+@app.route("/api/customer/<customer_id>/refresh-da", methods=["POST"])
+@login_required
+def api_refresh_da(customer_id):
+    """Pull the customer's Domain Authority from Moz now and snapshot it."""
+    db = get_db()
+    try:
+        from geo_agent.moz_client import track_domain_authority
+        da = track_domain_authority(db, customer_id)
+        if da is None:
+            return jsonify({"ok": False, "error": "Moz not configured (set MOZ_ACCESS_ID / MOZ_SECRET_KEY on the server) or no data returned."})
+        audit_log("domain_authority_refreshed", customer_id=customer_id, details=str(da))
+        return jsonify({"ok": True, "da": da})
     finally:
         db.close()
 

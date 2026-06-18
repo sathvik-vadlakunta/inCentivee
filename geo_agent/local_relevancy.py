@@ -371,6 +371,13 @@ def run_local_relevancy(db, customer_id: str, recompute: bool = True) -> dict:
     summary["modules"]["review_recency"] = _module_4_review_recency(db, customer)
     summary["modules"]["gbp_completeness"] = _module_5_gbp_completeness(db, customer)
 
+    # Domain Authority snapshot (Moz) — dormant until MOZ creds are set.
+    try:
+        from geo_agent import moz_client
+        summary["modules"]["domain_authority"] = {"da": moz_client.track_domain_authority(db, customer_id)}
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("local_relevancy: DA track skipped for %s: %s", customer_id, exc)
+
     if recompute:
         try:
             from geo_agent.practicerank_score import compute_practicerank_score
