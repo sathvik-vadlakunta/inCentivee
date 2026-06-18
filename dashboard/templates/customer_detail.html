@@ -44,6 +44,13 @@
   .va-progress { flex:1; height:8px; background:var(--border); border-radius:9999px; overflow:hidden; }
   .va-progress-fill { height:100%; background:var(--success); border-radius:9999px; transition:width .35s ease; }
   .va-progress-label { font-size:0.78rem; color:var(--muted); white-space:nowrap; font-weight:600; }
+  /* ===== DA vs competitors ===== */
+  .da-bar-row { display:flex; align-items:center; gap:0.6rem; margin:0.4rem 0; font-size:0.85rem; }
+  .da-bar-label { width:170px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-light); }
+  .da-bar-track { flex:1; height:15px; background:var(--border); border-radius:9999px; overflow:hidden; }
+  .da-bar-fill { height:100%; background:#94a3b8; border-radius:9999px; transition:width .4s ease; }
+  .da-bar-fill.you { background:var(--accent); }
+  .da-bar-val { width:30px; text-align:right; font-weight:700; }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -1989,6 +1996,28 @@
     {% endif %}
   </script>
 
+  {% set comps_da = (competitor_domains or []) | selectattr('domain_authority', 'gt', 0) | sort(attribute='domain_authority', reverse=True) | list %}
+  {% if comps_da %}
+  {% set you_da = (da_latest.value if da_latest else 0) %}
+  {% set max_da = ([you_da] + (comps_da | map(attribute='domain_authority') | list)) | max %}
+  <div class="card" style="margin-bottom:12px;">
+    <h3 style="margin:0 0 10px;">Domain Authority vs competitors</h3>
+    <div class="da-bar-row">
+      <span class="da-bar-label"><b>You — {{ customer.name }}</b></span>
+      <div class="da-bar-track"><div class="da-bar-fill you" style="width:{{ (you_da / max_da * 100) if max_da else 0 }}%"></div></div>
+      <span class="da-bar-val">{{ you_da | int }}</span>
+    </div>
+    {% for c in comps_da[:5] %}
+    <div class="da-bar-row">
+      <span class="da-bar-label" title="{{ c.competitor_domain }}">{{ c.competitor_name or c.competitor_domain }}</span>
+      <div class="da-bar-track"><div class="da-bar-fill" style="width:{{ (c.domain_authority / max_da * 100) if max_da else 0 }}%"></div></div>
+      <span class="da-bar-val">{{ c.domain_authority | int }}</span>
+    </div>
+    {% endfor %}
+    <p style="font-size:0.78rem;color:var(--muted);margin:10px 0 0;">The gap between your bar and the top competitor is the authority link building closes.</p>
+  </div>
+  {% endif %}
+
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
     <h2 style="margin:0;">Local SEO — VA Action Plan</h2>
     <span style="color:var(--muted);font-size:0.85rem;">{{ va_plan.open_steps }} open of {{ va_plan.total_steps }} steps</span>
@@ -2031,13 +2060,13 @@
   <div class="card" style="margin-bottom:14px;">
     <h3 style="margin:0 0 6px;">Service-area cities</h3>
     <p style="color:var(--muted);font-size:0.85rem;margin:0 0 10px;">Nearby cities (~25-min drive) used for "{service} in {city}" pages and the GBP service area. Auto-discovered when <code>GEONAMES_USERNAME</code> is set; edit here anytime.</p>
-    <div id="sa-chips" class="sa-chips"></div>
-    <div style="display:flex;gap:0.5rem;margin-top:0.65rem;">
+    <div style="display:flex;gap:0.5rem;">
       <input id="sa-add" placeholder="Add a city, e.g. Fairfax VA" style="flex:1;padding:0.45rem 0.6rem;border:1px solid var(--border);border-radius:6px;font-size:0.88rem;"
              onkeydown="if(event.key==='Enter'){addSaCity();return false;}">
       <button type="button" class="btn btn-sm btn-outline" onclick="addSaCity()">+ Add</button>
       <button type="button" class="btn btn-sm btn-primary" id="sa-save-btn" onclick="saveSaCities('{{ customer.id }}')">Save</button>
     </div>
+    <div id="sa-chips" class="sa-chips" style="margin-top:0.7rem;"></div>
     <div id="sa-result" style="font-size:0.8rem;margin-top:0.45rem;color:var(--muted);"></div>
     {% if places and places.lat and places.lng %}
     <div id="sa-map" style="height:300px;border-radius:10px;margin-top:0.85rem;border:1px solid var(--border);"></div>

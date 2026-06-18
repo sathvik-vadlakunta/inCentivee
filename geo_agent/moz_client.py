@@ -67,6 +67,28 @@ def get_domain_authority(domain: str) -> dict | None:
     }
 
 
+def track_competitor_da(db, customer_id: str, limit: int = 5) -> list[dict]:
+    """Pull DA for the customer's top REAL competitors (those with an actual
+    domain), ranked by review count. Stores on competitor_domains; returns
+    [{domain, name, da}]. No-op (empty) until Moz is configured.
+    """
+    if not _auth_header():
+        return []
+    comps = db.get_competitor_domains(customer_id) or []
+    real = [c for c in comps
+            if (c.get("competitor_domain") or "").strip() and "." in c["competitor_domain"]]
+    real.sort(key=lambda c: c.get("review_count") or 0, reverse=True)
+    out = []
+    for c in real[:limit]:
+        dom = c["competitor_domain"].strip()
+        res = get_domain_authority(dom)
+        if res and res.get("da") is not None:
+            da = float(res["da"])
+            db.update_competitor_da(customer_id, dom, da)
+            out.append({"domain": dom, "name": c.get("competitor_name") or dom, "da": da})
+    return out
+
+
 def track_domain_authority(db, customer_id: str) -> float | None:
     """Snapshot the customer's Domain Authority into the kpis table.
 

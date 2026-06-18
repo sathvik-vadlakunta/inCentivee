@@ -635,6 +635,13 @@ class CustomerDB:
             except Exception:
                 pass
 
+        # Migration: Domain Authority on competitors (Moz) for the you-vs-them chart.
+        for col, coltype, default in [("domain_authority", "REAL", "0"), ("da_checked_at", "TEXT", "''")]:
+            try:
+                self.conn.execute(f"ALTER TABLE competitor_domains ADD COLUMN {col} {coltype} DEFAULT {default}")
+            except Exception:
+                pass
+
         # Migration: map old onboarding_step values to new 9-column board.
         # Guarded by a read so the steady state (every page load re-runs
         # _init_schema) stays read-only and never contends for the write lock.
@@ -2866,6 +2873,16 @@ class CustomerDB:
             (customer_id, domain),
         )
         self.conn.commit()
+
+    def update_competitor_da(self, customer_id, domain, da):
+        self.conn.execute(
+            "UPDATE competitor_domains SET domain_authority = ?, "
+            "da_checked_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') "
+            "WHERE customer_id = ? AND competitor_domain = ?",
+            (da, customer_id, domain),
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
 
     # --- Reviews ---
 

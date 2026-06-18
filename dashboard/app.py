@@ -686,12 +686,13 @@ def api_refresh_da(customer_id):
     """Pull the customer's Domain Authority from Moz now and snapshot it."""
     db = get_db()
     try:
-        from geo_agent.moz_client import track_domain_authority
+        from geo_agent.moz_client import track_competitor_da, track_domain_authority
         da = track_domain_authority(db, customer_id)
         if da is None:
-            return jsonify({"ok": False, "error": "Moz not configured (set MOZ_ACCESS_ID / MOZ_SECRET_KEY on the server) or no data returned."})
-        audit_log("domain_authority_refreshed", customer_id=customer_id, details=str(da))
-        return jsonify({"ok": True, "da": da})
+            return jsonify({"ok": False, "error": "Moz not configured (set MOZ_API_TOKEN on the server) or no data returned."})
+        comps = track_competitor_da(db, customer_id)
+        audit_log("domain_authority_refreshed", customer_id=customer_id, details=f"{da} (+{len(comps)} competitors)")
+        return jsonify({"ok": True, "da": da, "competitors": len(comps)})
     finally:
         db.close()
 

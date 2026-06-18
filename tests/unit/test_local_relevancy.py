@@ -341,3 +341,26 @@ def test_track_da_noop_without_data(db, monkeypatch):
     db.add_customer(id="d2", name="D2", domain="d2.com", business_type="legal")
     monkeypatch.setattr(moz_client, "get_domain_authority", lambda dom: None)
     assert moz_client.track_domain_authority(db, "d2") is None
+
+
+def test_track_competitor_da_real_only(db, monkeypatch):
+    from geo_agent import moz_client
+    db.add_customer(id="c", name="C", domain="c.com", business_type="dental")
+    db.add_competitor_domain("c", "rival1.com", name="Rival One", review_count=200)
+    db.add_competitor_domain("c", "rival2.com", name="Rival Two", review_count=50)
+    db.add_competitor_domain("c", "", name="No domain")  # skipped — not a real domain
+    monkeypatch.setattr(moz_client, "_auth_header", lambda: "Basic x")
+    monkeypatch.setattr(moz_client, "get_domain_authority",
+                        lambda d: {"da": 30 if d == "rival1.com" else 22, "pa": 0, "spam": 0})
+    out = moz_client.track_competitor_da(db, "c", limit=5)
+    assert len(out) == 2                      # only the two with real domains
+    assert out[0]["domain"] == "rival1.com"   # highest review_count first
+    rows = {r["competitor_domain"]: r["domain_authority"] for r in db.get_competitor_domains("c")}
+    assert rows["rival1.com"] == 30.0 and rows["rival2.com"] == 22.0
+
+
+def test_track_competitor_da_noop_unkeyed(db, monkeypatch):
+    from geo_agent import moz_client
+    monkeypatch.setattr(moz_client, "_auth_header", lambda: None)
+    db.add_customer(id="c2", name="C2", domain="c2.com", business_type="legal")
+    assert moz_client.track_competitor_da(db, "c2") == []

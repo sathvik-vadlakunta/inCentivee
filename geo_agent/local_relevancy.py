@@ -374,7 +374,10 @@ def run_local_relevancy(db, customer_id: str, recompute: bool = True) -> dict:
     # Domain Authority snapshot (Moz) — dormant until MOZ creds are set.
     try:
         from geo_agent import moz_client
-        summary["modules"]["domain_authority"] = {"da": moz_client.track_domain_authority(db, customer_id)}
+        summary["modules"]["domain_authority"] = {
+            "da": moz_client.track_domain_authority(db, customer_id),
+            "competitors": moz_client.track_competitor_da(db, customer_id),
+        }
     except Exception as exc:  # noqa: BLE001
         logger.debug("local_relevancy: DA track skipped for %s: %s", customer_id, exc)
 
