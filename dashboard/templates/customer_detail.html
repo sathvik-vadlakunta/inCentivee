@@ -1088,6 +1088,37 @@
                 {% endif %}
             </div>
 
+            <!-- BrightLocal Integration (Local Relevancy Engine — citations/NAP) -->
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong>BrightLocal</strong>
+                        <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">Citation / NAP audit (Local Relevancy Engine)</span>
+                    </div>
+                    {% set bl_integ = integrations | selectattr('integration', 'equalto', 'brightlocal') | first %}
+                    <span class="badge" style="background:{% if bl_integ and bl_integ.status == 'active' %}#d1fae5;color:#065f46{% elif bl_integ and bl_integ.status == 'configured' %}#fef3c7;color:#92400e{% elif bl_integ and bl_integ.status == 'error' %}#fee2e2;color:#991b1b{% else %}#f3f4f6;color:#6b7280{% endif %};">
+                        {{ (bl_integ.status if bl_integ else 'not configured') | replace('_', ' ') | title }}
+                    </span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
+                    Paste this customer's BrightLocal <strong>location id</strong> (the Citation Tracker / Local Search Audit location/report id). Requires <code>BRIGHTLOCAL_API_KEY</code> set on the server. Activates Module 1 — directory breadth + NAP-consistency scoring + the report's Local Listings section.
+                </div>
+                <form onsubmit="saveBrightlocalIntegration(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
+                    <div style="flex:1;">
+                        <label style="font-size:0.75rem;color:var(--muted);display:block;margin-bottom:0.2rem;">BrightLocal Location ID</label>
+                        <input type="text" id="brightlocal-location-id" placeholder="e.g. 1234567"
+                               value="{{ bl_integ.config.location_id if bl_integ and bl_integ.config else '' }}"
+                               style="width:100%;padding:0.4rem 0.5rem;font-size:0.85rem;border:1px solid var(--border);border-radius:4px;">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary" style="white-space:nowrap;">Save</button>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="testIntegration('{{ customer.id }}', 'brightlocal', 'brightlocal-test-result')" style="white-space:nowrap;">Test</button>
+                </form>
+                <div id="brightlocal-test-result" style="font-size:0.8rem;margin-top:0.5rem;display:none;"></div>
+                {% if bl_integ and bl_integ.last_error %}
+                <div style="font-size:0.8rem;color:var(--danger);margin-top:0.4rem;">Last error: {{ bl_integ.last_error }}</div>
+                {% endif %}
+            </div>
+
             <!-- PageSpeed Integration -->
             <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -4476,6 +4507,19 @@ function saveGa4Integration(e, customerId) {
     }).then(r => r.json()).then(data => {
         if (data.ok) showResult('ga4-test-result', 'Saved! Click Test to verify.', 'success');
         else showResult('ga4-test-result', data.error || 'Save failed', 'error');
+    });
+}
+
+function saveBrightlocalIntegration(e, customerId) {
+    e.preventDefault();
+    const lid = document.getElementById('brightlocal-location-id').value.trim();
+    fetch('/api/customer/' + customerId + '/integrations', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({integration: 'brightlocal', config: {location_id: lid}})
+    }).then(r => r.json()).then(data => {
+        if (data.ok) showResult('brightlocal-test-result', 'Saved! Click Test to verify.', 'success');
+        else showResult('brightlocal-test-result', data.error || 'Save failed', 'error');
     });
 }
 
