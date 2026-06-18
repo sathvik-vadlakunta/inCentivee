@@ -5674,6 +5674,27 @@ def api_report_to_pipeline(report_id):
 
 # --- Analytics ---
 
+@app.route("/api/analytics/refresh-da", methods=["POST"])
+@login_required
+def api_analytics_refresh_da():
+    """Pull fresh Domain Authority (+ competitors) for every active/onboarding
+    customer so the analytics view is up to date."""
+    db = get_db()
+    try:
+        from geo_agent.moz_client import track_competitor_da, track_domain_authority
+        updated = 0
+        for c in db.list_customers():
+            if c.get("status") not in ("active", "onboarding"):
+                continue
+            if track_domain_authority(db, c["id"]) is not None:
+                updated += 1
+            track_competitor_da(db, c["id"])
+        audit_log("analytics_da_refreshed", details=f"{updated} customers")
+        return jsonify({"ok": True, "updated": updated})
+    finally:
+        db.close()
+
+
 @app.route("/analytics")
 @login_required
 def analytics():
@@ -5744,6 +5765,15 @@ def analytics():
             seo_done = sum(1 for t in seo_tasks if t.get("done"))
             seo_total = len(seo_tasks)
 
+            # Domain Authority (Moz) + competitor gap
+            da_kpis = db.get_kpis(cid, "domain_authority", limit=2)
+            da_val = _num(da_kpis, default=None)
+            da_prev = _num(da_kpis, 1, default=None)
+            comp_das = sorted(
+                (cd.get("domain_authority") or 0 for cd in (db.get_competitor_domains(cid) or [])),
+                reverse=True)
+            top_comp = comp_das[0] if comp_das and comp_das[0] > 0 else None
+
             analytics_data.append({
                 "id": cid,
                 "name": c["name"],
@@ -5766,6 +5796,11 @@ def analytics():
                 "access_total": access_total,
                 "seo_done": seo_done,
                 "seo_total": seo_total,
+                "da": da_val,
+                "da_delta": (da_val - da_prev) if (da_val is not None and da_prev is not None) else None,
+                "da_date": da_kpis[0]["date"] if da_kpis else None,
+                "top_competitor_da": top_comp,
+                "da_gap": (top_comp - da_val) if (top_comp is not None and da_val is not None) else None,
             })
 
         # Aggregate stats
@@ -5781,6 +5816,9 @@ def analytics():
             "active_count": active_count,
             "onboarding_count": onboarding_count,
         }
+        _das = [d["da"] for d in analytics_data if d["da"] is not None]
+        totals["avg_da"] = round(sum(_das) / len(_das)) if _das else None
+        totals["behind_competitor"] = sum(1 for d in analytics_data if d.get("da_gap") and d["da_gap"] > 0)
 
         return render_template("analytics.html", data=analytics_data, totals=totals)
     finally:

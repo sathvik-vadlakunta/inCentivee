@@ -9,11 +9,14 @@
 
 <div class="section-header">
     <h1>Analytics</h1>
-    <span style="color: var(--muted); font-size: 0.85rem;">Performance across all customers</span>
+    <div class="flex" style="align-items:center;gap:0.75rem;">
+        <span style="color: var(--muted); font-size: 0.85rem;">Performance across all customers</span>
+        <button class="btn btn-sm btn-outline" id="refresh-da-btn" onclick="refreshAllDA(this)" title="Pull fresh Domain Authority for every customer">↻ Refresh DA</button>
+    </div>
 </div>
 
 <!-- Aggregate Stats -->
-<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:0.75rem;margin-bottom:1.5rem;">
+<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.75rem;margin-bottom:1.5rem;">
     <div class="card stat">
         <div class="number">{{ totals.customers_tracked }}</div>
         <div class="label">Customers</div>
@@ -40,6 +43,11 @@
     <div class="card stat">
         <div class="number">{{ totals.total_hits | int }}</div>
         <div class="label">llms.txt Hits</div>
+    </div>
+    <div class="card stat">
+        <div class="number" style="color:#16a34a;">{{ totals.avg_da if totals.avg_da is not none else '—' }}</div>
+        <div class="label">Avg Domain Authority</div>
+        {% if totals.behind_competitor %}<div style="font-size:0.7rem;color:var(--danger);margin-top:0.25rem;">{{ totals.behind_competitor }} behind top competitor</div>{% endif %}
     </div>
 </div>
 
@@ -79,6 +87,8 @@
                 <th style="text-align:center;">SEO Progress</th>
                 <th style="text-align:center;">Access</th>
                 <th style="text-align:right;cursor:pointer;" onclick="sortAnalytics('llms_hits')">llms.txt</th>
+                <th style="text-align:right;">DA</th>
+                <th style="text-align:right;">vs Top Competitor</th>
             </tr>
         </thead>
         <tbody>
@@ -160,6 +170,12 @@
                     </span>
                     {% endif %}
                 </td>
+                <td style="text-align:right;font-weight:600;">
+                    {% if d.da is not none %}{{ d.da | int }}{% if d.da_delta %}<span style="font-size:0.7rem;color:{% if d.da_delta > 0 %}var(--success){% else %}var(--danger){% endif %};"> {{ '%+d' | format(d.da_delta | int) }}</span>{% endif %}{% else %}<span style="color:var(--muted);">—</span>{% endif %}
+                </td>
+                <td style="text-align:right;">
+                    {% if d.top_competitor_da %}<span style="color:var(--muted);">{{ d.top_competitor_da | int }}</span>{% if d.da_gap is not none and d.da_gap > 0 %} <span style="color:var(--danger);font-weight:600;font-size:0.75rem;">−{{ d.da_gap | int }}</span>{% elif d.da_gap is not none %} <span style="color:var(--success);font-weight:600;font-size:0.75rem;">ahead</span>{% endif %}{% else %}<span style="color:var(--muted);">—</span>{% endif %}
+                </td>
             </tr>
         {% endfor %}
         </tbody>
@@ -174,6 +190,16 @@
 {% endif %}
 
 <script>
+function refreshAllDA(btn) {
+    var orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Refreshing DA…';
+    fetch('/api/analytics/refresh-da', {method: 'POST'})
+        .then(r => r.json()).then(d => {
+            if (d.ok) { btn.textContent = 'Updated ' + d.updated; setTimeout(function(){ location.reload(); }, 1200); }
+            else { alert(d.error || 'Refresh failed'); btn.disabled = false; btn.textContent = orig; }
+        }).catch(function(){ alert('Network error'); btn.disabled = false; btn.textContent = orig; });
+}
+
 function filterAnalyticsTable(query) {
     var q = query.toLowerCase();
     document.querySelectorAll('#analytics-table tbody tr').forEach(function(row) {
