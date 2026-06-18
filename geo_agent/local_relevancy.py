@@ -130,12 +130,67 @@ def _module_3_service_area_pages(db, customer):
             "planned": len(pairs), "created": created}
 
 
-def _module_4_review_recency(db, customer):  # TODO Phase 4
-    return {"status": "not_built", "module": "review_recency"}
+REVIEW_THRESHOLD = 10  # verified: 9->10 gives a noticeable local bump; diminishing after
 
 
-def _module_5_gbp_completeness(db, customer):  # TODO Phase 4
-    return {"status": "not_built", "module": "gbp_completeness"}
+def _module_4_review_recency(db, customer):
+    """Module 4 — drive reviews to ~10+ with text, then keep a recent drip.
+
+    Uses the matched Google Place (rating + review_count) to produce a concrete
+    review-generation action + the GBP write-review link. (Last-review-date isn't
+    persisted yet — recency is handled by the recurring request action.)
+    """
+    place = db.get_google_places(customer["id"])
+    if not place:
+        return {"status": "no_gbp", "module": "review_recency",
+                "note": "Google Business Profile not matched yet — can't drive reviews"}
+    rating = place.get("rating") or 0
+    count = place.get("review_count") or 0
+    place_id = place.get("place_id") or ""
+    review_link = (f"https://search.google.com/local/writereview?placeid={place_id}"
+                   if place_id else "")
+    gap = max(0, REVIEW_THRESHOLD - count)
+    if count < REVIEW_THRESHOLD:
+        status, action = "below_threshold", (
+            f"Request {gap} more Google review(s) to reach the {REVIEW_THRESHOLD}-review "
+            f"threshold (the verified local-ranking step-up).")
+    else:
+        status, action = "maintain", (
+            "Keep a steady monthly drip of fresh reviews with text — recency is a top "
+            "local AI-recommendation signal.")
+    return {"status": status, "module": "review_recency", "rating": rating,
+            "review_count": count, "gap_to_threshold": gap,
+            "review_link": review_link, "action": action}
+
+
+def _module_5_gbp_completeness(db, customer):
+    """Module 5 — GBP completeness checklist, with vertical-correct category hints.
+
+    Field-level GBP data (categories/hours/photos) isn't persisted, so unknown
+    items are surfaced as 'needs verification' rather than guessed.
+    """
+    from geo_agent.directory_profiles import gbp_primary_category
+
+    place = db.get_google_places(customer["id"])
+    claimed = bool(place and place.get("place_id"))
+    primary = gbp_primary_category(customer.get("business_type"))
+    checklist = [
+        {"item": "GBP claimed & verified", "ok": claimed},
+        {"item": f"Primary category set (suggested: {primary})", "ok": None},
+        {"item": "3-4 relevant additional categories", "ok": None},
+        {"item": "Services / products listed", "ok": None},
+        {"item": "Hours + attributes complete", "ok": None},
+        {"item": "Service-area cities set", "ok": bool(customer.get("service_areas"))},
+        {"item": "Photos uploaded", "ok": None},
+    ]
+    return {
+        "status": "ok" if claimed else "no_gbp",
+        "module": "gbp_completeness",
+        "suggested_primary_category": primary,
+        "checklist": checklist,
+        "missing": [c["item"] for c in checklist if c["ok"] is False],
+        "needs_verification": [c["item"] for c in checklist if c["ok"] is None],
+    }
 
 
 def run_local_relevancy(db, customer_id: str, recompute: bool = True) -> dict:

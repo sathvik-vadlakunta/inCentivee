@@ -179,8 +179,25 @@ _DEFAULT_SERVICE_TERMS: dict[str, list[str]] = {
 }
 
 
+# Suggested Google Business Profile primary category, by profile key.
+GBP_PRIMARY_CATEGORY: dict[str, str] = {
+    "dental": "Dentist",
+    "medical": "Doctor / Medical Clinic",
+    "legal": "Law Firm",
+    "precious_metals": "Gold Dealer / Jewelry Buyer",
+    "local_retail": "Store",
+    "professional_services": "Consultant",
+    "finance": "Financial Consultant",
+    "default": "Local Business",
+}
+
+
 def content_schema(business_type: str | None) -> str:
     return CONTENT_SCHEMA.get(profile_key(business_type), "LocalBusiness")
+
+
+def gbp_primary_category(business_type: str | None) -> str:
+    return GBP_PRIMARY_CATEGORY.get(profile_key(business_type), "Local Business")
 
 
 def default_service_terms(business_type: str | None) -> list[str]:

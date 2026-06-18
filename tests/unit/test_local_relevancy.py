@@ -131,8 +131,8 @@ def test_run_local_customer_returns_modules(db):
     assert mods["directory_breadth"]["target"] == profile_target_count("legal")
     # Module 3 built (no service areas configured here -> graceful no-op).
     assert mods["service_area_pages"]["status"] == "no_service_areas"
-    # Modules 4-5 still stubbed.
-    assert mods["review_recency"]["status"] == "not_built"
+    # Module 4 built (no GBP matched here -> graceful no_gbp).
+    assert mods["review_recency"]["status"] == "no_gbp"
 
 
 def test_run_missing_customer(db):
@@ -216,6 +216,50 @@ def test_module3_no_service_areas(db):
     db.add_customer(id="bare", name="Bare", domain="bare.com", business_type="dental")
     r = run_local_relevancy(db, "bare", recompute=False)
     assert r["modules"]["service_area_pages"]["status"] == "no_service_areas"
+
+
+# ── Modules 4-5: review recency + GBP completeness ──────────────────
+
+def test_module4_below_threshold_with_link(db):
+    db.add_customer(id="rev", name="Rev Dental", domain="rev.com", business_type="dental")
+    db.upsert_google_places("rev", place_id="PID123", rating=4.7, review_count=6, match_confidence="high")
+    r = run_local_relevancy(db, "rev", recompute=False)
+    m4 = r["modules"]["review_recency"]
+    assert m4["status"] == "below_threshold"
+    assert m4["gap_to_threshold"] == 4
+    assert "PID123" in m4["review_link"]
+
+
+def test_module4_maintain_above_threshold(db):
+    db.add_customer(id="rev2", name="Rev2", domain="rev2.com", business_type="legal")
+    db.upsert_google_places("rev2", place_id="P2", rating=4.9, review_count=42, match_confidence="high")
+    m4 = run_local_relevancy(db, "rev2", recompute=False)["modules"]["review_recency"]
+    assert m4["status"] == "maintain"
+    assert m4["gap_to_threshold"] == 0
+
+
+def test_module4_no_gbp(db):
+    db.add_customer(id="nogbp", name="NoGBP", domain="n.com", business_type="dental")
+    m4 = run_local_relevancy(db, "nogbp", recompute=False)["modules"]["review_recency"]
+    assert m4["status"] == "no_gbp"
+
+
+def test_module5_gbp_completeness_vertical_category(db):
+    db.add_customer(id="firm5", name="Firm5", domain="f5.com", business_type="legal")
+    db.upsert_google_places("firm5", place_id="P5", rating=4.5, review_count=20, match_confidence="high")
+    m5 = run_local_relevancy(db, "firm5", recompute=False)["modules"]["gbp_completeness"]
+    assert m5["status"] == "ok"
+    assert m5["suggested_primary_category"] == "Law Firm"
+    # GBP claimed shows as ok; field-level items need verification.
+    assert "GBP claimed & verified" not in m5["missing"]
+    assert any("Primary category" in i for i in m5["needs_verification"])
+
+
+def test_module5_precious_metals_category(db):
+    db.add_customer(id="gold", name="Gold Buyer", domain="g.com", business_type="precious_metals_buyer")
+    m5 = run_local_relevancy(db, "gold", recompute=False)["modules"]["gbp_completeness"]
+    assert m5["suggested_primary_category"] == "Gold Dealer / Jewelry Buyer"
+    assert m5["status"] == "no_gbp"  # no place matched
 
 
 def test_content_schema_and_service_terms():
