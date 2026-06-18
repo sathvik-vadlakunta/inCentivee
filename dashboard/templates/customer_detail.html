@@ -1,5 +1,40 @@
 {% extends "base.html" %}
 {% block title %}{{ customer.name }} - PracticeRank{% endblock %}
+{% block head %}
+<style>
+  /* ===== Content Recommendations — clean card design ===== */
+  .crec-bar { display:flex; flex-wrap:wrap; gap:0.4rem; align-items:center; margin-bottom:0.85rem; }
+  .crec-chip { font-size:0.78rem; padding:0.3rem 0.75rem; border-radius:9999px; border:1px solid var(--border); background:var(--card); color:var(--text-light); cursor:pointer; font-weight:500; transition:background .12s,border-color .12s,color .12s; }
+  .crec-chip:hover { border-color:var(--primary); color:var(--primary); }
+  .crec-chip.active { background:var(--primary); border-color:var(--primary); color:#fff; }
+  .crec-chip .n { opacity:.65; margin-left:0.15rem; }
+  .crec { background:var(--card); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:0.7rem; padding:0.9rem 1.1rem; transition:box-shadow .15s,border-color .15s; }
+  .crec:hover { box-shadow:0 3px 12px rgba(16,24,40,.08); }
+  .crec[data-status="pending"]   { border-left-color:var(--warning); }
+  .crec[data-status="approved"]  { border-left-color:var(--success); }
+  .crec[data-status="published"] { border-left-color:var(--primary); }
+  .crec[data-status="rejected"], .crec[data-status="archived"] { border-left-color:var(--muted); opacity:.7; }
+  .crec-head { display:flex; justify-content:space-between; align-items:flex-start; gap:0.75rem; }
+  .crec-tags { display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap; }
+  .crec-type { font-size:0.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:0.16rem 0.5rem; border-radius:5px; background:#e5e7eb; color:#374151; }
+  .crec-type--blog_post { background:#dbeafe; color:#1e40af; }
+  .crec-type--faq_update { background:#d1fae5; color:#065f46; }
+  .crec-type--new_page { background:#e0e7ff; color:#3730a3; }
+  .crec-type--expert_quote { background:#ede9fe; color:#5b21b6; }
+  .crec-type--stat_injection { background:#fef3c7; color:#92400e; }
+  .crec-type--freshness_update { background:#fae8ff; color:#86198f; }
+  .crec-pri { font-size:0.7rem; color:var(--muted); }
+  .crec-title { font-size:0.98rem; font-weight:650; margin:0.55rem 0 0.2rem; line-height:1.35; }
+  .crec-desc { font-size:0.85rem; color:var(--text-light); margin:0 0 0.35rem; }
+  .crec-why { font-size:0.8rem; margin:0.2rem 0; }
+  .crec-why summary { color:var(--muted); cursor:pointer; list-style:none; font-weight:500; display:inline-block; }
+  .crec-why summary::-webkit-details-marker { display:none; }
+  .crec-why summary::before { content:'✨ '; }
+  .crec-why .why-body { color:var(--primary); margin:0.4rem 0 0; padding:0.5rem 0.7rem; background:rgba(37,99,235,.05); border-radius:6px; }
+  .crec-foot { display:flex; flex-wrap:wrap; align-items:center; gap:0.9rem; font-size:0.75rem; color:var(--muted); margin-top:0.55rem; padding-top:0.5rem; border-top:1px solid var(--border); }
+  .crec-actions { display:flex; gap:0.3rem; flex-shrink:0; align-items:flex-start; }
+</style>
+{% endblock %}
 {% block breadcrumbs %}
 <a href="{{ url_for('index') }}">Dashboard</a>
 <span class="bc-sep">/</span>
@@ -1843,66 +1878,67 @@
     </div>
 
     {% if content_recs %}
-    <div style="display: grid; gap: 0.75rem;">
+    <div class="crec-bar">
+        <button class="crec-chip active" data-filter="all" onclick="filterRecs(this,'all')">All <span class="n">{{ content_recs|length }}</span></button>
+        <button class="crec-chip" data-filter="pending" onclick="filterRecs(this,'pending')">Pending</button>
+        <button class="crec-chip" data-filter="approved" onclick="filterRecs(this,'approved')">Approved</button>
+        <button class="crec-chip" data-filter="published" onclick="filterRecs(this,'published')">Published</button>
+    </div>
+    <div style="display:grid;gap:0.6rem;" id="crec-list">
         {% for rec in content_recs %}
-        <div class="card content-rec" id="rec-{{ rec.id }}" style="border-left: 3px solid {% if rec.status == 'approved' %}var(--success){% elif rec.status == 'rejected' %}var(--danger){% elif rec.status == 'published' %}var(--primary){% else %}var(--warning){% endif %};">
-            <div class="section-header" style="margin-bottom: 0.5rem;">
-                <div>
-                    <span class="badge badge-{{ rec.rec_type }}" style="background: {% if rec.rec_type == 'blog_post' %}#dbeafe{% elif rec.rec_type == 'faq_update' %}#d1fae5{% elif rec.rec_type == 'expert_quote' %}#ede9fe{% elif rec.rec_type == 'stat_injection' %}#fef3c7{% else %}#e5e7eb{% endif %}; color: var(--text-light); font-size: 0.7rem;">{{ rec.rec_type | replace('_', ' ') | title }}</span>
-                    <span style="font-size: 0.7rem; color: var(--muted); margin-left: 0.5rem;">Priority {{ rec.priority }}</span>
+        <div class="crec content-rec" id="rec-{{ rec.id }}" data-status="{{ rec.status }}">
+            <div class="crec-head">
+                <div class="crec-tags">
+                    <span class="crec-type crec-type--{{ rec.rec_type }}">{{ rec.rec_type | replace('_', ' ') }}</span>
+                    <span class="crec-pri">Priority {{ rec.priority }}</span>
+                    {% if rec.status == 'approved' %}<span class="badge badge-approved">Approved</span>
+                    {% elif rec.status == 'published' %}<span class="badge badge-active">Published</span>
+                    {% elif rec.status == 'rejected' %}<span class="badge badge-archived">Rejected</span>
+                    {% elif rec.status == 'archived' %}<span class="badge badge-archived">Archived</span>{% endif %}
                 </div>
-                <div class="flex">
+                <div class="crec-actions">
                     {% if rec.status == 'pending' %}
                     <button class="btn btn-success btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'approved', this)">Approve</button>
                     <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="updateRecStatus('{{ rec.id }}', 'rejected', this)">Reject</button>
                     {% elif rec.status == 'approved' %}
-                    <span class="badge badge-approved">Approved</span>
-                    {% if rec.rec_type in ('blog_post', 'faq_update', 'new_page') %}
-                        {% if customer.platform == 'webflow' and webflow_connected %}
-                        <button class="btn btn-primary btn-sm" onclick="publishToWebflow('{{ rec.id }}', this)">Publish to Webflow</button>
-                        {% elif customer.platform == 'squarespace' and squarespace_connected %}
-                        <button class="btn btn-primary btn-sm" onclick="pushToSquarespace('{{ rec.id }}', this)">Push Draft to Squarespace</button>
-                        {% endif %}
+                    {% if rec.rec_type in ('blog_post','faq_update','new_page') %}
+                      {% if customer.platform == 'webflow' and webflow_connected %}
+                      <button class="btn btn-primary btn-sm" onclick="publishToWebflow('{{ rec.id }}', this)">Publish</button>
+                      {% elif customer.platform == 'squarespace' and squarespace_connected %}
+                      <button class="btn btn-primary btn-sm" onclick="pushToSquarespace('{{ rec.id }}', this)">Push Draft</button>
+                      {% endif %}
                     {% endif %}
-                    <button class="btn btn-outline btn-sm" onclick="downloadDocx('{{ rec.id }}')">Download DOCX</button>
                     <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'published', this)">Mark Published</button>
-                    {% elif rec.status == 'published' %}
-                    <span class="badge badge-active">Published</span>
-                    {% else %}
-                    <span class="badge badge-archived">Rejected</span>
+                    <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'archived', this)" title="Hide from view">Archive</button>
+                    {% elif rec.status in ('rejected','archived') %}
                     <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'pending', this)">Restore</button>
+                    {% else %}
+                    <button class="btn btn-outline btn-sm" onclick="updateRecStatus('{{ rec.id }}', 'archived', this)" title="Hide from view">Archive</button>
                     {% endif %}
                 </div>
             </div>
-            <h3 style="font-size: 0.95rem; margin-bottom: 0.25rem;">
+            <div class="crec-title">
                 {{ rec.title }}
-                {% if rec.webflow_item_id %}
-                <span style="display: inline-block; background: var(--primary); color: #fff; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;">Webflow</span>
-                {% elif rec.platform_draft_url %}
-                <span style="display: inline-block; background: #f97316; color: #fff; font-size: 0.6rem; padding: 1px 5px; border-radius: 3px; vertical-align: middle; margin-left: 0.4rem;">Squarespace Draft</span>
-                {% endif %}
-            </h3>
-            <p style="font-size: 0.85rem; color: var(--text-light); margin-bottom: 0.35rem;">{{ rec.description }}</p>
-            {% if rec.publish_error %}
-            <p style="font-size: 0.8rem; color: var(--danger); margin-bottom: 0.35rem;">Publish Error: {{ rec.publish_error }}</p>
-            {% endif %}
-            {% if rec.ai_impact_reason %}
-            <p style="font-size: 0.8rem; color: var(--primary); margin-bottom: 0.5rem;">AI Impact: {{ rec.ai_impact_reason }}</p>
-            {% endif %}
-            {% if rec.target_page and rec.target_page != 'new' %}
-            <span style="font-size: 0.75rem; color: var(--muted);">Target: {{ rec.target_page }}</span>
-            {% endif %}
-
-            {% if rec.html_snippet %}
-            <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 1rem;">
-                <a href="{{ url_for('content_preview', customer_id=customer.id, rec_id=rec.id) }}" target="_blank" style="font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: 500;">Open Preview &rarr;</a>
+                {% if rec.webflow_item_id %}<span style="background:var(--primary);color:#fff;font-size:0.6rem;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:0.4rem;">Webflow</span>
+                {% elif rec.platform_draft_url %}<span style="background:#f97316;color:#fff;font-size:0.6rem;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:0.4rem;">SQSP Draft</span>{% endif %}
             </div>
-            <details style="margin-top: 0.5rem;">
-                <summary style="font-size: 0.8rem; color: var(--muted); cursor: pointer;">View Raw HTML</summary>
-                <div style="margin-top: 0.5rem; background: #1e1e1e; color: #d4d4d4; padding: 1rem; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.75rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap;">{{ rec.html_snippet | e }}</div>
-                <button class="btn btn-outline btn-sm" style="margin-top: 0.5rem;" onclick="copySnippet(this)">Copy HTML</button>
-            </details>
+            <p class="crec-desc">{{ rec.description }}</p>
+            {% if rec.publish_error %}<p style="font-size:0.78rem;color:var(--danger);margin:0 0 0.3rem;">Publish error: {{ rec.publish_error }}</p>{% endif %}
+            {% if rec.ai_impact_reason %}
+            <details class="crec-why"><summary>Why this helps AI search</summary><div class="why-body">{{ rec.ai_impact_reason }}</div></details>
             {% endif %}
+            <div class="crec-foot">
+                {% if rec.target_page and rec.target_page != 'new' %}<span>Target: {{ rec.target_page }}</span>{% endif %}
+                <span>{{ rec.created_at[:10] }}</span>
+                {% if rec.html_snippet %}
+                <a href="{{ url_for('content_preview', customer_id=customer.id, rec_id=rec.id) }}" target="_blank" rel="noopener">Open preview &rarr;</a>
+                <a href="#" onclick="var d=this.parentElement.querySelector('.crec-html');d.style.display=d.style.display==='block'?'none':'block';return false;">View HTML</a>
+                <button class="btn btn-outline btn-sm" style="margin-left:auto;font-size:0.7rem;padding:2px 8px;" onclick="downloadDocx('{{ rec.id }}')">DOCX</button>
+                <div class="crec-html" style="display:none;width:100%;margin-top:0.4rem;background:#1e1e1e;color:#d4d4d4;padding:0.8rem;border-radius:6px;font-family:'Fira Code',monospace;font-size:0.72rem;overflow:auto;max-height:280px;white-space:pre-wrap;">{{ rec.html_snippet | e }}</div>
+                {% else %}
+                <button class="btn btn-outline btn-sm" style="margin-left:auto;font-size:0.7rem;padding:2px 8px;" onclick="downloadDocx('{{ rec.id }}')">DOCX</button>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -4143,6 +4179,14 @@ function syncPublished(customerId) {
         } else { alert(data.error || 'Check failed'); if (btn) { btn.disabled = false; btn.textContent = orig; } }
     })
     .catch(() => { alert('Network error'); if (btn) { btn.disabled = false; btn.textContent = orig; } });
+}
+
+function filterRecs(btn, f) {
+    document.querySelectorAll('.crec-bar .crec-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#crec-list .crec').forEach(card => {
+        card.style.display = (f === 'all' || card.dataset.status === f) ? '' : 'none';
+    });
 }
 
 function approveAll(customerId) {
