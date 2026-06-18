@@ -704,19 +704,48 @@ def public_report(token):
 @app.route("/customer/<customer_id>/note", methods=["POST"])
 @login_required
 def add_customer_note(customer_id):
+    import uuid
     db = get_db()
     try:
         body = (request.form.get("body") or "").strip()
         subject = (request.form.get("subject") or "").strip()
         activity_type = request.form.get("activity_type", "note")
-        if body or subject:
+        # Save any attached screenshots to the volume-mounted uploads dir.
+        attachments = []
+        updir = Path(DATA_DIR) / "uploads" / customer_id
+        allowed_ext = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+        for f in request.files.getlist("attachments"):
+            if not f or not f.filename:
+                continue
+            ext = Path(f.filename).suffix.lower()
+            if ext not in allowed_ext:
+                continue
+            updir.mkdir(parents=True, exist_ok=True)
+            fname = f"{uuid.uuid4().hex}{ext}"
+            f.save(str(updir / fname))
+            attachments.append(fname)
+        if body or subject or attachments:
             db.add_customer_activity(
                 customer_id, activity_type=activity_type, subject=subject, body=body,
+                meta={"attachments": attachments} if attachments else None,
                 created_by=session.get("username", ""),
             )
         return redirect(url_for("customer_detail", customer_id=customer_id) + "#notes")
     finally:
         db.close()
+
+
+@app.route("/customer/<customer_id>/upload/<path:filename>")
+@login_required
+def customer_upload(customer_id, filename):
+    """Serve a screenshot/attachment from a customer's uploads dir (auth-gated)."""
+    from flask import send_from_directory
+    from werkzeug.utils import secure_filename
+    safe = secure_filename(filename)
+    updir = Path(DATA_DIR) / "uploads" / customer_id
+    if not safe or not (updir / safe).is_file():
+        abort(404)
+    return send_from_directory(str(updir), safe)
 
 
 @app.route("/customer/<customer_id>/status", methods=["POST"])
