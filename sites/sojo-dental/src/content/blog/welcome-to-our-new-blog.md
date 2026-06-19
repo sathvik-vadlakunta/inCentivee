@@ -5,7 +5,7 @@ pubDate: 2025-12-02
 author: SoJo Dental
 tags:
   - Practice News
-image: /images/cta-welcome.webp
+image: /images/team-pic.webp
 ---
 
 We are excited to launch the SoJo Dental blog! This is your new destination for dental health tips, practice updates, and helpful insights from our team in South Jordan, Utah.
