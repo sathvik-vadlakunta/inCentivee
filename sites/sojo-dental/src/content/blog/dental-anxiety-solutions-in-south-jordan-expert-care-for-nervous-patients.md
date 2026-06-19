@@ -5,6 +5,7 @@ pubDate: 2026-03-17
 author: SoJo Dental
 tags:
   - General
+image: /images/hero-banner1.webp
 ---
 
 Dental anxiety is far more common than many people realize. [The 2021 Adult Oral Health Survey found that approximately 42% of adults experience moderate dental anxiety, with 12% experiencing extreme fear](https://www.nature.com/articles/s41415-024-7846-1). At Sojo Dental, we understand that this anxiety can prevent people from getting the dental care they need, which is why we've made anxiety management a cornerstone of our South Jordan practice.

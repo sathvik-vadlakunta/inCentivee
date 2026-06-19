@@ -5,6 +5,7 @@ pubDate: 2026-04-14
 author: SoJo Dental
 tags:
   - Endodontics
+image: /images/hero-banner4.webp
 ---
 
 Root canal treatment often gets an unfair reputation, but modern endodontic therapy is highly successful and far more comfortable than many patients expect. [Root canal treatment has a success rate of approximately 95%, preserving the natural tooth for a lifetime of function](https://www.aae.org/patients/root-canal-treatment/), according to the American Association of Endodontists.

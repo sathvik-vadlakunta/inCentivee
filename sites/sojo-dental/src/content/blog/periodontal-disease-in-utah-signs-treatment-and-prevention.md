@@ -5,6 +5,7 @@ pubDate: 2026-02-24
 author: SoJo Dental
 tags:
   - Periodontics
+image: /images/hero-banner2.webp
 ---
 
 Periodontal disease affects millions of Americans, yet many people remain unaware they have this serious condition until it reaches advanced stages. [CDC/NHANES data shows that 47.2% of adults aged 30 and older have some form of periodontal disease](https://www.nidcr.nih.gov/research/data-statistics/periodontal-disease/adults). At Sojo Dental in South Jordan, we're committed to helping our patients understand, prevent, and treat gum disease before it compromises their oral health.

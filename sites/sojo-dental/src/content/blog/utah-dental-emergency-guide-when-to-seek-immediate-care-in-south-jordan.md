@@ -5,6 +5,7 @@ pubDate: 2026-01-06
 author: SoJo Dental
 tags:
   - Emergency
+image: /images/hero-banner1.webp
 ---
 
 Dental emergencies don't wait for convenient times. Whether it's a weekend, holiday, or middle of the night, understanding when to seek immediate dental care can mean the difference between saving or losing a tooth. [The CDC reports that approximately 1 in 4 adults in the US have untreated tooth decay](https://www.cdc.gov/oral-health/php/2024-oral-health-surveillance-report/selected-findings.html), which can lead to serious emergencies if left unaddressed.

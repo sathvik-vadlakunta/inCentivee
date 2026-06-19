@@ -5,6 +5,7 @@ pubDate: 2026-05-05
 author: SoJo Dental
 tags:
   - Implants
+image: /images/tooth-graphic.webp
 ---
 
 Dental implants represent one of dentistry's greatest success stories, offering patients a permanent solution for missing teeth with exceptional longevity. [A systematic review found dental implants have a cumulative survival rate of approximately 96.4% at 10 years](https://www.sciencedirect.com/science/article/abs/pii/S0300571219300491), according to research published in the Journal of Dentistry.
