@@ -12,6 +12,10 @@ const categories = practice.serviceCategories.map((cat: string) => ({
 
 const currentPath = Astro.url.pathname
 
+// Areas We Serve — drives the location-page dropdown from practice.areaServed.
+const areas: string[] = (practice as any).areaServed ?? []
+const areaSlug = (a: string) => a.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+
 const navLinks = [
   { label: 'Home', href: '/' },
   { label: 'About Us', href: '/about' },
@@ -42,6 +46,13 @@ const navLinks = [
       { label: 'Patient Portal', href: practice.patientPortal, external: true },
     ],
   },
+  ...(areas.length
+    ? [{
+        label: 'Areas We Serve',
+        href: `/dentist/${areaSlug(areas[0])}`,
+        children: areas.map((a) => ({ label: `Dentist in ${a}`, href: `/dentist/${areaSlug(a)}` })),
+      }]
+    : []),
   { label: 'Blog', href: '/blog' },
   { label: 'Contact Us', href: '/contact' },
 ]

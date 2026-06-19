@@ -1,0 +1,21 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+const tel = practice.phone.replace(/[^+\d]/g, '')
+---
+
+<Base title="Page Not Found" description="Sorry, we couldn't find that page." noindex={true}>
+  <section class="relative overflow-hidden bg-secondary text-white">
+    <div class="blob" style="width:26rem;height:26rem;background:#6b7882;top:-9rem;right:-5rem;"></div>
+    <div class="container-px relative py-24 sm:py-32 text-center">
+      <p class="eyebrow justify-center text-accent-soft">Error 404</p>
+      <h1 class="mt-4 text-4xl sm:text-5xl font-semibold">We couldn’t find that page</h1>
+      <p class="mt-4 max-w-xl mx-auto text-white/80">The page may have moved or no longer exists. Let’s get you back on track.</p>
+      <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/" class="btn btn-gold">Back to home</a>
+        <a href="/services" class="btn btn-ghost">Browse services</a>
+        <a href={`tel:${tel}`} class="btn btn-ghost">Call {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>

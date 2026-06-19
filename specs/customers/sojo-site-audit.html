@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sojo Dental — Site Audit vs Best Practices</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--accent:#16a34a;--bad:#dc2626;--warn:#d97706;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:28px;margin:14px 0 0}
+  h2{font-size:19px;margin:28px 0 10px}
+  p{margin:9px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:#08080d;color:#4ade80;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .lead{color:var(--muted);font-size:16px;max-width:82ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin-bottom:18px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .p1{color:var(--bad);font-weight:700}.p2{color:var(--warn);font-weight:700}.p3{color:var(--muted);font-weight:700}
+  .ok{color:var(--accent);font-weight:700}
+  ul{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  .mini{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">AUDIT · CUSTOMER SITE</span>
+  <h1>Sojo Dental — Site Audit vs Best Practices</h1>
+  <p class="lead">Audited the converted <code>sites/sojo-dental</code> Astro build against our reference build (<b>Oak Ridge</b>) and the <code>docs/site-conversion-playbook.md</code>. Sojo was built <em>before</em> the playbook was captured, so the fundamentals are solid (real services, real bios, real Google reviews, schema, blog) but several best-practice features are missing — most notably <b>Areas We Serve / location pages</b>.</p>
+  <p class="mini">Practice: Sojo Dental · South Jordan, UT · 4.6★ / 143 reviews · 24 services · 2 providers · 7 blog posts · 2026-06-19</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Scorecard</h2>
+    <table>
+      <tr><th>Best practice</th><th>Oak Ridge (ref)</th><th>Sojo</th><th>Priority</th></tr>
+      <tr><td><b>Areas We Serve / location pages</b> (<code>dentist/[location].astro</code> + <code>areaServed</code> + Nav dropdown)</td><td>✓ 6 cities</td><td class="p1">✗ none</td><td class="p1">P1</td></tr>
+      <tr><td><b>Analytics + lead tracking</b> (<code>practice.json.analytics</code> — GTM/GA4 + form_submit / click_to_call events)</td><td>✓</td><td class="p1">✗ no config</td><td class="p1">P1</td></tr>
+      <tr><td><b>404 page</b> (<code>404.astro</code> — unknown URLs must 404, not soft-404 to home)</td><td>✓</td><td class="p1">✗ missing</td><td class="p1">P1</td></tr>
+      <tr><td><b>Homepage testimonials</b> (reusable <code>Testimonials.astro</code> w/ real Google reviews)</td><td>✓ component</td><td class="p2">partial (reviews page only)</td><td class="p2">P2</td></tr>
+      <tr><td><b>FAQ / AEO depth</b> (FAQPage schema across service + location pages)</td><td>✓ deep (76 refs)</td><td class="p2">thin (30 refs)</td><td class="p2">P2</td></tr>
+      <tr><td><b>Maps directions embed</b> (<code>mapsApiKey</code> → per-city driving-directions map)</td><td>✓</td><td class="p2">✗ (fallback embed only)</td><td class="p2">P2</td></tr>
+      <tr><td><b>Conversion widgets</b> (financing <code>cherryUrl</code>, booking <code>deardocSrc</code>, <code>payNowUrl</code>, <code>insuranceList</code>)</td><td>✓</td><td class="p3">✗ (needs client URLs)</td><td class="p3">P3</td></tr>
+      <tr><td>Core: real services / bios / NAP / Dentist + AggregateRating schema / llms.txt / blog</td><td>✓</td><td class="ok">✓ on par</td><td>—</td></tr>
+    </table>
+  </div>
+
+  <h2>P1 — Fix now (the gaps that cost rankings + leads)</h2>
+  <div class="doc">
+    <h3 style="margin-top:0">1 · Areas We Serve / location pages <span class="mini">(the one you flagged)</span></h3>
+    <p>Oak Ridge generates a dedicated, locally-written <code>/dentist/{city}</code> page for each nearby city via <code>dentist/[location].astro</code>, driven by a <code>areaServed</code> array in <code>practice.json</code>, surfaced in the Nav as an "Areas We Serve" dropdown. <b>Sojo has none of this</b> — so it can't rank for "dentist in {nearby city}" / "near me" and gives AI no service-area signal.</p>
+    <p><b>Fix:</b> add <code>areaServed</code> to Sojo's <code>practice.json</code> (South Jordan + West Jordan, Riverton, Herriman, Bluffdale, Draper, Sandy, Salt Lake County), port <code>dentist/[location].astro</code> + <code>Testimonials.astro</code> from Oak Ridge, and add the Nav dropdown. Each page gets a custom lede, the service grid, a directions map, testimonials, and LocalBusiness/areaServed schema.</p>
+
+    <h3>2 · Analytics + lead tracking</h3>
+    <p>Sojo's <code>practice.json</code> has <b>no <code>analytics</code> block</b> — so there's no GTM/GA4 wiring and, critically, no <code>form_submit</code> / <code>click_to_call</code> events. That's the exact "we can't see leads" gap from the platform side. Add the <code>analytics</code> config (GTM container or GA4 ID) and ensure the contact form + every <code>tel:</code> link fire events. (This pairs with the dashboard lead-tracking snippet — the site should fire the same <code>phone_click</code> / <code>form_submit</code> events GA4 ingests.)</p>
+
+    <h3>3 · 404 page</h3>
+    <p>No <code>404.astro</code> → unknown URLs soft-404 to the homepage, which Google dislikes and which breaks the "every old URL 301s, unknown → 404" rule. Port Oak Ridge's <code>404.astro</code> (one file).</p>
+  </div>
+
+  <h2>P2 — Strengthen</h2>
+  <div class="doc">
+    <ul>
+      <li><b>Homepage testimonials:</b> port the reusable <code>Testimonials.astro</code> (real 4.6★/143 Google reviews) so social proof is on the homepage and location pages, not just the reviews page.</li>
+      <li><b>FAQ / AEO depth:</b> Sojo has roughly half the FAQ coverage of Oak Ridge. Add 4–5 <b>FAQPage</b>-schema FAQs to each service page and the new location pages — this is the content AI assistants quote, and it ties straight into the dashboard's search-data content engine.</li>
+      <li><b>Maps directions:</b> add <code>mapsApiKey</code> so location pages show a real per-city driving-directions embed instead of the static fallback.</li>
+    </ul>
+  </div>
+
+  <h2>P3 — Needs client data</h2>
+  <div class="doc">
+    <ul>
+      <li>Financing widget (<code>cherryUrl</code>), online-booking/chat (<code>deardocSrc</code>), pay-online (<code>payNowUrl</code>), full <code>insuranceList</code> — Oak Ridge has these; Sojo doesn't. They lift conversion but need the client's actual URLs/accounts, so they're a follow-up once we collect them.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">What's already good (don't touch)</h2>
+    <ul>
+      <li>Real services (24), real provider bios as crawlable <code>/team/&lt;slug&gt;</code> pages (Dr. Call, Dr. Ogden), real NAP + geo.</li>
+      <li>Dentist + AggregateRating + Speakable schema, llms.txt / llms-full.txt, robots.</li>
+      <li>7 real blog posts (more than Oak Ridge's 4), South-Jordan-localized.</li>
+      <li>Real 4.6★ / 143 Google rating wired with the correct Place ID.</li>
+    </ul>
+    <p class="mini">Bottom line: Sojo's foundation is solid; it's missing the <b>local-reach layer</b> (Areas We Serve), the <b>measurement layer</b> (analytics/lead events), and the <b>404</b>. Those three are the P1 fixes — the first is the headline.</p>
+  </div>
+</div>
+</body>
+</html>
