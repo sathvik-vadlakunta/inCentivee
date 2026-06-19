@@ -504,6 +504,18 @@
     .score-ring .score-num { font-size: 1.5rem; }
   }
 </style>
+<!-- Analytics: paste your GA4 Measurement ID (Admin → Data Streams → G-XXXXXXX) into GA4_MEASUREMENT_ID to go live. Lead events queue to dataLayer regardless. -->
+<script>
+  window.GA4_MEASUREMENT_ID = ''; /* ← e.g. 'G-ABC123XYZ' */
+  if (window.GA4_MEASUREMENT_ID) {
+    var _s = document.createElement('script'); _s.async = true;
+    _s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA4_MEASUREMENT_ID;
+    document.head.appendChild(_s);
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){ dataLayer.push(arguments); }
+    window.gtag = gtag; gtag('js', new Date()); gtag('config', window.GA4_MEASUREMENT_ID);
+  }
+</script>
 </head>
 <body>
 <script>
@@ -906,13 +918,53 @@
 <!-- ═══ WHAT'S INCLUDED ═══ -->
 <section class="pricing-section" id="pricing">
   <div class="container" style="text-align: center;">
-    <div class="section-label fade-up">What's Included</div>
-    <div class="section-title fade-up">Everything most agencies charge $6,600+/mo for</div>
-    <p class="section-sub fade-up" style="margin: 0 auto;">One plan. Everything included. No long-term contracts. Custom to your market.</p>
+    <div class="section-label fade-up">Simple, transparent pricing</div>
+    <div class="section-title fade-up">Three ways to own your local &amp; AI search</div>
+    <p class="section-sub fade-up" style="margin: 0 auto;">Month-to-month, cancel anytime. We take <strong>one practice per area</strong> &mdash; so we never work with your competitors.</p>
+
+    <!-- Three-tier ladder -->
+    <div class="pricing-tiers fade-up" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;max-width:1000px;margin:2rem auto 1rem;text-align:left;">
+      <div style="flex:1;min-width:250px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:1.6rem;">
+        <div style="font-weight:700;font-size:1.15rem;">Optimize</div>
+        <div style="font-size:2.1rem;font-weight:800;margin:0.2rem 0;">$1,500<span style="font-size:0.9rem;font-weight:500;color:var(--text-muted);">/mo</span></div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.9rem;">Keep your site &mdash; we optimize it for Google + AI search.</div>
+        <ul style="list-style:none;padding:0;margin:0;font-size:0.88rem;line-height:1.85;">
+          <li>&#10003; Local SEO + AI-search foundation</li>
+          <li>&#10003; 100 citations + Google Business Profile</li>
+          <li>&#10003; 2 content pieces + 1 backlink / mo</li>
+          <li>&#10003; Review funnel + monthly report</li>
+        </ul>
+      </div>
+      <div style="flex:1;min-width:250px;background:rgba(74,222,128,0.08);border:2px solid var(--accent);border-radius:16px;padding:1.6rem;position:relative;">
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:#04210f;font-size:0.7rem;font-weight:800;letter-spacing:0.04em;padding:3px 14px;border-radius:999px;white-space:nowrap;">&#x1F525; MOST POPULAR</div>
+        <div style="font-weight:700;font-size:1.15rem;">Grow</div>
+        <div style="font-size:2.1rem;font-weight:800;margin:0.2rem 0;">$2,500<span style="font-size:0.9rem;font-weight:500;color:var(--text-muted);">/mo</span></div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.9rem;">We migrate + manage your site and build real authority.</div>
+        <ul style="list-style:none;padding:0;margin:0;font-size:0.88rem;line-height:1.85;">
+          <li>&#10003; <strong>Everything in Optimize, plus:</strong></li>
+          <li>&#10003; Managed, lightning-fast site (90+ PageSpeed)</li>
+          <li>&#10003; 4 content pieces + 2 backlinks / mo</li>
+          <li>&#10003; Location pages + keyword tracking</li>
+        </ul>
+      </div>
+      <div style="flex:1;min-width:250px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:1.6rem;">
+        <div style="font-weight:700;font-size:1.15rem;">Dominate</div>
+        <div style="font-size:2.1rem;font-weight:800;margin:0.2rem 0;">$3,500<span style="font-size:0.9rem;font-weight:500;color:var(--text-muted);">/mo</span></div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:0.9rem;">Full redesign + an aggressive authority + AI program.</div>
+        <ul style="list-style:none;padding:0;margin:0;font-size:0.88rem;line-height:1.85;">
+          <li>&#10003; <strong>Everything in Grow, plus:</strong></li>
+          <li>&#10003; Pro website redesign</li>
+          <li>&#10003; 6&ndash;8 content pieces + 4 backlinks / mo</li>
+          <li>&#10003; Advanced AI/entity building + CRO</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fade-up" style="font-size:0.82rem;color:var(--text-muted);max-width:640px;margin:0 auto 1.5rem;">One-time setup applies per tier (covers real onboarding costs &mdash; citations, migration, design). Every plan is backed by the 90-day guarantee below.</p>
+
     <div class="pricing-card fade-up">
-      <div class="pricing-plan">PracticeRank Growth</div>
-      <div class="pricing-amount" style="font-size: 2rem;">Custom to Your Market</div>
-      <div class="pricing-note">We only take 3 practices per market area to avoid conflicts of interest.<br>Month-to-month. Cancel anytime. No setup fees.</div>
+      <div class="pricing-plan">Everything in Grow &mdash; $2,500/mo</div>
+      <div class="pricing-amount" style="font-size: 1.5rem;">What agencies bill separately for this:</div>
+      <div class="pricing-note">Month-to-month. Cancel anytime.</div>
       <ul class="pricing-features">
         <li><span class="check">&#10003;</span> AI Search Visibility — get recommended by ChatGPT, Gemini, Grok, Claude, Perplexity <span class="val">$2,000/mo</span></li>
         <li><span class="check">&#10003;</span> Google Maps Dominance — posts, photos, Q&A, category optimization <span class="val">$500/mo</span></li>
@@ -1414,6 +1466,37 @@
     // Give it a moment to render, then trigger print (Save as PDF)
     setTimeout(() => { win.print(); }, 500);
   }
+</script>
+<!-- Lead tracking — fires phone_click / form_submit / appointment_request (Calendly/Book clicks) to GA4/dataLayer. Same stack we install for clients (we dogfood it). -->
+<script>
+  (function () {
+    if (window.__prLeadsInit) return; window.__prLeadsInit = true;
+    function fire(name, params) {
+      try {
+        if (typeof window.gtag === 'function') { window.gtag('event', name, params || {}); }
+        else { (window.dataLayer = window.dataLayer || []).push(Object.assign({ event: name }, params || {})); }
+      } catch (e) {}
+    }
+    var BOOK = /book|call|strategy|schedule|consult|get started|claim|calendly|audit/i;
+    document.addEventListener('click', function (ev) {
+      var t = ev.target; if (!t || !t.closest) return;
+      var tel = t.closest('a[href^="tel:"]');
+      if (tel) { fire('phone_click', { phone: (tel.getAttribute('href') || '').replace('tel:', '') }); return; }
+      var cta = t.closest('[data-pr-cta], a[href], button');
+      if (cta) {
+        var href = (cta.getAttribute('href') || '');
+        var label = (cta.getAttribute('aria-label') || cta.textContent || '').trim();
+        if (cta.hasAttribute('data-pr-cta') || /calendly\.com/.test(href) || BOOK.test(label)) {
+          fire('appointment_request', { label: label.slice(0, 60) });
+        }
+      }
+    }, true);
+    document.addEventListener('submit', function (ev) {
+      var f = ev.target || {};
+      var name = (f.getAttribute && (f.getAttribute('name') || f.getAttribute('id'))) || 'audit_form';
+      fire('form_submit', { form: String(name).slice(0, 60) });
+    }, true);
+  })();
 </script>
 </body>
 </html>
