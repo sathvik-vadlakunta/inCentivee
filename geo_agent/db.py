@@ -3367,6 +3367,26 @@ class CustomerDB:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    def get_query_aggregates(self, customer_id: str, start: str, end: str,
+                             min_impressions: int = 10, limit: int = 300) -> list[dict]:
+        """All queries in [start,end] aggregated (clicks/impressions/ctr/impression-
+        weighted position), ordered by impressions desc. Powers the search-data
+        content recommender."""
+        cur = self.conn.execute(
+            """SELECT query, SUM(clicks) AS clicks, SUM(impressions) AS impressions,
+                      CASE WHEN SUM(impressions) > 0
+                           THEN 1.0 * SUM(clicks) / SUM(impressions) ELSE 0 END AS ctr,
+                      CASE WHEN SUM(impressions) > 0
+                           THEN SUM(position * impressions) / SUM(impressions)
+                           ELSE AVG(position) END AS position
+               FROM gsc_query_daily
+               WHERE customer_id = ? AND date >= ? AND date <= ?
+               GROUP BY query HAVING SUM(impressions) >= ?
+               ORDER BY impressions DESC LIMIT ?""",
+            (customer_id, start, end, min_impressions, limit),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
     def get_query_movers(self, customer_id: str, cur_start: str, cur_end: str,
                          prev_start: str, prev_end: str, limit: int = 5) -> dict:
         """Compare avg position this period vs prior; return biggest improvers/decliners."""

@@ -6894,6 +6894,30 @@ def api_content_generate():
         db.close()
 
 
+@app.route("/api/content/from-search", methods=["POST"])
+@login_required
+def api_content_from_search():
+    """#5 — recommend this month's content from the customer's GSC query data
+    (striking-distance, low-CTR, question, and untapped opportunities)."""
+    data = request.get_json() or {}
+    customer_id = data.get("customer_id", "")
+    if not customer_id:
+        return jsonify({"error": "customer_id required"}), 400
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            return jsonify({"error": "Customer not found"}), 404
+        from geo_agent.keyword_content import recommend_from_search_data
+        created = recommend_from_search_data(db, customer_id, max_recs=8)
+        if not created:
+            return jsonify({"ok": True, "generated": 0,
+                            "message": "No new search-data opportunities found yet — needs Search Console query data."})
+        audit_log("content_from_search", customer_id=customer_id, details=f"{len(created)} recs from GSC")
+        return jsonify({"ok": True, "generated": len(created)})
+    finally:
+        db.close()
+
+
 # --- Public Content API (called by client-side blog template) ---
 
 @app.route("/api/content/<customer_id>/by-slug/<slug>")

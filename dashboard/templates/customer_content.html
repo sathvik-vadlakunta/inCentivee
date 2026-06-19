@@ -27,6 +27,7 @@
         <button class="btn btn-outline btn-sm" onclick="markAllPublished('{{ customer.id }}')" id="mark-all-published-btn">Mark All Published</button>
         {% endif %}
         <button class="btn btn-outline btn-sm" onclick="syncPublished('{{ customer.id }}')" id="sync-pub-btn" title="Detect which recommendations are already live on the site and auto-mark them Published">✓ Check Live &amp; Publish</button>
+        <button class="btn btn-outline btn-sm" onclick="contentFromSearch('{{ customer.id }}')" id="from-search-btn" title="Recommend this month's content from your Google Search Console queries — striking-distance, low-CTR, questions, and untapped demand">📊 From Search Data</button>
         <button class="btn btn-primary btn-sm" onclick="generateContent('{{ customer.id }}')" id="gen-btn">Generate New</button>
     </div>
 </div>
@@ -248,6 +249,19 @@ function renderPreviews() {
 document.addEventListener('DOMContentLoaded', renderPreviews);
 
 // --- Actions ---
+function contentFromSearch(customerId) {
+    const btn = document.getElementById('from-search-btn');
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Analyzing search data...';
+    fetch('/api/content/from-search', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({customer_id: customerId})
+    }).then(r => r.json()).then(data => {
+        if (data.ok && data.generated) { btn.textContent = '+' + data.generated + ' from search!'; setTimeout(() => location.reload(), 1200); }
+        else if (data.ok) { btn.textContent = orig; btn.disabled = false; alert(data.message || 'No new opportunities yet.'); }
+        else { btn.textContent = orig; btn.disabled = false; alert(data.error || 'Failed'); }
+    }).catch(() => { btn.textContent = orig; btn.disabled = false; alert('Network error'); });
+}
+
 function generateContent(customerId) {
     const btn = document.getElementById('gen-btn');
     btn.disabled = true;
