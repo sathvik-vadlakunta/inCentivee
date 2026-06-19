@@ -69,11 +69,12 @@ EXPENSE_ITEMS: list[dict] = [
      "billing": "free", "monthly": 0.0, "charged": "Free (keyless)", "note": "No account needed."},
 
     # ---- Reviews & funnel ----
-    {"category": "Reviews & Funnel", "name": "Grade.us (review funnel)", "vendor": "Grade.us",
-     "purpose": "White-label review funnel — route happy clients to Google, intercept negatives privately",
-     "billing": "per_customer", "monthly": 40.0, "charged": "Monthly subscription, $40 per location",
-     "note": "The paid review-funnel tool. Until it's switched on per client we run the funnel free off "
-             "the Google Business Profile 'get more reviews' short link (negative interception is the upgrade)."},
+    {"category": "Reviews & Funnel", "name": "In-house review funnel", "vendor": "PracticeRank (Cloudflare/Astro)",
+     "purpose": "Self-hosted star-gate page + free Google review link + QR / email templates",
+     "billing": "free", "monthly": 0.0, "charged": "Free — runs on our existing infra",
+     "note": "Built on the Cloudflare Workers / Astro stack we already use — $0 marginal cost. "
+             "Grade.us (~$40/location) is available as an OPTIONAL billable upsell for clients who want "
+             "multi-platform review management + a reporting dashboard."},
 
     # ---- Publishing & comms ----
     {"category": "Publishing & Comms", "name": "Resend (email)", "vendor": "Resend",

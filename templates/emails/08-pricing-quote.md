@@ -28,17 +28,17 @@ Best for: {industry_best_for_starter}.
 
 **Monthly deliverables:**
 
-- 2 new SEO-optimized blog posts per month
-- **FAQ schema + content freshness updates** — we keep your key pages current so Google and AI keep treating them as fresh
+- **2 strategic content pieces per month** — written from your *real* Google search data to capture demand you're already getting (not generic blog filler)
+- **FAQ + content freshness updates** — we keep your key pages current so Google and AI keep treating them as fresh
 - **1 local landing page** for your main service area
-- **1 high-quality editorial backlink per month** (real, relevant sites — not spam)
+- **1 high-authority backlink per month** (real, relevant sites — not spam)
 - **Review funnel** — a branded review link we set up for you to text/email happy clients (more on this below)
 - Monthly llms.txt and schema markup updates
 - AI visibility monitoring across ChatGPT, Claude, Perplexity & Google AI
 - Domain Authority tracking vs. your top competitors
 - Monthly performance report
 
-**Add-ons:** $150/extra blog post · $350/extra backlink · $250/extra location page
+**Add-ons:** $150/extra content piece · $350/extra backlink · $250/extra location page
 
 ---
 
@@ -58,18 +58,18 @@ Best for: {industry_best_for_growth}.
 
 **Monthly deliverables:**
 
-- 4 new SEO-optimized blog posts per month
+- **4 strategic content pieces per month** — service/treatment pages and AI-answer content, each targeting a real search your customers make (driven by your search data, not guesswork)
 - **New city / service-area landing pages** — we expand your reach into nearby towns you serve, one targeted page at a time
 - **Service-area expansion** — as we find demand, we add nearby cities to your Google profile and build matching pages so you show up in more "near me / in {city}" searches
 - **Monthly FAQ updates & content refreshes** — we keep service and location pages fresh (new questions, updated info) so they don't go stale in Google or AI answers
-- **2 editorial backlinks per month** (DR30+ real sites) + **1 brand listicle placement per quarter** to influence AI recommendations
+- **2 high-authority backlinks per month** on real, relevant sites + **1 AI-recommendation placement per quarter** (a brand feature on the kind of sites AI assistants cite)
 - Keyword rank tracking with weekly position reports
 - Local citation management + ongoing NAP consistency
 - **Review funnel — fully set up and automated** (branded link, routes happy clients to Google, intercepts unhappy ones privately — details below)
 - Competitor tracking with quarterly gap analysis
 - Monthly content strategy check-in + priority (same-day) support
 
-**Add-ons:** $125/extra blog post · $350/extra backlink · $750/brand listicle
+**Add-ons:** $125/extra content piece · $350/extra backlink · $750/AI-recommendation placement
 
 ---
 
@@ -91,7 +91,7 @@ Best for: {industry_best_for_premium}.
 - 6–8 new content pieces per month
 - **Aggressive service-area expansion** — new city / neighborhood landing pages every month to capture every market you serve
 - **Ongoing FAQ + content freshness across the whole site** — continuous updates so every page stays current for Google and AI search
-- **4 editorial backlinks per month** (DR30–40) + **1 brand listicle placement per month** for maximum AI visibility
+- **4 high-authority backlinks per month** + **1 AI-recommendation placement per month** for maximum AI visibility
 - **Review funnel — fully managed + automated** (multi-platform: Google, plus industry sites where relevant)
 - Advanced AI optimization and entity/knowledge-panel building
 - Custom schema markup ({industry_schema_types})
@@ -100,7 +100,7 @@ Best for: {industry_best_for_premium}.
 - Quarterly full-site audit with design refresh recommendations
 - Custom reporting dashboard
 
-**Add-ons:** $100/extra blog post · $600–$850/authority link (DR40–50) · $1,950/3-pack brand listicles
+**Add-ons:** $100/extra content piece · $600–$850/premium authority placement · $1,950/3-pack AI-recommendation placements
 
 ---
 
@@ -113,11 +113,11 @@ Best for: {industry_best_for_premium}.
 | **Your website** | Stays as-is | Migrated + cleaned up | Redesigned from scratch |
 | **Design work** | None | UI cleanup & fixes | Full redesign by pro designer |
 | **Hosting** | You manage | We manage | We manage |
-| **Blog posts** | 2/mo | 4/mo | 6–8/mo |
+| **Content pieces** | 2/mo | 4/mo | 6–8/mo |
 | **Location / service-area pages** | 1 | New cities ongoing | New cities monthly |
 | **FAQ & freshness updates** | Included | Monthly | Continuous (whole site) |
-| **Backlinks** | 1/mo (DR20–30) | 2/mo (DR30) | 4/mo (DR30–40) |
-| **Brand listicles** | — | 1/quarter | 1/month |
+| **Authority backlinks** | 1/mo | 2/mo | 4/mo |
+| **AI-recommendation placements** | — | 1/quarter | 1/month |
 | **Citations** | 100 + management | + ongoing | + ongoing |
 | **Review funnel** | Set up (Google) | Managed + automated | Fully managed (multi-platform) |
 | **Keyword tracking** | — | Weekly reports | Weekly reports |
@@ -131,7 +131,7 @@ Best for: {industry_best_for_premium}.
 
 **Grow** keeps your current website design — we migrate it off {platform}, clean up the UI (fix mobile issues, spacing, typography), and optimize performance. Your site looks essentially the same, just faster and on a better platform, with a steady cadence of content and backlinks building your authority.
 
-**Dominate** starts fresh. A professional designer creates an entirely new website from the ground up, and we run an aggressive content + authority program (4 links/mo + a monthly brand listicle) to push you to the top of both traditional and AI search.
+**Dominate** starts fresh. A professional designer creates an entirely new website from the ground up, and we run an aggressive content + authority program (4 backlinks/mo + a monthly AI-recommendation placement) to push you to the top of both traditional and AI search.
 
 ---
 
@@ -144,6 +144,12 @@ Reviews are one of the biggest local-ranking factors, so we set up a simple syst
 3. **The funnel routes them.** Happy clients (4–5★) go straight to your Google review page. Anyone unhappy is routed to a private feedback form first — so issues reach *you*, not your public rating.
 
 That last step (**negative interception**) protects your star rating while still getting you the volume and recency Google rewards. The one thing we need from you: **actually send the link to recent happy clients** — that's where the reviews come from.
+
+---
+
+### Why this compounds (and why it's different from ads)
+
+This isn't rented attention like Google Ads — the moment you stop paying for ads, you disappear. With us, **everything we build is an asset you keep and that keeps working**: every location page, every piece of content, every backlink and citation, and your growing review base all stack on top of each other. Month 6 is bigger than month 3, and month 12 is bigger than month 6 — the pages keep ranking, the authority keeps compounding, and the leads keep coming. The longer we work together, the wider the gap between you and your competitors gets. And it's all yours.
 
 ---
 
