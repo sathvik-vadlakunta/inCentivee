@@ -35,3 +35,22 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
+
+/* Layout + button utilities used by the location pages (/dentist/*) and
+   Testimonials — ported design-system helpers, mapped to SoJo's brand vars. */
+.container-px { margin-inline: auto; max-width: 80rem; padding-inline: 1.25rem; }
+@media (min-width: 1024px) { .container-px { padding-inline: 2rem; } }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; font-weight: 700; border-radius: 9999px; padding: .85rem 1.6rem; line-height: 1; transition: all .15s ease; }
+.btn:hover { transform: translateY(-2px); }
+.btn-gold { background: var(--color-accent); color: #fff; box-shadow: 0 10px 24px -10px rgba(60,128,67,.6); }
+.btn-gold:hover { background: var(--color-secondary); }
+.btn-dark { background: var(--color-secondary); color: #fff; }
+.btn-dark:hover { background: var(--color-dark); }
+.btn-ghost { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.45); }
+.btn-ghost:hover { background: rgba(255,255,255,.12); }
+.btn-outline { background: #fff; color: var(--color-secondary); border: 1.5px solid color-mix(in srgb, var(--color-primary) 30%, #fff); }
+.btn-outline:hover { border-color: var(--color-primary); }
+.eyebrow { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-body); font-weight: 600; font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; color: var(--color-accent); }
+.eyebrow::before { content: ''; width: 1.75rem; height: 2px; background: var(--color-accent); border-radius: 2px; }
+.card-soft { background: #fff; border: 1px solid rgba(27,28,29,.08); border-radius: 1rem; box-shadow: 0 1px 2px rgba(27,28,29,.04), 0 12px 30px -18px rgba(27,28,29,.18); transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+.card-soft:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(27,28,29,.04), 0 24px 48px -20px rgba(27,28,29,.3); }
