@@ -1222,12 +1222,28 @@ def add_customer():
             # Auto-populate business services + service-area cities in the background
             try:
                 def _populate_local(cid):
+                    """On-add bootstrap so a new company is set up immediately:
+                    services + service-area cities, a Domain Authority baseline
+                    (so week/month deltas have a start point), and a first
+                    local-relevancy pass. Search-data content waits for the
+                    bi-weekly cadence (no GSC data on day one)."""
                     bdb = get_db()
                     try:
                         from geo_agent.nearby_cities import ensure_service_areas
                         from geo_agent.service_scraper import ensure_services
                         ensure_services(bdb, cid)
                         ensure_service_areas(bdb, cid)
+                        try:
+                            from geo_agent.moz_client import track_competitor_da, track_domain_authority
+                            track_domain_authority(bdb, cid)
+                            track_competitor_da(bdb, cid)
+                        except Exception as ex:  # noqa: BLE001
+                            logger.info(f"DA baseline skipped for {cid}: {ex}")
+                        try:
+                            from geo_agent.local_relevancy import run_local_relevancy
+                            run_local_relevancy(bdb, cid)
+                        except Exception as ex:  # noqa: BLE001
+                            logger.info(f"first local-relevancy skipped for {cid}: {ex}")
                     except Exception as ex:  # noqa: BLE001
                         logger.warning(f"populate local data failed for {cid}: {ex}")
                     finally:

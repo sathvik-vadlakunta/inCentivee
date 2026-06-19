@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Bi-weekly content cadence — turn each active customer's Google Search Console
+queries into fresh content recommendations (the #5 search-data engine).
+
+Runs every 2 weeks so each client gets a steady pipeline of intent-driven content
+ideas (striking-distance, low-CTR, question, and untapped queries) rather than
+relying on someone clicking "From Search Data" by hand. Idempotent: skips queries
+that already have a pending recommendation.
+
+    python3 scripts/biweekly_content.py --all
+    python3 scripts/biweekly_content.py --customer paradigm-experts
+    python3 scripts/biweekly_content.py --all --dry-run
+
+Cron (every other Monday 07:00):
+    0 7 * * 1 [ $(( ($(date +\%s) / 604800) \% 2 )) -eq 0 ] && \
+      docker exec practicerank-dashboard python3 /app/scripts/biweekly_content.py --all \
+      >> /app/data/logs/biweekly-content.log 2>&1
+"""
+
+import argparse
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from datetime import datetime  # noqa: E402
+
+from geo_agent.db import CustomerDB  # noqa: E402
+from geo_agent.keyword_content import recommend_from_search_data  # noqa: E402
+
+DB_PATH = os.environ.get("DB_PATH", "/app/data/practicerank.db")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--customer", help="single customer id")
+    ap.add_argument("--all", action="store_true", help="all active/onboarding customers")
+    ap.add_argument("--max", type=int, default=8, help="max recs per customer")
+    ap.add_argument("--dry-run", action="store_true", help="don't persist (counts only)")
+    args = ap.parse_args()
+
+    db = CustomerDB(DB_PATH)
+    if args.customer:
+        c = db.get_customer(args.customer)
+        targets = [c] if c else []
+    elif args.all:
+        targets = [c for c in db.list_customers() if c.get("status") in ("onboarding", "active")]
+    else:
+        ap.error("pass --customer <id> or --all")
+        return
+
+    print(f"[{datetime.now().isoformat()}] biweekly content — {len(targets)} customer(s)")
+    total = 0
+    for i, c in enumerate(targets):
+        if not c:
+            continue
+        cid = c["id"]
+        try:
+            if args.dry_run:
+                # Classify without persisting: reuse the recommender on a throwaway
+                # in-memory view is overkill — just report query volume.
+                from datetime import timedelta
+                end = datetime.utcnow().strftime("%Y-%m-%d")
+                start = (datetime.utcnow() - timedelta(days=28)).strftime("%Y-%m-%d")
+                q = db.get_query_aggregates(cid, start, end, min_impressions=10, limit=300)
+                print(f"  [{i+1}/{len(targets)}] {cid}: {len(q)} candidate queries (dry-run)")
+                continue
+            created = recommend_from_search_data(db, cid, max_recs=args.max)
+            total += len(created)
+            print(f"  [{i+1}/{len(targets)}] {cid}: +{len(created)} content rec(s)")
+        except Exception as e:  # noqa: BLE001
+            print(f"  [{i+1}/{len(targets)}] {cid}: ERROR {e}")
+
+    db.close()
+    print(f"[{datetime.now().isoformat()}] biweekly content complete — {total} recs created")
+
+
+if __name__ == "__main__":
+    main()

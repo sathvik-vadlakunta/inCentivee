@@ -28,6 +28,7 @@ from geo_agent.brightlocal_client import track_citations  # noqa: E402
 from geo_agent.db import CustomerDB  # noqa: E402
 from geo_agent.ga4_client import track_conversions  # noqa: E402
 from geo_agent.google_places import refresh_competitor_snapshots  # noqa: E402
+from geo_agent.moz_client import track_competitor_da, track_domain_authority  # noqa: E402
 from geo_agent.gsc_client import track_gsc_queries  # noqa: E402
 
 DB_PATH = os.environ.get("DB_PATH", "/app/data/practicerank.db")
@@ -57,6 +58,10 @@ def main():
         _safe("R2 competitors", refresh_competitor_snapshots, db, cid)
         _safe("R3 ga4_conversions", track_conversions, db, cid)
         _safe("R4 citations", track_citations, db, cid)
+        # Weekly DA refresh so the report's week-over-week DA deltas populate
+        # (was monthly-only via the local-relevancy run).
+        _safe("R5 domain_authority", track_domain_authority, db, cid)
+        _safe("R5 competitor_da", track_competitor_da, db, cid)
         try:
             res = wr.generate_and_store(db, cid)
             print(f"    R0 report: score {res['score']} (week ending {res['period_end']})")

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PracticeRank — Automation Cadence</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--accent:#16a34a;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:28px;margin:14px 0 0}
+  h2{font-size:19px;margin:28px 0 10px}
+  p{margin:9px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px/1.4 ui-monospace,Menlo,monospace}
+  pre{background:#0f1117;color:#e6e8ec;border-radius:10px;padding:14px 16px;overflow:auto;font:12px/1.55 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:#08080d;color:#4ade80;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .lead{color:var(--muted);font-size:16px;max-width:80ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin-bottom:18px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  .new{display:inline-block;background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;margin-left:4px}
+  .mini{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · PLATFORM</span>
+  <h1>Automation Cadence</h1>
+  <p class="lead">What runs automatically, and when — so the platform produces results without anyone clicking buttons. Every manual "Generate" action has a scheduled equivalent. The principle: <b>bootstrap a new company immediately on add, then keep each signal fresh on the cheapest cadence that still feels live.</b></p>
+  <p class="mini">Owner: Kody · runs inside the dashboard container on the droplet · 2026-06-19</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">The cadence at a glance</h2>
+    <table>
+      <tr><th>When</th><th>Action</th><th>Why this cadence</th><th>Runner</th></tr>
+      <tr><td><b>On add</b><span class="new">updated</span></td><td>Services + service-area cities · DA baseline · first local-relevancy pass · first AI-mention check</td><td>Get them set up the moment they're created — gives the score/DA a day-0 starting point</td><td><code>add_customer</code> background thread</td></tr>
+      <tr><td><b>Daily</b> 06:00</td><td>GSC keyword pull + site audit</td><td>Search data changes daily; cheap</td><td><code>daily_gsc_pull.py</code></td></tr>
+      <tr><td><b>Daily</b></td><td>PracticeRank Score + status reconciliation</td><td>Keep the headline metric + board current</td><td><code>daily_score.py</code>, <code>daily_status_check.py</code></td></tr>
+      <tr><td><b>3×/week</b> M/W/F 10:00</td><td>AI-mention checks (ChatGPT/Claude/Gemini/Perplexity/Grok)</td><td>AI answers shift fast; 3× balances signal vs token cost</td><td><code>scheduled_ai_check.py</code></td></tr>
+      <tr><td><b>Weekly</b> Mon 08:00</td><td>Weekly report + GSC queries + competitors + <b>GA4 conversions (leads)</b> + citations + <b>Domain Authority + competitor DA</b><span class="new">DA added</span></td><td>DA moved here so the report's week-over-week DA deltas actually populate (was monthly-only)</td><td><code>weekly_reports.py</code></td></tr>
+      <tr><td><b>Bi-weekly</b> Mon 07:00</td><td><b>Search-data content recommendations (#5)</b><span class="new">new</span></td><td>A steady content pipeline every 2 weeks without manual clicks — matches the "2–4 pieces/mo" tiers</td><td><code>biweekly_content.py</code></td></tr>
+      <tr><td><b>Monthly</b> 15th 06:00</td><td>Full local-relevancy engine (citations/NAP, directory breadth, service-area expansion, FAQ/freshness) + KPI snapshot</td><td>Heavier, slower-moving local work</td><td><code>monthly_local_relevancy.py</code>, <code>track-kpis.sh</code></td></tr>
+    </table>
+    <p class="mini">Content generation (the AI "Generate New" crawl) stays on-demand + monthly via the local-relevancy run; the bi-weekly search-data engine is the steady driver because it's grounded in real demand, not a crawl.</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">What changed in this pass</h2>
+    <ul>
+      <li><b>DA now refreshes weekly</b> (added to <code>weekly_reports.py</code>) instead of only monthly — so the report's "▲ +N vs last week" DA pills and the over-time chart fill in properly.</li>
+      <li><b>Search-data content (#5) is now scheduled bi-weekly</b> (<code>biweekly_content.py</code>) — previously it only ran when someone clicked "From Search Data".</li>
+      <li><b>On-add bootstrap is heavier</b> — beyond services + cities, it now sets a DA baseline and runs a first local-relevancy pass, so a new company is "going" immediately (the user's ask).</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Crontab (droplet)</h2>
+    <p>Add to the <code>practicerank</code> user crontab (<code>crontab -e</code>). The dashboard container has the code + env; everything execs into it.</p>
+<pre># Daily
+0 6 * * *      docker exec practicerank-dashboard python3 /app/scripts/daily_gsc_pull.py     >> /app/data/logs/gsc.log 2>&1
+30 6 * * *     docker exec practicerank-dashboard python3 /app/scripts/daily_score.py         >> /app/data/logs/score.log 2>&1
+
+# AI mentions — Mon/Wed/Fri
+0 10 * * 1,3,5 docker exec practicerank-dashboard python3 /app/scripts/scheduled_ai_check.py --all >> /app/data/logs/ai-check.log 2>&1
+
+# Weekly — Monday (report + conversions + DA)
+0 8 * * 1      docker exec practicerank-dashboard python3 /app/scripts/weekly_reports.py      >> /app/data/logs/weekly.log 2>&1
+
+# Bi-weekly content — every other Monday 07:00 (even ISO weeks)
+0 7 * * 1      [ $(( ($(date +\%s) / 604800) \% 2 )) -eq 0 ] && docker exec practicerank-dashboard python3 /app/scripts/biweekly_content.py --all >> /app/data/logs/biweekly-content.log 2>&1
+
+# Monthly — 15th (local relevancy + KPIs)
+0 6 15 * *     docker exec practicerank-dashboard python3 /app/scripts/monthly_local_relevancy.py --all >> /app/data/logs/local-relevancy.log 2>&1
+0 7 15 * *     /home/practicerank/dental-marketing/scripts/track-kpis.sh</pre>
+    <p class="mini">Verify which of these are already installed with <code>crontab -l</code> before adding — daily GSC, 3×/week AI, and weekly reports likely already exist; the new lines are <b>bi-weekly content</b> and the DA addition (which rides inside the existing weekly job, no new cron needed).</p>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">Manual override still available</h2>
+    <p>Every scheduled action keeps its dashboard button for on-demand runs (new customer you want to push, a client asking for fresh ideas, debugging): "Generate New" / "From Search Data" on Content, "Refresh" on Domain Authority, the local-relevancy run, and the AI-mention check. Automation is the floor, not a cage.</p>
+  </div>
+</div>
+</body>
+</html>
