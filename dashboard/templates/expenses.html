@@ -49,7 +49,7 @@
     <div class="s">Flat monthly + amortized infra</div>
   </div>
   <div class="exp-card">
-    <div class="k">Usage (AI/LLM)</div>
+    <div class="k">Per-customer (AI + tools)</div>
     <div class="v">${{ '%.0f'|format(data.totals.usage) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
     <div class="s">${{ '%.2f'|format(data.totals.per_customer_usage) }}/customer × {{ data.active_customers }}</div>
   </div>
@@ -79,7 +79,7 @@
 </div>
 
 {% set bill_label = {'fixed':'Subscription','per_customer':'Usage','annual':'Annual','free':'Free','variable':'Per order','onetime':'One-time'} %}
-{% set cat_order = ['AI / LLM APIs','SEO & Data APIs','Publishing & Comms','Infrastructure','Link Building (variable COGS)','Setup / one-time (per customer)'] %}
+{% set cat_order = ['AI / LLM APIs','SEO & Data APIs','Reviews & Funnel','Publishing & Comms','Infrastructure','Link Building (variable COGS)','Setup / one-time (per customer)'] %}
 {% for cat in cat_order %}
   {% if cat in data.groups %}
   <div class="exp-group">

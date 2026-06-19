@@ -68,6 +68,13 @@ EXPENSE_ITEMS: list[dict] = [
      "purpose": "Geocoding + nearby-city discovery for service areas",
      "billing": "free", "monthly": 0.0, "charged": "Free (keyless)", "note": "No account needed."},
 
+    # ---- Reviews & funnel ----
+    {"category": "Reviews & Funnel", "name": "Grade.us (review funnel)", "vendor": "Grade.us",
+     "purpose": "White-label review funnel — route happy clients to Google, intercept negatives privately",
+     "billing": "per_customer", "monthly": 40.0, "charged": "Monthly subscription, $40 per location",
+     "note": "The paid review-funnel tool. Until it's switched on per client we run the funnel free off "
+             "the Google Business Profile 'get more reviews' short link (negative interception is the upgrade)."},
+
     # ---- Publishing & comms ----
     {"category": "Publishing & Comms", "name": "Resend (email)", "vendor": "Resend",
      "purpose": "Transactional email — reports, onboarding, alerts",
