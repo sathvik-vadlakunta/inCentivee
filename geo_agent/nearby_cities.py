@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import time
 
 import httpx
 
@@ -30,6 +31,7 @@ DEFAULT_LIMIT = 8
 _NOMINATIM = "https://nominatim.openstreetmap.org/search"
 _OVERPASS = "https://overpass-api.de/api/interpreter"
 _UA = "PracticeRank/1.0 (local-relevancy)"
+_RETRIES = 3  # transient-throttle retries for the free Nominatim/Overpass endpoints
 
 
 def haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -86,14 +88,21 @@ def geocode_city(city: str, state: str = "", *, client: httpx.Client | None = No
     owns = client is None
     client = client or httpx.Client(timeout=15.0, headers={"User-Agent": _UA})
     try:
-        resp = client.get(_NOMINATIM, params={"q": q, "format": "json", "limit": 1})
-        resp.raise_for_status()
-        data = resp.json()
-        if not data:
-            return None
-        return float(data[0]["lat"]), float(data[0]["lon"])
-    except Exception as exc:  # noqa: BLE001
-        logger.info("geocode failed for %r: %s", q, exc)
+        # Retry transient throttles (429/timeout) — the free Nominatim endpoint
+        # rate-limits bulk runs, which is what blanked customers before. A valid
+        # empty result (unknown city) is NOT retried.
+        for attempt in range(_RETRIES):
+            try:
+                resp = client.get(_NOMINATIM, params={"q": q, "format": "json", "limit": 1})
+                resp.raise_for_status()
+                data = resp.json()
+                if not data:
+                    return None
+                return float(data[0]["lat"]), float(data[0]["lon"])
+            except Exception as exc:  # noqa: BLE001
+                logger.info("geocode attempt %d failed for %r: %s", attempt + 1, q, exc)
+                if attempt < _RETRIES - 1:
+                    time.sleep(1.5 * (attempt + 1))
         return None
     finally:
         if owns:
@@ -112,22 +121,28 @@ def fetch_nearby_candidates(
     owns = client is None
     client = client or httpx.Client(timeout=30.0, headers={"User-Agent": _UA})
     try:
-        resp = client.post(_OVERPASS, data={"data": query})
-        resp.raise_for_status()
-        out = []
-        for el in resp.json().get("elements", []):
-            tags = el.get("tags", {})
-            name = tags.get("name")
-            if not name:
-                continue
+        # Retry transient Overpass throttles/timeouts (the public endpoint is
+        # flaky under bulk load — the cause of blank service areas before).
+        for attempt in range(_RETRIES):
             try:
-                pop = int(str(tags.get("population", "0")).replace(",", "") or 0)
-            except ValueError:
-                pop = 0
-            out.append({"name": name, "lat": el.get("lat"), "lon": el.get("lon"), "population": pop})
-        return out
-    except Exception as exc:  # noqa: BLE001
-        logger.info("Overpass lookup failed: %s", exc)
+                resp = client.post(_OVERPASS, data={"data": query})
+                resp.raise_for_status()
+                out = []
+                for el in resp.json().get("elements", []):
+                    tags = el.get("tags", {})
+                    name = tags.get("name")
+                    if not name:
+                        continue
+                    try:
+                        pop = int(str(tags.get("population", "0")).replace(",", "") or 0)
+                    except ValueError:
+                        pop = 0
+                    out.append({"name": name, "lat": el.get("lat"), "lon": el.get("lon"), "population": pop})
+                return out
+            except Exception as exc:  # noqa: BLE001
+                logger.info("Overpass attempt %d failed: %s", attempt + 1, exc)
+                if attempt < _RETRIES - 1:
+                    time.sleep(2.0 * (attempt + 1))
         return []
     finally:
         if owns:
