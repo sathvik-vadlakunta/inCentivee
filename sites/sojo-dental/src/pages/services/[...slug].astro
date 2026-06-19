@@ -27,16 +27,19 @@ const relatedServices = allServices
 const phoneDigits = practice.phone.replace(/[^+\d]/g, '')
 ---
 
-<Base title={service.data.title} description={service.data.description}>
+<Base
+  title={`${service.data.title} in ${practice.address.city}, ${practice.address.state}`}
+  description={`${service.data.description} Serving ${practice.address.city}, ${practice.address.state} and nearby cities — call ${practice.phone} to schedule.`}
+>
 
   {/* ── Hero Banner ── */}
   <section class="relative overflow-hidden">
     <div class="absolute inset-0 bg-gradient-to-br from-secondary via-primary/80 to-primary"></div>
     <div class="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10"></div>
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-      <p class="text-sm font-medium text-white/60 uppercase tracking-widest mb-2">{service.data.category}</p>
+      <p class="text-sm font-medium text-white/60 uppercase tracking-widest mb-2">{service.data.category} · {practice.address.city}, {practice.address.state}</p>
       <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-white leading-tight max-w-3xl">
-        {service.data.title}
+        {service.data.title} in {practice.address.city}
       </h1>
       <p class="mt-4 text-lg text-white/85 max-w-2xl">{service.data.description}</p>
       <div class="mt-6 flex flex-col sm:flex-row gap-3">
