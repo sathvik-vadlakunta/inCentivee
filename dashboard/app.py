@@ -5438,6 +5438,28 @@ def api_board_status():
 
 # --- Audit Logs ---
 
+@app.route("/expenses")
+@login_required
+def expenses():
+    """Operating-cost breakdown — every AI/LLM API + service the platform pays
+    for, monthly cost, and when it's charged. Usage lines scale by active
+    customers; see dashboard/expenses.py for the source line items."""
+    from geo_agent.expenses import compute_expenses
+    db = get_db()
+    try:
+        customers = db.list_customers()
+        active = sum(1 for c in customers if c.get("status") == "active")
+        non_archived = sum(1 for c in customers if c.get("status") != "archived")
+    finally:
+        db.close()
+    # Bill against active customers, but never 0 (so per-customer rates show).
+    data = compute_expenses(active or non_archived or 1)
+    return render_template(
+        "expenses.html",
+        data=data, active_customers=active, non_archived=non_archived,
+    )
+
+
 @app.route("/audit-logs")
 @login_required
 def audit_logs():
