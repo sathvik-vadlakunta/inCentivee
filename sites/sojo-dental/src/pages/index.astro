@@ -27,7 +27,11 @@ const reviews = [
 ]
 ---
 
-<Base title={practice.name} description={practice.tagline} hideFooter>
+<Base
+  title="Dentist in South Jordan, UT"
+  description="SoJo Dental — trusted family, cosmetic & implant dentistry in South Jordan, UT. Rated 4.6★ by 143+ patients. New patients welcome — call (801) 260-9150 to book."
+  hideFooter
+>
   {/* ═══════════════════ HERO — Split: dark left 60% with diagonal, image right 40% ═══════════════════ */}
   <section class="hero-banner relative min-h-[650px] md:min-h-[750px] overflow-hidden bg-dark">
     {/* Image — right side */}
@@ -47,20 +51,28 @@ const reviews = [
 
     <div class="relative z-10 w-full max-w-[1500px] mx-auto px-6 sm:px-10 lg:px-16 flex items-center min-h-[650px] md:min-h-[750px]">
       <div class="max-w-2xl py-16 md:max-w-[55%] lg:max-w-[50%]">
-        <p class="text-primary font-heading text-base sm:text-lg mb-4">Dentistry Made Easy</p>
+        <p class="text-primary font-heading text-base sm:text-lg mb-4">South Jordan, Utah Dentist</p>
         <h1 class="hero-h1 font-heading text-white leading-[1.1]">
-          Quality Care For Every Smile
+          Your Trusted Dentist in South Jordan
         </h1>
         <p class="mt-8 text-white/85 leading-relaxed hero-body">
-          Welcome to our dental family! We are excited to have you here and look forward to helping
-          you achieve a healthy, confident smile. Our practice is built on trust, comfort and quality care.
-          From your first visit to your ongoing appointments, our South Jordan dentists and team are dedicated to
-          creating a positive experience tailored to your needs. With a friendly team,
-          modern technology and a passion for patient satisfaction, we make dental
-          visits something to smile about. Whether you are new to the area or simply
-          looking for a fresh start, we are honored to be your choice for dental care in
-          South Jordan, UT.
+          Welcome to SoJo Dental — South Jordan's home for family, cosmetic, and implant dentistry.
+          From routine cleanings to dental implants, our experienced South Jordan dentists and team deliver
+          comfortable, modern care for patients of every age. New patients are always welcome.
         </p>
+        {/* Google rating badge */}
+        <div class="mt-7 inline-flex items-center gap-2.5 rounded-full bg-white/10 backdrop-blur px-4 py-2 ring-1 ring-white/20">
+          <span class="text-accent font-bold text-lg">{practice.reviews.rating}</span>
+          <span class="text-accent text-sm" aria-hidden="true">★★★★★</span>
+          <span class="text-white/80 text-sm">from {practice.reviews.count}+ Google reviews</span>
+        </div>
+        {/* CTAs */}
+        <div class="mt-8 flex flex-wrap gap-4">
+          <a href={practice.patientPortal} target="_blank" rel="noopener" data-pr-cta
+            class="btn btn-gold text-sm uppercase tracking-[0.15em]">Book an Appointment</a>
+          <a href={`tel:${practice.phone.replace(/[^+\d]/g, '')}`}
+            class="btn btn-ghost text-sm uppercase tracking-[0.15em]">Call {practice.phone}</a>
+        </div>
       </div>
     </div>
 
@@ -435,6 +447,29 @@ const reviews = [
       </div>
     </div>
   </section>
+
+  {/* ═══════════════════ AREAS WE SERVE ═══════════════════ */}
+  {(practice as any).areaServed?.length > 0 && (
+    <section class="py-20 sm:py-24 bg-light">
+      <div class="max-w-5xl mx-auto px-6 text-center">
+        <p class="eyebrow justify-center mb-3">Serving the South Valley</p>
+        <h2 class="font-heading text-dark services-h2 mb-4">Areas We Serve</h2>
+        <p class="text-dark/70 max-w-2xl mx-auto mb-8">
+          Conveniently located in South Jordan, SoJo Dental welcomes families from across the south end of the Salt Lake Valley.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3">
+          {(practice as any).areaServed.map((a: string) => (
+            <a
+              href={`/dentist/${a.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
+              class="rounded-full border border-dark/15 bg-white px-5 py-2 text-sm font-semibold text-dark/80 hover:border-primary hover:text-primary transition-colors"
+            >
+              Dentist in {a}
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
 
   {/* ═══════════════════ MAP + CONTACT FOOTER ═══════════════════ */}
   <section class="grid md:grid-cols-2">
