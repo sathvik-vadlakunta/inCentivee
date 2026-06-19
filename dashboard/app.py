@@ -2539,8 +2539,10 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
         "{practicerank_grade}": practicerank_grade_str,
         "{practicerank_delta}": practicerank_delta_str,
         "{quick_wins_summary}": quick_wins_summary_str,
-        # Pricing quote
-        "{recommended_tier}": "Growth" if platform.lower() in ("wordpress", "squarespace", "wix", "shopify") else "Starter",
+        # Pricing quote — recommend Grow for clients on platforms we'd migrate off,
+        # Optimize for those already on a fast/modern stack (e.g. Webflow). ($500
+        # Starter retired 2026-06-19 — see specs/pricing/good-better-best-pricing.html.)
+        "{recommended_tier}": "Grow" if platform.lower() in ("wordpress", "squarespace", "wix", "shopify") else "Optimize",
         # Industry-aware labels
         "{industry_schema_types}": {
             "practice": "FAQ, HowTo, MedicalProcedure, Dentist, LocalBusiness",

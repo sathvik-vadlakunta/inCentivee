@@ -10,122 +10,117 @@ Thank you for your interest in PracticeRank. Based on our audit of {domain}, we'
 
 ## Your PracticeRank Service Options
 
-### STARTER — Content & Optimization
-**One-time setup: $1,500** | **Monthly: $500/mo**
+### OPTIMIZE — Local SEO + AI Search
+**One-time setup: $1,500** | **Monthly: $1,500/mo**
 
 Best for: {industry_best_for_starter}.
 
-**We keep your existing website as-is.** No migration, no design changes. We plug into your current platform via API and handle all the SEO and content work behind the scenes.
+**We keep your existing website as-is.** No migration, no design changes. We plug into your current platform via API and handle all the SEO, AI-search, and content work behind the scenes.
 
 **Setup includes:**
 
 - Full SEO & AEO audit with prioritized action plan
-- Content & SEO recommendations report — specific action items you can implement yourself or hand to your team (blog topics, keyword targets, page improvements)
-- AI search optimization (llms.txt, schema markup, structured data)
+- AI search optimization (llms.txt, schema markup, structured data) so ChatGPT, Claude, Perplexity & Google AI recommend you
+- **100 local citations built** + NAP consistency across the directories that matter
+- Google Business Profile optimization (categories, services, photos, posts)
 - Cloudflare CDN setup for faster load times and security
 - Google Search Console & Analytics configuration
-- Google Business Profile optimization
 
 **Monthly deliverables:**
 
 - 2 new SEO-optimized blog posts per month
+- **1 high-quality editorial backlink per month** (real, relevant sites — not spam)
 - Monthly llms.txt and schema markup updates
 - AI visibility monitoring across ChatGPT, Claude, Perplexity & Google AI
+- Domain Authority tracking vs. your top competitors
 - Monthly performance report
-- Ongoing technical SEO monitoring
 
-**Additional content:** $150/blog post
+**Add-ons:** $150/extra blog post · $350/extra backlink
 
 ---
 
-### GROWTH — Platform Migration + Full SEO
-**One-time setup: $3,500** | **Monthly: $1,500/mo**
+### GROW — Migration + Full SEO & Authority
+**One-time setup: $3,500** | **Monthly: $2,500/mo** &nbsp; 🔥 *Most popular*
 
 Best for: {industry_best_for_growth}.
 
-**We migrate your existing website to our managed Cloudflare platform.** Your current design stays — we clean up the UI, fix mobile responsiveness, and optimize performance, but the overall look and feel of your site remains the same. You get a faster, more secure site without the headaches of CMS updates, plugin conflicts, or security patches.
+**We migrate your existing website to our managed Cloudflare platform.** Your current design stays — we clean up the UI, fix mobile responsiveness, and optimize performance, but the look and feel remain yours. You get a faster, more secure site with zero CMS maintenance, plugin conflicts, or security patches to worry about.
 
-**Setup includes everything in Starter, plus:**
+**Setup includes everything in Optimize, plus:**
 
 - Full website migration from {platform} to our managed platform
-- UI cleanup — fix spacing, typography, mobile issues, broken layouts
+- UI cleanup — spacing, typography, mobile issues, broken layouts
 - Performance optimization (target: 90+ Google PageSpeed score)
 - Managed hosting with SSL, CDN, and DDoS protection
-- No more CMS maintenance — we handle everything
-
-**Monthly deliverables:**
-
-- 2 new SEO-optimized blog posts per month
-- Ongoing page updates for content freshness and relevance
-- New service or location pages as needed based on SEO & AEO keyword opportunities
-- Keyword rank tracking with weekly position reports
-- Backlink monitoring and link-building outreach
-- Local citation building and NAP consistency management
-- Competitor tracking with quarterly gap analysis
-- Review generation strategy and automation setup
-- Monthly content strategy check-in
-- Priority support (same-day response)
-
-**Additional content:** $125/blog post | $200/page beyond included
-
----
-
-### PREMIUM — Complete Website Redesign + Full SEO
-**One-time setup: $7,500 – $10,000** | **Monthly: $2,000/mo**
-
-Best for: {industry_best_for_premium}.
-
-**We bring in a professional designer to completely redesign your website from scratch.** This isn't a cleanup — it's a full creative overhaul. A top-tier UI/UX designer builds custom layouts, refines your brand identity, and creates a conversion-optimized site that looks and performs like the best in your market. We then build it on our managed Cloudflare platform for maximum speed and reliability.
-
-**Setup includes everything in Growth, plus:**
-
-- Professional UI/UX designer — complete website redesign from the ground up ($4,000–$6,000 design investment included)
-- Custom page layouts, brand refinement, and visual identity
-- Photography and imagery direction
-- {industry_conversion_flow}
-- Full site build on our managed platform
 
 **Monthly deliverables:**
 
 - 4 new SEO-optimized blog posts per month
-- Ongoing page updates for content freshness and relevance
-- New service or location pages as needed based on SEO & AEO keyword opportunities
-- Advanced AI optimization and entity/knowledge panel building
+- **2 editorial backlinks per month** (DR30+ real sites) + **1 brand listicle placement per quarter** to influence AI recommendations
+- New service & location pages based on SEO/AEO keyword opportunities
+- Keyword rank tracking with weekly position reports
+- Local citation management + ongoing NAP consistency
+- Review generation funnel + automation setup
+- Competitor tracking with quarterly gap analysis
+- Monthly content strategy check-in + priority (same-day) support
+
+**Add-ons:** $125/extra blog post · $350/extra backlink · $750/brand listicle
+
+---
+
+### DOMINATE — Full Redesign + Aggressive Authority
+**One-time setup: $7,500 – $10,000** | **Monthly: $3,500/mo**
+
+Best for: {industry_best_for_premium}.
+
+**We bring in a professional designer to completely redesign your website from scratch** — custom layouts, refined brand identity, and a conversion-optimized site that looks and performs like the best in your market — then build it on our managed Cloudflare platform.
+
+**Setup includes everything in Grow, plus:**
+
+- Professional UI/UX designer — complete redesign from the ground up ($4,000–$6,000 design investment included)
+- Custom page layouts, brand refinement, and visual identity
+- {industry_conversion_flow}
+
+**Monthly deliverables:**
+
+- 6–8 new content pieces per month
+- **4 editorial backlinks per month** (DR30–40) + **1 brand listicle placement per month** for maximum AI visibility
+- Advanced AI optimization and entity/knowledge-panel building
 - Custom schema markup ({industry_schema_types})
 - Conversion rate optimization and A/B testing on key pages
-- Bi-weekly strategy and performance calls
-- Dedicated account manager
+- Bi-weekly strategy calls + dedicated account manager
 - Quarterly full-site audit with design refresh recommendations
 - Custom reporting dashboard
 
-**Additional content:** $100/blog post | $250/new page
+**Add-ons:** $100/extra blog post · $600–$850/authority link (DR40–50) · $1,950/3-pack brand listicles
 
 ---
 
 ## Quick Comparison
 
-| | Starter | Growth | Premium |
+| | Optimize | Grow 🔥 | Dominate |
 |---|---|---|---|
 | **Setup** | $1,500 | $3,500 | $7,500–$10,000 |
-| **Monthly** | $500/mo | $1,500/mo | $2,000/mo |
+| **Monthly** | $1,500/mo | $2,500/mo | $3,500/mo |
 | **Your website** | Stays as-is | Migrated + cleaned up | Redesigned from scratch |
 | **Design work** | None | UI cleanup & fixes | Full redesign by pro designer |
 | **Hosting** | You manage | We manage | We manage |
-| **New blog posts** | 2/mo | 2/mo | 4/mo |
-| **New pages** | — | As needed | As needed |
+| **Blog posts** | 2/mo | 4/mo | 6–8/mo |
+| **Backlinks** | 1/mo (DR20–30) | 2/mo (DR30) | 4/mo (DR30–40) |
+| **Brand listicles** | — | 1/quarter | 1/month |
+| **Citations** | 100 + management | + ongoing | + ongoing |
 | **Keyword tracking** | — | Weekly reports | Weekly reports |
-| **Backlinks & citations** | — | Included | Included |
 | **AI optimization** | Standard | Standard | Advanced + entity building |
 | **CRO / A/B testing** | — | — | Included |
 | **Support** | Email | Same-day | Dedicated manager |
 
 ---
 
-### What's the difference between Growth and Premium?
+### What's the difference between Grow and Dominate?
 
-**Growth** keeps your current website design — we migrate it off {platform}, clean up the UI (fix mobile issues, spacing, typography), and optimize performance. Your site looks essentially the same, just faster and on a better platform.
+**Grow** keeps your current website design — we migrate it off {platform}, clean up the UI (fix mobile issues, spacing, typography), and optimize performance. Your site looks essentially the same, just faster and on a better platform, with a steady cadence of content and backlinks building your authority.
 
-**Premium** starts fresh. A professional designer creates an entirely new website from the ground up — new layouts, new visual identity, conversion-optimized pages. It's a complete brand overhaul, not a touch-up.
+**Dominate** starts fresh. A professional designer creates an entirely new website from the ground up, and we run an aggressive content + authority program (4 links/mo + a monthly brand listicle) to push you to the top of both traditional and AI search.
 
 ---
 

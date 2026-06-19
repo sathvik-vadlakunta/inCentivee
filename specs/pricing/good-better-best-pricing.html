@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PracticeRank — Good/Better/Best Pricing Model + Competitive Analysis</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--hero:#08080d;--accent:#16a34a;--accent2:#4ade80;--warn:#d97706;--bad:#dc2626;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:29px;margin:14px 0 0;letter-spacing:-.02em}
+  h2{font-size:20px;margin:30px 0 12px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px}
+  p{margin:9px 0}
+  a{color:var(--accent)}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px/1.4 ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;background:var(--hero);color:var(--accent2);font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .lead{color:var(--muted);font-size:16px;max-width:80ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow);margin-bottom:20px}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  ul,ol{margin:8px 0;padding-left:20px}li{margin:5px 0}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:13px 15px;font-size:13.5px;color:#7a5b1e}
+  .ok{background:#ecfdf5;border:1px solid #a7e3bf;border-radius:10px;padding:13px 15px;font-size:13.5px}
+  .bad{background:#fef2f2;border:1px solid #f4c0c0;border-radius:10px;padding:13px 15px;font-size:13.5px;color:#7a1e1e}
+  .mini{font-size:12px;color:var(--muted)}
+  .big{font-weight:700;color:var(--accent)}
+  tr.tot td{font-weight:700;border-top:2px solid var(--line)}
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}
+  .tier{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fff}
+  .tier.pop{border:2px solid var(--accent);box-shadow:0 8px 24px rgba(22,163,74,.12)}
+  .tier h4{margin:0 0 2px;font-size:16px}
+  .tier .price{font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .tier .sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+  .tier ul{font-size:12.5px;padding-left:16px}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:#dcfce7;color:#166534}
+  @media(max-width:760px){.tiers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · PRICING</span>
+  <h1>Good / Better / Best Pricing Model + Competitive Analysis</h1>
+  <p class="lead">Rebuilds our pricing around real vendor costs (FATJOE link building, citations, brand listicles) and 2026 market benchmarks. Drops the $500/mo Starter (too low, too thin to deliver real value), and sets a defensible three-tier ladder that centers our ~$3k/mo target ACV while keeping 65–88% gross margin.</p>
+  <p class="mini">Owner: Kody · companion to <code>link-building-pricing.html</code> + <code>fatjoe-va-ops-and-tracking.html</code> · updates email <code>08-pricing-quote.md</code> · 2026-06-19</p>
+
+  <div class="doc">
+    <h2 style="margin-top:0">TL;DR</h2>
+    <ul>
+      <li><strong>Kill the $500 Starter.</strong> It's below the credible market floor for local SEO, can't fund real link building, and trains clients to expect cheap. Market data shows the working median for single-location local SEO is <strong>$1,000–$2,000/mo</strong>, and service verticals like dental already pay <strong>$2,000–$2,500</strong>.</li>
+      <li><strong>New ladder: $1,500 → $2,500 → $3,500/mo</strong> (good / better / best), each tied to a website treatment (optimize / migrate / redesign) AND a clear escalation of content + links + GEO.</li>
+      <li><strong>GEO/AEO is the price justifier.</strong> It's a category competitors sell separately for $1k–$3k/mo (WebFX bundles GEO at $3,000). Folding it into every tier lets us price at the top of the local-SEO band.</li>
+      <li><strong>Margin lives in links + GEO.</strong> Citations & GBP are bundled table-stakes (cheap). Link building carries ~2–3× markup over FATJOE wholesale; GEO is high-perceived-value and largely automated by our geo_agent.</li>
+    </ul>
+  </div>
+
+  <h2>1 · Competitive analysis (2026 market)</h2>
+  <div class="doc">
+    <h3>Monthly retainer benchmarks — single-location local business</h3>
+    <table>
+      <tr><th>Source</th><th>Finding</th></tr>
+      <tr><td>Ahrefs survey (439 SEO pros)</td><td>Most common retainer $501–$1,000; <b>66% of agencies charge ≥$1,001/mo</b>; most common agency band $2,501–$5,000.</td></tr>
+      <tr><td>Credo survey</td><td>Plurality of retainer firms charge <b>$1,000–$1,999</b>; 17.6% at $2,000–$2,999.</td></tr>
+      <tr><td>SEOProfy</td><td>Local SEO "starts ~$1,600"; range $500–$2,500+.</td></tr>
+      <tr><td>BizIQ</td><td>Single-location service businesses (dentists, contractors) "typically invest <b>$2,000–$2,500/mo</b>."</td></tr>
+      <tr><td>BrightLocal managed</td><td>Done-for-you local SEO <b>$799–$1,299 / location / mo</b>.</td></tr>
+    </table>
+    <h3>GEO / AEO (AI-search) pricing — the new category</h3>
+    <ul>
+      <li>Entry "monitor & maintain": <b>$1,000–$2,500/mo</b>. Mid-market active program: <b>$3,000–$8,000/mo</b>.</li>
+      <li>WebFX sells GEO <b>bundled, starting $3,000/mo</b> (not an add-on). Many SEO shops sell it as a premium add-on layer.</li>
+      <li>Tools (Profound, Semrush AI, Surfer) run $79–$999/mo — but those are DIY trackers, not done-for-you.</li>
+    </ul>
+    <h3>Link building & citations — retail vs our wholesale</h3>
+    <table>
+      <tr><th>Item</th><th>Market retail (per unit)</th><th>FATJOE wholesale (ours)</th><th>Implied markup</th></tr>
+      <tr><td>Niche edit / link insertion</td><td>avg $179 ($20–$1,500)</td><td>~$72–$216</td><td>~1.5–3×</td></tr>
+      <tr><td>Guest post (editorial link)</td><td>$300–$600 (DR30–50 sweet spot)</td><td>DR30 $120 · DR40 $216</td><td>~2.5–3×</td></tr>
+      <tr><td>High-DR / real-traffic link</td><td>$700–$1,500</td><td>DR50 $336 · DR60 $456</td><td>~2–3×</td></tr>
+      <tr><td>Brand listicle / digital-PR mention</td><td>$1,250–$1,500 (digital PR)</td><td>$378 / placement</td><td>~3×+</td></tr>
+      <tr><td>100 local citations</td><td>bundled / modest markup</td><td>$135 (100) · $324 (300)</td><td>table-stakes</td></tr>
+    </table>
+    <p class="mini">Setup fees: market typical <b>$300–$1,500</b> (ours run higher because they include migration/redesign). Contracts: <b>month-to-month is the 2026 norm</b> and a trust signal; results compound over 6–12 months.</p>
+    <div class="ok"><b>Positioning takeaway:</b> $1.5k–$3.5k is premium-but-credible for single-location local SEO. We sit at/above the agency median, exactly where dental/legal already pay — and our bundled GEO + real link building justify the top of the band. Anchor messaging to the agency/vertical benchmark ($1k–$2.5k), never the bargain-content floor ($300–$800).</div>
+  </div>
+
+  <h2>2 · The model — Good / Better / Best</h2>
+  <div class="doc">
+    <div class="tiers">
+      <div class="tier">
+        <h4>OPTIMIZE <span class="mini">(Good)</span></h4>
+        <div class="price">$1,500<span class="mini">/mo</span></div>
+        <div class="sub">Setup $1,500 · keep your site as-is</div>
+        <ul>
+          <li>Full local SEO + GEO/AEO foundation (llms.txt, schema, AI-visibility monitoring)</li>
+          <li>GBP optimization + <b>100 citations</b> at onboarding + NAP management</li>
+          <li><b>2 blog posts/mo</b></li>
+          <li><b>1 editorial link/mo</b> (DR20–30)</li>
+          <li>Monthly performance report</li>
+        </ul>
+      </div>
+      <div class="tier pop">
+        <h4>GROW <span class="tag">⭐ Popular</span></h4>
+        <div class="price">$2,500<span class="mini">/mo</span></div>
+        <div class="sub">Setup $3,500 · migrate + clean up your site</div>
+        <ul>
+          <li>Everything in Optimize, plus:</li>
+          <li>Website migration to managed Cloudflare platform + UI cleanup + 90+ PageSpeed</li>
+          <li><b>4 blog posts/mo</b> + local/service-area landing pages</li>
+          <li><b>2 editorial links/mo</b> (DR30) + <b>1 brand listicle / quarter</b></li>
+          <li>Keyword rank tracking + review-funnel automation</li>
+          <li>Quarterly competitor gap analysis</li>
+        </ul>
+      </div>
+      <div class="tier">
+        <h4>DOMINATE <span class="mini">(Best)</span></h4>
+        <div class="price">$3,500<span class="mini">/mo</span></div>
+        <div class="sub">Setup $7,500–$10,000 · full redesign</div>
+        <ul>
+          <li>Everything in Grow, plus:</li>
+          <li>Full website redesign by a pro UI/UX designer ($4–6k design included in setup)</li>
+          <li><b>6–8 content pieces/mo</b></li>
+          <li><b>4 editorial links/mo</b> (DR30–40) + <b>1 brand listicle / month</b></li>
+          <li>Advanced GEO/entity building, CRO + A/B testing</li>
+          <li>Dedicated account manager + bi-weekly calls</li>
+        </ul>
+      </div>
+    </div>
+    <p class="mini">Month-to-month, cancel anytime. All tiers include the 90-day results-or-refund guarantee (PracticeRank Score +20 or full refund).</p>
+  </div>
+
+  <h2>3 · Real costs &amp; margin (the proof the prices work)</h2>
+  <div class="doc">
+    <p>Monthly COGS = hard vendor spend (FATJOE links/citations/listicles, Moz, Claude API, BrightLocal) + light VA labor (~$8/hr offshore; the model is 85%+ automated).</p>
+    <table>
+      <tr><th>Cost line</th><th>Optimize $1,500</th><th>Grow $2,500</th><th>Dominate $3,500</th></tr>
+      <tr><td>Editorial links (FATJOE)</td><td>1× DR30 = $120</td><td>2× DR30 = $240</td><td>3× DR30 + 1× DR40 = $576</td></tr>
+      <tr><td>Brand listicle (FATJOE $378)</td><td>—</td><td>$378 / qtr ≈ $126</td><td>$378 / mo</td></tr>
+      <tr><td>Citations (amortized)</td><td>$135÷12 ≈ $11</td><td>top-ups ≈ $15</td><td>ongoing ≈ $15</td></tr>
+      <tr><td>Claude API (content + GEO)</td><td>$25</td><td>$40</td><td>$60</td></tr>
+      <tr><td>Moz / BrightLocal / rank tracking</td><td>$15</td><td>$30</td><td>$40</td></tr>
+      <tr><td>VA labor</td><td>~2 hr = $16</td><td>~5 hr = $40</td><td>~10 hr = $80</td></tr>
+      <tr class="tot"><td>Total monthly COGS</td><td>≈ $187</td><td>≈ $491</td><td>≈ $1,149</td></tr>
+      <tr class="tot"><td>Gross margin</td><td class="big">~88%</td><td class="big">~80%</td><td class="big">~67%</td></tr>
+    </table>
+    <p class="mini">Dominate's lower margin is real link spend — that's the value, not waste. Even at 67% it clears our automation thesis. Setup fees are largely pass-through + markup (the designer cost in Dominate is included in its $7.5–10k setup).</p>
+  </div>
+
+  <h2>4 · Add-on menu (upsell — price ≈ 2.5–3× our cost)</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Add-on</th><th>Our cost (FATJOE)</th><th>We charge</th><th>Margin</th></tr>
+      <tr><td>Extra editorial link (DR30)</td><td>$120</td><td>$350</td><td>~66%</td></tr>
+      <tr><td>Authority link (DR40–50)</td><td>$216–$336</td><td>$600–$850</td><td>~50–60%</td></tr>
+      <tr><td>AI-Visibility brand listicle</td><td>$378</td><td>$750 ea · 3-pack $1,950</td><td>~48–50%</td></tr>
+      <tr><td>Citation Blitz (300 dirs)</td><td>$324</td><td>$750 one-time</td><td>~57%</td></tr>
+      <tr><td>Extra blog post</td><td>~$5 (Claude)</td><td>$100–$150</td><td>~95%</td></tr>
+    </table>
+    <p class="mini">Add-ons sit inside market retail ($300–$600 mid-DR link, $1,250+ digital PR) so they're easy to justify. Most clients run the tier; competitive markets buy up.</p>
+  </div>
+
+  <h2>5 · Why drop the $500 tier</h2>
+  <div class="doc">
+    <ul>
+      <li><strong>Below the credible floor.</strong> $500 is beneath the agency working median; it signals "cheap SEO," which is exactly the bargain-content segment we don't want to compete in.</li>
+      <li><strong>Can't fund real value.</strong> A single DR30 link ($120) + citations + GEO already eats a big chunk; there's no room to deliver the link building that actually moves authority. It forces thin deliverables that underperform the 90-day guarantee.</li>
+      <li><strong>Anchoring.</strong> A $500 floor drags the whole ladder down and makes $1,500 feel expensive. Removing it makes <b>$1,500 the entry</b> and <b>$2,500 (Grow) the obvious popular choice</b> — pulling ACV toward our $3k target.</li>
+      <li><strong>Migration path:</strong> existing $500 clients → move to Optimize $1,500 at renewal (grandfather for one cycle if needed), framed as "we've added real link building + GEO and dropped the entry tier."</li>
+    </ul>
+  </div>
+
+  <h2>6 · Implementation</h2>
+  <div class="doc">
+    <ul>
+      <li>Rewrite <code>templates/emails/08-pricing-quote.md</code>: three tiers (Optimize/Grow/Dominate), new prices, link/citation/listicle deliverables, updated comparison table. <b>(done in this change)</b></li>
+      <li>Update <code>{recommended_tier}</code> logic in <code>app.py</code> to pick from the new tier names (no more "Starter"). <b>(done)</b></li>
+      <li>Mirror these numbers on the public pricing page when we refresh it.</li>
+      <li>Fulfillment wired already: links/citations/listicles flow through the FATJOE off-site ledger (Backlinks &amp; Authority tab) → weekly report "Authority work" block.</li>
+    </ul>
+    <p class="mini">Bottom line: drop $500, anchor at $1,500, make $2,500 the popular pick, reserve $3,500 for redesign + aggressive authority. Real COGS keeps every tier at 67–88% gross while delivering link building the old Starter never could.</p>
+  </div>
+</div>
+</body>
+</html>
