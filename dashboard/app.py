@@ -2109,18 +2109,29 @@ ONBOARDING_REQUIREMENTS = [
     {"access_key": "gsc", "label": "Google Search Console — Full user",
      "how": "Search Console → Settings → Users and permissions → Add user → "
             "**kdoherty@practicerank.ai**, permission **Full**."},
-    {"access_key": "ga", "label": "Google Analytics 4 — Editor + Property ID",
-     "how": "Admin → Property Access Management → Add **kdoherty@practicerank.ai** as **Editor**. "
-            "**Also send your numeric GA4 Property ID** (Admin → Property Settings — a 9-digit number, "
-            "*not* the `G-XXXXXXX` measurement ID). This is what lets your reports show real call/form leads."},
-    {"access_key": "gtm", "label": "Google Tag Manager — Publish access",
-     "how": "Admin → User Management → Add **kdoherty@practicerank.ai** with **Publish** access. "
-            "Lets us track phone-call clicks and contact-form submissions as leads. "
-            "(Already tracking these in GA4? Just tell us the event names instead.)"},
-    {"access_key": "gbp", "label": "Google Business Profile — Manager",
-     "how": "Your Business Profile → Business Profile settings → People and access → Add → "
-            "**kdoherty@practicerank.ai** as **Manager**. This is the single most important listing "
-            "for Google Maps and local ranking."},
+    {"access_key": "ga", "label": "Google Analytics 4 — add us + send your IDs",
+     "how": "At **analytics.google.com** → ⚙️ **Admin** → **Account/Property Access Management** → **+** → "
+            "add **kdoherty@practicerank.ai** as **Editor** → Add. Then send us two IDs (or we'll grab them once "
+            "you've added us): (1) **Measurement ID** — Admin → **Data Streams** → click your website stream → "
+            "top-right, starts with **G-XXXXXXX** (this powers lead tracking on your site); (2) **Property ID** — "
+            "Admin → **Property Settings** — a 9-digit number (this lets your reports pull real call/form leads). "
+            "Don't have GA4 yet? Tell us and we'll set it up for you."},
+    {"access_key": "gtm", "label": "Google Tag Manager — add us + send Container ID",
+     "how": "At **tagmanager.google.com** → your container → **Admin** → **User Management** → **+** → add "
+            "**kdoherty@practicerank.ai** with **Publish** access. Then send us the **Container ID** "
+            "(top of the workspace, starts with **GTM-XXXXXXX**), or we'll read it once you've added us. "
+            "This is how we track phone-call clicks and form submissions as leads. "
+            "No GTM yet? We'll create one — just grant the access above on the account."},
+    {"access_key": "gbp", "label": "Google Business Profile / Google Maps — add us as Manager",
+     "how": "This is your Google Maps listing and the #1 local-ranking asset. The fastest way (instant, no "
+            "password sharing): the profile **owner** adds us. On a phone, open the **Google Maps** app (or "
+            "**business.google.com** on desktop) signed in as the owner → tap your business → **Edit profile** → "
+            "**⋯ / Settings → People and access → Add** → enter **kdoherty@practicerank.ai** → role **Manager** → "
+            "Invite. We accept and we're in — you stay the Owner. "
+            "**Not sure who owns it, or lost access?** Don't share your password — instead go to "
+            "**business.google.com**, search your business, click **\"Request access / Own this business?\"**, "
+            "and we'll send a request the current owner approves (Google gives them ~3–7 days; if no response we "
+            "can claim it). Tell us and we'll walk you through it on a quick call."},
     {"access_key": "__cms__", "label": "Website access ({cms_platform})",
      "how": None},  # filled from the platform-specific access_steps
     {"access_key": "cloudflare", "label": "DNS access ({dns_registrar})",
