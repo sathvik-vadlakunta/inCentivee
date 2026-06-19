@@ -68,6 +68,14 @@ def main():
             site_url = integ.get("config", {}).get("property_url", f"sc-domain:{domain}")
             print(f"Pulling keywords for {cid} ({site_url})...")
             pull_keywords(db, cid, site_url)
+            # Also populate gsc_query_daily (the per-date query table the search-data
+            # content recommender (#5) and the report's query trends read from).
+            try:
+                from geo_agent.gsc_client import track_gsc_queries
+                n = track_gsc_queries(db, cid, days=14)
+                print(f"  {cid}: gsc_query_daily refreshed ({n} rows)")
+            except Exception as e:  # noqa: BLE001
+                print(f"  {cid}: query-daily refresh error: {e}")
 
         # Run site audit (weekly on Mondays, or if no audit exists yet)
         if datetime.now().weekday() == 0:  # Monday

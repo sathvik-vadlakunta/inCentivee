@@ -11,10 +11,10 @@ that already have a pending recommendation.
     python3 scripts/biweekly_content.py --customer paradigm-experts
     python3 scripts/biweekly_content.py --all --dry-run
 
-Cron (every other Monday 07:00):
-    0 7 * * 1 [ $(( ($(date +\%s) / 604800) \% 2 )) -eq 0 ] && \
-      docker exec practicerank-dashboard python3 /app/scripts/biweekly_content.py --all \
-      >> /app/data/logs/biweekly-content.log 2>&1
+Cron (Monday 07:00 — idempotent top-up; dedupes so weekly cadence is safe):
+    0 7 * * 1 docker exec practicerank-dashboard
+      python3 /app/scripts/biweekly_content.py --all
+      >> /home/kody/dental-marketing/logs/biweekly_content.log 2>&1
 """
 
 import argparse
