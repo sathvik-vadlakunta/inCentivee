@@ -64,8 +64,11 @@ if [ "$DRY_RUN" = true ]; then
     exit 0
 fi
 
-echo "==> Deploying deploy/ to Cloudflare Pages project '$PROJECT'"
+echo "==> Deploying deploy/ to Cloudflare Pages project '$PROJECT' (production)"
 cd "$ROOT"
-npx wrangler pages deploy "$SRC_DIR" --project-name="$PROJECT"
+# Force the PRODUCTION branch — without --branch, wrangler deploys to a preview
+# alias named after the current git branch when you're not on main, which
+# silently does NOT update practicerank.ai. (Bit us 2026-06-19.)
+npx wrangler pages deploy "$SRC_DIR" --project-name="$PROJECT" --branch main --commit-dirty=true
 
 echo "==> Done. Verify: https://practicerank.ai  (and /legal /medical /blog /llms.txt /sitemap.xml)"
