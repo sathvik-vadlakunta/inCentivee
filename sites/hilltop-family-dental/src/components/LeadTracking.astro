@@ -1,0 +1,33 @@
+---
+/* PracticeRank lead tracking — fires phone_click / form_submit / appointment_request
+   into GA4 (gtag) or GTM (dataLayer), whichever is loaded. Document-level + guarded
+   so it survives Astro View Transitions and binds once. Event names match
+   geo_agent/lead_tracking.py + ga4_client DEFAULT_CONVERSION_EVENTS. */
+---
+<script is:inline>
+  (function () {
+    if (window.__prLeadsInit) return; window.__prLeadsInit = true;
+    function fire(name, params) {
+      try {
+        if (typeof window.gtag === 'function') { window.gtag('event', name, params || {}); }
+        else { (window.dataLayer = window.dataLayer || []).push(Object.assign({ event: name }, params || {})); }
+      } catch (e) {}
+    }
+    var BOOK = /book|appointment|schedule|request|consult|get started|free quote|estimate|reserve|contact us/i;
+    document.addEventListener('click', function (ev) {
+      var t = ev.target; if (!t || !t.closest) return;
+      var tel = t.closest('a[href^="tel:"]');
+      if (tel) { fire('phone_click', { phone: (tel.getAttribute('href') || '').replace('tel:', '') }); return; }
+      var cta = t.closest('[data-pr-cta], a[href], button');
+      if (cta) {
+        var label = (cta.getAttribute('aria-label') || cta.textContent || '').trim();
+        if (cta.hasAttribute('data-pr-cta') || BOOK.test(label)) { fire('appointment_request', { label: label.slice(0, 60) }); }
+      }
+    }, true);
+    document.addEventListener('submit', function (ev) {
+      var f = ev.target || {};
+      var name = (f.getAttribute && (f.getAttribute('name') || f.getAttribute('id'))) || 'form';
+      fire('form_submit', { form: String(name).slice(0, 60) });
+    }, true);
+  })();
+</script>

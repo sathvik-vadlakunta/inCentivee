@@ -2,8 +2,14 @@
 import Nav from '@components/Nav.astro'
 import Footer from '@components/Footer.astro'
 import SchemaMarkup from '@components/SchemaMarkup.astro'
+import LeadTracking from '@components/LeadTracking.astro'
 import practice from '@data/practice.json'
 import '@/styles/global.css'
+
+const analytics = (practice as any).analytics ?? {}
+const ga4: string = analytics.ga4 || ''
+const gtm: string = analytics.gtm || ''
+const gsc: string = analytics.googleSiteVerification || ''
 
 interface Props {
   title: string
@@ -29,6 +35,18 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, nofollow" />}
+    {gsc && <meta name="google-site-verification" content={gsc} />}
+
+    {/* Analytics — GA4 + GTM from practice.json.analytics (loads only when set) */}
+    {ga4 && (
+      <>
+        <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${ga4}`}></script>
+        <script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${ga4}');`}></script>
+      </>
+    )}
+    {gtm && (
+      <script is:inline set:html={`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtm}');`}></script>
+    )}
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -55,5 +73,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
       <slot />
     </main>
     {!hideFooter && <Footer />}
+    {gtm && <noscript set:html={`<iframe src="https://www.googletagmanager.com/ns.html?id=${gtm}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`}></noscript>}
+    <LeadTracking />
   </body>
 </html>

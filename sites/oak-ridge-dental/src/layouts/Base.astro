@@ -2,6 +2,7 @@
 import Nav from '@components/Nav.astro'
 import Footer from '@components/Footer.astro'
 import SchemaMarkup from '@components/SchemaMarkup.astro'
+import LeadTracking from '@components/LeadTracking.astro'
 import practice from '@data/practice.json'
 import { ClientRouter } from 'astro:transitions'
 import '@/styles/global.css'
@@ -118,16 +119,9 @@ const gsc: string = analytics.googleSiteVerification || ''
       if (document.readyState !== 'loading') prSetupReveal()
       else document.addEventListener('DOMContentLoaded', prSetupReveal)
     </script>
-    <!-- Conversion: click-to-call (document-level, survives View Transitions) -->
-    <script is:inline>
-      document.addEventListener('click', (e) => {
-        const a = e.target.closest && e.target.closest('a[href^="tel:"]')
-        if (a) {
-          window.dataLayer = window.dataLayer || []
-          window.dataLayer.push({ event: 'click_to_call' })
-        }
-      })
-    </script>
+    {/* Lead tracking — phone_click / form_submit / appointment_request (replaces
+        the old click_to_call-only script; unified with the dashboard + other sites) */}
+    <LeadTracking />
 
     {/* DearDoc AI chat widget — the practice's licensed embed.
         The embed self-initialises on the window 'load' event and guards against
