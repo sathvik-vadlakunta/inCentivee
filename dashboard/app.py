@@ -494,6 +494,14 @@ def customer_detail(customer_id):
             "total": _mix_total,
             "exact_pct": round(_mix_counts["exact"] / _mix_total * 100) if _mix_total else 0,
         }
+        # Lead tracking: the paste-once snippet + whether GA4 is connected (the
+        # pull side). track_conversions ingests the events this fires.
+        from geo_agent.lead_tracking import lead_tracker_snippet
+        lead_snippet = lead_tracker_snippet()
+        ga4_connected = any(
+            i.get("integration") in ("ga", "ga4") and i.get("status") == "active"
+            for i in (integrations or []))
+
         this_month = now_iso[:7]  # YYYY-MM
         links_this_month = sum(1 for o in link_orders if (o.get("ordered_at") or "")[:7] == this_month)
         da_val = (db.get_latest_kpi(customer_id, "domain_authority") or {}).get("value")
@@ -551,6 +559,8 @@ def customer_detail(customer_id):
             offsite_summary=db.offsite_summary(customer_id),
             offsite_anchor_mix=offsite_anchor_mix,
             offsite_cadence=offsite_cadence,
+            lead_snippet=lead_snippet,
+            ga4_connected=ga4_connected,
         )
     finally:
         db.close()
@@ -2629,6 +2639,7 @@ def _get_va_todos(customer: dict, access: list[dict], contacts: list[dict],
         add("nap_confirmed", "Client confirmed exact NAP (name / address / phone / hours)", phase="access")
         add("brand_assets_received", "Received logo + 10 photos from client", phase="access")
         add("services_confirmed", "Client confirmed services & service-area cities", phase="access")
+        add("lead_tracking_installed", "Install lead-tracking snippet on the site (phone/form/CTA → GA4)", phase="access")
         add("gsc_setup", "Add your Google account as Full user in customer's Search Console, then save property URL in Integrations tab")
         add("followup_sent", "Send access follow-up email (if needed)")
         add("first_audit", "Run first site audit", auto_done=bool(runs))

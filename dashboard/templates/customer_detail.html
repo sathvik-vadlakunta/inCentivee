@@ -593,6 +593,19 @@
 <!-- ==================== ACCOUNT TAB ==================== -->
 <div id="tab-account" class="tab-content">
     <div style="max-width:920px;">
+            <!-- Lead Tracking -->
+            <div class="card" id="lead-tracking-card">
+                <div class="section-header">
+                    <h2>Lead Tracking <span style="font-size:0.7rem;font-weight:600;padding:2px 8px;border-radius:999px;{{ 'background:#dcfce7;color:#166534;' if ga4_connected else 'background:#fef3c7;color:#92400e;' }}">{{ 'GA4 connected' if ga4_connected else 'GA4 not connected' }}</span></h2>
+                    <button type="button" class="btn btn-sm btn-outline" onclick="openGuide(this)" data-guide="lead_tracking" data-title="Install lead tracking">📋 How to install</button>
+                </div>
+                <p style="color:var(--muted);font-size:0.85rem;margin-top:0;">Paste this once on the site (or in GTM). It fires <b>phone-click</b>, <b>form-submit</b>, and <b>booking/CTA</b> events into GA4 so reports show real leads — calls &amp; forms — not just traffic.{% if not ga4_connected %} <b style="color:#92400e;">Connect GA4 first</b> (Integrations) so the events can be read back.{% endif %}</p>
+                <div style="position:relative;">
+                    <button type="button" class="btn btn-sm btn-primary" style="position:absolute;top:8px;right:8px;z-index:2;" onclick="copyLeadSnippet(this)">Copy</button>
+                    <pre id="lead-snippet" style="background:#0f1117;color:#e6e8ec;border-radius:8px;padding:14px 16px;overflow:auto;font:12px/1.5 ui-monospace,Menlo,monospace;max-height:240px;margin:0;">{{ lead_snippet }}</pre>
+                </div>
+                <p style="font-size:0.78rem;color:var(--muted);margin-top:8px;">Tip: add <code>data-pr-cta</code> to the main "Book"/"Contact" button for precise tracking. Once live, leads flow into the weekly report automatically.</p>
+            </div>
             <!-- Business Details -->
             <div class="card">
                 <div class="section-header">
@@ -5040,6 +5053,13 @@ const STEP_GUIDES = {
     "Notes: <code>\"Positive, natural mention in a listicle/roundup; include city; aimed at AI/LLM visibility.\"</code> Mixed follow/nofollow is fine.",
     "Submit, then <b>Log FATJOE order</b> as type <b>mention</b>. On delivery, Import/Mark live — it becomes a candidate \"source now citing you.\"",
   ], tip: "The goal is a citable mention for AI assistants, not link juice — don't sweat nofollow here." },
+  lead_tracking: { sub: "Install lead tracking on the site", steps: [
+    "<b>Make sure GA4 is connected first</b> (Integrations tab) — the snippet fires events into GA4, and we read them back from there. No GA4 = no leads in the report.",
+    "<b>Copy the snippet</b> from the Lead Tracking card (Account tab).",
+    "<b>Paste it once</b> where the site allows custom code:<br>• <b>GTM:</b> Tags → New → Custom HTML → paste → trigger All Pages → Submit/Publish.<br>• <b>Webflow:</b> Site Settings → Custom Code → Footer → paste → Publish.<br>• <b>Squarespace:</b> Settings → Developer Tools → Code Injection → Footer (Business plan+).<br>• <b>WordPress:</b> a header/footer-scripts plugin → Footer.<br>• <b>Sites we host:</b> we add it to the layout — no action.",
+    "<b>Tag the main CTA</b> (optional but better): add <code>data-pr-cta</code> to the primary Book/Contact button so booking clicks are caught precisely.",
+    "<b>Test it.</b> Open the site, click the phone number and submit the contact form, then check GA4 → Reports → Realtime → Event count for <code>phone_click</code> / <code>form_submit</code>. Then mark this step done.",
+  ], tip: "It auto-detects tel: links, all form submissions, and buttons whose text looks like 'book / appointment / schedule / contact'. Leads then flow into the weekly report automatically." },
   publish_pages: { sub: "Publish local content pages", steps: [
     "Open the <b>Content</b> tab on this customer.",
     "Review each generated city/service page for accuracy — fix any wrong claim, hours, or service.",
@@ -5156,6 +5176,15 @@ function markCitation(cid, directory, done, btn) {
             if (d.ok) location.reload();
             else { alert(d.error || 'Failed'); btn.disabled = false; }
         }).catch(() => { alert('Network error'); btn.disabled = false; });
+}
+
+function copyLeadSnippet(btn) {
+    const el = document.getElementById('lead-snippet');
+    const txt = el ? el.textContent : '';
+    navigator.clipboard.writeText(txt).then(() => {
+        const o = btn.textContent; btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = o; }, 1500);
+    }).catch(() => alert('Copy failed — select the snippet manually.'));
 }
 
 // Mark a VA action-plan step done/undone via the shared checklist API.
