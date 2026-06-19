@@ -153,7 +153,9 @@ This isn't rented attention like Google Ads — the moment you stop paying for a
 
 ---
 
-All plans include our **90-day results-or-refund guarantee** — if your PracticeRank Score doesn't improve by 20+ points within 90 days, you get a full refund and keep everything we've built.
+All plans include our **90-day results-or-refund guarantee**: if your PracticeRank Score doesn't improve by 20+ points within 90 days, we **refund your monthly fees** — and you keep everything we've built.
+
+A couple of fair-play notes: the one-time **setup/onboarding fee is non-refundable** — it covers real third-party costs we pay up front on your behalf (citation building, site migration, design work). And the guarantee assumes you've given us **timely access** to the accounts we need (Search Console, Analytics, your site, Google Business Profile) so we can actually get to work — we can't guarantee results we were never given the keys to produce.
 
 Plans are month-to-month — cancel anytime. No long-term contracts.
 

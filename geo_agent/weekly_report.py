@@ -214,13 +214,38 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
             prior = [h for h in da_hist if (h.get("date") or "")[:10] <= target_date]
             return prior[-1]["value"] if prior else None
 
+        # Last ~10 DA readings as a labelled series for the over-time chart.
+        da_series = [{"label": (h.get("date") or "")[5:10].replace("-", "/"), "value": h["value"]}
+                     for h in da_hist[-10:]]
+        # Named competitor DAs for the comparison bars (real competitors only).
+        competitors = sorted(
+            [{"name": (c.get("competitor_name") or c.get("competitor_domain") or "Competitor"),
+              "da": c.get("domain_authority") or 0}
+             for c in (db.get_competitor_domains(customer_id) or [])
+             if (c.get("domain_authority") or 0) > 0],
+            key=lambda x: x["da"], reverse=True)[:4]
+
         data["sections"]["authority"] = {
             "da": da_latest["value"],
             "first": da_hist[0]["value"] if da_hist else da_latest["value"],
             "week_prev": _da_at_or_before(ds(end - timedelta(days=7))),
             "month_prev": _da_at_or_before(ds(end - timedelta(days=28))),
             "top_competitor": comp_das[0] if comp_das and comp_das[0] > 0 else None,
+            "series": da_series if len(da_series) > 1 else [],
+            "competitors": competitors,
         }
+
+    # --- Visitors / clicks over time (last 8 weeks) for the trend chart ---
+    try:
+        wk = db.get_gsc_weekly_summary(customer_id, weeks=8)
+        if wk and len(wk) > 1:
+            data["sections"]["traffic_series"] = [
+                {"label": (w.get("week_start") or "")[5:10].replace("-", "/"),
+                 "clicks": int(w.get("clicks") or 0)}
+                for w in reversed(wk)
+            ]
+    except Exception:
+        pass
 
     # --- Authority work this period (FATJOE off-site, last 30 days) ---
     try:
@@ -333,6 +358,45 @@ def _delta_span(label: str, direction: str) -> str:
 def _kpi(k: str, v: str, delta_html: str = "") -> str:
     return (f'<div class="kpi"><div class="k">{html.escape(k)}</div>'
             f'<div class="v">{html.escape(v)}</div>{delta_html}</div>')
+
+
+def _vbars(points: list[dict], value_key: str, *, color: str = "#16a34a", height: int = 48) -> str:
+    """Email-safe vertical bar chart (table-based) from [{label, <value_key>}]."""
+    if not points:
+        return ""
+    vals = [max(p.get(value_key) or 0, 0) for p in points]
+    mx = max(vals) or 1
+    cells = ""
+    for p in points:
+        v = max(p.get(value_key) or 0, 0)
+        bh = max(int(round(v / mx * height)), 2)
+        cells += (
+            f'<td style="vertical-align:bottom;text-align:center;padding:0 3px;">'
+            f'<div style="font-size:9px;color:#64748b;margin-bottom:2px;">{int(v)}</div>'
+            f'<div style="width:16px;height:{bh}px;background:{color};border-radius:3px 3px 0 0;margin:0 auto;"></div>'
+            f'<div style="font-size:8.5px;color:#9aa6b2;margin-top:3px;">{html.escape(str(p.get("label","")))}</div>'
+            f'</td>')
+    return f'<table style="border-collapse:collapse;margin-top:6px;"><tr>{cells}</tr></table>'
+
+
+def _hbars(rows: list[tuple], *, you_color: str = "#16a34a", other: str = "#cbd5e1") -> str:
+    """Email-safe horizontal comparison bars. rows = [(name, value, is_you)]."""
+    rows = [r for r in rows if r[1] is not None]
+    if not rows:
+        return ""
+    mx = max((r[1] for r in rows), default=1) or 1
+    out = '<table style="border-collapse:collapse;width:100%;margin-top:6px;font-size:12px;">'
+    for name, val, is_you in rows:
+        w = int(round(val / mx * 100))
+        col = you_color if is_you else other
+        nm = f"<b>{html.escape(str(name))}</b>" if is_you else html.escape(str(name))
+        out += (
+            f'<tr><td style="width:42%;padding:3px 8px 3px 0;white-space:nowrap;overflow:hidden;'
+            f'text-overflow:ellipsis;max-width:0;">{nm}</td>'
+            f'<td style="padding:3px 0;"><div style="background:{col};height:13px;width:{w}%;'
+            f'border-radius:3px;display:inline-block;vertical-align:middle;"></div>'
+            f'<span style="font-weight:700;margin-left:6px;">{int(val)}</span></td></tr>')
+    return out + "</table>"
 
 
 def render_html(data: dict) -> str:
@@ -538,13 +602,31 @@ def render_html(data: dict) -> str:
             gap_html = (f'<p style="margin:8px 0 0">Your top competitor sits at <b>{top}</b> — '
                         f'a <b>{gap}-point</b> authority gap. Closing it is exactly what our off-site '
                         f'link &amp; citation work targets.</p>')
+        # Over-time chart + competitor comparison bars.
+        trend_html = ""
+        if a.get("series"):
+            trend_html = (f'<div style="margin-top:14px"><div class="mini" style="margin-bottom:2px">'
+                          f'Domain Authority over time</div>{_vbars(a["series"], "value", color="#16a34a")}</div>')
+        comp_html = ""
+        if a.get("competitors"):
+            rows = [(f"You", da, True)] + [(c["name"], round(c["da"]), False) for c in a["competitors"]]
+            rows.sort(key=lambda r: r[1], reverse=True)
+            comp_html = (f'<div style="margin-top:14px"><div class="mini" style="margin-bottom:2px">'
+                         f'You vs your competitors (DA)</div>{_hbars(rows)}</div>')
         parts.append(
             f'<div class="r-sec"><h3>Domain Authority</h3>'
             f'<div class="score-row"><div class="score-badge" style="background:#16a34a;width:88px;height:88px">'
             f'<b style="font-size:26px">{da}</b><span>of 100</span></div>'
             f'<div class="pillars"><p style="margin:0">Your site\'s link authority — a 0–100 measure of how '
             f'much Google trusts your domain.</p>{pills}{gap_html}</div>'
-            f'</div></div>')
+            f'</div>{trend_html}{comp_html}</div>')
+
+    # 8b-2. Visitors over time (organic clicks trend)
+    if s.get("traffic_series"):
+        parts.append(
+            f'<div class="r-sec"><h3>Visitors over time</h3>'
+            f'<p class="mini" style="margin:0 0 2px">Organic visitors per week (Google Search)</p>'
+            f'{_vbars(s["traffic_series"], "clicks", color="#2563eb", height=54)}</div>')
 
     # 8c. Authority work this period (off-site / FATJOE)
     if "offsite" in s:
