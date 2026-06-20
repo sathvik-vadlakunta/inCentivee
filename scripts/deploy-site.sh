@@ -44,7 +44,7 @@ fi
 
 echo "==> Sanity-checking $SRC_DIR"
 missing=false
-for f in index.html legal.html medical.html llms.txt llms-full.txt robots.txt sitemap.xml _redirects; do
+for f in index.html law-firms/index.html medical-practices/index.html llms.txt llms-full.txt robots.txt sitemap.xml _redirects; do
     if [ ! -f "$SRC_DIR/$f" ]; then
         echo "    MISSING: deploy/$f"
         missing=true
