@@ -1331,9 +1331,7 @@
     '<div style="text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;">' +
     '<span style="font-size:10px;color:#94a3b8;">PracticeRank &mdash; AI-Powered Legal Marketing | practicerank.ai | jonlucas@lostrelic.com</span></div>' +
 
-    '<!-- Lead tracking (dogfood) -->
-<script>(function(){if(window.__prLeadsInit)return;window.__prLeadsInit=true;function fire(n,p){try{if(typeof window.gtag==='function'){window.gtag('event',n,p||{});}else{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:n},p||{}));}}catch(e){}}var B=/book|call|strategy|schedule|consult|get started|claim|calendly|audit/i;document.addEventListener('click',function(ev){var t=ev.target;if(!t||!t.closest)return;var tel=t.closest('a[href^="tel:"]');if(tel){fire('phone_click',{phone:(tel.getAttribute('href')||'').replace('tel:','')});return;}var c=t.closest('[data-pr-cta],a[href],button');if(c){var h=c.getAttribute('href')||'';var l=(c.getAttribute('aria-label')||c.textContent||'').trim();if(c.hasAttribute('data-pr-cta')||/calendly\.com/.test(h)||B.test(l)){fire('appointment_request',{label:l.slice(0,60)});}}},true);document.addEventListener('submit',function(ev){var f=ev.target||{};var n=(f.getAttribute&&(f.getAttribute('name')||f.getAttribute('id')))||'form';fire('form_submit',{form:String(n).slice(0,60)});},true);})();</script>
-</body></html>';
+    '</body></html>';
 
     const win = window.open('', '_blank');
     win.document.write(html);
@@ -1342,5 +1340,7 @@
     setTimeout(() => { win.print(); }, 500);
   }
 </script>
+<!-- Lead tracking (dogfood) -->
+<script>(function(){if(window.__prLeadsInit)return;window.__prLeadsInit=true;function fire(n,p){try{if(typeof window.gtag==='function'){window.gtag('event',n,p||{});}else{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:n},p||{}));}}catch(e){}}var B=/book|call|strategy|schedule|consult|get started|claim|calendly|audit/i;document.addEventListener('click',function(ev){var t=ev.target;if(!t||!t.closest)return;var tel=t.closest('a[href^="tel:"]');if(tel){fire('phone_click',{phone:(tel.getAttribute('href')||'').replace('tel:','')});return;}var c=t.closest('[data-pr-cta],a[href],button');if(c){var h=c.getAttribute('href')||'';var l=(c.getAttribute('aria-label')||c.textContent||'').trim();if(c.hasAttribute('data-pr-cta')||/calendly\.com/.test(h)||B.test(l)){fire('appointment_request',{label:l.slice(0,60)});}}},true);document.addEventListener('submit',function(ev){var f=ev.target||{};var n=(f.getAttribute&&(f.getAttribute('name')||f.getAttribute('id')))||'form';fire('form_submit',{form:String(n).slice(0,60)});},true);})();</script>
 </body>
 </html>
