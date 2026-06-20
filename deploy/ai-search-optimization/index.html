@@ -96,9 +96,9 @@
     --bg: #08080d;
     --bg-nav: rgba(8,8,13,0.92);
     --text: #f0f0f0;
-    --text-secondary: rgba(255,255,255,0.5);
-    --text-muted: rgba(255,255,255,0.35);
-    --text-faint: rgba(255,255,255,0.25);
+    --text-secondary: rgba(255,255,255,0.72);
+    --text-muted: rgba(255,255,255,0.56);
+    --text-faint: rgba(255,255,255,0.42);
     --text-dim: rgba(255,255,255,0.15);
     --text-ghost: rgba(255,255,255,0.06);
     --accent: #4ade80;
@@ -332,6 +332,14 @@
     .footer-inner { flex-direction: column; }
     .result-metrics { grid-template-columns: 1fr; gap: 1.5rem; }
     .card-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Mobile fit + centering safety */
+  @media (max-width: 600px) {
+    .container { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+    .pricing-tiers { flex-direction: column; }
+    .pricing-tiers > div { min-width: 0 !important; }
+    img, table, pre, iframe, video { max-width: 100%; }
   }
 </style>
 <!-- Google tag (gtag.js) -->

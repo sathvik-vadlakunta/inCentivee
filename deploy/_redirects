@@ -1,6 +1,11 @@
 # Cloudflare Pages redirects — https://developers.cloudflare.com/pages/configuration/redirects/
 # 301s for legacy blog slugs (old public/ bundle) -> current canonical posts.
 # Keeps SEO equity / inbound links alive after consolidating onto deploy/.
+/legal            /law-firms/           301
+/legal.html       /law-firms/           301
+/medical          /medical-practices/   301
+/medical.html     /medical-practices/   301
+/dental-practices /                     301
 /blog/what-is-aeo-for-dentists      /blog/what-is-aeo-ai-engine-optimization   301
 /blog/how-chatgpt-recommends-dentists   /blog/chatgpt-recommending-your-competitor   301
 /blog/schema-markup-for-dentists    /blog/what-is-aeo-ai-engine-optimization   301

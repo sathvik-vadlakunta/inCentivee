@@ -76,9 +76,9 @@
     --bg: #08080d;
     --bg-nav: rgba(8,8,13,0.92);
     --text: #f0f0f0;
-    --text-secondary: rgba(255,255,255,0.5);
-    --text-muted: rgba(255,255,255,0.35);
-    --text-faint: rgba(255,255,255,0.25);
+    --text-secondary: rgba(255,255,255,0.72);
+    --text-muted: rgba(255,255,255,0.56);
+    --text-faint: rgba(255,255,255,0.42);
     --text-dim: rgba(255,255,255,0.15);
     --text-ghost: rgba(255,255,255,0.06);
     --accent: #4ade80;
@@ -507,6 +507,14 @@
     .score-ring { width: 110px; height: 110px; }
     .score-ring .score-num { font-size: 1.5rem; }
   }
+
+  /* Mobile fit + centering safety */
+  @media (max-width: 600px) {
+    .container { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+    .pricing-tiers { flex-direction: column; }
+    .pricing-tiers > div { min-width: 0 !important; }
+    img, table, pre, iframe, video { max-width: 100%; }
+  }
 </style>
 <!-- Analytics: paste your GA4 Measurement ID (Admin → Data Streams → G-XXXXXXX) into GA4_MEASUREMENT_ID to go live. Lead events queue to dataLayer regardless. -->
 <script>
@@ -566,8 +574,8 @@
       <button class="industry-nav-btn" onclick="this.parentElement.classList.toggle('open')">Industries &#9662;</button>
       <div class="industry-dropdown">
         <a href="/" class="active"><span class="ind-icon">&#x1F9B7;</span> Dental Practices</a>
-        <a href="/legal"><span class="ind-icon">&#x2696;</span> Law Firms</a>
-        <a href="/medical"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
+        <a href="/law-firms/"><span class="ind-icon">&#x2696;</span> Law Firms</a>
+        <a href="/medical-practices/"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
       </div>
     </div>
     <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
@@ -585,8 +593,8 @@
     <button class="industry-nav-btn" onclick="this.parentElement.classList.toggle('open')">Industries &#9662;</button>
     <div class="industry-dropdown">
       <a href="/" class="active"><span class="ind-icon">&#x1F9B7;</span> Dental Practices</a>
-      <a href="/legal"><span class="ind-icon">&#x2696;</span> Law Firms</a>
-      <a href="/medical"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
+      <a href="/law-firms/"><span class="ind-icon">&#x2696;</span> Law Firms</a>
+      <a href="/medical-practices/"><span class="ind-icon">&#x1FA7A;</span> Medical Practices</a>
     </div>
   </div>
   <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode"><span class="icon-sun">&#9728;&#65039;</span><span class="icon-moon">&#9790;&#65039;</span></button>
@@ -599,7 +607,7 @@
   <div class="hero-content">
     <div class="hero-text">
       <div class="section-label">AI-Powered Dental Marketing</div>
-      <h1>Get <em>15-25 more new patient inquiries</em> every&nbsp;month.</h1>
+      <h1>The marketing that gets your <em>dental practice</em> found everywhere patients&nbsp;search.</h1>
       <p class="hero-sub">A full schedule. A growing practice. Zero time wasted on marketing. PracticeRank gets your practice found everywhere patients search — so your phone rings more and you focus on&nbsp;dentistry.</p>
       <div class="hero-ctas">
         <a href="#audit" class="btn-primary">See How Many Patients You're Missing &rarr;</a>
