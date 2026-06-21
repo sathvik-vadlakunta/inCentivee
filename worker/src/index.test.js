@@ -1104,3 +1104,62 @@ describe("VERTICAL_CONFIG — new verticals", () => {
     expect(VERTICAL_CONFIG.generic.clientTerm).toBe("customer");
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// ── Review-count reconciliation in narrative text ──
+// ════════════════════════════════════════════════════════════════
+
+describe("validateAndCorrectReport — review count in prose", () => {
+  const siteData = { scraped: true, city: "Casper", state: "WY" };
+  const placeData = {
+    name: "Hilltop Family Dental", city: "Casper", state: "WY",
+    rating: 4.8, reviewCount: 1105, isMultiLocation: false,
+    matchConfidence: "high", domainMatch: true, nameMatch: true, placeId: "x",
+  };
+  const competitors = [{ name: "Aspen Ridge Dental", reviewCount: 542, rating: 4.6, address: "Casper, WY" }];
+
+  function makeReport(execSummary, findings = []) {
+    return {
+      practice_name: "Hilltop Family Dental", city: "Casper", state: "WY",
+      executive_summary: execSummary,
+      categories: {
+        gbp: { score: 58, status: "needs_work", findings },
+        reviews: { score: 70, status: "good", findings: [], count: 1105, rating: 4.8,
+          competitor_name: "Aspen Ridge Dental", competitor_reviews: 542 },
+      },
+      priority_actions: [],
+    };
+  }
+
+  it("corrects a stale high self-count (>500) in the executive summary", () => {
+    const r = validateAndCorrectReport(
+      makeReport("Hilltop Family Dental has built a strong reputation with 910 Google reviews and a 4.8-star rating."),
+      siteData, placeData, competitors
+    );
+    expect(r.executive_summary).toContain("1105 reviews");
+    expect(r.executive_summary).not.toContain("910");
+  });
+
+  it("preserves a competitor's review count in prose", () => {
+    const r = validateAndCorrectReport(
+      makeReport("You have 910 reviews while Aspen Ridge Dental has 542 reviews."),
+      siteData, placeData, competitors
+    );
+    expect(r.executive_summary).toContain("1105 reviews"); // practice corrected
+    expect(r.executive_summary).toContain("542 reviews");  // competitor preserved
+  });
+
+  it("corrects review counts inside category findings", () => {
+    const r = validateAndCorrectReport(
+      makeReport("summary", ["The practice shows only 910 reviews, limiting trust signals."]),
+      siteData, placeData, competitors
+    );
+    expect(r.categories.gbp.findings[0]).toContain("1105 reviews");
+  });
+
+  it("leaves the already-correct count untouched", () => {
+    const original = "Hilltop has 1105 reviews at 4.8 stars.";
+    const r = validateAndCorrectReport(makeReport(original), siteData, placeData, competitors);
+    expect(r.executive_summary).toBe(original);
+  });
+});

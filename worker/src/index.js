@@ -1066,35 +1066,57 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
     }
   }
 
-  // ── Fix findings text AFTER competitor data is finalized ──
-  // Replace wrong review counts in findings, but preserve competitor review counts
+  // ── Fix review counts in all narrative text AFTER competitor data is finalized ──
+  // Replace the practice's wrong review count with the Google-verified number,
+  // but never clobber a number that belongs to a competitor.
   if (placeData && placeData.reviewCount > 0) {
     const realCount = placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount;
     const compReviews = report.categories?.reviews?.competitor_reviews || 0;
     const compName = report.categories?.reviews?.competitor_name || "";
 
-    const fixReviewCount = (f) => {
-      // Split finding into segments around competitor mentions to avoid clobbering those numbers
-      return f.replace(/\b(\d+)\s*(total\s+)?reviews?\b/gi, (match, numStr) => {
-        const num = parseInt(numStr);
-        // Don't replace if it matches the competitor count
-        if (compReviews > 0 && num === compReviews) return match;
-        // Don't replace if it's the correct count already
+    // Review counts that belong to a competitor (ANY competitor, not just #1) —
+    // these must be preserved. This replaces the old blanket ">500" guard, which
+    // wrongly skipped the practice's OWN high review count (e.g. a verified 1,105
+    // showing as a stale 910 in the executive summary).
+    const competitorCounts = competitors.map((c) => c.reviewCount).filter((n) => n > 0);
+    if (compReviews > 0) competitorCounts.push(compReviews);
+    const isCompetitorCount = (num) =>
+      competitorCounts.some((c) => Math.abs(num - c) <= Math.max(2, c * 0.02));
+
+    const fixReviewCount = (text) => {
+      if (!text) return text;
+      return text.replace(/\b(\d[\d,]*)\s*(total\s+|google\s+)?reviews?\b/gi, (match, numStr) => {
+        const num = parseInt(numStr.replace(/,/g, ""), 10);
+        if (!num) return match;
+        // Already correct
         if (num === realCount) return match;
-        // Don't replace large numbers (likely competitor or industry stats)
-        if (num > 500) return match;
-        // Check if this mention is near the competitor name (within 100 chars before)
-        const idx = f.indexOf(match);
-        const before = f.slice(Math.max(0, idx - 100), idx).toLowerCase();
+        // Belongs to a competitor (exact-ish match to any competitor's count)
+        if (isCompetitorCount(num)) return match;
+        // Mentioned right after a competitor's name (within 100 chars before)
+        const idx = text.indexOf(match);
+        const before = text.slice(Math.max(0, idx - 100), idx).toLowerCase();
         if (compName && before.includes(compName.toLowerCase().split(" ")[0])) return match;
+        // Otherwise this is the practice's own count — use the verified number
         return `${realCount} reviews`;
       });
     };
 
+    // Apply to category findings, the executive summary, and priority actions —
+    // anywhere the practice's review count appears in prose.
     for (const cat of Object.values(report.categories)) {
       if (Array.isArray(cat.findings)) {
         cat.findings = cat.findings.map(fixReviewCount);
       }
+    }
+    if (typeof report.executive_summary === "string") {
+      report.executive_summary = fixReviewCount(report.executive_summary);
+    }
+    if (Array.isArray(report.priority_actions)) {
+      report.priority_actions = report.priority_actions.map((a) =>
+        a && typeof a.description === "string"
+          ? { ...a, description: fixReviewCount(a.description) }
+          : a
+      );
     }
   }
 
