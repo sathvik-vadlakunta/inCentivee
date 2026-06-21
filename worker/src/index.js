@@ -957,7 +957,7 @@ async function validateCompetitors(competitors, vertical) {
     if (comp.website && validated.length < 8) {
       try {
         const res = await fetch(comp.website, {
-          headers: { "User-Agent": "PracticeRank-Audit/1.0" },
+          headers: browserHeaders(BROWSER_UAS[0]),
           redirect: "follow",
           signal: AbortSignal.timeout(3000),
         });
@@ -1614,6 +1614,28 @@ async function sendResendEmail(apiKey, payload) {
 // ── Scrape practice website for real data ──
 // ════════════════════════════════════════════════════════════════
 
+// Realistic browser User-Agents. A bot-looking UA ("PracticeRank-Auditor/1.0")
+// gets blocked by WAFs/Cloudflare on many real sites (e.g. our own client
+// hilltopdental.com returned 403). We present as a normal browser, and rotate
+// to a second UA if the first is challenged.
+const BROWSER_UAS = [
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+];
+
+function browserHeaders(ua) {
+  return {
+    "User-Agent": ua,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+  };
+}
+
 async function scrapePracticeSite(practiceUrl) {
   const domain = practiceUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
   const urls = [`https://${domain}`, `https://www.${domain}`];
@@ -1621,20 +1643,30 @@ async function scrapePracticeSite(practiceUrl) {
   let html = "";
   let finalUrl = "";
 
+  // Try each URL variant with a browser UA, rotating UAs on block/failure.
+  outer:
   for (const u of urls) {
-    try {
-      const res = await fetch(u, {
-        headers: { "User-Agent": "PracticeRank-Auditor/1.0" },
-        redirect: "follow",
-        cf: { cacheTtl: 300 },
-      });
-      if (res.ok) {
-        html = await res.text();
-        finalUrl = res.url || u;
-        break;
+    for (const ua of BROWSER_UAS) {
+      try {
+        const res = await fetch(u, {
+          headers: browserHeaders(ua),
+          redirect: "follow",
+          signal: AbortSignal.timeout(9000),
+          cf: { cacheTtl: 300 },
+        });
+        if (res.ok) {
+          const body = await res.text();
+          // Guard against challenge/interstitial pages that return 200 with no
+          // real content — treat as a miss so we try the next UA/URL.
+          if (body && body.length > 500) {
+            html = body;
+            finalUrl = res.url || u;
+            break outer;
+          }
+        }
+      } catch (_) {
+        continue;
       }
-    } catch (_) {
-      continue;
     }
   }
 
@@ -1682,7 +1714,8 @@ async function scrapePracticeSite(practiceUrl) {
   let robotsTxt = "";
   try {
     const rRes = await fetch(`https://${domain}/robots.txt`, {
-      headers: { "User-Agent": "PracticeRank-Auditor/1.0" },
+      headers: browserHeaders(BROWSER_UAS[0]),
+      signal: AbortSignal.timeout(6000),
     });
     if (rRes.ok) robotsTxt = await rRes.text();
   } catch (_) {}
@@ -1691,7 +1724,8 @@ async function scrapePracticeSite(practiceUrl) {
   let hasLlmsTxt = false;
   try {
     const lRes = await fetch(`https://${domain}/llms.txt`, {
-      headers: { "User-Agent": "PracticeRank-Auditor/1.0" },
+      headers: browserHeaders(BROWSER_UAS[0]),
+      signal: AbortSignal.timeout(6000),
     });
     hasLlmsTxt = lRes.ok && (await lRes.text()).length > 50;
   } catch (_) {}
