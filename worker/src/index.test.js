@@ -758,12 +758,14 @@ describe("detectVertical", () => {
     expect(detectVertical("legal", site)).toBe("legal");
   });
 
-  it("trusts explicit legal selection even if site looks dental", () => {
+  it("reclassifies to dental when content is clearly dental despite a legal selection", () => {
+    // Content wins over the submitted vertical: a site full of dental terms is
+    // dental even if the lead came in on the legal page (the Ethan-class bug).
     const site = mockSite({
       isDental: true,
       text: "dentist dental practice orthodontist",
     });
-    expect(detectVertical("legal", site)).toBe("legal");
+    expect(detectVertical("legal", site)).toBe("dental");
   });
 
   // --- User explicitly chose medical — NEVER override ---
@@ -906,8 +908,9 @@ describe("detectVertical — real site scenarios", () => {
       isMedicalSite: true, // "patient" triggers this
       visibleText: "family dental practice dentist cosmetic dentistry patient care oral hygiene teeth whitening",
     };
-    // User selected medical but site is dental — we trust user selection
-    expect(detectVertical("medical", site)).toBe("medical");
+    // User came in on the medical page, but the content is overwhelmingly
+    // dental — content wins, so the audit is correctly run as dental.
+    expect(detectVertical("medical", site)).toBe("dental");
   });
 
   it("personal injury law firm on dental page auto-detects legal", () => {
@@ -1039,5 +1042,65 @@ describe("finalSafetyChecks — GBP guard", () => {
     const f = report.categories.gbp.findings[0];
     expect(assertsGbpAbsence(f)).toBe(false);
     expect(f).toMatch(/could not (fully )?verify|under-optimized/i);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ── Vertical Detection — financial + generic (new verticals) ──
+// ════════════════════════════════════════════════════════════════
+
+describe("detectVertical — financial & generic", () => {
+  it("reclassifies a wealth advisor (submitted as legal) to financial", () => {
+    const site = {
+      scraped: true,
+      visibleText: "fee-only fiduciary financial advisor wealth management retirement planning investment management portfolio cfp",
+    };
+    expect(detectVertical("legal", site)).toBe("financial");
+  });
+
+  it("honors an explicit financial selection", () => {
+    const site = {
+      scraped: true,
+      visibleText: "wealth advisory financial planning fiduciary retirement income",
+    };
+    expect(detectVertical("financial", site)).toBe("financial");
+  });
+
+  it("falls back to generic for a non-modeled business with real content", () => {
+    const site = {
+      scraped: true,
+      visibleText: "instructional design e-learning company we build custom training courses and learning management systems for enterprise clients across many industries with a focus on engaging multimedia content and measurable outcomes for corporate learning and development teams worldwide every single day".repeat(2),
+    };
+    expect(detectVertical("dental", site)).toBe("generic");
+  });
+
+  it("uses signalCounts from scrape when present", () => {
+    const site = {
+      scraped: true,
+      visibleText: "irrelevant",
+      signalCounts: { dental: 0, legal: 1, medical: 0, financial: 6 },
+    };
+    expect(detectVertical("legal", site)).toBe("financial");
+  });
+
+  it("respects a near-tie with the user's selection", () => {
+    // legal=4, financial=4 (estate planning overlap) — user picked legal, keep it
+    const site = {
+      scraped: true,
+      visibleText: "x",
+      signalCounts: { dental: 0, legal: 4, medical: 0, financial: 4 },
+    };
+    expect(detectVertical("legal", site)).toBe("legal");
+  });
+});
+
+describe("VERTICAL_CONFIG — new verticals", () => {
+  it("has financial and generic configs with null placeType", () => {
+    expect(VERTICAL_CONFIG.financial).toBeDefined();
+    expect(VERTICAL_CONFIG.financial.placeType).toBe(null);
+    expect(VERTICAL_CONFIG.financial.clientTerm).toBe("client");
+    expect(VERTICAL_CONFIG.generic).toBeDefined();
+    expect(VERTICAL_CONFIG.generic.placeType).toBe(null);
+    expect(VERTICAL_CONFIG.generic.clientTerm).toBe("customer");
   });
 });

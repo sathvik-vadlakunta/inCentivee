@@ -239,8 +239,9 @@ export default {
     try {
       const body = await request.json();
       const { practiceUrl, email, name, phone, vertical } = body;
-      // vertical: "dental" (default), "legal", "medical"
-      let vert = ["dental", "legal", "medical"].includes(vertical) ? vertical : "dental";
+      // vertical: "dental" (default), "legal", "medical", "financial", "generic".
+      // detectVertical() re-checks against scraped content and may override this.
+      let vert = ["dental", "legal", "medical", "financial", "generic"].includes(vertical) ? vertical : "dental";
 
       if (!practiceUrl || !email) {
         return new Response(
@@ -487,7 +488,10 @@ export default {
 
 async function fetchGooglePlaceData(practiceName, city, state, domain, phone, apiKey, vertical = "dental") {
   try {
-    const placeType = VERTICAL_CONFIG[vertical]?.placeType || "dentist";
+    // placeType may be null (financial/generic) or an array (medical) —
+    // includedType takes a single string, so normalize and allow "no type".
+    const rawType = VERTICAL_CONFIG[vertical]?.placeType;
+    const placeType = Array.isArray(rawType) ? rawType[0] : (rawType || null);
     const placeLabel = VERTICAL_CONFIG[vertical]?.placeLabel || "dentist";
 
     // Strategy: try multiple search queries to find the right place.
@@ -521,7 +525,7 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
 
     for (const query of queries) {
       const body = { textQuery: query.text, maxResultCount: 10 };
-      if (query.typed) body.includedType = placeType;
+      if (query.typed && placeType) body.includedType = placeType;
       const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
         method: "POST",
         headers: {
@@ -776,9 +780,12 @@ function findBestMatch(results, practiceName, domain, phone, city) {
  */
 async function fetchNearbyCompetitors(lat, lng, practiceName, apiKey, vertical = "dental") {
   const config = VERTICAL_CONFIG[vertical];
-  const placeTypeRaw = config?.placeType || "dentist";
-  // placeType can be a string or array — normalize to array for includedTypes
-  const placeTypes = Array.isArray(placeTypeRaw) ? placeTypeRaw : [placeTypeRaw];
+  const placeTypeRaw = config?.placeType;
+  // placeType can be a string, array, or null (financial/generic — no clean
+  // Google type). null → skip type-based searchNearby, use text search only.
+  const placeTypes = placeTypeRaw
+    ? (Array.isArray(placeTypeRaw) ? placeTypeRaw : [placeTypeRaw])
+    : null;
 
   const fieldMask = "places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.websiteUri,places.primaryType";
 
@@ -804,32 +811,34 @@ async function fetchNearbyCompetitors(lat, lng, practiceName, apiKey, vertical =
   };
 
   try {
-    // Search within ~8km (5 miles) using Places API (New)
-    const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": fieldMask,
-      },
-      body: JSON.stringify({
-        includedTypes: placeTypes,
-        maxResultCount: 20,
-        locationRestriction: {
-          circle: {
-            center: { latitude: lat, longitude: lng },
-            radius: 8000.0,
-          },
+    // Type-based nearby search — only when the vertical has a Google Places type.
+    if (placeTypes) {
+      const res = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": fieldMask,
         },
-      }),
-    });
-    const data = await res.json();
+        body: JSON.stringify({
+          includedTypes: placeTypes,
+          maxResultCount: 20,
+          locationRestriction: {
+            circle: {
+              center: { latitude: lat, longitude: lng },
+              radius: 8000.0,
+            },
+          },
+        }),
+      });
+      const data = await res.json();
 
-    if (data.places && data.places.length > 0) {
-      return filterAndMap(data.places);
+      if (data.places && data.places.length > 0) {
+        return filterAndMap(data.places);
+      }
     }
 
-    // Fallback: text search for verticals where searchNearby returns nothing
+    // Fallback: text search (also the primary path for typeless verticals)
     const label = config?.placeLabel || vertical;
     const textQuery = `${label} near ${lat},${lng}`;
     console.log(`searchNearby returned 0 results for ${vertical}, falling back to textSearch: "${textQuery}"`);
@@ -878,24 +887,45 @@ async function validateCompetitors(competitors, vertical) {
     dental: ["dental", "dentist", "orthodont", "oral", "smile", "tooth", "teeth", "dds", "dmd", "periodon", "endodon", "prosthodon"],
     legal: ["law", "attorney", "lawyer", "legal", "counsel", "esq", "advocacy", "litigation", "injury", "defense", "defenders", "advocates"],
     medical: ["medical", "health", "clinic", "doctor", "physician", "care", "wellness", "dermatol", "orthoped", "cardiolog", "pediatric", "urgent care"],
+    financial: ["financial", "wealth", "advisor", "advisors", "advisory", "capital", "investment", "investments", "planning", "asset", "retirement", "fiduciary"],
   };
-  const nkw = nameKeywords[vertical] || nameKeywords.dental;
+  const nkw = nameKeywords[vertical] || null;
 
-  // Non-competitor business types that Google sometimes mixes in
-  const excludePatterns = [
+  // Non-competitor business types that Google sometimes mixes in. Some excludes
+  // ARE the competitor set for certain verticals (financial advisors/planners
+  // when vertical=financial), so drop those from the exclude list.
+  let excludePatterns = [
     "tax relief", "tax service", "tax prepar", "accounting", "accountant", "cpa",
     "insurance agent", "insurance broker", "real estate agent", "realtor",
     "financial advisor", "financial planner", "mortgage", "bail bond",
     "notary", "title company", "escrow", "collection agency",
   ];
+  if (vertical === "financial") {
+    excludePatterns = excludePatterns.filter(
+      (p) => !["financial advisor", "financial planner", "accounting", "accountant", "cpa"].includes(p)
+    );
+  }
+  if (vertical === "generic") {
+    // We don't know the industry — only strip the most obviously-unrelated types.
+    excludePatterns = ["bail bond", "collection agency"];
+  }
 
   // Website keywords to check (broader than name — catches sites that don't have industry in name)
   const siteKeywords = {
     dental: ["dentist", "dental", "teeth", "orthodont", "oral health", "cleaning", "crown", "implant", "cavity"],
     legal: ["attorney", "lawyer", "law firm", "practice area", "legal", "litigation", "case result", "court", "counsel", "verdict", "settlement"],
     medical: ["doctor", "physician", "medical", "patient", "treatment", "diagnosis", "appointment", "specialist", "board certified", "clinic"],
+    financial: ["financial advisor", "wealth management", "investment", "retirement", "fiduciary", "portfolio", "financial planning", "advisory", "assets under management"],
   };
-  const skw = siteKeywords[vertical] || siteKeywords.dental;
+  const skw = siteKeywords[vertical] || null;
+
+  // For verticals we don't model by keyword (generic), skip the strict
+  // industry filter — just drop obvious excludes and return what Google found.
+  if (!nkw || !skw) {
+    return competitors
+      .filter((c) => !excludePatterns.some((ex) => c.name.toLowerCase().includes(ex)))
+      .slice(0, 10);
+  }
 
   // Resolve expected Google place types for primaryType matching (string or array)
   const expectedTypes = (() => {
@@ -1680,6 +1710,20 @@ async function scrapePracticeSite(practiceUrl) {
   const hasMedicalSchema = schemaTypes.some(t => /physician|medical|doctor|health|hospital|clinic/i.test(t));
   const isMedicalSite = medicalSignals.length >= 1;
 
+  const financialSignals = FINANCIAL_KEYWORDS.filter(kw => allText.includes(kw));
+  const hasFinancialSchema = schemaTypes.some(t => /financial|wealth|investment/i.test(t));
+  const isFinancialSite = financialSignals.length >= 2;
+
+  // Per-vertical signal scores (schema match is a strong prior — worth +2).
+  // detectVertical uses these to pick the strongest-supported vertical rather
+  // than blindly trusting whichever landing page the lead submitted from.
+  const signalCounts = {
+    dental: dentalSignals.length + (hasDentalSchema ? 2 : 0),
+    legal: legalSignals.length + (hasLegalSchema ? 2 : 0),
+    medical: medicalSignals.length + (hasMedicalSchema ? 2 : 0),
+    financial: financialSignals.length + (hasFinancialSchema ? 2 : 0),
+  };
+
   const raw = {
     scraped: true,
     domain,
@@ -1687,6 +1731,8 @@ async function scrapePracticeSite(practiceUrl) {
     isDentalSite,
     isLegalSite,
     isMedicalSite,
+    isFinancialSite,
+    signalCounts,
     dentalSignals,
     practiceName: practiceName || "",
     title: title || "",
@@ -1803,6 +1849,14 @@ const MEDICAL_KEYWORDS = [
   "board certified", "patient", "md", "do", "np", "telehealth",
 ];
 
+const FINANCIAL_KEYWORDS = [
+  "financial advisor", "financial planner", "financial planning", "wealth management",
+  "wealth advisor", "wealth advisory", "investment advisor", "investment management",
+  "portfolio", "fiduciary", "retirement planning", "retirement income",
+  "fee-only", "registered investment advisor", "asset management", "private wealth",
+  "cfp", "cfa", "chfc", "aum", "annuit", "401(k)", "estate and tax planning",
+];
+
 const VERTICAL_CONFIG = {
   dental: {
     placeType: "dentist",
@@ -1830,6 +1884,28 @@ const VERTICAL_CONFIG = {
     clientTermPlural: "patients",
     providerTerm: "doctor",
     ltv: "$2,000-$10,000",
+  },
+  // Financial advisors / wealth managers have no clean Google Places type, so
+  // placeType is null — the lookup matches by domain/name text instead.
+  financial: {
+    placeType: null,
+    placeLabel: "financial advisor",
+    businessTerm: "firm",
+    clientTerm: "client",
+    clientTermPlural: "clients",
+    providerTerm: "advisor",
+    ltv: "$10,000-$100,000",
+  },
+  // Neutral fallback for any local business we can't confidently classify —
+  // avoids forcing a wrong industry's terminology onto the report.
+  generic: {
+    placeType: null,
+    placeLabel: "business",
+    businessTerm: "business",
+    clientTerm: "customer",
+    clientTermPlural: "customers",
+    providerTerm: "team",
+    ltv: "$500-$5,000",
   },
 };
 
@@ -2088,6 +2164,35 @@ MEDICAL-SPECIFIC ANALYSIS — evaluate these additional factors:
 - Multi-provider practices: For group practices, are individual providers discoverable? Each doctor should have their own optimized page.
 - Average patient LTV by specialty: Primary care ($2K-$5K), Dermatology ($3K-$8K), Orthopedics ($5K-$15K), Cardiology ($8K-$20K), Cosmetic/plastic surgery ($10K-$50K+). Use these to calculate revenue_lost_annually.`,
     },
+    financial: {
+      role: "expert financial advisory and wealth management marketing auditor with deep knowledge of SEC/FINRA advertising rules and high-net-worth client acquisition",
+      badExample1: '"No structured FAQ data detected — AI search engines like ChatGPT and Gemini cannot extract service or fee information from this site, making it invisible to the growing share of investors who now use AI to research and shortlist financial advisors before reaching out"',
+      badExample2: '"Missing AI discoverability file — this site has no machine-readable summary for AI assistants, so ChatGPT, Gemini, and Perplexity have no structured way to learn about or recommend this advisor when prospects ask for help with retirement, investments, or wealth planning"',
+      aiVisNote: "what prospective clients see when they ask AI assistants about financial advisors, wealth managers, fiduciaries, or retirement planning in this area",
+      directoryNote: "SmartAsset, NAPFA, CFP Board 'Find a CFP', Wealthtender, XY Planning Network, FINRA BrokerCheck / SEC IAPD profile completeness, Google Business Profile, local business citations",
+      contentNote: "service pages (retirement planning, investment management, estate & tax planning), advisor bio pages with credentials (CFP, CFA, ChFC, fiduciary status), fee-structure transparency, and educational/thought-leadership content",
+      extraGuidance: `
+FINANCIAL-SPECIFIC ANALYSIS — evaluate these additional factors:
+- Fiduciary & fee positioning: Does the site clearly state fiduciary status and fee model (fee-only, fee-based, AUM %)? This is the #1 trust question prospects and AI engines weigh.
+- Credentials: Are CFP, CFA, ChFC, and years of experience prominent on advisor bios? These are the strongest E-E-A-T signals in financial content.
+- Service depth: Dedicated pages for retirement planning, investment management, estate/tax planning, and the niches/clientele served (e.g. business owners, physicians, pre-retirees) rank far better than a generic "services" list.
+- Compliance: Financial marketing is governed by SEC/FINRA rules — avoid recommending performance claims, testimonials without disclosures, or guarantees. Frame findings around visibility and trust, never around promised returns.
+- Directory authority: SmartAsset/NAPFA/CFP-Board listings and a clean BrokerCheck record are weighted heavily by AI engines recommending advisors.
+- Average client LTV: advisory relationships are long (often 7-10+ years) at ~1% of AUM, so a single new client is typically worth $10K-$100K+ in lifetime fees. Use this to calculate revenue_lost_annually.`,
+    },
+    generic: {
+      role: "expert local business marketing auditor",
+      badExample1: '"No structured FAQ data detected — AI search engines like ChatGPT and Gemini cannot extract service information from this site, making it invisible to the growing share of customers who now use AI assistants to find local businesses"',
+      badExample2: '"Missing AI discoverability file — this site has no machine-readable summary for AI assistants, so ChatGPT, Gemini, and Perplexity have no structured way to learn about or recommend this business"',
+      aiVisNote: "what customers see when they ask AI assistants for recommendations for this type of local business in this area",
+      directoryNote: "Google Business Profile, Apple Maps, Bing Places, Yelp, relevant industry directories, and NAP/citation consistency",
+      contentNote: "service/product pages, about page, local landing pages, and local keyword targeting",
+      extraGuidance: `
+GENERIC LOCAL BUSINESS ANALYSIS — we could not confidently classify this business into a specialized vertical, so keep findings broadly applicable:
+- Use neutral "customer/customers" language; do NOT assume it is a dental, legal, medical, or financial business.
+- Focus on universal local-visibility factors: Google Business Profile optimization, reviews, local citations, on-page local SEO, mobile/performance, and AI discoverability.
+- Avoid industry-specific jargon, directories, or revenue figures you can't support from the scraped content.`,
+    },
   };
   const vp = verticalPrompts[vertical] || verticalPrompts.dental;
 
@@ -2263,17 +2368,54 @@ function classifyUserAgent(ua) {
 function detectVertical(userVertical, siteData) {
   if (!siteData || !siteData.scraped) return userVertical;
 
-  // Trust explicit user selection for legal/medical — never override
-  if (userVertical === "legal" || userVertical === "medical") return userVertical;
+  const VERTICALS = ["dental", "legal", "medical", "financial"];
 
-  // Only auto-detect from the default dental page when site isn't dental
-  if (userVertical === "dental" && !siteData.isDentalSite) {
+  // Prefer the full-text signal scores captured during scrape; fall back to
+  // recomputing from visibleText (older callers / tests).
+  let counts = siteData.signalCounts;
+  if (!counts) {
     const text = (siteData.visibleText || "").toLowerCase();
-    const legalHits = LEGAL_KEYWORDS.filter(kw => text.includes(kw)).length;
-    const medicalHits = MEDICAL_KEYWORDS.filter(kw => text.includes(kw)).length;
-    // Require at least 3 keyword matches to auto-switch, and pick the stronger signal
-    if (legalHits >= 3 && legalHits > medicalHits) return "legal";
-    if (medicalHits >= 3 && medicalHits > legalHits) return "medical";
+    counts = {
+      dental: DENTAL_KEYWORDS.filter(kw => text.includes(kw)).length,
+      legal: LEGAL_KEYWORDS.filter(kw => text.includes(kw)).length,
+      medical: MEDICAL_KEYWORDS.filter(kw => text.includes(kw)).length,
+      financial: FINANCIAL_KEYWORDS.filter(kw => text.includes(kw)).length,
+    };
+  }
+
+  let best = null;
+  let bestScore = 0;
+  for (const v of VERTICALS) {
+    const s = counts[v] || 0;
+    if (s > bestScore) { bestScore = s; best = v; }
+  }
+  const userScore = counts[userVertical] || 0;
+
+  // Strong, clear signal for a specific vertical — trust the page CONTENT over
+  // whichever landing page the lead happened to submit from. This is the core
+  // fix: a law firm submitted on the medical page, or a wealth advisor labeled
+  // "legal", now gets reclassified to what the site actually is.
+  if (best && bestScore >= 3) {
+    // Respect the user's selection only when it's essentially tied with the
+    // winner (within 1 hit) — guards against flip-flopping on overlapping vocab
+    // like "estate planning" (legal/financial) or "implant" (dental/medical).
+    if (VERTICALS.includes(userVertical) && userScore >= bestScore - 1) return userVertical;
+    return best;
+  }
+
+  // Weak signal: keep the user's selection if it has any support at all.
+  if (VERTICALS.includes(userVertical) && userScore >= 1) return userVertical;
+
+  // No vertical has any support. Distinguish two cases:
+  //  - Substantial page content but zero industry signal anywhere → genuinely a
+  //    business we don't model (e.g. a design firm in the dental form) → neutral
+  //    generic audit instead of mislabeling it dental/legal/medical/financial.
+  //  - Thin/short text → likely a sparse or partially-blocked scrape → don't
+  //    downgrade; trust whatever vertical the lead submitted from.
+  if (bestScore === 0) {
+    const textLen = (siteData.visibleText || "").length;
+    if (textLen > 400) return "generic";
+    return userVertical || "generic";
   }
 
   return userVertical;
@@ -2292,6 +2434,7 @@ export {
   DENTAL_KEYWORDS,
   LEGAL_KEYWORDS,
   MEDICAL_KEYWORDS,
+  FINANCIAL_KEYWORDS,
   VERTICAL_CONFIG,
   BAD_NAME_PATTERNS,
   VALID_STATES,
