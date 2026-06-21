@@ -1544,8 +1544,8 @@ async function sendAuditEmails(env, report, prospectEmail, prospectName, practic
 
       <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:20px;margin:24px 0;">
         <h3 style="margin:0 0 8px;color:#16a34a;font-size:16px;">Ready to fix this?</h3>
-        <p style="margin:0 0 16px;color:#555;font-size:14px;">PracticeRank can implement all these fixes in your first month — no effort from you.</p>
-        <a href="https://practicerank.ai/#book" style="background:#10b981;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;display:inline-block;">Book Your Free Strategy Call</a>
+        <p style="margin:0 0 16px;color:#555;font-size:14px;">On a free 20-minute call we'll walk through your report and show you exactly how we'd close these gaps — backed by our 90-day score-or-refund guarantee. No obligation.</p>
+        <a href="https://calendly.com/ethan-practicerank?email=${encodeURIComponent(prospectEmail || '')}&name=${encodeURIComponent(prospectName || '')}" style="background:#10b981;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;display:inline-block;">Book Your Free Strategy Call &rarr;</a>
       </div>
     </div>
 

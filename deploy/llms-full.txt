@@ -1,6 +1,6 @@
 # PracticeRank — Full Content Index
 
-> PracticeRank (practicerank.ai) is a fully managed AI-powered dental marketing platform. It gets dental practices found everywhere patients search: Google Search, Google Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, Google AI Overviews, Apple Maps, Siri, and 20+ local directories. Pricing: custom plans based on each practice's market, with no long-term contracts and no setup fees. Results: 15-25 additional new patient inquiries per month within 90 days. 90-day results-or-refund guarantee. Founded by Kody Doherty. Contact: kdoherty@practicerank.ai.
+> PracticeRank (practicerank.ai) is a fully managed AI-powered dental marketing platform. It gets dental practices found everywhere patients search: Google Search, Google Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, Google AI Overviews, Apple Maps, Siri, and 20+ local directories. Pricing: three tiers (Optimize, Grow, Dominate) based on each practice's market and goals, month-to-month with no long-term contracts. Every engagement starts with a free PracticeRank Score and is backed by a 90-day results-or-refund guarantee. Founded by Kody Doherty, Matt Toone, and Ethan Mandelup (Lost Relic). Contact: kdoherty@practicerank.ai.
 
 ---
 
@@ -8,22 +8,20 @@
 
 ### [PracticeRank — AI-Powered Marketing for Dental Practices](https://practicerank.ai)
 
-PracticeRank is the first dental marketing platform built for the AI search era. The way patients find dentists has fundamentally changed: 90% of patients search online before booking, 60% of clicks go to the Google Maps 3-pack, and over 40% of patients now ask ChatGPT, Gemini, Grok, Claude, or Perplexity for dentist recommendations.
+PracticeRank is a dental marketing platform built for the AI search era. The way patients find dentists is changing: most patients research online before booking, the Google Maps 3-pack captures a large share of local clicks, and a fast-growing share of patients now ask ChatGPT, Gemini, Grok, Claude, or Perplexity for dentist recommendations.
 
-Unlike Google Ads, AI search visibility cannot be purchased — practices either show up or they don't. The practices that optimize now will own these results for years. PracticeRank handles the entire process.
+Unlike Google Ads, AI search visibility cannot be purchased — practices either show up or they don't. The practices that optimize now build an advantage that compounds. PracticeRank handles the entire process.
 
-"Most dental practices are completely invisible in AI search results. They're spending $5,000 to $10,000 per month on agencies that only optimize for Google — while 40% of their potential patients are asking AI for recommendations and getting sent to a competitor. The window to dominate AI search in your market is closing fast." — Kody Doherty, Founder
+"Most dental practices are effectively invisible in AI search results. They're spending $5,000 to $10,000 per month on agencies that only optimize for Google — while a growing share of patients ask AI for recommendations and get sent to a competitor." — Kody Doherty, Co-Founder
 
-**Key Statistics:**
-- 90% of patients search online before choosing a dentist
-- Over 40% of patients now use AI assistants for dentist recommendations
-- 60% of clicks go to the Google Maps 3-pack — if you're not in the top 3, you're invisible
-- AI search positions compound — first movers dominate for years
-- 58% of dental practices have not claimed their Apple Maps listing
-- Optimized directory listings generate 2.3x more calls (BrightLocal 2025)
-- Professional photos on Apple Maps increase direction requests by 42% and website clicks by 35%
+**Why it matters:**
+- Most patients research online before choosing a dentist
+- A fast-growing share of patients now use AI assistants for dentist recommendations
+- The Google Maps 3-pack captures a large share of local clicks — if you're not in the top 3, you're easy to miss
+- AI search positions compound — early movers build a lasting advantage
+- Many dental practices have not fully claimed or optimized their Apple Maps and directory listings
+- Optimized directory listings drive more calls than incomplete ones (BrightLocal, local search research)
 - Average dental patient lifetime value: $800-$2,500+
-- PracticeRank clients average 15-25 additional new patient inquiries per month — a 5-10x ROI
 
 PracticeRank Score: A 0-100 rating of your dental practice's online visibility across Google Search, Google Maps, AI search engines, review platforms, and local directories. The audit is free and benchmarks your practice against 10+ local competitors.
 
@@ -38,48 +36,38 @@ PracticeRank Score: A 0-100 rating of your dental practice's online visibility a
 - [Dental SEO](https://practicerank.ai/dental-seo) — comprehensive dental SEO services
 - [Google Maps Optimization](https://practicerank.ai/google-maps-optimization) — Google Business Profile and Maps 3-pack optimization
 
-PracticeRank handles everything a dental practice needs to get found online — across every platform patients use to search. The service is fully managed: practices spend 15 minutes granting access during setup, then roughly 5 minutes per month reviewing results.
+PracticeRank handles what a dental practice needs to get found online — across the platforms patients use to search. The service is fully managed: practices spend about 15 minutes granting access during setup, then a few minutes per month reviewing results.
 
 **AI Search Visibility:**
-When patients ask ChatGPT, Gemini, Grok, Claude, or Perplexity "who's the best dentist near me?" — PracticeRank clients are the ones that get recommended. We implement the proprietary signals that AI platforms rely on when deciding which practices to cite. Our clients typically go from appearing in 0 of 10 top AI queries to 7 or more within 90 days.
+When patients ask ChatGPT, Gemini, Grok, Claude, or Perplexity "who's the best dentist near me?", we work to make sure your practice is structured to be found and cited. We implement the structured data, AI-readable content, and llms.txt signals AI platforms rely on when deciding which practices to surface.
 
 **Google Maps Dominance:**
-60% of local dental clicks go to the Maps 3-pack. PracticeRank manages the entire Google Business Profile: weekly posts, professional photos, Q&A optimization, category management, review monitoring, and AI-drafted responses. Practices with optimized, active profiles dramatically outperform those with neglected listings.
+The Maps 3-pack captures a large share of local dental clicks. PracticeRank manages the entire Google Business Profile: regular posts, professional photos, Q&A optimization, category management, review monitoring, and AI-drafted responses. Practices with optimized, active profiles consistently outperform those with neglected listings.
 
 **Review & Reputation Engine:**
-Automated review generation that turns every happy patient into a 5-star review. Negative feedback gets intercepted before it reaches public platforms. AI drafts responses to all reviews within 24 hours. PracticeRank's review engine generates 2-3x more reviews compared to SMS-only systems.
+A branded review funnel that routes happy patients to Google and intercepts unhappy feedback privately before it reaches public platforms, plus AI-drafted responses to reviews. Reviews are one of the strongest local-ranking factors, so we build steady volume and recency.
 
 **Content That Converts:**
-Fresh, expert-level content published to practice websites every month. Stale websites get buried in search results — AI systems and search engines both prioritize recently updated content. PracticeRank keeps practice websites current, relevant, and ranking.
+Fresh, expert-level content published to practice websites every month, driven by your real search data. Stale websites get buried in search results — AI systems and search engines both prioritize recently updated content. PracticeRank keeps practice websites current, relevant, and ranking.
 
 **Apple Maps & Directory Visibility:**
-58% of dental practices haven't claimed their Apple Maps listing — despite Apple Maps being the default navigation on every iPhone. PracticeRank claims, optimizes, and maintains listings across Apple Maps and 20+ healthcare and local directories so patients find the practice no matter where they search.
+Apple Maps is the default navigation on every iPhone, and many practices haven't fully claimed or optimized it. PracticeRank claims, optimizes, and maintains listings across Apple Maps and 20+ healthcare and local directories so patients find the practice no matter where they search.
 
 **Referral Program:**
-Automated referral triggers after every positive review, turning satisfied patients into a growth engine.
+Automated referral prompts after positive reviews, turning satisfied patients into a growth channel.
 
 ---
 
-## Proven Results
+## How We Prove It
 
-### [Real Practices. Real Results.](https://practicerank.ai/#results)
+### [The proof is your own number](https://practicerank.ai/#results)
 
-PracticeRank has audited 50+ dental practices across 18 states. Here are representative results:
+We don't publish invented case studies or stock testimonials. Instead:
 
-**Case Study — General & Cosmetic Practice, Wyoming:**
-A 2-provider general and cosmetic dental practice established in 1980. Before PracticeRank: 4 new patient inquiries per month, PracticeRank Score of 42, AI visibility score of 15, 47 Google reviews at 4.6 stars, appearing in 0 of 10 top AI search queries. After 90 days with PracticeRank: 22 new patient inquiries per month (+450%), score increased to 81 (+93%), AI visibility jumped to 78 (+420%), 89 Google reviews at 4.8 stars (+89%), now recommended in 7 of 10 AI queries across ChatGPT, Gemini, and Grok.
-
-"Our phone started ringing more within the first month. By month three, we were getting 20+ new patient inquiries per month that we weren't getting before. PracticeRank handled everything — we just granted access and watched the numbers climb." — Practice Owner, DDS
-
-**Case Study — Implant & Restorative Practice, Texas:**
-A 3-provider practice focused on high-value implant and restorative services. Google Maps position improved from #8 to #2, entering the 3-pack. New patient inquiries grew from 6/month to 19/month (+217%). Replaced a $8,000/month traditional SEO agency with PracticeRank at less than half the cost — with dramatically better results.
-
-"We were spending $8,000/month on a traditional SEO agency and barely moving the needle. PracticeRank got us into the Google Maps top 3 and showing up in AI search within 60 days — for less than half the cost." — Practice Owner, DMD
-
-**Case Study — Pediatric & Family Practice, Colorado:**
-A solo provider in a suburban market. New patient inquiries grew from 3/month to 17/month (+467%). Google reviews grew from 23 at 4.3 stars to 67 at 4.9 stars (+191%). Schedule is consistently full for the first time.
-
-"I'm a solo practitioner — I don't have time for marketing. PracticeRank took 15 minutes to set up and now I'm getting more new families than I ever did with mailers and Google Ads combined." — Practice Owner, DDS
+- Every practice gets a free **PracticeRank Score** up front — your real visibility today across Google, Maps, reviews, and AI search, benchmarked against 10+ local competitors.
+- We report the **measurable before-and-after every month**, so you can see exactly what moved.
+- We publish client results **only once they're measured and the practice approves** — never invented numbers.
+- It's all backed by our **90-day results-or-refund guarantee** (below), so the risk is on us.
 
 ---
 
@@ -87,34 +75,19 @@ A solo provider in a suburban market. New patient inquiries grew from 3/month to
 
 ### [PracticeRank Pricing](https://practicerank.ai/#pricing)
 
-**PracticeRank Growth: one custom monthly plan, priced to your market**
+**Three tiers — Optimize, Grow, Dominate — priced to your market and goals.**
 
-Everything included. No hidden fees. No long-term contracts. Month-to-month. Cancel anytime. No setup fees. Book a strategy call for a quote tailored to your practice.
+Month-to-month. Cancel anytime. No long-term contracts. A one-time onboarding/setup fee covers real third-party costs we pay up front on your behalf (citation building, site migration, design work). Book a strategy call for a quote tailored to your practice.
 
-| Service | Individual Value |
-|---------|-----------------|
-| AI Search Visibility (ChatGPT, Gemini, Grok, Claude, Perplexity) | $2,000/mo |
-| Google Maps Management | $500/mo |
-| Review generation engine | $500/mo |
-| Referral program | $300/mo |
-| Search intelligence signals | $400/mo |
-| Monthly content publishing | $1,500/mo |
-| Local market pages | $500/mo |
-| Apple Maps optimization | $200/mo |
-| 20+ directory listings | $300/mo |
-| Competitor monitoring | $200/mo |
-| Monthly performance report + strategy call | $200/mo |
-| **Total value** | **$6,600/mo** |
-| **PracticeRank price** | **One custom plan — a fraction of the combined value** |
+The combined a-la-carte value of the work in a full plan (AI search visibility, Google Maps management, review engine, referral program, search intelligence, monthly content, local pages, Apple Maps, directories, competitor monitoring, reporting) is roughly $6,600/month if purchased separately — PracticeRank delivers it as one managed plan for a fraction of that.
 
-**ROI calculation:**
+**ROI framing:**
 - Average dental patient lifetime value: $800-$2,500+
-- Patients needed to break even: 2 per month
-- Average patients generated by PracticeRank: 15-25 per month
-- Return on investment: 5-10x
+- A small number of new patients per month covers the fee
+- Results vary by market — which is exactly why we offer the guarantee below
 
 **90-Day Results-or-Refund Guarantee:**
-If PracticeRank Score doesn't improve by 20+ points in 90 days, the client receives a full refund. Every penny. The client keeps every asset built — content, review engine, all of it. PracticeRank assumes all the risk.
+If your PracticeRank Score doesn't improve by 20+ points in 90 days, you receive a full refund of your monthly fees — and you keep every asset built (content, review engine, all of it). The guarantee assumes timely access to the accounts we need to do the work.
 
 ---
 
@@ -123,16 +96,16 @@ If PracticeRank Score doesn't improve by 20+ points in 90 days, the client recei
 ### [Getting Started with PracticeRank](https://practicerank.ai/#how-it-works)
 
 **Step 1: Free Audit (2 minutes)**
-Enter your website and get your PracticeRank Score — a full competitive analysis benchmarking your practice against 10+ local competitors.
+Enter your website and get your PracticeRank Score — a competitive analysis benchmarking your practice against 10+ local competitors across Google, Maps, reviews, and AI search.
 
 **Step 2: Strategy Call (20 minutes)**
-Walk through your results. See exactly which competitors are beating you, why, and what can be done. No pressure, no obligation.
+Walk through your results. See which competitors are beating you, why, and what can be done. No pressure, no obligation.
 
 **Step 3: We Execute (15 minutes of your time)**
 Grant access to your Google Business Profile, website, and analytics. PracticeRank handles everything else.
 
-**Step 4: Results in 30 Days**
-Most practices see measurable improvements within 30 days. By 90 days, 15-25 additional new patient inquiries per month is typical.
+**Step 4: Measurable Reporting**
+Most practices see measurable improvements in the first 30-90 days, and we report progress every month.
 
 ---
 
@@ -141,19 +114,19 @@ Most practices see measurable improvements within 30 days. By 90 days, 15-25 add
 ### [Frequently Asked Questions](https://practicerank.ai/#faq)
 
 **What is AI search and why should I care?**
-Over 40% of patients now ask ChatGPT, Gemini, Grok, and other AI assistants for dentist recommendations. When they ask "who's the best dentist near me?" — is your name coming up? Unlike Google Ads, you can't buy AI visibility. Practices that optimize now will dominate for years.
+A fast-growing share of patients now ask ChatGPT, Gemini, Grok, and other AI assistants for dentist recommendations. When they ask "who's the best dentist near me?" — is your name coming up? Unlike Google Ads, you can't buy AI visibility. Practices that optimize their structured data and content now build an advantage that compounds.
 
 **How is PracticeRank different from my current SEO company?**
-Traditional agencies only optimize for Google and charge $5,000-$10,000/month. PracticeRank gets you found across Google, Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, Apple Maps, and 20+ directories — in one custom monthly plan with no contracts.
+Traditional agencies typically only optimize for Google and charge $5,000-$10,000/month. PracticeRank gets you found across Google, Maps, ChatGPT, Gemini, Grok, Claude, Perplexity, Apple Maps, and 20+ directories — in one plan with no long-term contracts.
 
 **How long until I see results?**
-30 days to measurable improvements. 90 days to 15-25 additional patient inquiries per month. If we don't improve your score 20+ points in 90 days, you get a full refund.
+We target measurable improvements within the first 30-90 days and report progress monthly. If we don't improve your score 20+ points in 90 days, you get a full refund of your monthly fees.
 
 **How much of my time does this require?**
-15 minutes during setup. 5 minutes per month after that. We handle absolutely everything else.
+About 15 minutes during setup, and a few minutes per month after that. We handle the rest.
 
 **What's your guarantee?**
-Full refund if we don't deliver results in 90 days. You keep everything we built. No contracts — cancel anytime. We keep clients because we deliver results, not because we trap them.
+Full refund of monthly fees if we don't improve your score 20+ points in 90 days. You keep everything we built. No long-term contracts — cancel anytime.
 
 **I already run Google Ads. Do I still need this?**
 Ads get you patients today, but you're renting that traffic. PracticeRank builds assets that compound: AI visibility, reviews, organic presence. The best practices run both — they multiply each other.
@@ -162,9 +135,11 @@ Ads get you patients today, but you're renting that traffic. PracticeRank builds
 
 ## Resources & Guides
 
-- [What Is AEO (AI Engine Optimization) for Dentists?](https://practicerank.ai/blog/what-is-aeo-for-dentists) — The complete guide to AI Engine Optimization: what it is, why it matters, and how dental practices can get recommended by ChatGPT, Gemini, Grok, Claude, and Perplexity.
-- [How ChatGPT Decides Which Dentist to Recommend](https://practicerank.ai/blog/how-chatgpt-recommends-dentists) — An in-depth look at the signals AI assistants use to choose which dental practices to recommend, and what practices can do about it.
-- [Schema Markup for Dentists: The Complete Guide](https://practicerank.ai/blog/schema-markup-for-dentists) — Why structured data is the foundation of both SEO and AI search visibility, with practical guidance for dental practices.
+- [What Is AEO (AI Engine Optimization)?](https://practicerank.ai/blog/what-is-aeo-ai-engine-optimization) — The complete guide to AI Engine Optimization: what it is, why it matters, and how dental practices can get recommended by ChatGPT, Gemini, Grok, Claude, and Perplexity.
+- [Is ChatGPT Recommending Your Competitor?](https://practicerank.ai/blog/chatgpt-recommending-your-competitor) — How AI assistants decide which dental practices to recommend, and what practices can do about it.
+- [Dental Patients Are Asking AI, Not Google](https://practicerank.ai/blog/dental-patients-asking-ai-not-google) — Why AI search is changing how patients find and choose a dentist.
+- [Five Signs Your Practice Is Invisible in AI Search](https://practicerank.ai/blog/five-signs-dental-practice-invisible-ai-search) — A quick self-check on your AI-search readiness.
+- [How Google AI Overviews Changed Local SEO](https://practicerank.ai/blog/google-ai-overviews-changed-local-seo) — What AI Overviews mean for local dental visibility.
 
 ---
 
@@ -172,7 +147,7 @@ Ads get you patients today, but you're renting that traffic. PracticeRank builds
 
 ### [About](https://practicerank.ai)
 
-PracticeRank was founded by Kody Doherty. The platform has audited 50+ dental practices across 18 states and delivers an average of 15-25 additional new patient inquiries per month for clients.
+PracticeRank was founded by Kody Doherty, Matt Toone, and Ethan Mandelup (Lost Relic). Every engagement starts with a free PracticeRank Score and is backed by a 90-day results-or-refund guarantee.
 
 **Contact:**
 - Email: kdoherty@practicerank.ai
