@@ -490,26 +490,38 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
     const placeType = VERTICAL_CONFIG[vertical]?.placeType || "dentist";
     const placeLabel = VERTICAL_CONFIG[vertical]?.placeLabel || "dentist";
 
-    // Strategy: try multiple search queries to find the right place
+    // Strategy: try multiple search queries to find the right place.
+    // Typed queries (includedType) are precise but DANGEROUS when our vertical
+    // detection is wrong — e.g. a law firm misdetected as "medical" searches
+    // includedType:doctor and finds nothing, so we'd wrongly report "no GBP".
+    // So we ALSO run untyped queries that match purely on the website domain
+    // (the definitive signal — findBestMatch scores a domain match highest).
+    const domainName = domain.replace(/^www\./, "").replace(/\.(com|net|org|dental|dentist|law|legal|medical|health)$/i, "").replace(/[-_]/g, " ");
     const queries = [];
 
-    // Best query: name + city + state + type
+    // Typed queries first (precise — win when vertical is correct)
     if (practiceName && city && state) {
-      queries.push(`${practiceName} ${placeLabel} ${city} ${state}`);
+      queries.push({ text: `${practiceName} ${placeLabel} ${city} ${state}`, typed: true });
     }
-    // Fallback: name + type
     if (practiceName) {
-      queries.push(`${practiceName} ${placeLabel}`);
+      queries.push({ text: `${practiceName} ${placeLabel}`, typed: true });
     }
-    // Fallback: domain-based search
-    const domainName = domain.replace(/^www\./, "").replace(/\.(com|net|org|dental|dentist|law|legal|medical|health)$/i, "").replace(/[-_]/g, " ");
-    queries.push(`${domainName} ${placeLabel} ${city || ""} ${state || ""}`.trim());
+    queries.push({ text: `${domainName} ${placeLabel} ${city || ""} ${state || ""}`.trim(), typed: true });
+
+    // Untyped fallbacks — NO includedType, so a wrong vertical can't suppress the
+    // real business. Match is still gated by findBestMatch (domain/name/phone).
+    if (practiceName) {
+      queries.push({ text: `${practiceName} ${city || ""} ${state || ""}`.trim(), typed: false });
+    }
+    queries.push({ text: `${domainName} ${city || ""} ${state || ""}`.trim(), typed: false });
 
     const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.location,places.businessStatus,places.addressComponents";
 
     let bestPlace = null;
 
     for (const query of queries) {
+      const body = { textQuery: query.text, maxResultCount: 10 };
+      if (query.typed) body.includedType = placeType;
       const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
         method: "POST",
         headers: {
@@ -517,11 +529,7 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
           "X-Goog-Api-Key": apiKey,
           "X-Goog-FieldMask": FIELD_MASK,
         },
-        body: JSON.stringify({
-          textQuery: query,
-          includedType: placeType,
-          maxResultCount: 10,
-        }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
 
