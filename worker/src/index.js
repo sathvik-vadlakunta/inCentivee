@@ -2242,7 +2242,15 @@ Also generate:
 - Executive summary (2-3 sentences, lead with ${vc.clientTerm} inquiry impact, create urgency)
 - The ${vc.businessTerm} name, city, and state — USE THE VERIFIED GOOGLE VALUES if available, otherwise use scraped values
 - Top competitor name and their review count — USE THE VERIFIED COMPETITOR DATA provided above
-- 5 priority recommendations ranked by ${vc.clientTerm} inquiry impact (each with title, outcome-focused description emphasizing ${vc.clientTermPlural} lost, impact level, and estimated new ${vc.clientTermPlural}/month)
+- 5 priority recommendations ranked by ${vc.clientTerm} inquiry impact (each with title, outcome-focused description emphasizing ${vc.clientTermPlural} lost, impact level, and estimated new ${vc.clientTermPlural}/month).
+  Choose the 5 that best fit THIS ${vc.businessTerm}'s actual gaps from the outcome levers below — these mirror the work an expert partner does, so the report flows naturally into a service conversation. Stay outcome-framed (what they GAIN), never how-to:
+    • "Get found in AI search" — when ai_readiness is weak (be recommended by ChatGPT/Gemini/Perplexity/Google AI when ${vc.clientTermPlural} ask for a ${vp.providerTerm || vc.businessTerm})
+    • "Win the Google Map Pack" — when gbp/local_seo is weak (show up in the top-3 map results for "near me" searches)
+    • "Build review volume & momentum" — when reviews trail the top competitor (more recent 5-star reviews via a steady review system)
+    • "Earn local authority" — when local_seo/content is weak (high-quality local links, mentions, and citations that lift rankings AND AI recommendations)
+    • "Expand into nearby service areas" — when they clearly serve more than one city/neighborhood (capture "${vc.clientTerm} in {nearby city}" demand they're invisible for today)
+    • "Modernize the website" — ONLY if the scrape shows real issues (no SSL, no mobile viewport, slow/outdated, thin content) — faster, more trustworthy site that converts more visitors
+  Do NOT recommend modernizing the website if the scraped data shows it's already secure, mobile-ready, and content-rich. Pick the levers that match the evidence.
 - AI platform visibility: for each of ChatGPT, Gemini, Grok, Claude, Perplexity — would they likely recommend this ${vc.businessTerm}? (yes/no/partial + 1 sentence explaining ${vp.aiVisNote})
 - Growth projections at 3, 6, and 12 months (estimated new ${vc.clientTerm} inquiries/month)
 - A "money left on the table" estimate — annual revenue being lost to competitors
