@@ -1116,6 +1116,53 @@ function validateAndCorrectReport(report, siteData, placeData, competitors) {
 // ── Final Safety Checks — catch data mix-ups before release ──
 // ════════════════════════════════════════════════════════════════
 
+// ── GBP absence-claim detection ─────────────────────────────────
+// We have Google Places data, so claiming a business has "no Google Business
+// Profile" is never safe: if placeData exists they definitely have one, and if
+// placeData is null our matcher simply couldn't confirm it (not proof of absence).
+// These helpers detect and rewrite any text that falsely asserts the profile is
+// missing/unclaimed. NOTE: this only fires on explicit ABSENCE phrasing — legit
+// optimization findings ("missing photos", "no recent posts") are left untouched
+// because they don't claim the profile itself doesn't exist.
+function assertsGbpAbsence(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase().replace(/\s+/g, " ");
+  // Must reference the profile/listing itself (not a sub-element like photos/posts)
+  if (!/(google business (profile|listing)|business profile|google (maps )?listing|gbp|presence on google|on google maps|google maps)/.test(t)) {
+    return false;
+  }
+  const patterns = [
+    /no (verified |active |claimed |visible )?(google )?(business )?(profile|listing)/,
+    /(does ?n'?t|do not|don'?t|doesn't|did not|didn'?t) (have|appear to have|seem to have|maintain) (a |an )?(verified |claimed )?(google )?(business )?(profile|listing)/,
+    /(un-?claimed|unverified) (google )?(business )?(profile|listing)/,
+    /(google business (profile|listing)|gbp|listing|profile) (is |appears |seems |has |was |were )?(un-?claimed|unclaimed|unverified)/,
+    /(google business (profile|listing)|gbp|listing|profile) (has not|hasn'?t|have not|haven'?t) been (claimed|set up|verified|created|established)/,
+    /(google business (profile|listing)|gbp|listing|profile) (is |are )?(not|isn'?t|aren'?t) (claimed|set up|verified|established|present|listed)/,
+    /(no|missing|lacks?|lacking|without|absence of|absent) (a |an |any )?(verified |claimed )?(google )?(business )?(profile|listing|presence on google)/,
+    /not (yet )?(present|listed|found|visible|established) on google( maps)?/,
+    /no (presence|listing|profile) on google( maps)?/,
+  ];
+  return patterns.some((re) => re.test(t));
+}
+
+// Rewrite a free-text field (executive summary, finding, action description),
+// replacing only the sentences that falsely assert GBP absence.
+function scrubGbpAbsenceText(text, placeData) {
+  if (!text) return text;
+  const sentences = String(text).match(/[^.!?]+[.!?]*/g) || [String(text)];
+  let changed = false;
+  const rebuilt = sentences.map((s) => {
+    if (!assertsGbpAbsence(s)) return s;
+    changed = true;
+    if (placeData) {
+      const rc = placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount;
+      return ` Your Google Business Profile is live and claimed${rc ? ` with ${rc} reviews` : ""}, but it's under-optimized — incomplete categories, photos, posts, and Q&A are limiting how often you surface in the Google Map Pack.`;
+    }
+    return ` We could not fully verify your Google Business Profile's optimization in this automated scan, so its completeness should be confirmed in a manual review.`;
+  });
+  return changed ? rebuilt.join(" ").replace(/\s+/g, " ").trim() : text;
+}
+
 function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors) {
   const warnings = [];
   const inputDomain = normalizeDomain(practiceUrl);
@@ -1235,6 +1282,88 @@ function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors
         });
       }
     }
+  }
+
+  // CHECK 8: GBP existence guard — NEVER let the report claim the business has
+  // no Google Business Profile. We have Google API access, so an absence claim is
+  // either provably false (placeData present) or unverifiable (placeData null).
+  // Rewrite any absence claim in findings, executive summary, AI-visibility
+  // reasons, and priority actions. When placeData proves the profile exists,
+  // also keep the gbp score out of "doesn't exist" territory.
+  let gbpFixed = 0;
+  const factualGbpFindings = placeData
+    ? [
+        `Your Google Business Profile is live${(placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount) ? ` with ${placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount} reviews` : ""}, but it's under-optimized — gaps in photos, posts, categories, and Q&A mean it surfaces in the Google Map Pack far less often than it should, sending nearby searchers to competitors.`,
+        `Your profile isn't being actively managed — infrequent posts, thin photo coverage, and unanswered questions signal low engagement to Google, which quietly suppresses how often you rank in local "near me" results.`,
+      ]
+    : [
+        `We could not fully verify your Google Business Profile's optimization in this automated scan — its categories, photos, posts, and Q&A should be reviewed and completed to maximize local visibility.`,
+        `Your local listing's completeness couldn't be confirmed in this scan; an optimized profile (full categories, fresh photos and posts, answered Q&A) is one of the strongest drivers of Map Pack ranking.`,
+      ];
+
+  if (report.categories) {
+    for (const [catKey, cat] of Object.entries(report.categories)) {
+      if (Array.isArray(cat.findings)) {
+        cat.findings = cat.findings.map((f) => {
+          if (assertsGbpAbsence(f)) {
+            const replacement = factualGbpFindings[gbpFixed % factualGbpFindings.length];
+            gbpFixed++;
+            warnings.push(`Rewrote false GBP-absence claim in "${catKey}" findings`);
+            return replacement;
+          }
+          return f;
+        });
+      }
+    }
+  }
+
+  // Executive summary
+  if (report.executive_summary && assertsGbpAbsence(report.executive_summary)) {
+    report.executive_summary = scrubGbpAbsenceText(report.executive_summary, placeData);
+    gbpFixed++;
+    warnings.push("Rewrote false GBP-absence claim in executive summary");
+  }
+
+  // Priority actions
+  if (Array.isArray(report.priority_actions)) {
+    report.priority_actions = report.priority_actions.map((a) => {
+      if (a && (assertsGbpAbsence(a.title) || assertsGbpAbsence(a.description))) {
+        gbpFixed++;
+        warnings.push("Rewrote false GBP-absence claim in a priority action");
+        return {
+          ...a,
+          title: assertsGbpAbsence(a.title) ? "Optimize your Google Business Profile" : a.title,
+          description: scrubGbpAbsenceText(a.description, placeData),
+        };
+      }
+      return a;
+    });
+  }
+
+  // AI-visibility reasons
+  if (report.ai_visibility) {
+    for (const platform of Object.values(report.ai_visibility)) {
+      if (platform && assertsGbpAbsence(platform.reason)) {
+        platform.reason = scrubGbpAbsenceText(platform.reason, placeData);
+        gbpFixed++;
+        warnings.push("Rewrote false GBP-absence claim in AI-visibility reason");
+      }
+    }
+  }
+
+  // When Google proves the profile exists, keep its score out of "doesn't exist"
+  // territory (a live, claimed profile is at worst under-optimized, not absent).
+  if (placeData && report.categories?.gbp) {
+    if (typeof report.categories.gbp.score !== "number" || report.categories.gbp.score < 30) {
+      report.categories.gbp.score = 30;
+      report.categories.gbp.status = scoreToStatus(30);
+      warnings.push("Floored GBP score — Google confirms the profile exists");
+    }
+    report.categories.gbp.profile_verified = true;
+  }
+
+  if (gbpFixed > 0) {
+    console.log(`GBP guard: rewrote ${gbpFixed} false absence claim(s)`);
   }
 
   if (warnings.length > 0) {
@@ -1873,13 +2002,17 @@ CRITICAL: For the reviews category, you MUST use:
 - count: ${placeData.reviewCount}
 - rating: ${placeData.rating}`}
 These are REAL numbers from Google. Do NOT change them. Do NOT make up different numbers.
-Use the Google-verified city and state for the report location fields.`;
+Use the Google-verified city and state for the report location fields.
+
+⚠️ GOOGLE BUSINESS PROFILE EXISTS — This business HAS a live, claimed Google Business Profile. Google returned it above with ${placeData.isMultiLocation ? placeData.combinedReviewCount : placeData.reviewCount} reviews and a ${placeData.isMultiLocation ? placeData.combinedRating : placeData.rating}-star rating (status: ${placeData.businessStatus || "OPERATIONAL"}). For the "gbp" category you MUST treat the profile as EXISTING and CLAIMED. It is FACTUALLY FALSE — and we can prove it false with Google data — to write that they have "no Google Business Profile", an "unclaimed", "unverified", or "missing" listing, or that they are "not on Google Maps". NEVER write any of those. Evaluate OPTIMIZATION QUALITY ONLY: completeness of categories, photos, post cadence, Q&A, hours, services, attributes. Frame every gbp finding as "under-optimized / incomplete / not fully leveraged", never as "missing / absent / doesn't exist".`;
   } else {
     googleContext = `
 
 NOTE: Google Places data was not available for this practice. For the reviews section,
 make your best estimate based on the website content, but clearly indicate these are estimates.
-Be conservative — do NOT guess high review counts without evidence.`;
+Be conservative — do NOT guess high review counts without evidence.
+
+IMPORTANT — DO NOT CLAIM THE BUSINESS HAS NO GOOGLE BUSINESS PROFILE. Our automated lookup simply could not confirm the listing in this scan; that is NOT evidence the profile is missing or unclaimed. For the "gbp" category, do NOT assert absence, and do NOT call the listing "unclaimed" or "missing". Instead, state that the profile's optimization could not be fully verified in this automated scan and frame findings as items to confirm and improve — never as "you don't have a profile".`;
   }
 
   // ── Add verified competitor data ──
@@ -2159,4 +2292,7 @@ export {
   nameSimilarity,
   validateCompetitors,
   detectVertical,
+  assertsGbpAbsence,
+  scrubGbpAbsenceText,
+  finalSafetyChecks,
 };

@@ -20,6 +20,9 @@ import {
   nameSimilarity,
   validateCompetitors,
   detectVertical,
+  assertsGbpAbsence,
+  scrubGbpAbsenceText,
+  finalSafetyChecks,
 } from "./index.js";
 
 // ════════════════════════════════════════════════════════════════
@@ -928,5 +931,113 @@ describe("detectVertical — real site scenarios", () => {
       visibleText: "medical spa dermatology aesthetic clinic botox physician board certified patient healthcare terms of service legal notice",
     };
     expect(detectVertical("medical", site)).toBe("medical");
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ── GBP existence guard — never falsely claim "no Google Business Profile" ──
+// ════════════════════════════════════════════════════════════════
+
+describe("assertsGbpAbsence", () => {
+  it("flags explicit absence claims", () => {
+    expect(assertsGbpAbsence("No Google Business Profile detected for this practice")).toBe(true);
+    expect(assertsGbpAbsence("The business has an unclaimed Google Business listing")).toBe(true);
+    expect(assertsGbpAbsence("They don't have a Google Business Profile")).toBe(true);
+    expect(assertsGbpAbsence("Missing a Google Business Profile entirely")).toBe(true);
+    expect(assertsGbpAbsence("This practice is not listed on Google Maps")).toBe(true);
+    expect(assertsGbpAbsence("Google Business Profile has not been claimed")).toBe(true);
+    expect(assertsGbpAbsence("Lacks a presence on Google")).toBe(true);
+  });
+
+  it("does NOT flag legitimate optimization findings", () => {
+    expect(assertsGbpAbsence("Your Google Business Profile is missing photos and recent posts")).toBe(false);
+    expect(assertsGbpAbsence("Google Business Profile has no recent posts in 6 months")).toBe(false);
+    expect(assertsGbpAbsence("The profile is under-optimized with incomplete categories")).toBe(false);
+    expect(assertsGbpAbsence("Add more photos to your Google Business Profile")).toBe(false);
+    expect(assertsGbpAbsence("Few reviews compared to competitors")).toBe(false);
+    expect(assertsGbpAbsence("")).toBe(false);
+    expect(assertsGbpAbsence(null)).toBe(false);
+  });
+
+  it("does not flag text that never mentions the profile/listing", () => {
+    expect(assertsGbpAbsence("No FAQ schema markup was detected on the site")).toBe(false);
+    expect(assertsGbpAbsence("The site is not optimized for AI search")).toBe(false);
+  });
+});
+
+describe("finalSafetyChecks — GBP guard", () => {
+  const placeData = {
+    name: "Hilltop Family Dental",
+    city: "Reno",
+    state: "NV",
+    rating: 4.8,
+    reviewCount: 152,
+    businessStatus: "OPERATIONAL",
+    matchConfidence: "high",
+    domainMatch: true,
+    nameMatch: true,
+    placeId: "abc123",
+  };
+
+  function baseReport(gbpFindings) {
+    return {
+      practice_name: "Hilltop Family Dental",
+      state: "NV",
+      executive_summary: "Summary.",
+      categories: {
+        gbp: { score: 5, status: "critical", findings: gbpFindings },
+        reviews: { score: 70, status: "good", findings: [], count: 152, rating: 4.8 },
+      },
+    };
+  }
+
+  it("rewrites a false 'no GBP' finding when Google confirms the profile exists", () => {
+    const report = finalSafetyChecks(
+      baseReport(["No Google Business Profile was detected for this practice."]),
+      "https://hilltopfamilydental.com",
+      { practiceName: "Hilltop Family Dental" },
+      placeData,
+      []
+    );
+    const f = report.categories.gbp.findings[0];
+    expect(assertsGbpAbsence(f)).toBe(false);
+    expect(f).toMatch(/live/i);
+    expect(report.categories.gbp.profile_verified).toBe(true);
+  });
+
+  it("floors the GBP score when Google proves the profile exists", () => {
+    const report = finalSafetyChecks(
+      baseReport(["No Google Business Profile detected."]),
+      "https://hilltopfamilydental.com",
+      { practiceName: "Hilltop Family Dental" },
+      placeData,
+      []
+    );
+    expect(report.categories.gbp.score).toBeGreaterThanOrEqual(30);
+  });
+
+  it("preserves legitimate optimization findings untouched", () => {
+    const original = "Your Google Business Profile is missing photos and has no posts in 6 months.";
+    const report = finalSafetyChecks(
+      baseReport([original]),
+      "https://hilltopfamilydental.com",
+      { practiceName: "Hilltop Family Dental" },
+      placeData,
+      []
+    );
+    expect(report.categories.gbp.findings[0]).toBe(original);
+  });
+
+  it("softens absence claims to 'could not verify' when placeData is null", () => {
+    const report = finalSafetyChecks(
+      baseReport(["This practice has no Google Business Profile."]),
+      "https://example.com",
+      { practiceName: "Example" },
+      null,
+      []
+    );
+    const f = report.categories.gbp.findings[0];
+    expect(assertsGbpAbsence(f)).toBe(false);
+    expect(f).toMatch(/could not (fully )?verify|under-optimized/i);
   });
 });
