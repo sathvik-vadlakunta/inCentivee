@@ -45,14 +45,21 @@ CLIENT = {
     ],
 }
 
-# ─────────────────────────── brand ───────────────────────────
-BG      = RGBColor(0x0F, 0x16, 0x20)
-CARD    = RGBColor(0x1B, 0x24, 0x30)
-CARD2   = RGBColor(0x16, 0x21, 0x3E)
-GREEN   = RGBColor(0x4A, 0xDE, 0x80)
+# ─────────────────────────── brand (matches practicerank.ai dark mode) ───────────────────────────
+from pptx.oxml.ns import qn
+
+BG      = RGBColor(0x08, 0x08, 0x0D)   # site --bg (near-black)
+CARD    = RGBColor(0x12, 0x18, 0x22)   # panel
+CARD2   = RGBColor(0x16, 0x21, 0x3E)   # navy accent panel
+NAVY    = RGBColor(0x16, 0x21, 0x3E)
+GREEN   = RGBColor(0x4A, 0xDE, 0x80)   # --accent
+GREEN_D = RGBColor(0x16, 0xA3, 0x4A)
 WHITE   = RGBColor(0xFF, 0xFF, 0xFF)
-GREY    = RGBColor(0xA8, 0xB3, 0xC2)
-DARKTXT = RGBColor(0x0F, 0x16, 0x20)
+TXT2    = RGBColor(0xDC, 0xE2, 0xE8)   # ~white 86%
+GREY    = RGBColor(0x9A, 0xA6, 0xB4)   # muted
+FAINT   = RGBColor(0x5E, 0x6A, 0x79)   # faint
+BORDER  = RGBColor(0x23, 0x2C, 0x39)
+DARKTXT = RGBColor(0x04, 0x21, 0x0F)   # text on green
 LOGO    = os.path.join(ROOT, "brand", "practicerank-logo-360.png")
 
 prs = Presentation()
@@ -62,11 +69,34 @@ SW, SH = prs.slide_width, prs.slide_height
 BLANK = prs.slide_layouts[6]
 
 
-def slide(bg=BG):
+def _soft_edge(shape, rad_in):
+    spPr = shape._element.spPr
+    eff = spPr.find(qn('a:effectLst'))
+    if eff is None:
+        eff = spPr.makeelement(qn('a:effectLst'), {}); spPr.append(eff)
+    eff.append(eff.makeelement(qn('a:softEdge'), {'rad': str(int(rad_in * 914400))}))
+
+
+def _alpha(shape, pct):
+    srgb = shape.fill.fore_color._xFill.find(qn('a:srgbClr'))
+    srgb.append(srgb.makeelement(qn('a:alpha'), {'val': str(int(pct * 1000))}))
+
+
+def glow(s, cx, cy, w, h, color, alpha=38, soft=1.3):
+    """Soft radial-style glow ellipse — the site's signature lighting."""
+    e = s.shapes.add_shape(MSO_SHAPE.OVAL, Inches(cx - w / 2), Inches(cy - h / 2), Inches(w), Inches(h))
+    e.fill.solid(); e.fill.fore_color.rgb = color; e.line.fill.background(); e.shadow.inherit = False
+    _alpha(e, alpha); _soft_edge(e, soft)
+    return e
+
+
+def slide(bg=BG, green_corner=False):
     s = prs.slides.add_slide(BLANK)
     r = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, SW, SH)
-    r.fill.solid(); r.fill.fore_color.rgb = bg; r.line.fill.background()
-    r.shadow.inherit = False
+    r.fill.solid(); r.fill.fore_color.rgb = bg; r.line.fill.background(); r.shadow.inherit = False
+    glow(s, 6.67, -1.4, 15, 6.5, NAVY, alpha=46, soft=1.6)        # top navy glow
+    if green_corner:
+        glow(s, 12.8, 7.6, 7, 7, GREEN, alpha=12, soft=1.8)       # faint green corner
     return s
 
 
@@ -88,10 +118,22 @@ def rect(s, l, t, w, h, fill=CARD, line=None, radius=True):
     shp = s.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE if radius else MSO_SHAPE.RECTANGLE,
                              Inches(l), Inches(t), Inches(w), Inches(h))
     shp.fill.solid(); shp.fill.fore_color.rgb = fill
-    if line: shp.line.color.rgb = line; shp.line.width = Pt(1)
-    else: shp.line.fill.background()
+    if line is not None:
+        shp.line.color.rgb = line; shp.line.width = Pt(1)
+    elif radius and fill not in (GREEN, GREEN_D):
+        shp.line.color.rgb = BORDER; shp.line.width = Pt(0.75)   # subtle card border
+    else:
+        shp.line.fill.background()
     shp.shadow.inherit = False
     return shp
+
+
+def _footer(s):
+    n = len(prs.slides._sldIdLst)
+    if os.path.exists(LOGO):
+        s.shapes.add_picture(LOGO, Inches(0.7), Inches(7.02), height=Inches(0.26))
+    text(s, 1.05, 7.0, 4, 0.3, "practicerank.ai", size=9, color=FAINT, anchor=MSO_ANCHOR.MIDDLE)
+    text(s, 11.55, 7.0, 1.1, 0.3, f"{n:02d}", size=9, color=FAINT, align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE)
 
 
 def accent_bar(s, l=0.0, t=0.0, w=13.333, h=0.12):
@@ -99,9 +141,11 @@ def accent_bar(s, l=0.0, t=0.0, w=13.333, h=0.12):
 
 
 def heading(s, kicker, title):
-    text(s, 0.7, 0.55, 11, 0.4, kicker, size=14, color=GREEN, bold=True)
-    text(s, 0.7, 0.95, 12, 1.0, title, size=33, color=WHITE, bold=True)
-    rect(s, 0.72, 1.75, 0.9, 0.06, fill=GREEN, radius=False)
+    rect(s, 0.72, 0.62, 0.22, 0.22, fill=GREEN, radius=False)   # green tick
+    text(s, 1.05, 0.55, 11, 0.4, kicker, size=13, color=GREEN, bold=True)
+    text(s, 0.68, 0.98, 12, 1.0, title, size=32, color=WHITE, bold=True)
+    rect(s, 0.74, 1.78, 0.8, 0.055, fill=GREEN, radius=False)
+    _footer(s)
 
 
 def bullets(s, l, t, w, items, size=16, gap=True, color=WHITE, marker="—"):
@@ -116,7 +160,7 @@ def bullets(s, l, t, w, items, size=16, gap=True, color=WHITE, marker="—"):
 
 
 # ═══ 1. TITLE ═══
-s = slide(CARD2)
+s = slide(green_corner=True)
 accent_bar(s)
 if os.path.exists(LOGO):
     s.shapes.add_picture(LOGO, Inches(0.7), Inches(0.7), height=Inches(1.0))
@@ -271,14 +315,14 @@ for i, (m, d) in enumerate(phases):
 text(s, 0.72, 5.5, 11.9, 0.6, [("Target:  ", GREY, False, 18), (CLIENT["target"], GREEN, True, 18)])
 
 # ═══ 11. GUARANTEE ═══
-s = slide(CARD2); accent_bar(s)
+s = slide(green_corner=True); accent_bar(s)
 text(s, 0.7, 2.1, 12, 0.5, "OUR PROMISE", size=15, color=GREEN, bold=True, align=PP_ALIGN.CENTER)
 text(s, 1.0, 2.7, 11.3, 1.2, "The 90-Day Results-or-Refund Guarantee", size=34, bold=True, align=PP_ALIGN.CENTER)
 text(s, 1.5, 4.1, 10.3, 1.4, "If your PracticeRank Score doesn't improve by 20+ points in 90 days, we refund your monthly fees — and you keep everything we built. Month-to-month. No long-term contracts.",
      size=18, color=GREY, align=PP_ALIGN.CENTER, line_spacing=1.25)
 
 # ═══ 12. CLOSE ═══
-s = slide(); accent_bar(s)
+s = slide(green_corner=True); accent_bar(s)
 if os.path.exists(LOGO):
     s.shapes.add_picture(LOGO, Inches(6.17), Inches(0.9), height=Inches(1.0))
 text(s, 1.0, 2.4, 11.3, 0.9, "Let's grow your visibility.", size=38, bold=True, align=PP_ALIGN.CENTER)
