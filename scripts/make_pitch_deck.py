@@ -27,7 +27,7 @@ CLIENT = {
         ("“Near me” keywords (top 10)", "2", "49", "24x"),
         ("Top-10 ranking keywords", "14", "69", "4.9x"),
     ],
-    "gap_source": "Source: Semrush organic research, May 2026",
+    "gap_source": "Source: competitive organic-search analysis, May 2026",
     # Real Domain Authority (Moz). da_self first, then rivals.
     "da_self": ("Paradigm Experts", 14),
     "da_rivals": [("CASH FOR GOLD", 18), ("Alexandria Gold & Silver", 11), ("Cash for Gold NOVA", 10)],
@@ -39,7 +39,7 @@ CLIENT = {
                          '"where to sell silver Northern Virginia"'],
     "target": "500+ monthly organic visits within 6 months",
     "done": [
-        "Deep competitive & keyword-gap analysis vs your top local rival (Semrush)",
+        "Deep competitive & keyword-gap analysis vs your top local rival",
         "Full SEO / AI-search audit + a phased action plan",
         "Technical foundation: schema markup, llms.txt / llms-full.txt, HTTPS-canonical fixes",
         "Service & city/location landing pages built for your core markets",
