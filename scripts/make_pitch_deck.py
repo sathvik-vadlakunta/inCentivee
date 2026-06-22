@@ -32,7 +32,8 @@ CLIENT = {
     "da_self": ("Paradigm Experts", 14),
     "da_rivals": [("CASH FOR GOLD", 18), ("Alexandria Gold & Silver", 11), ("Cash for Gold NOVA", 10)],
     "da_source": "Domain Authority — Moz, June 2026",
-    "da_insight": "You already out-rank Alexandria on Domain Authority (14 vs 11) — yet they pull ~10x your traffic. That proves the gap is on-page & local, not authority. We close that gap AND push your DA past the market leader to lock in the lead.",
+    "da_explainer": "Domain Authority (0–100) is a trust score for your website — built mostly from quality backlinks. The higher it climbs, the easier everything else ranks.",
+    "da_insight": "Most local businesses live in the single digits to low teens. You're already at 14 — ahead of most rivals here. The goal isn't 80; it's ~30, which is very achievable for a local business and puts you clearly ahead of nearly every local competitor. Getting there is exactly what our backlink program does.",
     "service_areas": "Springfield · Arlington · McLean · Fairfax · Alexandria · Lorton · DC",
     "keyword_examples": ['"sell gold in Springfield VA"', '"estate jewelry buyer near me"',
                          '"where to sell silver Northern Virginia"'],
@@ -41,6 +42,7 @@ CLIENT = {
         "Deep competitive & keyword-gap analysis vs your top local rival (Semrush)",
         "Full SEO / AI-search audit + a phased action plan",
         "Technical foundation: schema markup, llms.txt / llms-full.txt, HTTPS-canonical fixes",
+        "Service & city/location landing pages built for your core markets",
         "Google Business Profile access secured — category, services & service-area optimization underway",
     ],
 }
@@ -104,11 +106,11 @@ def text(s, l, t, w, h, runs, size=18, color=WHITE, bold=False, align=PP_ALIGN.L
          anchor=MSO_ANCHOR.TOP, font="Calibri", line_spacing=1.0):
     tb = s.shapes.add_textbox(Inches(l), Inches(t), Inches(w), Inches(h))
     tf = tb.text_frame; tf.word_wrap = True; tf.vertical_anchor = anchor
+    # A list => multiple INLINE runs on one paragraph; a string => one run.
     items = runs if isinstance(runs, list) else [(runs, color, bold, size)]
-    for i, item in enumerate(items):
+    p = tf.paragraphs[0]; p.alignment = align; p.line_spacing = line_spacing
+    for item in items:
         txt, c, b, sz = (item + (color, bold, size))[:4] if isinstance(item, tuple) else (item, color, bold, size)
-        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.alignment = align; p.line_spacing = line_spacing
         run = p.add_run(); run.text = txt
         run.font.size = Pt(sz); run.font.bold = b; run.font.color.rgb = c; run.font.name = font
     return tb
@@ -254,26 +256,27 @@ if CLIENT.get("gap_rows"):
 
 # ═══ 6b. DOMAIN AUTHORITY ═══
 if CLIENT.get("da_self"):
-    s = slide(); accent_bar(s); heading(s, "AUTHORITY", "Your Domain Authority vs. The Competition")
+    s = slide(); accent_bar(s); heading(s, "AUTHORITY", "Domain Authority — and Why ~30 Is the Goal")
+    text(s, 0.72, 1.95, 11.9, 0.7, CLIENT["da_explainer"], size=15, color=GREY, line_spacing=1.18)
     rows = [(CLIENT["da_self"][0], CLIENT["da_self"][1], True)] + [(n, d, False) for n, d in CLIENT["da_rivals"]]
     rows.sort(key=lambda r: -r[1])
-    maxda = max(r[1] for r in rows) or 1
-    bx, bw_max = 5.2, 5.7
+    SCALE = 40.0
+    bx, bw, lblw = 4.3, 6.4, 3.3
+    rows_top, rh = 3.15, 0.6
+    # target marker at ~30
+    tx = bx + bw * 30 / SCALE
+    rect(s, tx, rows_top - 0.05, 0.035, len(rows) * rh + 0.05, fill=GREEN, radius=False)
+    text(s, tx - 0.85, rows_top - 0.5, 1.8, 0.35, "YOUR TARGET  ~30", size=11, color=GREEN, bold=True, align=PP_ALIGN.CENTER)
     for i, (nm, da, mine) in enumerate(rows):
-        y = 2.25 + i * 0.78
-        text(s, 0.7, y, 4.3, 0.55, nm, size=15, bold=mine, color=GREEN if mine else WHITE, anchor=MSO_ANCHOR.MIDDLE)
-        rect(s, bx, y + 0.06, bw_max, 0.42, fill=CARD, radius=False)
-        w = max(0.25, bw_max * da / 20.0)
-        rect(s, bx, y + 0.06, w, 0.42, fill=GREEN if mine else RGBColor(0x5A, 0x67, 0x78), radius=False)
-        text(s, bx + w + 0.12, y, 1.0, 0.55, str(int(da)), size=16, bold=True,
+        y = rows_top + i * rh
+        text(s, 0.7, y, lblw, 0.45, nm, size=13.5, bold=mine, color=GREEN if mine else WHITE, anchor=MSO_ANCHOR.MIDDLE)
+        rect(s, bx, y + 0.04, bw, 0.36, fill=CARD, radius=False)
+        w = max(0.18, bw * da / SCALE)
+        rect(s, bx, y + 0.04, w, 0.36, fill=GREEN if mine else RGBColor(0x5A, 0x67, 0x78), radius=False)
+        text(s, bx + w + 0.1, y, 0.6, 0.45, str(int(da)), size=14, bold=True,
              color=GREEN if mine else GREY, anchor=MSO_ANCHOR.MIDDLE)
-    text(s, 0.7, 5.55, 11.9, 1.0, CLIENT["da_insight"], size=15, color=GREY, line_spacing=1.2)
-    text(s, 0.7, 6.95, 8, 0.3, CLIENT["da_source"], size=10.5, color=GREY)
-    # how-we-grow chips
-    text(s, 9.0, 2.2, 3.6, 0.4, "HOW WE GROW IT", size=12, color=GREEN, bold=True)
-    for j, chip in enumerate(["High-value local links", "Citation building + cleanup", "Local press & sponsorships", "Partner / supplier links"]):
-        rect(s, 9.0, 2.65 + j * 0.62, 3.6, 0.5, fill=CARD)
-        text(s, 9.2, 2.68 + j * 0.62, 3.3, 0.45, chip, size=12.5, anchor=MSO_ANCHOR.MIDDLE)
+    text(s, 0.72, 5.55, 11.9, 1.1, CLIENT["da_insight"], size=14.5, color=TXT2, line_spacing=1.2)
+    text(s, 0.72, 6.78, 8, 0.3, CLIENT["da_source"] + "   ·   Backlinks are the #1 lever for raising Domain Authority.", size=10.5, color=FAINT)
 
 # ═══ 7. WHAT WE'VE DONE ═══
 s = slide(); accent_bar(s); heading(s, "PROGRESS", "What We've Done So Far")
@@ -296,15 +299,15 @@ s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 2 OF 2", "Content & Blog �
 text(s, 0.72, 2.0, 11.9, 0.6, "Shift from curiosity content to buyer-intent content that brings customers through the door.", size=16, color=GREY)
 bullets(s, 0.9, 2.85, 11.4, [
     "Target transactional searches like " + ", ".join(CLIENT["keyword_examples"]),
-    "City & service landing pages for every area you serve (" + CLIENT["service_areas"] + ")",
+    "Expand & refresh your landing pages as we find new demand (" + CLIENT["service_areas"] + ")",
     "2–4 new posts per month on high-intent topics, refreshed so they stay ranking",
     "FAQ content structured for Google snippets and AI answers",
 ], size=16)
 
 # ═══ 10. ROADMAP ═══
 s = slide(); accent_bar(s); heading(s, "THE PLAN", "Your 90-Day Roadmap")
-phases = [("Month 1", "Technical foundation, Google Business Profile, homepage rebuild"),
-          ("Month 2", "City / service landing pages, first authority links, content cadence"),
+phases = [("Month 1  ✓", "Technical foundation, Google Business Profile, homepage rebuild, service & location landing pages"),
+          ("Month 2", "Authority backlinks (raise Domain Authority), on-page depth, content cadence"),
           ("Month 3", "Authority push, review growth, measure & iterate")]
 for i, (m, d) in enumerate(phases):
     x = 0.7 + i * 4.1
@@ -312,7 +315,8 @@ for i, (m, d) in enumerate(phases):
     rect(s, x, 2.4, 3.8, 0.7, fill=GREEN)
     text(s, x, 2.45, 3.8, 0.6, m, size=18, bold=True, color=DARKTXT, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
     text(s, x + 0.3, 3.4, 3.2, 1.5, d, size=15, color=GREY, line_spacing=1.2)
-text(s, 0.72, 5.5, 11.9, 0.6, [("Target:  ", GREY, False, 18), (CLIENT["target"], GREEN, True, 18)])
+text(s, 0.72, 5.55, 11.9, 0.6, [("Goal:  ", GREY, False, 17), (CLIENT["target"], GREEN, True, 17),
+     ("   — backed by our 90-day score guarantee.", GREY, False, 14)])
 
 # ═══ 11. GUARANTEE ═══
 s = slide(green_corner=True); accent_bar(s)
