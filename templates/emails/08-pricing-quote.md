@@ -65,7 +65,7 @@ Best for: {industry_best_for_growth}.
 - **2 high-authority backlinks per month** on real, relevant sites + **1 AI-recommendation placement per quarter** (a brand feature on the kind of sites AI assistants cite)
 - Keyword rank tracking with weekly position reports
 - Local citation management + ongoing NAP consistency
-- **Review funnel — fully set up and automated** (branded link, routes happy clients to Google, intercepts unhappy ones privately — details below)
+- **Review funnel — fully set up and automated** (branded link that makes it easy for happy clients to leave Google reviews, with a private feedback option — details below)
 - Competitor tracking with quarterly gap analysis
 - Monthly content strategy check-in + priority (same-day) support
 
@@ -141,9 +141,9 @@ Reviews are one of the biggest local-ranking factors, so we set up a simple syst
 
 1. **We give you one branded review link.** We set it up and put it everywhere it helps — your site, email signature, and a QR code for the front desk.
 2. **You send it to happy clients.** After a great visit, text or email them the link (we'll give you ready-to-paste templates, and on Grow/Dominate we automate the send).
-3. **The funnel routes them.** Happy clients (4–5★) go straight to your Google review page. Anyone unhappy is routed to a private feedback form first — so issues reach *you*, not your public rating.
+3. **The funnel routes them.** Happy clients (4–5★) are guided straight to your Google review page. Anyone unhappy is offered a private feedback form so they can tell you directly — giving you the chance to make it right.
 
-That last step (**negative interception**) protects your star rating while still getting you the volume and recency Google rewards. The one thing we need from you: **actually send the link to recent happy clients** — that's where the reviews come from.
+That private feedback option helps you catch and resolve issues early, while the funnel drives the steady volume and recency of public reviews Google rewards. The one thing we need from you: **actually send the link to recent happy clients** — that's where the reviews come from.
 
 ---
 

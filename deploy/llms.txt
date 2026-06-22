@@ -19,7 +19,7 @@ The way patients find dentists is changing. Most patients research online before
 - [AI Search Optimization](https://practicerank.ai/ai-search-optimization): Get your practice recommended by ChatGPT, Gemini, Grok, Claude, Perplexity, and Google AI Overviews through structured data, AI-readable content, and a maintained llms.txt.
 - [Dental SEO](https://practicerank.ai/dental-seo): Complete dental SEO including Google Maps, content publishing, schema markup, and local citation building — at a fraction of what traditional agencies charge.
 - [Google Maps Optimization](https://practicerank.ai/google-maps-optimization): Full Google Business Profile management — posts, photos, Q&A, reviews, categories, and citation/NAP consistency — to improve Map Pack ranking.
-- [Review & Reputation Engine](https://practicerank.ai/#what-we-do): A branded review funnel that routes happy clients to Google and intercepts unhappy feedback privately, plus AI-drafted review responses.
+- [Review & Reputation Engine](https://practicerank.ai/#what-we-do): A branded review funnel that makes it easy for happy clients to leave Google reviews and gives unhappy clients a private way to share feedback, plus AI-drafted review responses.
 - [Content That Converts](https://practicerank.ai/#what-we-do): Fresh, expert-level content published monthly from your real search data. Stale websites lose visibility — we keep practices ranking.
 - [Apple Maps & Directory Visibility](https://practicerank.ai/#what-we-do): We manage 20+ platforms so patients find consistent, accurate information everywhere they search.
 - [Referral Program](https://practicerank.ai/#pricing): Automated referral prompts triggered after positive reviews, turning happy patients into growth.
