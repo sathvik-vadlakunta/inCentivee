@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Connected — PracticeRank</title>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Your accounts are connected. Here's what happens next with PracticeRank.">
+  <link rel="icon" type="image/png" href="/assets/practicerank-logo-360.png">
+  <meta property="og:title" content="You're Connected — PracticeRank">
+  <meta property="og:description" content="Your accounts are connected. Here's what happens next.">
+  <style>
+    :root{ --bg:#08080d; --panel:#14181f; --border:rgba(255,255,255,0.10);
+      --text:#f4f6f8; --muted:rgba(255,255,255,0.66); --accent:#4ade80; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+      background:radial-gradient(1200px 600px at 50% -10%,#16213e 0%,var(--bg) 60%);
+      color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .card{max-width:560px;width:100%;text-align:center;}
+    .logo{width:88px;height:88px;border-radius:20px;margin:0 auto 28px;display:block;box-shadow:0 12px 40px rgba(0,0,0,0.45);}
+    .check{width:74px;height:74px;border-radius:50%;background:rgba(74,222,128,0.12);
+      border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;
+      margin:0 auto 22px;font-size:38px;color:var(--accent);font-weight:800;line-height:1;}
+    h1{font-size:2rem;line-height:1.2;margin-bottom:12px;letter-spacing:-0.02em;}
+    h1 span{color:var(--accent);}
+    .sub{color:var(--muted);font-size:1.05rem;line-height:1.7;margin-bottom:32px;}
+    .steps{background:var(--panel);border:1px solid var(--border);border-radius:16px;
+      padding:24px 26px;text-align:left;margin-bottom:30px;}
+    .steps h2{font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:16px;}
+    .step{display:flex;gap:14px;align-items:flex-start;padding:10px 0;}
+    .step:not(:last-child){border-bottom:1px solid var(--border);}
+    .num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:rgba(74,222,128,0.14);
+      color:var(--accent);font-weight:800;font-size:0.82rem;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+    .step p{font-size:0.95rem;line-height:1.55;color:var(--text);}
+    .step p small{display:block;color:var(--muted);font-size:0.85rem;margin-top:2px;}
+    .btn{display:inline-block;background:var(--accent);color:#04210f;text-decoration:none;
+      font-weight:800;font-size:1.02rem;padding:15px 34px;border-radius:10px;transition:transform .15s;}
+    .btn:hover{transform:translateY(-2px);}
+    .fine{color:var(--muted);font-size:0.85rem;margin-top:18px;line-height:1.6;}
+    .fine a{color:var(--accent);text-decoration:none;}
+    @media(max-width:480px){h1{font-size:1.6rem;}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="/assets/practicerank-logo-360.png" alt="PracticeRank" class="logo">
+    <div class="check">&#10003;</div>
+    <h1>You're <span>connected.</span></h1>
+    <p class="sub">Thank you &mdash; your accounts are securely linked and we have everything we need to get started. You stay the owner of every account; we never change anything without your approval.</p>
+
+    <section class="steps">
+      <h2>What happens next</h2>
+      <div class="step"><div class="num">1</div><p>We verify your access and run your full PracticeRank audit.<small>Usually within 1 business day.</small></p></div>
+      <div class="step"><div class="num">2</div><p>We map out your local &amp; AI-search game plan and confirm your services, service areas, and business details.</p></div>
+      <div class="step"><div class="num">3</div><p>We get to work &mdash; and you'll see a measurable before-and-after report every month.</p></div>
+    </section>
+
+    <a href="https://calendly.com/ethan-practicerank" target="_blank" rel="noopener" class="btn">Book Your Kickoff Call &rarr;</a>
+    <p class="fine">Questions in the meantime? Email <a href="mailto:kdoherty@practicerank.ai">kdoherty@practicerank.ai</a> &middot; <a href="https://practicerank.ai">practicerank.ai</a></p>
+  </main>
+</body>
+</html>
