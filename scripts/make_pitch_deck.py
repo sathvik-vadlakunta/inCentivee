@@ -16,7 +16,9 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # ─────────────────────────── CLIENT CONFIG (swap per deal) ───────────────────────────
-CLIENT = {
+import sys
+
+_PARADIGM = {
     "name": "Paradigm Experts",
     "location": "Springfield, Virginia",
     "industry": "Gold, Silver & Estate Jewelry Buyer",
@@ -28,6 +30,7 @@ CLIENT = {
         ("Top-10 ranking keywords", "14", "69", "4.9x"),
     ],
     "gap_source": "Source: competitive organic-search analysis, May 2026",
+    "comparison_placement": "“Best Gold & Silver Buyer in Northern VA” comparison placements — rank for high-intent searches AND get cited by AI",
     # Real Domain Authority (Moz). da_self first, then rivals.
     "da_self": ("Paradigm Experts", 14),
     "da_rivals": [("CASH FOR GOLD", 18), ("Alexandria Gold & Silver", 11), ("Cash for Gold NOVA", 10)],
@@ -75,6 +78,50 @@ CLIENT = {
          "“Best in Northern VA” comparison placements", "Aggressive citations + AI authority building"]),
     ],
 }
+
+# ── Brand-new prospect: no progress slides (omit done/score/visit keys) ──
+_PARIAN = {
+    "name": "Parian Lawyers",
+    "location": "Carrollton, Georgia",
+    "industry": "Personal Injury Law Firm",
+    "competitor": "your top local rivals",
+    "gap_intro": "You've already built a strong local reputation — the opportunity is turning it into search and AI dominance.",
+    "gap_rows": [
+        ("Google reviews", "162  ·  4.9★", "83–148", "You lead"),
+        ("Domain Authority", "29", "single digits (most)", "You lead"),
+        ("AI search visibility", "0 of 68 queries", "—", "Biggest gap"),
+    ],
+    "gap_source": "Google · Moz · AI-visibility scan, June 2026",
+    "comparison_placement": "“Best Injury Lawyer in West Georgia” comparison placements — rank for high-intent searches AND get cited by AI",
+    "da_self": ("Parian Lawyers", 29),
+    "da_rivals": [],   # no verified competitor DA — show their own strong position
+    "da_source": "Domain Authority — Moz, June 2026",
+    "da_explainer": "Domain Authority (0–100) is a trust score for your website — built mostly from quality backlinks. The higher it climbs, the easier everything else ranks.",
+    "da_insight": "Most local firms sit in the single digits to low teens. You're already at 29 — basically the ~30 sweet spot that beats nearly every local competitor. So authority isn't your gap; AI-search visibility is. We protect this lead and turn it into more rankings and AI recommendations.",
+    "service_areas": "Carrollton · Villa Rica · Bremen · Temple · Douglasville · Newnan · West Georgia",
+    "keyword_examples": ['"car accident lawyer Carrollton GA"', '"personal injury attorney near me"',
+                         '"truck accident lawyer West Georgia"'],
+    "target": "Top-3 Map Pack + AI recommendations for your core injury keywords within 6 months",
+    # Visuals
+    "cover_image": "deck-assets/parian/cover-justice.jpg",
+    "img_backlinks": "deck-assets/parian/law-office.jpg",
+    "img_content": "deck-assets/parian/consult.jpg",
+    # Tiers — standard pricing (no founding discount); new managed site for a PI firm
+    "show_tiers": True,
+    "popular_tier": 1,
+    "founding_note": "Pricing tailored to your market.  ·  Month-to-month, no long-term contracts.  ·  Backed by our 90-day guarantee.",
+    "tiers": [
+        ("Optimize", "The Foundation", "1,500", "1,500", ["Local SEO + AI-search foundation", "100 local citations + Google Business Profile",
+         "2 content + 1 backlink / mo", "Review funnel + monthly report"]),
+        ("Grow", "The Growth Engine", "2,500", "2,500", ["Everything in Optimize, plus:", "New site on our fast managed platform",
+         "4 content + 2 backlinks / mo", "Practice-area + city pages, keyword tracking"]),
+        ("Dominate", "Market Domination", "3,500", "3,500", ["Everything in Grow, plus:", "4 high-authority backlinks / mo",
+         "“Best injury lawyer in West GA” comparison placements", "Aggressive citations + AI authority"]),
+    ],
+}
+
+CLIENT = {"paradigm": _PARADIGM, "parian": _PARIAN}.get(
+    (sys.argv[1].lower() if len(sys.argv) > 1 else "paradigm"), _PARADIGM)
 
 # ─────────────────────────── brand (matches practicerank.ai dark mode) ───────────────────────────
 from pptx.oxml.ns import qn
@@ -308,7 +355,7 @@ for i, (prob, fix) in enumerate(fixes):
 # ═══ 6. WHERE YOU STAND ═══
 if CLIENT.get("gap_rows"):
     s = slide(); accent_bar(s); heading(s, "THE OPPORTUNITY", f"Where {CLIENT['name']} Stands Today")
-    text(s, 0.72, 2.0, 11.9, 0.6, f"You're being out-ranked by {CLIENT['competitor']} — but the gap is closeable, and we've mapped exactly how.", size=16, color=GREY)
+    text(s, 0.72, 2.0, 11.9, 0.6, CLIENT.get("gap_intro", f"You're being out-ranked by {CLIENT['competitor']} — but the gap is closeable, and we've mapped exactly how."), size=16, color=GREY)
     # table header
     cols = [("", 4.6), (CLIENT["name"], 2.7), (CLIENT["competitor"], 2.7), ("Gap", 1.6)]
     x = 0.7; y = 2.85
@@ -354,12 +401,13 @@ if CLIENT.get("da_self"):
     text(s, 0.72, 5.55, 11.9, 1.1, CLIENT["da_insight"], size=14.5, color=TXT2, line_spacing=1.2)
     text(s, 0.72, 6.78, 8, 0.3, CLIENT["da_source"] + "   ·   Backlinks are the #1 lever for raising Domain Authority.", size=10.5, color=FAINT)
 
-# ═══ 7. WHAT WE'VE DONE ═══
-s = slide(); accent_bar(s); heading(s, "PROGRESS", "What We've Done So Far")
-bullets(s, 0.9, 2.25, 7.5, CLIENT["done"], size=15)
-if CLIENT.get("img_done"):
-    picture(s, CLIENT["img_done"], 8.55, 2.3, 4.1, 2.73)
-text(s, 0.9, 6.15, 11.4, 0.5, "Foundation set — now we scale visibility, authority, and content.", size=15, color=GREEN, bold=True)
+# ═══ 7. WHAT WE'VE DONE (only for existing clients with progress) ═══
+if CLIENT.get("done"):
+    s = slide(); accent_bar(s); heading(s, "PROGRESS", "What We've Done So Far")
+    bullets(s, 0.9, 2.25, 7.5, CLIENT["done"], size=15)
+    if CLIENT.get("img_done"):
+        picture(s, CLIENT["img_done"], 8.55, 2.3, 4.1, 2.73)
+    text(s, 0.9, 6.15, 11.4, 0.5, "Foundation set — now we scale visibility, authority, and content.", size=15, color=GREEN, bold=True)
 
 # ═══ 7b. PRACTICERANK SCORE (proof of momentum) ═══
 if CLIENT.get("score_now"):
@@ -397,7 +445,7 @@ s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 1 OF 2", "Building Authori
 text(s, 0.72, 2.0, 11.9, 0.6, "Quality over volume: the work that raises your Domain Authority toward ~30 and gets you cited by AI.", size=16, color=GREY)
 bullets(s, 0.9, 2.85, 7.2, [
     "Aggressive local citation building + NAP cleanup across the directories that matter",
-    "“Best Gold & Silver Buyer in Northern VA” comparison placements — rank for high-intent searches AND get cited by AI",
+    CLIENT.get("comparison_placement", "“Best [your service] in [your area]” comparison placements — rank for high-intent searches AND get cited by AI"),
     "High-authority backlinks from real, locally-relevant sites — no spam, no risky tactics",
     "Local press, partner & supplier links for authoritative mentions",
     "A steady monthly cadence — compounding authority that competitors can't shortcut",
@@ -451,7 +499,8 @@ if CLIENT.get("show_tiers"):
             text(s, x + 1.15, 2.03, 1.5, 0.38, "RECOMMENDED", size=9, color=DARKTXT, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
         text(s, x + 0.3, 2.42, 3.2, 0.45, name, size=19, bold=True)
         text(s, x + 0.3, 2.87, 3.2, 0.32, tagline, size=12, color=GREEN, bold=True)
-        text(s, x + 0.3, 3.24, 3.2, 0.28, f"reg. ${reg}/mo", size=11, color=FAINT)
+        if reg != found:   # show the discount ("was $X")
+            text(s, x + 0.3, 3.24, 3.2, 0.28, f"reg. ${reg}/mo", size=11, color=FAINT)
         text(s, x + 0.3, 3.5, 3.2, 0.6, [(f"${found}", GREEN, True, 29), ("/mo", GREY, False, 14)])
         bullets(s, x + 0.3, 4.3, 3.3, feats, size=10.5, marker="✓")
     text(s, 0.72, 6.62, 11.9, 0.45, CLIENT.get("founding_note", ""), size=12, color=GREEN, bold=True, align=PP_ALIGN.CENTER)
