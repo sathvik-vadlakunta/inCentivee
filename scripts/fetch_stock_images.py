@@ -68,9 +68,9 @@ LIBRARY = {
 }
 
 
-def search(query):
+def search(query, per_page=5):
     url = "https://api.pexels.com/v1/search?" + urllib.parse.urlencode({
-        "query": query, "orientation": "landscape", "size": "large", "per_page": 5,
+        "query": query, "orientation": "landscape", "size": "large", "per_page": per_page,
     })
     req = urllib.request.Request(url, headers={"Authorization": API_KEY, "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/124 Safari/537.36"})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -87,10 +87,49 @@ def fetch_webp(src_url, dest):
     os.remove(tmp)
 
 
+def download_variants(vertical, n):
+    """Download N distinct variants per label into <vertical>-pool/<label>-<i>.webp
+    so different customers can use different photos for the same category."""
+    items = LIBRARY.get(vertical)
+    if not items:
+        print(f"unknown vertical: {vertical}"); return
+    d = os.path.join(OUT, f"{vertical}-pool"); os.makedirs(d, exist_ok=True)
+    print(f"\n== {vertical} variants pool ({len(items)} labels × {n}) ==")
+    for label, query in items.items():
+        try:
+            photos = search(query, per_page=max(15, n * 4))
+            seen, saved = set(), 0
+            for p in photos:
+                if saved >= n:
+                    break
+                # skip near-duplicate dominant colors for visual variety
+                ac = p.get("avg_color", "")
+                if ac in seen:
+                    continue
+                seen.add(ac)
+                dest = os.path.join(d, f"{label}-{saved+1}.webp")
+                if os.path.exists(dest):
+                    saved += 1; continue
+                src = p["src"].get("large2x") or p["src"].get("large")
+                fetch_webp(src, dest)
+                saved += 1
+                time.sleep(0.3)
+            print(f"  ✓ {label}: {saved} variants")
+        except Exception as e:
+            print(f"  ! {label}: {e}")
+    print(f"\nDone → {d}")
+
+
 def main():
     if not API_KEY:
         print("ERROR: set PEXELS_API_KEY (get one free at https://www.pexels.com/api/)")
         sys.exit(1)
+    # variants mode:  fetch_stock_images.py variants dental 4
+    if sys.argv[1:2] == ["variants"]:
+        vert = sys.argv[2] if len(sys.argv) > 2 else "dental"
+        n = int(sys.argv[3]) if len(sys.argv) > 3 else 4
+        download_variants(vert, n)
+        return
     verticals = sys.argv[1:] or list(LIBRARY.keys())
     for vert in verticals:
         items = LIBRARY.get(vert)
