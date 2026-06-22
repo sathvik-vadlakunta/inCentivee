@@ -23,6 +23,9 @@ import {
   assertsGbpAbsence,
   scrubGbpAbsenceText,
   finalSafetyChecks,
+  analyzeRobotsAiBlocking,
+  googleTypeToVertical,
+  assertsAiCrawlerBlock,
 } from "./index.js";
 
 // ════════════════════════════════════════════════════════════════
@@ -1161,5 +1164,139 @@ describe("validateAndCorrectReport — review count in prose", () => {
     const original = "Hilltop has 1105 reviews at 4.8 stars.";
     const r = validateAndCorrectReport(makeReport(original), siteData, placeData, competitors);
     expect(r.executive_summary).toBe(original);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// ── Hard blocks: robots AI-crawler, vertical-by-Google-type, claim scrubs ──
+// ════════════════════════════════════════════════════════════════
+
+describe("analyzeRobotsAiBlocking", () => {
+  it("does NOT report a block when AI agents are merely listed (Squarespace default)", () => {
+    const robots = `# Squarespace Robots Txt
+User-agent: anthropic-ai
+User-agent: ClaudeBot
+User-agent: GPTBot
+User-agent: *
+Disallow: /config
+Disallow: /search
+Disallow: /api/
+Sitemap: https://x.com/sitemap.xml`;
+    const r = analyzeRobotsAiBlocking(robots);
+    expect(r.blocksAi).toBe(false);
+    expect(r.blockedAgents).toEqual([]);
+  });
+
+  it("reports a block when an AI agent has a real Disallow: /", () => {
+    const robots = `User-agent: GPTBot
+Disallow: /
+
+User-agent: *
+Disallow: /admin`;
+    const r = analyzeRobotsAiBlocking(robots);
+    expect(r.blocksAi).toBe(true);
+    expect(r.blockedAgents).toContain("gptbot");
+  });
+
+  it("handles empty / missing robots.txt", () => {
+    expect(analyzeRobotsAiBlocking("").blocksAi).toBe(false);
+    expect(analyzeRobotsAiBlocking(null).hasRobots).toBe(false);
+  });
+});
+
+describe("googleTypeToVertical", () => {
+  it("maps Google business categories to verticals", () => {
+    expect(googleTypeToVertical("dentist", [])).toBe("dental");
+    expect(googleTypeToVertical("lawyer", [])).toBe("legal");
+    expect(googleTypeToVertical("doctor", ["hospital"])).toBe("medical");
+    expect(googleTypeToVertical("financial_consultant", [])).toBe("financial");
+    expect(googleTypeToVertical("accounting", [])).toBe("financial");
+    expect(googleTypeToVertical("consultant", ["consultant","finance","point_of_interest","service","establishment"])).toBe("financial");
+    expect(googleTypeToVertical("restaurant", ["point_of_interest"])).toBe(null);
+  });
+
+  it("falls back to Google's display-name label when type doesn't map", () => {
+    expect(googleTypeToVertical("point_of_interest", [], "Financial Planner")).toBe("financial");
+    expect(googleTypeToVertical("", [], "Wealth Management Service")).toBe("financial");
+    expect(googleTypeToVertical("establishment", [], "Personal Injury Attorney")).toBe("legal");
+    expect(googleTypeToVertical("", [], "Cosmetic Dentist")).toBe("dental");
+  });
+});
+
+describe("assertsAiCrawlerBlock", () => {
+  it("flags claims that the site blocks AI crawlers", () => {
+    expect(assertsAiCrawlerBlock("The robots.txt explicitly blocks multiple major AI crawlers including Anthropic and ByteSpider")).toBe(true);
+    expect(assertsAiCrawlerBlock("the site's robots.txt explicitly blocks Anthropic's crawler, so Claude cannot read the website")).toBe(true);
+    expect(assertsAiCrawlerBlock("the firm has actively prevented AI assistants from reading and indexing its content")).toBe(true);
+  });
+  it("does not flag normal AI-readiness findings", () => {
+    expect(assertsAiCrawlerBlock("No llms.txt file means AI assistants have no structured summary")).toBe(false);
+    expect(assertsAiCrawlerBlock("Few reviews compared to competitors")).toBe(false);
+  });
+});
+
+describe("finalSafetyChecks — claim hard blocks", () => {
+  function baseReport(overrides = {}) {
+    return {
+      practice_name: "Bone Fide Wealth, LLC", city: "New York", state: "NY",
+      executive_summary: "summary",
+      revenue_lost_annually: "$240,000-$600,000",
+      projections: { month_12: "+22-32" },
+      categories: {
+        ai_readiness: { score: 18, status: "critical", findings: [] },
+        gbp: { score: 38, status: "needs_work", findings: [] },
+        local_seo: { score: 30, status: "critical", findings: [] },
+        reviews: { score: 26, status: "critical", findings: [], count: 4, rating: 4 },
+      },
+      ai_visibility: { claude: { visible: "no", reason: "" } },
+      priority_actions: [],
+      ...overrides,
+    };
+  }
+  const site = (o = {}) => ({ scraped: true, aiCrawlersBlocked: false, ...o });
+
+  it("scrubs false AI-crawler-block claims when robots.txt does NOT block", () => {
+    const r = baseReport();
+    r.categories.ai_readiness.findings = ["The site's robots.txt explicitly blocks multiple major AI crawlers including Anthropic and ByteSpider, preventing Claude from reading the content."];
+    r.ai_visibility.claude.reason = "The robots.txt explicitly blocks Anthropic's crawler, so Claude cannot read the website content.";
+    const out = finalSafetyChecks(r, "https://bonefidewealth.com", site(), null, []);
+    expect(assertsAiCrawlerBlock(out.categories.ai_readiness.findings[0])).toBe(false);
+    expect(assertsAiCrawlerBlock(out.ai_visibility.claude.reason)).toBe(false);
+    expect(out.safety_warnings.join(" ")).toMatch(/blocks AI crawlers/i);
+  });
+
+  it("preserves a real AI-crawler-block claim when robots.txt DOES block", () => {
+    const r = baseReport();
+    const txt = "The robots.txt blocks GPTBot from the entire site.";
+    r.categories.ai_readiness.findings = [txt];
+    const out = finalSafetyChecks(r, "https://x.com", site({ aiCrawlersBlocked: true }), null, []);
+    expect(out.categories.ai_readiness.findings[0]).toBe(txt);
+  });
+
+  it("softens unsourced percentage stats", () => {
+    const r = baseReport();
+    r.categories.ai_readiness.findings = ["An estimated 40%+ of prospective clients now use AI tools to research financial advisors."];
+    const out = finalSafetyChecks(r, "https://x.com", site(), null, []);
+    expect(out.categories.ai_readiness.findings[0]).not.toMatch(/40\s*%/);
+    expect(out.categories.ai_readiness.findings[0]).toMatch(/growing share/i);
+  });
+
+  it("softens site-wide overstatements", () => {
+    const r = baseReport();
+    r.categories.local_seo.findings = ["No physical address or phone number appears anywhere on the website."];
+    const out = finalSafetyChecks(r, "https://x.com", site(), null, []);
+    expect(out.categories.local_seo.findings[0]).not.toMatch(/anywhere on the website/i);
+  });
+
+  it("removes stale year ranges", () => {
+    const r = baseReport();
+    r.priority_actions = [{ title: "X", description: "This is the highest-leverage opportunity in 2024-2025 for any firm." }];
+    const out = finalSafetyChecks(r, "https://x.com", site(), null, []);
+    expect(out.priority_actions[0].description).not.toMatch(/2024-2025/);
+  });
+
+  it("attaches an estimate disclaimer when projections/revenue are present", () => {
+    const out = finalSafetyChecks(baseReport(), "https://x.com", site(), null, []);
+    expect(out.estimate_disclaimer).toMatch(/illustrative estimate/i);
   });
 });

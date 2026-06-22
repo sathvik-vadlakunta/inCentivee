@@ -300,6 +300,20 @@ export default {
           vert
         );
 
+        // ── Step 2a: Correct the vertical from Google's verified business category ──
+        // Google's own category is authoritative for what the business IS, so it
+        // rescues thin-content sites that defeated keyword detection (e.g. a wealth
+        // advisor misread as "legal"). Only override when our content signal for the
+        // current vertical is weak, so a strong content match still wins.
+        if (placeData) {
+          const googleVert = googleTypeToVertical(placeData.primaryType, placeData.types, placeData.primaryTypeDisplay);
+          const contentScore = siteData.signalCounts?.[vert] || 0;
+          if (googleVert && googleVert !== vert && contentScore < 3) {
+            console.log(`Vertical override: ${vert} → ${googleVert} (Google type: ${placeData.primaryType})`);
+            vert = googleVert;
+          }
+        }
+
         // If Google found the place, search for additional locations + competitors
         if (placeData && placeData.location) {
           const lat = placeData.location.latitude || placeData.location.lat;
@@ -519,7 +533,7 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
     }
     queries.push({ text: `${domainName} ${city || ""} ${state || ""}`.trim(), typed: false });
 
-    const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.location,places.businessStatus,places.addressComponents";
+    const FIELD_MASK = "places.id,places.displayName,places.formattedAddress,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.location,places.businessStatus,places.addressComponents,places.primaryType,places.primaryTypeDisplayName,places.types";
 
     let bestPlace = null;
 
@@ -587,6 +601,9 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
       location: place.location || null,
       businessStatus: place.businessStatus || "",
       placeId: place.id,
+      primaryType: place.primaryType || "",
+      primaryTypeDisplay: place.primaryTypeDisplayName?.text || "",
+      types: place.types || [],
       domainMatch,
       nameMatch,
       nameSimScore,
@@ -1223,6 +1240,30 @@ function scrubGbpAbsenceText(text, placeData) {
   return changed ? rebuilt.join(" ").replace(/\s+/g, " ").trim() : text;
 }
 
+// Detects a claim that the site BLOCKS AI crawlers. We only let this stand when
+// robots.txt actually has a full-site Disallow for an AI agent (verified in the
+// scraper). Otherwise it's the false "Squarespace lists the bots" inference.
+function assertsAiCrawlerBlock(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase().replace(/\s+/g, " ");
+  const mentionsAi = /(ai crawler|ai bot|ai assistant|ai (search|system|platform)|chatgpt|gptbot|anthropic|claude|perplexity|gemini|crawler|bytespider|robots\.txt)/.test(t);
+  if (!mentionsAi) return false;
+  return /(block|blocking|blocked|prevent|prevented|preventing|disallow|shut (the )?door|excluded|exclude|restrict|cannot (read|access|index|crawl)|can'?t (read|access|index|crawl)|denied access|barred)/.test(t)
+    && /(crawler|bot|gptbot|anthropic|claude|perplexity|ai (assistant|search|system|crawler)|robots\.txt|spider)/.test(t);
+}
+
+// Replace only the sentences in a field that match `predicate`, with `replacement`.
+function scrubSentences(text, predicate, replacement) {
+  if (!text) return { text, changed: false };
+  const sentences = String(text).match(/[^.!?]+[.!?]*/g) || [String(text)];
+  let changed = false;
+  const rebuilt = sentences.map((s) => {
+    if (predicate(s)) { changed = true; return replacement(s); }
+    return s;
+  });
+  return { text: changed ? rebuilt.join(" ").replace(/\s+/g, " ").trim() : text, changed };
+}
+
 function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors) {
   const warnings = [];
   const inputDomain = normalizeDomain(practiceUrl);
@@ -1426,6 +1467,96 @@ function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors
     console.log(`GBP guard: rewrote ${gbpFixed} false absence claim(s)`);
   }
 
+  // Helper: run a sentence-level scrub across every narrative field in the report.
+  const scrubEverywhere = (predicate, replacement, label) => {
+    let n = 0;
+    const apply = (txt) => {
+      const r = scrubSentences(txt, predicate, replacement);
+      if (r.changed) n++;
+      return r.text;
+    };
+    if (report.categories) {
+      for (const cat of Object.values(report.categories)) {
+        if (Array.isArray(cat.findings)) cat.findings = cat.findings.map(apply);
+      }
+    }
+    if (typeof report.executive_summary === "string") report.executive_summary = apply(report.executive_summary);
+    if (Array.isArray(report.priority_actions)) {
+      report.priority_actions = report.priority_actions.map((a) =>
+        a && typeof a.description === "string" ? { ...a, description: apply(a.description) } : a
+      );
+    }
+    if (report.ai_visibility) {
+      for (const p of Object.values(report.ai_visibility)) {
+        if (p && typeof p.reason === "string") p.reason = apply(p.reason);
+      }
+    }
+    if (n > 0) warnings.push(`${label} (${n} field${n > 1 ? "s" : ""})`);
+    return n;
+  };
+
+  // CHECK 9 — HARD BLOCK: never claim the site blocks AI crawlers unless robots.txt
+  // verifiably has a full-site Disallow for an AI agent. (The Squarespace false-positive.)
+  if (!siteData?.aiCrawlersBlocked) {
+    scrubEverywhere(
+      assertsAiCrawlerBlock,
+      () => " The site's robots.txt permits AI assistants to read it, but thin on-page content and missing structured data still limit how confidently they can describe and recommend the business.",
+      "Removed false 'blocks AI crawlers' claim"
+    );
+  }
+
+  // CHECK 10 — HARD BLOCK: strip unsourced precise stats stated as fact (e.g.
+  // "40%+ of patients use AI"). We never publish a specific % we can't source.
+  scrubEverywhere(
+    (s) => /\b\d{1,3}\s*%\+?/.test(s) && /(patients?|clients?|customers?|consumers?|people|users?|prospects?|searches?|of\s+\w+)/i.test(s) && /(ai|chatgpt|gemini|perplexity|claude|google|search|online|maps|reviews?|map pack)/i.test(s),
+    (s) => s.replace(/\b(over|nearly|roughly|about|an estimated|approximately)?\s*\d{1,3}\s*%\+?\s*(of\s+)?/gi, "a growing share of "),
+    "Softened unsourced percentage stat"
+  );
+
+  // CHECK 11 — HARD BLOCK: soften absolute "anywhere on the (entire) website"
+  // claims — our scan only reads the homepage, so we can't assert site-wide absence.
+  scrubEverywhere(
+    (s) => /\b(anywhere on (the|your) (entire )?(website|site)|nowhere on (the|your) (website|site)|across (the|your) (entire )?(website|site))\b/i.test(s),
+    (s) => s.replace(/\banywhere on (the|your) (entire )?(website|site)\b/gi, "on the homepage we scanned")
+            .replace(/\bacross (the|your) (entire )?(website|site)\b/gi, "on the homepage we scanned"),
+    "Softened site-wide overstatement"
+  );
+
+  // CHECK 12 — HARD BLOCK: remove stale calendar-year references that read as out
+  // of date (e.g. "in 2024-2025"). Only targets year RANGES and "in/by YEAR" forms
+  // so we don't mangle incidental years (e.g. "established in 1998").
+  scrubEverywhere(
+    (s) => /\b20(1\d|2[0-5])\s*[-–]\s*20\d{2}\b/.test(s) || /\b(in|by|for|as of|during|throughout)\s+20(1\d|2[0-5])\b/i.test(s),
+    (s) => s.replace(/\b(in|by|for|as of|during|throughout)\s+20(1\d|2[0-5])\s*[-–]\s*20\d{2}\b/gi, "today")
+            .replace(/\b(in|by|for|as of|during|throughout)\s+20(1\d|2[0-5])\b/gi, "today")
+            .replace(/\b20(1\d|2[0-5])\s*[-–]\s*20\d{2}\b/g, "now"),
+    "Removed stale year reference"
+  );
+
+  // CHECK 13 — HARD BLOCK: don't claim "no phone / no address on the site" when our
+  // own scrape actually captured one.
+  if (siteData?.phone) {
+    scrubEverywhere(
+      (s) => /\bno (visible |listed )?(phone|telephone|contact) (number|info)/i.test(s) && /(website|site|page|on-?page|scraped)/i.test(s),
+      (s) => s.replace(/\bno (visible |listed )?(phone|telephone|contact) (number|info)[a-z ]*?(on|across|anywhere)[^,.;]*/gi, "the phone number is present but under-leveraged for local SEO"),
+      "Corrected false 'no phone on site' claim"
+    );
+  }
+  if (siteData?.streetAddress) {
+    scrubEverywhere(
+      (s) => /\bno (visible |physical |listed )?(address|location)( information| signals?| info)?/i.test(s) && /(website|site|page|on-?page|scraped|anywhere)/i.test(s),
+      (s) => s.replace(/\bno (visible |physical |listed )?(address|location)( information| signals?| info)?[a-z ]*?(on|across|anywhere)[^,.;]*/gi, "the address is present but not optimized with consistent local signals"),
+      "Corrected false 'no address on site' claim"
+    );
+  }
+
+  // CHECK 14 — HARD BLOCK: every fabricated projection/revenue figure must carry an
+  // estimate disclaimer so it is never read as a measured fact.
+  if (report.revenue_lost_annually || report.projections) {
+    report.estimate_disclaimer =
+      "Projections and revenue figures are illustrative estimates based on typical local-search benchmarks for this industry and market — not measured results or guarantees.";
+  }
+
   if (warnings.length > 0) {
     report.safety_warnings = warnings;
     console.log("Safety check warnings:", warnings.join("; "));
@@ -1544,9 +1675,10 @@ async function sendAuditEmails(env, report, prospectEmail, prospectName, practic
         <span style="font-size:48px;font-weight:800;color:${scoreColor(report.overall_score)};">${report.overall_score}</span>
       </div>
       <p style="color:#64748b;font-size:15px;line-height:1.7;max-width:500px;margin:0 auto 24px;">${report.executive_summary || ''}</p>
-      ${report.revenue_lost_annually ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 20px;display:inline-block;margin-bottom:24px;">
+      ${report.revenue_lost_annually ? `<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 20px;display:inline-block;margin-bottom:8px;">
         <span style="color:#ef4444;font-weight:700;font-size:14px;">Estimated revenue lost: ${report.revenue_lost_annually}/year</span>
-      </div>` : ''}
+      </div>
+      <p style="color:#94a3b8;font-size:11px;line-height:1.5;max-width:480px;margin:0 auto 24px;">${report.estimate_disclaimer || 'Estimate based on typical local-search benchmarks for this industry — not a guarantee.'}</p>` : ''}
 
       <table style="width:100%;border-collapse:collapse;margin:24px 0;text-align:left;">
         <thead>
@@ -1808,6 +1940,13 @@ async function scrapePracticeSite(practiceUrl) {
     hasLlmsTxt,
     robotsTxt: robotsTxt.slice(0, 500),
   };
+
+  // Verified robots.txt analysis — did the site ACTUALLY block AI crawlers
+  // (a real `Disallow: /` for an AI user-agent), or just list them? Never let
+  // the report claim "blocks AI crawlers" off the raw text alone.
+  const robotsAi = analyzeRobotsAiBlocking(robotsTxt);
+  raw.aiCrawlersBlocked = robotsAi.blocksAi;
+  raw.blockedAiAgents = robotsAi.blockedAgents;
 
   // Run sanity checks on the scraped data
   return validateScrapedData(raw);
@@ -2088,7 +2227,9 @@ IMPORTANT — REAL DATA SCRAPED FROM THE WEBSITE (use this, do NOT guess):
 - Has FAQ Schema: ${site.hasFaqSchema ? "Yes" : "No"}
 - Has AI Discoverability File: ${site.hasLlmsTxt ? "Yes" : "No"}
 - Mobile Viewport Tag: ${site.hasViewport ? "Yes" : "No"}
-- Robots.txt: ${site.robotsTxt ? "Found — " + site.robotsTxt.slice(0, 200) : "Not found or empty"}
+- AI crawler access (VERIFIED by parsing robots.txt): ${site.aiCrawlersBlocked
+    ? "BLOCKED — robots.txt has a full-site Disallow for AI bots: " + (site.blockedAiAgents || []).join(", ")
+    : "NOT blocked — robots.txt does NOT prevent AI assistants (ChatGPT, Claude, Perplexity, etc.) from reading this site. DO NOT claim the site blocks AI crawlers, blocks Claude/Anthropic/GPTBot, or has 'shut the door' on AI — that is FALSE. Many sites merely LIST AI user-agents without a Disallow rule; that is not a block."}
 
 Visible page content (first 3000 chars):
 """
@@ -2419,14 +2560,93 @@ function classifyUserAgent(ua) {
 }
 
 // ── Exports for testing ──
+// Map a Google Places business type to our vertical. Google's own category is
+// authoritative for WHAT a business is, so it rescues thin-content sites that
+// defeat keyword detection (e.g. a wealth advisor whose homepage is all slogans
+// and got misread as "legal"). Returns null when the type doesn't map cleanly.
+function googleTypeToVertical(primaryType, types = [], displayName = "") {
+  const all = [primaryType, ...(types || [])].filter(Boolean).map((t) => String(t).toLowerCase());
+  const has = (...names) => all.some((t) => names.includes(t));
+  if (has("dentist", "dental_clinic")) return "dental";
+  if (has("lawyer", "legal_services")) return "legal";
+  if (has("doctor", "hospital", "medical_clinic", "physiotherapist", "dermatologist",
+          "chiropractor", "medical_lab", "wellness_center", "skin_care_clinic", "medical_spa")) return "medical";
+  if (has("financial_consultant", "financial_institution", "finance", "accounting",
+          "insurance_agency", "investment_service", "investment_bank")) return "financial";
+  // Many real categories (e.g. "Financial Planner", "Wealth Manager") have no
+  // standard Places type — fall back to Google's human-readable category label.
+  const dn = String(displayName || "").toLowerCase();
+  if (dn) {
+    if (/dentist|dental|orthodont|endodont|periodont/.test(dn)) return "dental";
+    if (/attorney|lawyer|law (firm|office|practice)|legal/.test(dn)) return "legal";
+    if (/financial|wealth|investment|asset manage|retirement|advisor|advisory|insurance|accountant|accounting|tax/.test(dn)) return "financial";
+    if (/doctor|physician|medical|clinic|dermatolog|cardiolog|orthoped|pediatr|chiropract|health|hospital|med spa|medspa|wellness|surgeon|therapy|psycholog/.test(dn)) return "medical";
+  }
+  return null;
+}
+
+// Parse robots.txt and determine whether AI crawlers are ACTUALLY blocked from
+// the site root (a real `Disallow: /` in a group that names an AI user-agent).
+// Critical: the old pipeline fed Claude only the first ~200 chars of robots.txt
+// — which on Squarespace is just the list of AI user-agent NAMES, with no
+// Disallow rules — so Claude wrongly concluded the site "blocks AI crawlers".
+// This parser yields the verified truth instead.
+const AI_CRAWLER_UAS = [
+  "gptbot", "oai-searchbot", "chatgpt-user", "google-extended", "ccbot",
+  "anthropic-ai", "claudebot", "claude-web", "perplexitybot", "perplexity-user",
+  "bytespider", "amazonbot", "applebot-extended", "meta-externalagent",
+  "facebookbot", "cohere-ai", "ai2bot", "youbot", "duckassistbot", "omgilibot",
+];
+
+function analyzeRobotsAiBlocking(robotsTxt) {
+  if (!robotsTxt || typeof robotsTxt !== "string") {
+    return { hasRobots: false, blocksAi: false, blockedAgents: [] };
+  }
+  const groups = [];
+  let cur = null;
+  let acceptingAgents = false; // true while consecutive User-agent lines accumulate
+  for (const rawLine of robotsTxt.split(/\r?\n/)) {
+    const line = rawLine.replace(/#.*$/, "").trim();
+    if (!line) continue;
+    const ua = line.match(/^user-?agent\s*:\s*(.+)$/i);
+    if (ua) {
+      if (!cur || !acceptingAgents) {
+        cur = { agents: new Set(), disallowRoot: false, allowRoot: false };
+        groups.push(cur);
+      }
+      cur.agents.add(ua[1].trim().toLowerCase());
+      acceptingAgents = true;
+      continue;
+    }
+    const dis = line.match(/^disallow\s*:\s*(.*)$/i);
+    if (dis) {
+      acceptingAgents = false;
+      if (cur && dis[1].trim() === "/") cur.disallowRoot = true;
+      continue;
+    }
+    const alw = line.match(/^allow\s*:\s*(.*)$/i);
+    if (alw) {
+      acceptingAgents = false;
+      if (cur && alw[1].trim() === "/") cur.allowRoot = true;
+      continue;
+    }
+    acceptingAgents = false; // sitemap/crawl-delay/etc. end the agent run
+  }
+  const blocked = new Set();
+  for (const g of groups) {
+    if (!g.disallowRoot || g.allowRoot) continue; // only a real full-site block counts
+    for (const ag of g.agents) {
+      if (AI_CRAWLER_UAS.includes(ag)) blocked.add(ag);
+    }
+  }
+  return { hasRobots: true, blocksAi: blocked.size > 0, blockedAgents: [...blocked] };
+}
+
 /**
  * Detect the correct vertical from scraped site content.
- * Only auto-detects when user submitted from the default dental page.
- * If they explicitly chose legal or medical, trust their selection —
- * sites often have cross-industry keywords (e.g. law firm with "healthcare" practice area).
  *
- * @param {string} userVertical - The vertical the user selected ("dental", "legal", "medical")
- * @param {object} siteData - Scraped site data with isDentalSite, isLegalSite, isMedicalSite, visibleText
+ * @param {string} userVertical - The vertical the user selected
+ * @param {object} siteData - Scraped site data with signalCounts/visibleText
  * @returns {string} The resolved vertical to use for the audit
  */
 function detectVertical(userVertical, siteData) {
@@ -2510,4 +2730,7 @@ export {
   assertsGbpAbsence,
   scrubGbpAbsenceText,
   finalSafetyChecks,
+  analyzeRobotsAiBlocking,
+  googleTypeToVertical,
+  assertsAiCrawlerBlock,
 };
