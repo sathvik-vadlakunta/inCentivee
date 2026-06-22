@@ -46,6 +46,13 @@ CLIENT = {
         "Full Google access connected — Business Profile, Search Console, Analytics & Tag Manager — so we measure and report results from day one",
         "Live performance tracking in place: Search Console data flowing, Domain Authority & competitor monitoring active",
     ],
+    # Visuals (leave any None to skip). Paths relative to repo root.
+    "cover_image": "deck-assets/paradigm/cover-gold.jpg",
+    "img_backlinks": "deck-assets/paradigm/storefront.jpg",
+    "img_content": "deck-assets/paradigm/jewelry.jpg",
+    "img_done": "deck-assets/paradigm/consult.jpg",
+    "current_visits": 131,
+    "target_visits": 520,   # "500+" goal, for the trajectory graph
 }
 
 # ─────────────────────────── brand (matches practicerank.ai dark mode) ───────────────────────────
@@ -139,6 +146,51 @@ def _footer(s):
     text(s, 11.55, 7.0, 1.1, 0.3, f"{n:02d}", size=9, color=FAINT, align=PP_ALIGN.RIGHT, anchor=MSO_ANCHOR.MIDDLE)
 
 
+def _img_path(path):
+    return path if os.path.isabs(path) else os.path.join(ROOT, path)
+
+
+def picture(s, path, l, t, w, h=None, border=True):
+    p = _img_path(path)
+    if not os.path.exists(p):
+        return None
+    kw = {"width": Inches(w)} if h is None else {"width": Inches(w), "height": Inches(h)}
+    pic = s.shapes.add_picture(p, Inches(l), Inches(t), **kw)
+    if border:
+        pic.line.color.rgb = BORDER; pic.line.width = Pt(1)
+    return pic
+
+
+def cover_image(s, path, darken=76):
+    p = _img_path(path)
+    if not os.path.exists(p):
+        return
+    s.shapes.add_picture(p, 0, Inches(-0.85), width=SW)   # full-bleed, cover-crop
+    ov = s.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, SW, SH)
+    ov.fill.solid(); ov.fill.fore_color.rgb = BG; ov.line.fill.background(); ov.shadow.inherit = False
+    _alpha(ov, darken)
+
+
+def column_chart(s, l, t, w, h, labels, values, target=None, accent_last=False):
+    """On-brand rising column chart (shapes). values scaled to max*1.15."""
+    n = len(values); vmax = max(values + ([target] if target else [])) * 1.12 or 1
+    gap = 0.22; cw = (w - gap * (n - 1)) / n
+    base = t + h
+    rect(s, l - 0.05, base, w + 0.1, 0.02, fill=BORDER, radius=False)   # baseline
+    if target:
+        ty = base - h * target / vmax
+        rect(s, l, ty, w, 0.025, fill=GREEN, radius=False)
+        text(s, l + w - 2.0, ty - 0.4, 2.0, 0.3, f"Goal {target}+", size=11, color=GREEN, bold=True, align=PP_ALIGN.RIGHT)
+    for i, (lab, v) in enumerate(zip(labels, values)):
+        x = l + i * (cw + gap); bh = max(0.06, h * v / vmax)
+        mine = accent_last and i == n - 1
+        col = GREEN if (mine or i == n - 1) else RGBColor(0x3A, 0x46, 0x55)
+        rect(s, x, base - bh, cw, bh, fill=col, radius=False)
+        text(s, x - 0.2, base - bh - 0.42, cw + 0.4, 0.35, str(v), size=12, bold=True,
+             color=WHITE if not mine else GREEN, align=PP_ALIGN.CENTER)
+        text(s, x - 0.2, base + 0.08, cw + 0.4, 0.3, lab, size=11, color=GREY, align=PP_ALIGN.CENTER)
+
+
 def accent_bar(s, l=0.0, t=0.0, w=13.333, h=0.12):
     rect(s, l, t, w, h, fill=GREEN, radius=False)
 
@@ -164,6 +216,8 @@ def bullets(s, l, t, w, items, size=16, gap=True, color=WHITE, marker="—"):
 
 # ═══ 1. TITLE ═══
 s = slide(green_corner=True)
+if CLIENT.get("cover_image"):
+    cover_image(s, CLIENT["cover_image"])
 accent_bar(s)
 if os.path.exists(LOGO):
     s.shapes.add_picture(LOGO, Inches(0.7), Inches(0.7), height=Inches(1.0))
@@ -281,29 +335,35 @@ if CLIENT.get("da_self"):
 
 # ═══ 7. WHAT WE'VE DONE ═══
 s = slide(); accent_bar(s); heading(s, "PROGRESS", "What We've Done So Far")
-bullets(s, 0.9, 2.3, 11.4, CLIENT["done"], size=18)
-text(s, 0.9, 5.9, 11.4, 0.5, "Foundation set — now we scale visibility, authority, and content.", size=15, color=GREEN, bold=True)
+bullets(s, 0.9, 2.25, 7.5, CLIENT["done"], size=15)
+if CLIENT.get("img_done"):
+    picture(s, CLIENT["img_done"], 8.55, 2.3, 4.1, 2.73)
+text(s, 0.9, 6.15, 11.4, 0.5, "Foundation set — now we scale visibility, authority, and content.", size=15, color=GREEN, bold=True)
 
 # ═══ 8. NEXT: BACKLINKS ═══
 s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 1 OF 2", "Building Authority — High-Value Backlinks")
 text(s, 0.72, 2.0, 11.9, 0.6, "Quality over volume: a few strong, locally-relevant links that lift rankings AND AI recommendations.", size=16, color=GREY)
-bullets(s, 0.9, 2.9, 11.4, [
-    "Local citations + NAP consistency across the directories that matter (industry + general)",
-    "Local press, community sponsorships & events for authoritative local mentions",
+bullets(s, 0.9, 2.95, 7.2, [
+    "Local citations + NAP consistency across the directories that matter",
+    "Local press, community sponsorships & events for authoritative mentions",
     "Partner, supplier & association links relevant to your business",
     "“Best in {city}” roundups and local guides that AI assistants cite",
-    "Steady cadence of high-authority links each month — no spam, no risky tactics",
-], size=16)
+    "Steady cadence of high-authority links each month — no spam",
+], size=15)
+if CLIENT.get("img_backlinks"):
+    picture(s, CLIENT["img_backlinks"], 8.3, 2.95, 4.3, 2.87)
 
 # ═══ 9. NEXT: CONTENT/BLOG ═══
 s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 2 OF 2", "Content & Blog — Capture Ready-to-Buy Searches")
 text(s, 0.72, 2.0, 11.9, 0.6, "Shift from curiosity content to buyer-intent content that brings customers through the door.", size=16, color=GREY)
-bullets(s, 0.9, 2.85, 11.4, [
-    "Target transactional searches like " + ", ".join(CLIENT["keyword_examples"]),
-    "Expand & refresh your landing pages as we find new demand (" + CLIENT["service_areas"] + ")",
-    "2–4 new posts per month on high-intent topics, refreshed so they stay ranking",
+bullets(s, 0.9, 2.95, 7.2, [
+    "Target real transactional searches from your Google data, like " + ", ".join(CLIENT["keyword_examples"][:2]),
+    "Expand & refresh landing pages as we find new demand",
+    "2–4 new posts per month on high-intent topics, refreshed to keep ranking",
     "FAQ content structured for Google snippets and AI answers",
-], size=16)
+], size=15)
+if CLIENT.get("img_content"):
+    picture(s, CLIENT["img_content"], 8.3, 2.95, 4.3, 2.87)
 
 # ═══ 10. ROADMAP ═══
 s = slide(); accent_bar(s); heading(s, "THE PLAN", "Your 90-Day Roadmap")
@@ -318,6 +378,15 @@ for i, (m, d) in enumerate(phases):
     text(s, x + 0.3, 3.4, 3.2, 1.5, d, size=15, color=GREY, line_spacing=1.2)
 text(s, 0.72, 5.55, 11.9, 0.6, [("Goal:  ", GREY, False, 17), (CLIENT["target"], GREEN, True, 17),
      ("   — backed by our 90-day score guarantee.", GREY, False, 14)])
+
+# ═══ 10b. PROJECTED GROWTH (chart) ═══
+if CLIENT.get("current_visits") and CLIENT.get("target_visits"):
+    s = slide(); accent_bar(s); heading(s, "THE TRAJECTORY", "Projected Organic Growth")
+    cur, tgt = CLIENT["current_visits"], CLIENT["target_visits"]
+    labels = ["Now", "Mo 1", "Mo 2", "Mo 3", "Mo 4", "Mo 5", "Mo 6"]
+    vals = [round(cur + (tgt - cur) * (i / 6)) for i in range(7)]
+    column_chart(s, 1.3, 2.85, 10.7, 2.95, labels, vals, target=tgt, accent_last=True)
+    text(s, 0.72, 6.35, 11.9, 0.6, "Illustrative trajectory toward the 500+ monthly-visit goal as on-page, local, and authority work compound — not a guarantee. Backed by our 90-day score-improvement guarantee.", size=12.5, color=FAINT, line_spacing=1.15)
 
 # ═══ 11. GUARANTEE ═══
 s = slide(green_corner=True); accent_bar(s)
