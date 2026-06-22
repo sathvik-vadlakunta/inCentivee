@@ -393,15 +393,15 @@ if CLIENT.get("score_now"):
         text(s, x + 0.25, 5.95, 3.25, 0.7, why, size=11.5, color=GREY, line_spacing=1.1)
 
 # ═══ 8. NEXT: BACKLINKS ═══
-s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 1 OF 2", "Building Authority — High-Value Backlinks")
-text(s, 0.72, 2.0, 11.9, 0.6, "Quality over volume: a few strong, locally-relevant links that lift rankings AND AI recommendations.", size=16, color=GREY)
-bullets(s, 0.9, 2.95, 7.2, [
-    "Local citations + NAP consistency across the directories that matter",
-    "Local press, community sponsorships & events for authoritative mentions",
-    "Partner, supplier & association links relevant to your business",
-    "“Best in {city}” roundups and local guides that AI assistants cite",
-    "Steady cadence of high-authority links each month — no spam",
-], size=15)
+s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 1 OF 2", "Building Authority — Citations & Backlinks")
+text(s, 0.72, 2.0, 11.9, 0.6, "Quality over volume: the work that raises your Domain Authority toward ~30 and gets you cited by AI.", size=16, color=GREY)
+bullets(s, 0.9, 2.85, 7.2, [
+    "Aggressive local citation building + NAP cleanup across the directories that matter",
+    "“Best Gold & Silver Buyer in Northern VA” comparison placements — rank for high-intent searches AND get cited by AI",
+    "High-authority backlinks from real, locally-relevant sites — no spam, no risky tactics",
+    "Local press, partner & supplier links for authoritative mentions",
+    "A steady monthly cadence — compounding authority that competitors can't shortcut",
+], size=14.5)
 if CLIENT.get("img_backlinks"):
     picture(s, CLIENT["img_backlinks"], 8.3, 2.95, 4.3, 2.87)
 
