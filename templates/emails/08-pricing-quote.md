@@ -163,9 +163,5 @@ I'd recommend the **{recommended_tier}** tier for {practice_name} based on what 
 
 Best,
 **Kody Doherty**
-Chief Technology Officer
-PracticeRank
-
-(925) 819-2663
-kdoherty@practicerank.ai
-practicerank.ai
+CTO · PracticeRank
+(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai

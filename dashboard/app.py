@@ -2227,10 +2227,11 @@ EMAIL_TEMPLATE_META = {
     "06-content-review":         {"category": "Approvals",  "steps": ["content", "live", "monitoring"],   "order": 6},
     "07-weekly-seo-update":      {"category": "Reporting",  "steps": ["live", "content", "monitoring"],   "order": 7},
     "04-monthly-report":         {"category": "Reporting",  "steps": ["monitoring"],                      "order": 8},
+    "09-review-request":         {"category": "Reviews",    "steps": ["live", "content", "monitoring"],   "order": 9},
 }
 
 # Order categories surface in the filter bar.
-EMAIL_CATEGORY_ORDER = ["Sales", "Access", "Onboarding", "Approvals", "Reporting", "Other"]
+EMAIL_CATEGORY_ORDER = ["Sales", "Access", "Onboarding", "Approvals", "Reporting", "Reviews", "Other"]
 
 
 def _get_email_templates(current_step: str | None = None) -> list[dict]:
@@ -2705,10 +2706,22 @@ def _render_email_template(content: str, customer: dict, contacts: list[dict],
     except Exception:
         pass
 
+    # Plan name from the customer's Stripe subscription (for the welcome email).
+    plan_name = "PracticeRank"
+    try:
+        _bdb = get_db()
+        _sub = _bdb.get_subscription_for_customer(customer.get("id", ""))
+        _bdb.close()
+        if _sub and _sub.get("plan_name"):
+            plan_name = _sub["plan_name"]
+    except Exception:  # noqa: BLE001 — never let billing lookup break email rendering
+        pass
+
     replacements = {
         "{practice_name}": customer.get("name", ""),
         "{contact_name}": contact_name,
         "{contact_email}": contact_email,
+        "{plan_name}": plan_name,
         "{platform}": platform.title(),
         "{platform_access_steps}": access_steps,
         # Dynamic onboarding checklist (only outstanding items + how to grant)

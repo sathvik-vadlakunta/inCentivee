@@ -36,5 +36,6 @@ Here's your monthly PracticeRank report for {practice_name}.
 If you have any questions about these metrics or want to discuss strategy, just reply to this email.
 
 Best,
-Kody Doherty
-PracticeRank
+**Kody Doherty**
+CTO · PracticeRank
+(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai

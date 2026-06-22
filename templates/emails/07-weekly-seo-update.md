@@ -49,5 +49,6 @@ Here's your weekly PracticeRank update for {practice_name}.
 Questions about any of these metrics? Just reply to this email.
 
 Best,
-Kody Doherty
-PracticeRank
+**Kody Doherty**
+CTO · PracticeRank
+(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai

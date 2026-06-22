@@ -20,8 +20,9 @@ Please review the attached DOCX and let us know:
 Nothing goes live without your approval.
 
 Best,
-Kody Doherty
-PracticeRank
+**Kody Doherty**
+CTO · PracticeRank
+(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
 
 ---
 
