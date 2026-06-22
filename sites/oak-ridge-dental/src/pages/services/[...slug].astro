@@ -38,6 +38,24 @@ const CAT_IMG: Record<string, string> = {
 }
 const heroImg = service.data.image || SLUG_IMG[service.slug] || CAT_IMG[service.data.category] || '/images/stock/hero-office.webp'
 
+// A second, DIFFERENT photo for the body so the page isn't the same image twice.
+const CAT_BODY: Record<string, string> = {
+  'General Dentistry': '/images/stock/general-dentistry-b.webp',
+  'Pediatric Dentistry': '/images/stock/pediatric-dentistry-b.webp',
+  'Technology': '/images/stock/technology-b.webp',
+  'Restorative Dentistry': '/images/stock/restorative-dentistry-b.webp',
+  'Periodontics': '/images/stock/periodontics-b.webp',
+  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry-b.webp',
+  'Sedation Dentistry': '/images/stock/sedation-dentistry-b.webp',
+  'Holistic Dentistry': '/images/stock/holistic-dentistry-b.webp',
+  'Orthodontics': '/images/stock/orthodontics-b.webp',
+  'Oral Surgery': '/images/stock/oral-surgery-b.webp',
+  'Endodontics': '/images/stock/endodontics-b.webp',
+}
+const bodyImg = CAT_BODY[service.data.category] || '/images/stock/hero-office-b.webp'
+// Deterministic per-service flag so the body layout alternates (image left/right).
+const flip = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 2 === 1
+
 const related = services
   .filter((s) => s.data.category === service.data.category && s.slug !== service.slug)
   .sort((a, b) => a.data.order - b.data.order)
@@ -76,6 +94,21 @@ const financingUrl = (practice as any).financingUrl || '/contact'
       <div class="prose-brand">
         <Content />
       </div>
+
+      {/* ── Body feature band — real photo + CTA, side alternates per service ── */}
+      <section class="mt-12 grid md:grid-cols-5 gap-6 sm:gap-8 items-center rounded-2xl bg-light p-6 sm:p-8">
+        <figure class={`md:col-span-2 ${flip ? 'md:order-2' : ''}`}>
+          <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`} class="w-full rounded-xl aspect-[4/3] object-cover shadow-md" loading="lazy" />
+        </figure>
+        <div class="md:col-span-3">
+          <h2 class="text-2xl sm:text-3xl font-semibold text-dark mb-3">{service.data.title} at {practice.name}</h2>
+          <p class="text-dark/70 leading-relaxed mb-5">{service.data.description}</p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a href="/contact" class="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">Book Appointment</a>
+            <a href={`tel:${tel}`} class="inline-flex items-center justify-center border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary/5 transition">Call {practice.phone}</a>
+          </div>
+        </div>
+      </section>
 
       {faqs.length > 0 && (
         <section class="mt-12">

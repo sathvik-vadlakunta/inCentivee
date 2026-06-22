@@ -36,6 +36,20 @@ const CAT_IMG: Record<string, string> = {
   'Restorative Dentistry': '/images/stock/restorative-dentistry.webp',
 }
 const heroImg = service.data.image || CAT_IMG[service.data.category] || '/images/stock/hero-office.webp'
+
+// A second, DIFFERENT photo for the body (so the page isn't the same image twice).
+const CAT_BODY: Record<string, string> = {
+  'General & Family Dentistry': '/images/stock/general-dentistry-b.webp',
+  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry-b.webp',
+  'Endodontics': '/images/stock/endodontics-b.webp',
+  'Implant Dentistry': '/images/stock/oral-surgery-b.webp',
+  'Pediatric Dentistry': '/images/stock/pediatric-dentistry-b.webp',
+  'Restorative Dentistry': '/images/stock/restorative-dentistry-b.webp',
+}
+const bodyImg = CAT_BODY[service.data.category] || '/images/stock/hero-office-b.webp'
+// Deterministic per-service flag so the body layout alternates (image left/right)
+// — makes consecutive service pages look different instead of cookie-cutter.
+const flip = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 2 === 1
 ---
 
 <Base
@@ -108,6 +122,21 @@ const heroImg = service.data.image || CAT_IMG[service.data.category] || '/images
         <div class="service-prose">
           <Content />
         </div>
+
+        {/* ── Body feature band — real photo + CTA, side alternates per service ── */}
+        <section class="mt-12 grid md:grid-cols-5 gap-6 sm:gap-8 items-center rounded-2xl bg-light p-6 sm:p-8">
+          <figure class={`md:col-span-2 ${flip ? 'md:order-2' : ''}`}>
+            <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`} class="w-full rounded-xl aspect-[4/3] object-cover shadow-md" loading="lazy" />
+          </figure>
+          <div class="md:col-span-3">
+            <h2 class="text-2xl sm:text-3xl font-bold font-heading mb-3">{service.data.title} at {practice.name}</h2>
+            <p class="text-gray-600 leading-relaxed mb-5">{service.data.description}</p>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <a href="/contact" class="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-secondary transition-colors">Book Appointment</a>
+              <a href={`tel:${phoneDigits}`} class="inline-flex items-center justify-center border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary/5 transition-colors">Call {practice.phone}</a>
+            </div>
+          </div>
+        </section>
 
         {/* ── FAQ Section ── */}
         {faqs.length > 0 && (
