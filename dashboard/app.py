@@ -561,9 +561,118 @@ def customer_detail(customer_id):
             offsite_cadence=offsite_cadence,
             lead_snippet=lead_snippet,
             ga4_connected=ga4_connected,
+            subscription=db.get_subscription_for_customer(customer_id),
         )
     finally:
         db.close()
+
+
+# --- Billing (Stripe) ---
+
+# Subscription statuses we treat as "paid / in good standing" for badge coloring.
+_BILLING_OK = {"active", "trialing"}
+_BILLING_WARN = {"past_due", "unpaid", "incomplete", "incomplete_expired"}
+
+
+def _handle_stripe_event(db, event) -> None:
+    """Idempotently process one verified Stripe event: re-read the subscription's
+    current state from Stripe and upsert it. On a freshly-active+paid subscription,
+    nudge a matched customer from 'onboarding' toward 'active'."""
+    from geo_agent import billing
+
+    event_id = billing._g(event, "id")
+    event_type = billing._g(event, "type", "") or ""
+    if db.billing_event_seen(event_id):
+        return
+
+    sub_id = billing.subscription_id_from_event(event)
+    if sub_id:
+        parsed = billing.fetch_subscription(sub_id)
+        if parsed:
+            row = db.upsert_subscription(parsed)
+            # Auto-advance a matched, still-onboarding customer once they're paying.
+            if (row and row.get("customer_id")
+                    and parsed["status"] in _BILLING_OK
+                    and parsed.get("last_payment_at")):
+                cust = db.get_customer(row["customer_id"])
+                if cust and cust.get("status") == "onboarding":
+                    try:
+                        db.update_customer(row["customer_id"], next_action="✅ Paid — send access email (Leadsie)")
+                    except Exception:  # noqa: BLE001
+                        pass
+    db.record_billing_event(event_id, event_type, sub_id)
+
+
+@app.route("/webhooks/stripe", methods=["POST"])
+def stripe_webhook():
+    """Stripe webhook receiver. PUBLIC by design (no login) — authenticated via
+    signature verification against STRIPE_WEBHOOK_SECRET."""
+    from geo_agent import billing
+    event = billing.verify_event(request.get_data(), request.headers.get("Stripe-Signature", ""))
+    if event is None:
+        return ("invalid signature", 400)
+    db = get_db()
+    try:
+        _handle_stripe_event(db, event)
+    except Exception as e:  # noqa: BLE001 — always 200 so Stripe doesn't spam retries on our bugs
+        logger.exception("stripe webhook handler error: %s", e)
+    finally:
+        db.close()
+    return ("", 200)
+
+
+@app.route("/billing")
+@login_required
+def billing():
+    from geo_agent import billing as billing_mod
+    db = get_db()
+    try:
+        subs = db.list_subscriptions()
+        mrr_cents = sum(s["amount_cents"] for s in subs
+                        if s["status"] in _BILLING_OK and s["billing_interval"] == "month")
+        return render_template(
+            "billing.html",
+            subscriptions=subs,
+            customers=db.list_customers(),
+            mrr=mrr_cents / 100,
+            active_count=sum(1 for s in subs if s["status"] in _BILLING_OK),
+            attention=[s for s in subs if s["status"] in _BILLING_WARN],
+            billing_enabled=billing_mod.billing_enabled(),
+            ok_statuses=list(_BILLING_OK),
+            warn_statuses=list(_BILLING_WARN),
+        )
+    finally:
+        db.close()
+
+
+@app.route("/billing/sync", methods=["POST"])
+@login_required
+def billing_sync():
+    from geo_agent import billing as billing_mod
+    db = get_db()
+    try:
+        n = billing_mod.sync_all(db)
+        audit_log("billing_synced", details=f"{n} subscriptions")
+        flash(f"Synced {n} subscription(s) from Stripe.", "success")
+    except Exception as e:  # noqa: BLE001
+        flash(f"Sync failed: {e}", "error")
+    finally:
+        db.close()
+    return redirect(url_for("billing"))
+
+
+@app.route("/billing/<sub_id>/link", methods=["POST"])
+@login_required
+def billing_link(sub_id):
+    db = get_db()
+    try:
+        customer_id = request.form.get("customer_id") or None
+        db.link_subscription(sub_id, customer_id)
+        audit_log("billing_linked", customer_id=customer_id, details=f"sub={sub_id}")
+        flash("Subscription link updated.", "success")
+    finally:
+        db.close()
+    return redirect(request.referrer or url_for("billing"))
 
 
 # --- Weekly customer report (R0) ---

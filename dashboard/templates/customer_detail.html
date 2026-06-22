@@ -306,6 +306,33 @@
     </div>
     {% endif %}
 
+    <!-- Billing (Stripe) -->
+    {% if subscription %}
+    {% set _ok = subscription.status in ('active','trialing') %}
+    <div class="card" style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-left:3px solid {% if _ok %}var(--success){% else %}var(--danger){% endif %};">
+      <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;">Plan</div>
+          <div style="font-weight:700;">{{ subscription.plan_name or '—' }}
+            {% if subscription.amount_cents %}<span style="color:var(--muted);font-weight:500;">· ${{ '%.0f'|format(subscription.amount_cents/100) }}/{{ subscription.billing_interval[:2] }}</span>{% endif %}
+          </div>
+        </div>
+        <div>
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;">Status</div>
+          <span style="display:inline-block;font-size:.66rem;font-weight:700;padding:3px 9px;border-radius:999px;text-transform:uppercase;background:{% if _ok %}#dcfce7;color:#166534{% else %}#fee2e2;color:#991b1b{% endif %};">{{ subscription.status.replace('_',' ') }}</span>
+          {% if subscription.cancel_at_period_end %}<span style="color:var(--muted);font-size:.7rem;"> · cancels at period end</span>{% endif %}
+        </div>
+        {% if subscription.last_payment_at %}
+        <div>
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;">Last paid</div>
+          <div>{{ subscription.last_payment_at[:10] }}</div>
+        </div>
+        {% endif %}
+      </div>
+      <a href="{{ url_for('billing') }}" style="font-size:.8rem;color:var(--muted);">Billing →</a>
+    </div>
+    {% endif %}
+
     <!-- PracticeRank Score Section -->
     <div class="grid grid-3" style="margin-bottom: 1rem; grid-template-columns: 1fr 1.5fr 1fr;">
         <!-- Score Ring -->

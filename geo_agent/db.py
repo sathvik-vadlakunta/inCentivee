@@ -872,6 +872,41 @@ class CustomerDB:
             CREATE INDEX IF NOT EXISTS idx_offsite_assets_order ON offsite_assets(order_id);
         """)
 
+        # Migration v9 → v10: Stripe billing — one subscription row per Stripe
+        # subscription, auto-matched to a customer by email; billing_events logs
+        # every webhook delivery for idempotency. See dashboard /webhooks/stripe.
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT REFERENCES customers(id),   -- NULL until matched
+                stripe_subscription_id TEXT NOT NULL UNIQUE,
+                stripe_customer_id TEXT NOT NULL DEFAULT '',
+                stripe_customer_email TEXT NOT NULL DEFAULT '',
+                plan_name TEXT NOT NULL DEFAULT '',           -- Stripe product name (Optimize/Grow/Dominate)
+                price_id TEXT NOT NULL DEFAULT '',
+                amount_cents INTEGER NOT NULL DEFAULT 0,
+                currency TEXT NOT NULL DEFAULT 'usd',
+                billing_interval TEXT NOT NULL DEFAULT 'month',
+                status TEXT NOT NULL DEFAULT 'incomplete',    -- active/trialing/past_due/canceled/unpaid/incomplete
+                latest_invoice_status TEXT NOT NULL DEFAULT '',
+                last_payment_at TEXT,
+                current_period_end TEXT,
+                cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+                raw_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_subscriptions_customer ON subscriptions(customer_id);
+            CREATE INDEX IF NOT EXISTS idx_subscriptions_email ON subscriptions(stripe_customer_email);
+
+            CREATE TABLE IF NOT EXISTS billing_events (
+                stripe_event_id TEXT PRIMARY KEY,             -- idempotency guard
+                type TEXT NOT NULL DEFAULT '',
+                stripe_subscription_id TEXT,
+                received_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+        """)
+
         # share_token may be missing on report_snapshots created before it was added.
         rs_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(report_snapshots)").fetchall()]
         if "share_token" not in rs_cols:
@@ -992,6 +1027,128 @@ class CustomerDB:
         if status == "active":
             updates["onboarded_at"] = datetime.now(timezone.utc).isoformat()
         self.update_customer(customer_id, **updates)
+
+    # ───────────────────────────── Billing (Stripe) ─────────────────────────────
+
+    def billing_event_seen(self, event_id: str) -> bool:
+        """True if this Stripe event was already processed (idempotency)."""
+        if not event_id:
+            return False
+        row = self.conn.execute(
+            "SELECT 1 FROM billing_events WHERE stripe_event_id = ?", (event_id,)
+        ).fetchone()
+        return row is not None
+
+    def record_billing_event(self, event_id: str, event_type: str,
+                             subscription_id: str | None = None) -> None:
+        """Log a processed webhook event. Safe to call repeatedly."""
+        if not event_id:
+            return
+        self.conn.execute(
+            "INSERT OR IGNORE INTO billing_events (stripe_event_id, type, stripe_subscription_id) "
+            "VALUES (?, ?, ?)",
+            (event_id, event_type, subscription_id),
+        )
+        self.conn.commit()
+
+    def _customer_id_for_email(self, email: str) -> str | None:
+        """Auto-match: find a customer whose email matches the Stripe customer
+        email (case-insensitive). Returns None if no/ambiguous match."""
+        if not email:
+            return None
+        rows = self.conn.execute(
+            "SELECT id FROM customers WHERE lower(email) = lower(?)", (email.strip(),)
+        ).fetchall()
+        return rows[0]["id"] if len(rows) == 1 else None
+
+    def upsert_subscription(self, data: dict) -> dict | None:
+        """Insert or update a subscription by stripe_subscription_id. Auto-matches
+        to a customer by email when not already linked. `data` is the normalized
+        dict produced by geo_agent.billing.parse_subscription(). Returns the stored
+        row as a dict."""
+        sub_id = data.get("stripe_subscription_id")
+        if not sub_id:
+            return None
+        existing = self.conn.execute(
+            "SELECT id, customer_id FROM subscriptions WHERE stripe_subscription_id = ?",
+            (sub_id,),
+        ).fetchone()
+
+        # Auto-match a customer by email if we don't already have one linked.
+        customer_id = existing["customer_id"] if existing else None
+        if not customer_id:
+            customer_id = self._customer_id_for_email(data.get("stripe_customer_email", ""))
+
+        cols = {
+            "customer_id": customer_id,
+            "stripe_subscription_id": sub_id,
+            "stripe_customer_id": data.get("stripe_customer_id", ""),
+            "stripe_customer_email": data.get("stripe_customer_email", ""),
+            "plan_name": data.get("plan_name", ""),
+            "price_id": data.get("price_id", ""),
+            "amount_cents": int(data.get("amount_cents", 0) or 0),
+            "currency": data.get("currency", "usd"),
+            "billing_interval": data.get("billing_interval", "month"),
+            "status": data.get("status", "incomplete"),
+            "latest_invoice_status": data.get("latest_invoice_status", ""),
+            "last_payment_at": data.get("last_payment_at"),
+            "current_period_end": data.get("current_period_end"),
+            "cancel_at_period_end": int(bool(data.get("cancel_at_period_end"))),
+            "raw_json": json.dumps(data.get("raw", {}))[:200000],
+        }
+        if existing:
+            # Never blank an already-set last_payment_at on a non-payment event.
+            if not cols["last_payment_at"]:
+                cols.pop("last_payment_at")
+            set_clause = ", ".join(f"{k} = ?" for k in cols)
+            self.conn.execute(
+                f"UPDATE subscriptions SET {set_clause}, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') "
+                "WHERE stripe_subscription_id = ?",
+                list(cols.values()) + [sub_id],
+            )
+        else:
+            keys = list(cols)
+            self.conn.execute(
+                f"INSERT INTO subscriptions ({', '.join(keys)}) VALUES ({', '.join('?' for _ in keys)})",
+                [cols[k] for k in keys],
+            )
+        self.conn.commit()
+        return self.get_subscription_by_stripe_id(sub_id)
+
+    def get_subscription_by_stripe_id(self, sub_id: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM subscriptions WHERE stripe_subscription_id = ?", (sub_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def get_subscription_for_customer(self, customer_id: str) -> dict | None:
+        """Most relevant subscription for a customer — prefer an active one, else
+        the most recently updated."""
+        row = self.conn.execute(
+            "SELECT * FROM subscriptions WHERE customer_id = ? "
+            "ORDER BY (status IN ('active','trialing')) DESC, updated_at DESC LIMIT 1",
+            (customer_id,),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def list_subscriptions(self) -> list[dict]:
+        """All subscriptions joined to customer name (NULL name = unmatched)."""
+        rows = self.conn.execute(
+            "SELECT s.*, c.name AS customer_name FROM subscriptions s "
+            "LEFT JOIN customers c ON c.id = s.customer_id "
+            "ORDER BY (s.status IN ('active','trialing')) DESC, s.updated_at DESC"
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def link_subscription(self, sub_id: str, customer_id: str | None) -> bool:
+        """Manually link/override (or unlink with None) a subscription's customer."""
+        self.conn.execute(
+            "UPDATE subscriptions SET customer_id = ?, "
+            "updated_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE stripe_subscription_id = ?",
+            (customer_id, sub_id),
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
 
     ONBOARDING_STEPS = [
         "new", "outreach", "setup", "review", "live",
