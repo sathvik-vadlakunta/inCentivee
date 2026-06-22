@@ -1,15 +1,15 @@
-Subject: Let's get {practice_name} started — 2 quick things
+Subject: Welcome aboard, {practice_name} — 2 quick things to start
 
 Hi {contact_name},
 
-Excited to get going! Two quick things and we're off:
+You're all set with the **{plan_name}** plan — excited to get going! Two quick things and we're off:
 
-**1. Connect Google** (2 min, no passwords — sign in & approve):
+**1. Connect Google** (2 min, no passwords — sign in & approve). This one link grants everything we need: Business Profile, Analytics, Search Console & Tag Manager:
 👉 https://app.leadsie.com/connect/practicerank/manage
 
-**2. Domain access** — add **kdoherty@practicerank.ai** at your registrar (where {domain} lives), or share the login.
+**2. Domain access** — add **kdoherty@practicerank.ai** at your registrar (where {domain} lives), or share the login so we can connect it to your managed platform.
 
-That's it. Once we're in, we run your audit and start optimizing — you approve anything before it goes live.
+That's everything. The moment both are in, we run your audit and start optimizing — and you approve anything before it goes live.
 
 Questions? Just reply, or we'll hop on a 5-min call and do it together.
 
