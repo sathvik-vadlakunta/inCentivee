@@ -56,11 +56,12 @@ not block onboarding waiting for them to create accounts.** Split it like this:
   site and DNS, we create all three under our agency account
   (`kdoherty@practicerank.ai`) and install them ourselves. This is *better* than
   using the client's — consistent across every client, and we never lose access.
-  - On a **managed-platform site** (we host it): we add GTM + GA to the site and
-    verify Search Console via DNS. Fully on us.
-  - On a **client-hosted site they're keeping** (e.g. Paradigm on Webflow): we
-    need **Webflow editor access + DNS access**, then we still create/own GA4,
-    GTM, and GSC under our account and install them via their site + a DNS record.
+  - **Default — we port the site to our managed platform:** we rebuild it on our
+    side, so all we need is **DNS access** to point the domain. No Webflow / CMS
+    login required. We add GTM + GA and verify Search Console ourselves.
+  - **Exception — client keeps their existing site** (e.g. Paradigm staying on
+    Webflow): then we also need **Webflow editor access** so we can install the
+    tags on their site. Still create/own GA4, GTM, and GSC under our account.
 
 **Only the client can own this one:**
 
