@@ -3199,6 +3199,28 @@ class CustomerDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def count_offsite_orders_in_period(self, customer_id, order_type, since: str | None = None) -> int:
+        """How many non-cancelled orders of a type were placed since `since`
+        (ISO). `since=None` counts all-time. Powers the per-tier 'due this period'
+        view — citations top-ups count as orders, link drips count per link via
+        quantity."""
+        where = "customer_id = ? AND order_type = ? AND status != 'cancelled'"
+        args: list = [customer_id, order_type]
+        if since:
+            where += " AND ordered_at >= ?"
+            args.append(since)
+        # Links/mentions: each order's quantity counts toward the monthly target.
+        # Citations: count distinct orders (one pack satisfies the target).
+        if order_type == "citation":
+            row = self.conn.execute(
+                f"SELECT COUNT(*) FROM offsite_orders WHERE {where}", args
+            ).fetchone()
+        else:
+            row = self.conn.execute(
+                f"SELECT COALESCE(SUM(quantity), 0) FROM offsite_orders WHERE {where}", args
+            ).fetchone()
+        return int(row[0] or 0)
+
     def update_offsite_order(self, order_id, **fields):
         allowed = set(self._OFFSITE_ORDER_COLS) | {"delivered_at"}
         sets = {k: v for k, v in fields.items() if k in allowed}

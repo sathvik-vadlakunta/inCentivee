@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}FATJOE Orders · PracticeRank{% endblock %}
+
+{% block content %}
+<style>
+  .fj-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;}
+  .fj-cust{background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
+  .fj-cust h3{margin:0;padding:11px 16px;font-size:.95rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;background:#f8fafc;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .fj-cust h3 .who{display:flex;align-items:center;gap:.6rem;}
+  .tier{display:inline-block;font-size:.62rem;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;background:#ede9fe;color:#5b21b6;}
+  .tier.optimize{background:#dbeafe;color:#1e40af;} .tier.grow{background:#dcfce7;color:#166534;} .tier.dominate{background:#fae8ff;color:#86198f;}
+  .paid{display:inline-block;font-size:.6rem;font-weight:800;padding:3px 8px;border-radius:999px;text-transform:uppercase;}
+  .paid.yes{background:#dcfce7;color:#166534;} .paid.no{background:#fee2e2;color:#991b1b;}
+  table.fj{width:100%;border-collapse:collapse;font-size:.85rem;}
+  table.fj th{text-align:left;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:7px 16px;border-bottom:1px solid var(--border);}
+  table.fj td{padding:9px 16px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.fj tr:last-child td{border-bottom:none;}
+  .due-pill{display:inline-block;min-width:1.6em;text-align:center;font-weight:800;border-radius:7px;padding:1px 8px;}
+  .due-pill.go{background:#fee2e2;color:#991b1b;} .due-pill.done{background:#dcfce7;color:#166534;}
+  .cad{font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;}
+  .muted{color:var(--muted);font-size:.8rem;}
+  .fj-note{font-size:.78rem;color:var(--muted);max-width:48ch;}
+  .fj-cta{display:flex;gap:.5rem;align-items:center;}
+  .nothing{padding:10px 16px;color:#166534;font-size:.85rem;}
+  details.recipe{margin-top:1rem;background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;padding:0 16px;}
+  details.recipe summary{cursor:pointer;font-weight:700;padding:12px 0;}
+  details.recipe table{width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:12px;}
+  details.recipe th,details.recipe td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);}
+</style>
+
+<div class="fj-head">
+  <div>
+    <h1 style="margin:0;">FATJOE Orders <span class="muted" style="font-weight:500;">· Dan's monthly queue</span></h1>
+    <p class="muted" style="margin:.25rem 0 0;">What to order this period for each paying client, by tier. Order in the FATJOE reseller dashboard, then log each order on the client's <b>Backlinks &amp; Authority</b> tab so it drops off here and tracks to delivery.</p>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:1.8rem;font-weight:800;line-height:1;">{{ total_due }}</div>
+    <div class="cad">orders due now</div>
+  </div>
+</div>
+
+{% for r in rows %}
+<div class="fj-cust">
+  <h3>
+    <span class="who">
+      <a href="{{ url_for('customer_detail', customer_id=r.customer.id) }}" style="font-weight:700;">{{ r.customer.name }}</a>
+      <span class="tier {{ r.plan.tier }}">{{ r.plan.label }}</span>
+      <span class="paid {{ 'yes' if r.paid else 'no' }}">{{ 'paid · ' ~ r.status if r.paid else r.status }}</span>
+    </span>
+    <span class="muted">{% if r.plan.total_due %}{{ r.plan.total_due }} to order{% else %}✓ all ordered this period{% endif %}</span>
+  </h3>
+  {% if r.plan.items %}
+  <table class="fj">
+    <thead><tr><th>Cadence</th><th>Product</th><th>Spec</th><th>Done</th><th>Due</th><th>How to order</th><th></th></tr></thead>
+    <tbody>
+    {% for i in r.plan["items"] %}
+    <tr>
+      <td><span class="cad">{{ i.cadence }}</span></td>
+      <td><b>{{ i.type_label }}</b></td>
+      <td>
+        {% if i.type == 'link' %}{{ i.qty_target }} × DR{{ i.dr_tier }}–{{ i.dr_tier + 10 }} link{{ 's' if i.qty_target>1 }}
+        {% elif i.type == 'citation' %}{{ i.qty_target }}-citation pack
+        {% else %}{{ i.qty_target }} × DR{{ i.dr_tier }}–60 mention{% endif %}
+        <div class="muted">~${{ i.cost_each_period }} COGS</div>
+      </td>
+      <td>{{ i.qty_done }}/{{ i.qty_target if i.type != 'citation' else 1 }}</td>
+      <td><span class="due-pill {{ 'go' if i.qty_due else 'done' }}">{{ i.qty_due }}</span></td>
+      <td class="fj-note">{{ i.note }}</td>
+      <td class="fj-cta">
+        {% if i.qty_due %}
+        <a class="btn btn-sm" href="{{ url_for('customer_detail', customer_id=r.customer.id) }}">Open client →</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="nothing">No orders configured for this tier.</div>
+  {% endif %}
+</div>
+{% else %}
+<div class="fj-cust"><div class="nothing">No paying clients with a tier yet. Once a Stripe subscription is active, its plan drives this queue.</div></div>
+{% endfor %}
+
+{% if unplanned %}
+<div class="fj-cust" style="border-color:#fcd34d;">
+  <h3 style="background:#fef3c7;color:#92400e;">⚠️ Active clients with no linked paid plan ({{ unplanned|length }})</h3>
+  <table class="fj"><tbody>
+  {% for u in unplanned %}
+  <tr>
+    <td><a href="{{ url_for('customer_detail', customer_id=u.customer.id) }}" style="font-weight:600;">{{ u.customer.name }}</a></td>
+    <td class="muted">{{ u.customer.status }}</td>
+    <td class="muted">{% if u.sub %}Stripe plan “{{ u.sub.plan_name }}” doesn’t map to a tier — rename the product to include Optimize/Grow/Dominate.{% else %}No Stripe subscription linked — <a href="{{ url_for('billing') }}">link one on Billing</a>.{% endif %}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table>
+</div>
+{% endif %}
+
+<details class="recipe">
+  <summary>📋 The per-tier recipe (what each plan includes)</summary>
+  <table>
+    <thead><tr><th>Tier</th><th>Onboarding (once)</th><th>Monthly</th><th>Quarterly</th></tr></thead>
+    <tbody>
+    {% for key, plan in tier_plans.items() %}
+    <tr>
+      <td><span class="tier {{ key }}">{{ plan.label }}</span></td>
+      <td class="muted">{% for s in plan.onboarding %}{{ s.qty }} citations{% else %}—{% endfor %}</td>
+      <td class="muted">{% for s in plan.monthly %}{{ s.qty }} × DR{{ s.dr_tier }}–{{ s.dr_tier+10 }} link{{ 's' if s.qty>1 }}{% else %}—{% endfor %}</td>
+      <td class="muted">{% for s in plan.quarterly %}{{ s.qty }} brand mention{% else %}—{% endfor %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted" style="padding-bottom:12px;">Anchor mix per client (running): ~40% branded · 20% naked URL · 20% generic · 15% partial · ≤5% exact-match (never repeat an exact-match). Full playbook: <code>docs/fatjoe-monthly-playbook.md</code>.</p>
+</details>
+{% endblock %}

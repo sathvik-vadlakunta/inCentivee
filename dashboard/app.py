@@ -511,6 +511,12 @@ def customer_detail(customer_id):
             "this_month": links_this_month, "target": cadence_target, "last_link_date": last_link_date,
         }
 
+        # Billing + this-period FATJOE orders Dan still owes (driven by paid tier).
+        _subscription = db.get_subscription_for_customer(customer_id)
+        from geo_agent import fatjoe_plan as _fp
+        _fatjoe_due = _fp.due_orders(db, customer_id,
+                                     _subscription["plan_name"] if _subscription else None)
+
         return render_template(
             "customer_detail.html",
             customer=customer, providers=providers, contacts=contacts,
@@ -561,7 +567,8 @@ def customer_detail(customer_id):
             offsite_cadence=offsite_cadence,
             lead_snippet=lead_snippet,
             ga4_connected=ga4_connected,
-            subscription=db.get_subscription_for_customer(customer_id),
+            subscription=_subscription,
+            fatjoe_due=_fatjoe_due,
         )
     finally:
         db.close()
@@ -659,6 +666,47 @@ def billing_sync():
     finally:
         db.close()
     return redirect(url_for("billing"))
+
+
+@app.route("/fatjoe")
+@login_required
+def fatjoe_queue():
+    """Dan's monthly FATJOE order queue — for every customer with a paid tier,
+    exactly what still needs to be ordered this period, with status. Driven by the
+    customer's Stripe plan (subscription.plan_name)."""
+    from geo_agent import fatjoe_plan as fp
+    db = get_db()
+    try:
+        rows = []
+        unplanned = []
+        for cust in db.list_customers():
+            sub = db.get_subscription_for_customer(cust["id"])
+            plan_name = sub["plan_name"] if sub else None
+            paid = bool(sub and sub["status"] in _BILLING_OK)
+            tier = fp.normalize_tier(plan_name)
+            if not tier:
+                # Active customers with no linked paid plan — surface so they're not forgotten.
+                if cust["status"] in ("active", "onboarding"):
+                    unplanned.append({"customer": cust, "sub": sub})
+                continue
+            due = fp.due_orders(db, cust["id"], plan_name)
+            rows.append({
+                "customer": cust,
+                "paid": paid,
+                "status": sub["status"] if sub else "—",
+                "plan": due,
+                "recent_orders": db.get_offsite_orders(cust["id"])[:5],
+            })
+        rows.sort(key=lambda r: (-r["plan"]["total_due"], r["customer"]["name"]))
+        return render_template(
+            "fatjoe.html",
+            rows=rows,
+            unplanned=unplanned,
+            tier_plans=fp.TIER_PLANS,
+            total_due=sum(r["plan"]["total_due"] for r in rows),
+        )
+    finally:
+        db.close()
 
 
 @app.route("/billing/<sub_id>/link", methods=["POST"])
