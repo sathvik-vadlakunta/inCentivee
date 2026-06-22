@@ -64,14 +64,15 @@ CLIENT = {
     # Priced tiers slide (set show_tiers False for a no-pricing strategy review).
     # Tuple: (name, tagline, regular $/mo, founding $/mo, [features])
     "show_tiers": True,
-    "founding_note": "Founding Client rate — your first-customer pricing.  ·  Onboarding waived  ·  Website refactor billed at our exact cost.",
+    "popular_tier": 2,   # highlight Dominate (the one we're pushing)
+    "founding_note": "Founding Client rate — your first-customer pricing.  ·  Onboarding waived  ·  Webflow site improvements billed at our exact cost.",
     "tiers": [
-        ("Optimize", "The Foundation", "1,500", "1,250", ["Keep your current site", "Local SEO + AI-search foundation",
-         "100 citations + Google Business Profile", "2 content + 1 backlink / mo", "Review funnel + monthly report"]),
-        ("Grow", "The Growth Engine", "2,500", "2,000", ["Everything in Optimize, plus:", "Migrated, fast managed site",
-         "4 content + 2 backlinks / mo", "Location pages + keyword tracking"]),
-        ("Dominate", "Market Domination", "3,500", "2,500", ["Everything in Grow, plus:", "Pro website redesign",
-         "6–8 content + 4 backlinks / mo", "Advanced AI/entity building + CRO"]),
+        ("Optimize", "The Foundation", "1,500", "1,250", ["Keep your Webflow site — we optimize it", "Local SEO + AI-search foundation",
+         "100 local citations + Google Business Profile", "2 content + 1 backlink / mo", "Review funnel + monthly report"]),
+        ("Grow", "The Growth Engine", "2,500", "2,000", ["Everything in Optimize, plus:", "4 content + 2 backlinks / mo",
+         "Citation building + NAP cleanup", "Local landing pages + keyword tracking"]),
+        ("Dominate", "Market Domination", "3,500", "2,500", ["Everything in Grow, plus:", "4 high-authority backlinks / mo",
+         "“Best in Northern VA” comparison placements", "Aggressive citations + AI authority building"]),
     ],
 }
 
@@ -443,11 +444,11 @@ if CLIENT.get("current_visits") and CLIENT.get("target_visits"):
 if CLIENT.get("show_tiers"):
     s = slide(); accent_bar(s); heading(s, "YOUR OPTIONS", "Three Ways to Grow")
     for i, (name, tagline, reg, found, feats) in enumerate(CLIENT["tiers"]):
-        x = 0.7 + i * 4.1; pop = (i == 1)
+        x = 0.7 + i * 4.1; pop = (i == CLIENT.get("popular_tier", 1))
         rect(s, x, 2.2, 3.8, 4.25, fill=CARD2 if pop else CARD, line=GREEN if pop else None)
         if pop:
-            rect(s, x + 1.05, 2.02, 1.7, 0.4, fill=GREEN)
-            text(s, x + 1.05, 2.03, 1.7, 0.38, "MOST POPULAR", size=9, color=DARKTXT, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+            rect(s, x + 1.15, 2.02, 1.5, 0.4, fill=GREEN)
+            text(s, x + 1.15, 2.03, 1.5, 0.38, "RECOMMENDED", size=9, color=DARKTXT, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
         text(s, x + 0.3, 2.42, 3.2, 0.45, name, size=19, bold=True)
         text(s, x + 0.3, 2.87, 3.2, 0.32, tagline, size=12, color=GREEN, bold=True)
         text(s, x + 0.3, 3.24, 3.2, 0.28, f"reg. ${reg}/mo", size=11, color=FAINT)

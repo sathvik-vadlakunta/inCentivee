@@ -18,15 +18,19 @@ In just a few weeks, before you've paid a cent, here's the movement:
 
 You're our **first proof-of-progress client**, so you get our Founding Client rate — locked in:
 
+You keep your Webflow site — we optimize it; no migration, no redesign.
+
 | Plan | Regular | **Your rate** | What it is |
 |---|---|---|---|
-| **Optimize** — The Foundation | $1,500/mo | **$1,250/mo** | Keep your site; full local + AI-search optimization |
-| **Grow** — The Growth Engine 🔥 | $2,500/mo | **$2,000/mo** | We migrate & rebuild your site, add authority + content |
-| **Dominate** — Market Domination | $3,500/mo | **$2,500/mo** | Pro redesign + aggressive authority & AI program |
+| **Optimize** — The Foundation | $1,500/mo | **$1,250/mo** | Local + AI-search optimization, 100 citations, GBP, 2 content + 1 backlink/mo |
+| **Grow** — The Growth Engine | $2,500/mo | **$2,000/mo** | + 4 content + 2 backlinks/mo, citation building, local landing pages |
+| **Dominate** — Market Domination ⭐ | $3,500/mo | **$2,500/mo** | + 4 high-authority backlinks/mo, "Best in Northern VA" comparison placements, aggressive citations & AI authority |
+
+**My recommendation: Dominate.** Your gap vs. competitors is authority and local visibility — Dominate is the package built to close it fast: aggressive **local citations**, **high-authority backlinks**, and **"Best gold & silver buyer in Northern VA"-style comparison posts** that both rank and get cited by AI. That's what pushes your Domain Authority toward ~30 and gets you into the Map Pack and AI answers.
 
 **Plus, on the house / at cost:**
 - **Onboarding & setup fees: waived** (normally $1,500–$3,500).
-- **Website refactor: billed at our exact outsourced cost** — no markup. You only pay what we paid the designer/developer.
+- **Webflow site improvements: billed at our exact outsourced cost** — no markup.
 
 ## The guarantee
 
@@ -37,9 +41,7 @@ Month-to-month, cancel anytime. If your PracticeRank Score doesn't improve 20+ p
 - **Backlinks / Domain Authority** — a steady cadence of high-value local links to push your DA from 14 toward ~30 (ahead of nearly every local competitor).
 - **Content from your real Google searches** — we're already mining the actual queries you show up for ("where to sell gold jewelry," "Springfield gold & silver buyer," "sterling silver flatware value") and building the pages/posts to capture them. Fresh, intent-driven content every month.
 
-Based on your goals, I'd recommend **Grow** — it gets your site migrated and rebuilt while we scale authority and content.
-
-Happy to jump on a quick call to finalize. What does your week look like?
+Happy to jump on a quick call to finalize and get the authority program rolling. What does your week look like?
 
 Best,
 **Kody Doherty** — Chief Technology Officer
