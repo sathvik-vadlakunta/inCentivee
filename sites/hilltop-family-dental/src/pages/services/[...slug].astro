@@ -74,15 +74,19 @@ const financingUrl = (practice as any).financingUrl || '/new-patients'
     <!-- Main content -->
     <article class="lg:col-span-8">
       {/* Prominent feature image near the top — layout varies per service */}
-      {variant !== 2 && (
+      {variant === 2 ? (
+        <div class="grid md:grid-cols-2 gap-6 sm:gap-8 items-center mb-10">
+          <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`} class="w-full rounded-2xl aspect-[4/3] object-cover shadow-md" loading="eager" />
+          <div>
+            <p class="text-dark/70 leading-relaxed mb-4">{service.data.description}</p>
+            <a href="/contact" class="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">Book Appointment</a>
+          </div>
+        </div>
+      ) : (
         <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`}
-          class={`w-full rounded-2xl mb-8 object-cover shadow-md ${variant === 1 ? 'aspect-[21/9]' : 'aspect-[16/9]'}`} loading="eager" />
+          class={`w-full rounded-2xl mb-10 object-cover shadow-md ${variant === 1 ? 'aspect-[21/9]' : 'aspect-[16/9]'}`} loading="eager" />
       )}
       <div class="prose-brand">
-        {variant === 2 && (
-          <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`}
-            class="rounded-2xl shadow-md object-cover w-full md:w-[42%] md:float-right md:ml-8 md:mb-4 aspect-[4/3]" loading="eager" />
-        )}
         <Content />
       </div>
 
