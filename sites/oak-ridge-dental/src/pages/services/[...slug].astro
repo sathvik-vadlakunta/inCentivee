@@ -22,10 +22,21 @@ const SLUG_IMG: Record<string, string> = {
   'teeth-whitening': '/images/oak/inoffice-whitening-bg.webp',
   'smile-makeover': '/images/oak/smile-makeover-bg.webp',
 }
+// Distinct hero per category so every service page looks different.
 const CAT_IMG: Record<string, string> = {
   'Cosmetic Dentistry': '/images/oak/cosmetic-bg.webp',
+  'General Dentistry': '/images/stock/general-dentistry.webp',
+  'Pediatric Dentistry': '/images/stock/pediatric-dentistry.webp',
+  'Technology': '/images/stock/technology.webp',
+  'Restorative Dentistry': '/images/stock/restorative-dentistry.webp',
+  'Periodontics': '/images/stock/periodontics.webp',
+  'Sedation Dentistry': '/images/stock/sedation-dentistry.webp',
+  'Holistic Dentistry': '/images/stock/holistic-dentistry.webp',
+  'Orthodontics': '/images/stock/orthodontics.webp',
+  'Oral Surgery': '/images/stock/oral-surgery.webp',
+  'Endodontics': '/images/stock/endodontics.webp',
 }
-const heroImg = service.data.image || SLUG_IMG[service.slug] || CAT_IMG[service.data.category] || '/images/oak/internal-banner.webp'
+const heroImg = service.data.image || SLUG_IMG[service.slug] || CAT_IMG[service.data.category] || '/images/stock/hero-office.webp'
 
 const related = services
   .filter((s) => s.data.category === service.data.category && s.slug !== service.slug)

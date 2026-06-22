@@ -25,6 +25,17 @@ const relatedServices = allServices
 
 // Format phone for tel: link
 const phoneDigits = practice.phone.replace(/[^+\d]/g, '')
+
+// Distinct hero photo per category so every service page looks different.
+const CAT_IMG: Record<string, string> = {
+  'General & Family Dentistry': '/images/stock/general-dentistry.webp',
+  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry.webp',
+  'Endodontics': '/images/stock/endodontics.webp',
+  'Implant Dentistry': '/images/stock/oral-surgery.webp',
+  'Pediatric Dentistry': '/images/stock/pediatric-dentistry.webp',
+  'Restorative Dentistry': '/images/stock/restorative-dentistry.webp',
+}
+const heroImg = service.data.image || CAT_IMG[service.data.category] || '/images/stock/hero-office.webp'
 ---
 
 <Base
@@ -34,7 +45,8 @@ const phoneDigits = practice.phone.replace(/[^+\d]/g, '')
 
   {/* ── Hero Banner ── */}
   <section class="relative overflow-hidden">
-    <div class="absolute inset-0 bg-gradient-to-br from-secondary via-primary/80 to-primary"></div>
+    <img src={heroImg} alt={service.data.title} class="absolute inset-0 w-full h-full object-cover" />
+    <div class="absolute inset-0 bg-gradient-to-br from-secondary/85 via-primary/80 to-primary/85"></div>
     <div class="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10"></div>
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
       <p class="text-sm font-medium text-white/60 uppercase tracking-widest mb-2">{service.data.category} · {practice.address.city}, {practice.address.state}</p>
