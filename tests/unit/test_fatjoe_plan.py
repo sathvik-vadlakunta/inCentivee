@@ -71,6 +71,28 @@ def test_unknown_plan_returns_empty(db):
     assert due["items"] == []
 
 
+def test_buying_window_severity_escalates(db):
+    """Monthly orders are 'ok' early in the window, 'soon' near the deadline,
+    'overdue' once past it."""
+    sev = lambda day: fp.due_orders(
+        db, "c1", "Grow", now=datetime(2026, 6, day, tzinfo=timezone.utc)
+    )["severity"]
+    # MONTHLY_ORDER_BY_DAY=10. But onboarding citations are due immediately, so the
+    # plan severity is driven by the soonest item — check the monthly item directly.
+    def link_sev(day):
+        d = fp.due_orders(db, "c1", "Grow", now=datetime(2026, 6, day, tzinfo=timezone.utc))
+        return next(i["severity"] for i in d["items"] if i["cadence"] == "monthly")
+    assert link_sev(2) == "ok"
+    assert link_sev(9) == "soon"
+    assert link_sev(11) == "overdue"
+
+
+def test_deadline_is_first_n_days_of_month(db):
+    d = fp.due_orders(db, "c1", "Optimize", now=datetime(2026, 6, 1, tzinfo=timezone.utc))
+    monthly = next(i for i in d["items"] if i["cadence"] == "monthly")
+    assert monthly["deadline"] == f"2026-06-{fp.MONTHLY_ORDER_BY_DAY:02d}"
+
+
 def test_cancelled_orders_dont_count(db):
     oid = db.add_offsite_order("c1", "link", quantity=2, dr_tier=30, cost_usd=240)
     db.update_offsite_order(oid, status="cancelled")

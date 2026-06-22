@@ -172,6 +172,7 @@ def index():
         all_customers = db.list_customers()
         staging = get_staging()
 
+        from geo_agent import action_items as ai
         for c in all_customers:
             c["pending_count"] = len(db.get_pending_access(c["id"]))
             c["is_staged"] = staging.is_staged(c["id"])
@@ -179,12 +180,18 @@ def index():
             places = db.get_google_places(c["id"])
             c["rating"] = places["rating"] if places else None
             c["review_count"] = places["review_count"] if places else None
+            if c["status"] != "archived":
+                c["action_items"] = ai.customer_action_items(db, c)
+                c["worst_severity"] = ai.worst_severity(c["action_items"])
 
         # Filter out archived for main view
         customers = [c for c in all_customers if c["status"] != "archived"]
         archived_count = sum(1 for c in all_customers if c["status"] == "archived")
 
         active_alerts = db.get_active_alert_count()
+        # Sort so customers needing the most urgent attention float to the top.
+        _sev_rank = {"critical": 3, "warning": 2, "info": 1, None: 0}
+        customers.sort(key=lambda c: (_sev_rank.get(c.get("worst_severity")), len(c.get("action_items") or [])), reverse=True)
 
         stats = {
             "total": len(customers),
@@ -193,6 +200,8 @@ def index():
             "pending_approval": sum(1 for c in customers if c.get("is_staged") and not c.get("is_approved")),
             "archived": archived_count,
             "active_alerts": active_alerts,
+            "needs_attention": sum(1 for c in customers if c.get("worst_severity") in ("critical", "warning")),
+            "critical": sum(1 for c in customers if c.get("worst_severity") == "critical"),
         }
 
         return render_template("index.html", customers=customers, stats=stats)
@@ -704,6 +713,7 @@ def fatjoe_queue():
             unplanned=unplanned,
             tier_plans=fp.TIER_PLANS,
             total_due=sum(r["plan"]["total_due"] for r in rows),
+            order_by_day=fp.MONTHLY_ORDER_BY_DAY,
         )
     finally:
         db.close()

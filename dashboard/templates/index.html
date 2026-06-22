@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - PracticeRank{% endblock %}
 {% block content %}
+<style>
+  .sev-dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .sev-dot.critical{background:#dc2626;} .sev-dot.warning{background:#f59e0b;} .sev-dot.info{background:#38bdf8;}
+  .ai-chip{display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:999px;margin:2px 4px 2px 0;white-space:nowrap;}
+  .ai-chip.critical{background:#fee2e2;color:#991b1b;} .ai-chip.warning{background:#fef3c7;color:#92400e;} .ai-chip.info{background:#e0f2fe;color:#075985;}
+  tr.row-critical{box-shadow:inset 4px 0 0 #dc2626;} tr.row-warning{box-shadow:inset 4px 0 0 #f59e0b;}
+  td.ai-cell{max-width:380px;}
+  .all-clear{color:var(--success);font-size:.82rem;}
+</style>
 
 <div class="section-header">
     <h1>Dashboard</h1>
@@ -11,9 +20,9 @@
 </div>
 
 <div class="grid grid-4" style="margin-bottom: 1.5rem;">
-    <div class="card stat">
-        <div class="number">{{ stats.total }}</div>
-        <div class="label">Total Customers</div>
+    <div class="card stat" {% if stats.needs_attention %}style="border-left:4px solid var(--danger);"{% endif %}>
+        <div class="number" style="color: {% if stats.needs_attention %}var(--danger){% else %}var(--success){% endif %};">{{ stats.needs_attention }}</div>
+        <div class="label">Need Attention{% if stats.critical %} · {{ stats.critical }} critical{% endif %}</div>
     </div>
     <div class="card stat">
         <div class="number" style="color: var(--success);">{{ stats.active }}</div>
@@ -35,23 +44,30 @@
         <thead>
             <tr>
                 <th>Practice</th>
-                <th>Domain</th>
-                <th>Platform</th>
+                <th>Action needed</th>
                 <th>Status</th>
                 <th>Reviews</th>
-                <th>Staging</th>
-                <th>Access</th>
+                <th>Platform</th>
             </tr>
         </thead>
         <tbody>
             {% for c in customers %}
-            <tr>
-                <td><a href="{{ url_for('customer_detail', customer_id=c.id) }}"><strong>{{ c.name }}</strong></a></td>
-                <td style="color: var(--muted);">{{ c.domain }}</td>
-                <td>{{ c.platform | title }}</td>
+            <tr class="{% if c.worst_severity in ('critical','warning') %}row-{{ c.worst_severity }}{% endif %}">
                 <td>
-                    <span class="badge badge-{{ c.status }}">{{ c.status | title }}</span>
+                    <a href="{{ url_for('customer_detail', customer_id=c.id) }}"><strong>{{ c.name }}</strong></a>
+                    <div style="color:var(--muted);font-size:.78rem;">{{ c.domain }}</div>
                 </td>
+                <td class="ai-cell">
+                    {% if c.action_items %}
+                        {% for a in c.action_items %}
+                        {% if a.url %}<a href="{{ a.url }}" class="ai-chip {{ a.severity }}" title="{{ a.detail }}"><span class="sev-dot {{ a.severity }}"></span>{{ a.label }}</a>
+                        {% else %}<span class="ai-chip {{ a.severity }}" title="{{ a.detail }}"><span class="sev-dot {{ a.severity }}"></span>{{ a.label }}</span>{% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <span class="all-clear">✓ All clear</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ c.status }}">{{ c.status | title }}</span></td>
                 <td>
                     {% if c.rating %}
                         <span class="stars">{{ "%.1f" | format(c.rating) }}</span>
@@ -60,22 +76,7 @@
                         <span style="color: var(--muted);">--</span>
                     {% endif %}
                 </td>
-                <td>
-                    {% if c.is_staged and c.is_approved %}
-                        <span class="badge badge-approved">Approved</span>
-                    {% elif c.is_staged %}
-                        <span class="badge badge-staged">Staged</span>
-                    {% else %}
-                        <span style="color: var(--muted);">--</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if c.pending_count > 0 %}
-                        <span class="badge badge-pending">{{ c.pending_count }} pending</span>
-                    {% else %}
-                        <span style="color: var(--success); font-size: 0.85rem;">All granted</span>
-                    {% endif %}
-                </td>
+                <td>{{ c.platform | title }}</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -17,6 +17,12 @@
   table.fj tr:last-child td{border-bottom:none;}
   .due-pill{display:inline-block;min-width:1.6em;text-align:center;font-weight:800;border-radius:7px;padding:1px 8px;}
   .due-pill.go{background:#fee2e2;color:#991b1b;} .due-pill.done{background:#dcfce7;color:#166534;}
+  .clock{display:inline-block;font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap;}
+  .clock.ok{background:#e0f2fe;color:#075985;} .clock.soon{background:#fef3c7;color:#92400e;}
+  .clock.overdue{background:#fee2e2;color:#991b1b;} .clock.done{background:#dcfce7;color:#166534;}
+  .sev-overdue{border-left:4px solid #dc2626 !important;} .sev-soon{border-left:4px solid #f59e0b !important;}
+  .sev-ok{border-left:4px solid #38bdf8 !important;} .sev-done{border-left:4px solid #22c55e !important;}
+  .alarmbar{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:10px;margin-bottom:1rem;font-weight:600;font-size:.88rem;}
   .cad{font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;}
   .muted{color:var(--muted);font-size:.8rem;}
   .fj-note{font-size:.78rem;color:var(--muted);max-width:48ch;}
@@ -39,15 +45,31 @@
   </div>
 </div>
 
+{% set overdue_rows = rows | selectattr('plan.severity', 'equalto', 'overdue') | list %}
+{% if overdue_rows %}
+<div class="alarmbar">⛔ {{ overdue_rows|length }} client{{ 's' if overdue_rows|length != 1 }} past the buying window this month — order now: {{ overdue_rows | map(attribute='customer.name') | join(', ') }}</div>
+{% endif %}
+<p class="muted" style="margin:-.5rem 0 1rem;">Buying window: place each month's orders within the first <b>{{ order_by_day }} days</b>. After that the client turns <span style="color:#991b1b;font-weight:700;">overdue</span>.</p>
+
 {% for r in rows %}
-<div class="fj-cust">
+<div class="fj-cust sev-{{ r.plan.severity }}">
   <h3>
     <span class="who">
       <a href="{{ url_for('customer_detail', customer_id=r.customer.id) }}" style="font-weight:700;">{{ r.customer.name }}</a>
       <span class="tier {{ r.plan.tier }}">{{ r.plan.label }}</span>
       <span class="paid {{ 'yes' if r.paid else 'no' }}">{{ 'paid · ' ~ r.status if r.paid else r.status }}</span>
     </span>
-    <span class="muted">{% if r.plan.total_due %}{{ r.plan.total_due }} to order{% else %}✓ all ordered this period{% endif %}</span>
+    {% if r.plan.total_due %}
+      {% if r.plan.severity == 'overdue' %}
+        <span class="clock overdue">⛔ OVERDUE by {{ -r.plan.days_left }}d · {{ r.plan.total_due }} to order</span>
+      {% elif r.plan.severity == 'soon' %}
+        <span class="clock soon">🗓 Due by {{ r.plan.deadline }} · {{ r.plan.days_left }}d left · {{ r.plan.total_due }} to order</span>
+      {% else %}
+        <span class="clock ok">🗓 Due by {{ r.plan.deadline }} · {{ r.plan.days_left }}d left · {{ r.plan.total_due }} to order</span>
+      {% endif %}
+    {% else %}
+      <span class="clock done">✓ all ordered this period</span>
+    {% endif %}
   </h3>
   {% if r.plan.items %}
   <table class="fj">

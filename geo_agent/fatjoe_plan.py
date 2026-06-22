@@ -12,7 +12,14 @@ to its first word: "Optimize" / "Grow" / "Dominate".
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from calendar import monthrange
+from datetime import datetime, timedelta, timezone
+
+# Each month's link/citation orders should be placed within the first N days of
+# the month. After that the row goes "overdue" (red). Quarterly mentions get the
+# whole quarter. Tune here — it's the single knob for the buying SLA.
+MONTHLY_ORDER_BY_DAY = 10
+DUE_SOON_DAYS = 3  # amber when this many days or fewer remain
 
 # anchor_type / dr_tier guidance lives here so Dan never has to guess.
 TIER_PLANS: dict[str, dict] = {
@@ -90,6 +97,29 @@ def _period_starts(now: datetime) -> tuple[str, str]:
     return month_start.strftime("%Y-%m-%dT%H:%M:%SZ"), quarter_start.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _deadline_for(cadence: str, now: datetime) -> datetime:
+    """End-of-day deadline by which an order of this cadence should be placed."""
+    if cadence == "monthly":
+        d = now.replace(day=1) + timedelta(days=MONTHLY_ORDER_BY_DAY - 1)
+    elif cadence == "quarterly":
+        q_last_month = ((now.month - 1) // 3) * 3 + 3
+        last_day = monthrange(now.year, q_last_month)[1]
+        d = now.replace(month=q_last_month, day=last_day)
+    else:  # onboarding — due immediately
+        d = now
+    return d.replace(hour=23, minute=59, second=59, microsecond=0)
+
+
+def _severity(qty_due: int, days_left: int) -> str:
+    if qty_due == 0:
+        return "done"
+    if days_left < 0:
+        return "overdue"
+    if days_left <= DUE_SOON_DAYS:
+        return "soon"
+    return "ok"
+
+
 def order_cost(spec: dict) -> int:
     if spec["type"] == "link":
         return LINK_COST.get(spec.get("dr_tier") or 20, 96) * spec["qty"]
@@ -120,6 +150,8 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
             done = db.count_offsite_orders_in_period(customer_id, spec["type"], since)
             target = 1 if spec["type"] == "citation" else spec["qty"]  # citations: one pack, not 100 orders
             due = max(0, target - done)
+            deadline = _deadline_for(cadence, now)
+            days_left = (deadline.date() - now.date()).days
             items.append({
                 "cadence": cadence,
                 "type": spec["type"],
@@ -131,10 +163,22 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
                 "dr_tier": spec.get("dr_tier"),
                 "note": spec["note"],
                 "cost_each_period": order_cost(spec),
+                "deadline": deadline.strftime("%Y-%m-%d"),
+                "days_left": days_left,
+                "severity": _severity(due, days_left),
             })
+
+    due_items = [i for i in items if i["qty_due"]]
+    # Worst severity across outstanding items drives the customer's alarm color.
+    rank = {"overdue": 3, "soon": 2, "ok": 1, "done": 0}
+    worst = max((i["severity"] for i in due_items), key=lambda s: rank[s], default="done")
+    soonest = min((i["days_left"] for i in due_items), default=None)
     return {
         "tier": tier,
         "label": plan["label"],
         "items": items,
         "total_due": sum(i["qty_due"] for i in items),
+        "severity": worst,
+        "days_left": soonest,
+        "deadline": min((i["deadline"] for i in due_items), default=None),
     }
