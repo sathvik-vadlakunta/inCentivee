@@ -180,7 +180,7 @@ def column_chart(s, l, t, w, h, labels, values, target=None, accent_last=False):
     if target:
         ty = base - h * target / vmax
         rect(s, l, ty, w, 0.025, fill=GREEN, radius=False)
-        text(s, l + w - 2.0, ty - 0.4, 2.0, 0.3, f"Goal {target}+", size=11, color=GREEN, bold=True, align=PP_ALIGN.RIGHT)
+        text(s, l, ty - 0.44, 3.0, 0.32, f"Goal: {target}+", size=11, color=GREEN, bold=True, align=PP_ALIGN.LEFT)
     for i, (lab, v) in enumerate(zip(labels, values)):
         x = l + i * (cw + gap); bh = max(0.06, h * v / vmax)
         mine = accent_last and i == n - 1
