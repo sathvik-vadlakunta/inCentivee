@@ -43,7 +43,8 @@ CLIENT = {
         "Full SEO / AI-search audit + a phased action plan",
         "Technical foundation: schema markup, llms.txt / llms-full.txt, HTTPS-canonical fixes",
         "Service & city/location landing pages built for your core markets",
-        "Google Business Profile access secured — category, services & service-area optimization underway",
+        "Full Google access connected — Business Profile, Search Console, Analytics & Tag Manager — so we measure and report results from day one",
+        "Live performance tracking in place: Search Console data flowing, Domain Authority & competitor monitoring active",
     ],
 }
 

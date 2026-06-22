@@ -583,6 +583,23 @@ def weekly_report_view(customer_id):
         db.close()
 
 
+@app.route("/customer/<customer_id>/validate-access", methods=["POST"])
+@login_required
+def validate_customer_access(customer_id):
+    """Auto-check real Google access (post-Leadsie) and update the tracker."""
+    db = get_db()
+    try:
+        from geo_agent.access_validation import validate_google_access
+        result = validate_google_access(db, customer_id)
+        audit_log("access_validated", customer_id=customer_id,
+                  details=", ".join(f"{c['key']}={'granted' if c['granted'] else 'pending'}" for c in result["checked"]))
+        return jsonify({"ok": True, **result})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    finally:
+        db.close()
+
+
 @app.route("/report/<customer_id>/snapshot/<int:snapshot_id>/delete", methods=["POST"])
 @login_required
 def delete_report_snapshot(customer_id, snapshot_id):

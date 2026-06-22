@@ -2469,7 +2469,30 @@
                style="flex:1;min-width:220px;padding:0.4rem 0.55rem;font-size:0.78rem;border:1px solid #a7f3d0;border-radius:6px;background:#fff;color:#065f46;">
         <button class="btn btn-sm" onclick="navigator.clipboard.writeText('https://app.leadsie.com/connect/practicerank/manage'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy link',1500);"
                 style="background:#10b981;color:#fff;border:none;padding:0.4rem 0.9rem;font-size:0.78rem;border-radius:6px;cursor:pointer;font-weight:600;">Copy link</button>
+        <button id="validate-access-btn" onclick="validateAccess(this)"
+                style="background:#0ea5e9;color:#fff;border:none;padding:0.4rem 0.9rem;font-size:0.78rem;border-radius:6px;cursor:pointer;font-weight:600;">Validate access</button>
     </div>
+    <div id="validate-access-result" style="font-size:0.8rem;color:#065f46;margin:-0.5rem 0 1rem;display:none;"></div>
+    <script>
+      async function validateAccess(btn){
+        const orig = btn.textContent; btn.textContent = 'Checking…'; btn.disabled = true;
+        const box = document.getElementById('validate-access-result'); box.style.display='block'; box.style.color='#475569';
+        box.textContent = 'Checking Google access for {{ customer.id }}…';
+        try {
+          const r = await fetch('/customer/{{ customer.id }}/validate-access', {method:'POST'});
+          const d = await r.json();
+          if(!d.ok){ box.style.color='#b91c1c'; box.textContent='Error: '+(d.error||'failed'); }
+          else {
+            box.innerHTML = d.checked.map(c =>
+              (c.granted ? '✅ ' : '⚠️ ') + '<strong>'+c.platform+'</strong> — ' + (c.granted ? 'connected' : 'not yet') +
+              ' <span style="color:#94a3b8">('+c.detail+')</span>').join('<br>') +
+              (d.ga4_property_id ? '<br><span style="color:#16a34a">GA4 property stored: '+d.ga4_property_id+'</span>' : '');
+            box.style.color='#334155';
+          }
+        } catch(e){ box.style.color='#b91c1c'; box.textContent='Error: '+e.message; }
+        btn.textContent = orig; btn.disabled = false;
+      }
+    </script>
     {% if email_templates %}
     <p style="color: var(--muted); margin-bottom: 0.6rem; font-size: 0.85rem;">
         Emails rendered for <strong>{{ customer.name }}</strong>. ⭐ = recommended for the current stage
