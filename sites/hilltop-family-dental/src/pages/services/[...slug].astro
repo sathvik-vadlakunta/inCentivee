@@ -25,18 +25,25 @@ const CAT_IMG: Record<string, string> = {
 }
 const heroImg = service.data.image || CAT_IMG[service.data.category] || '/images/office.jpg'
 
-// A second, DIFFERENT photo for the body so the page isn't the same image twice.
-const CAT_BODY: Record<string, string> = {
-  'General & Family Dentistry': '/images/stock/general-dentistry-b.webp',
-  'Restorative Dentistry': '/images/stock/restorative-dentistry-b.webp',
-  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry-b.webp',
-  'Orthodontics': '/images/stock/orthodontics-b.webp',
-  'Sleep & Airway': '/images/stock/sedation-dentistry-b.webp',
+// Body photo — a DIFFERENT stock variant per service so pages within the same
+// category don't share the same body image (sub-category variety). Hero stays
+// on the real practice photos above.
+const CAT_LABEL: Record<string, string> = {
+  'General & Family Dentistry': 'general-dentistry',
+  'Restorative Dentistry': 'restorative-dentistry',
+  'Cosmetic Dentistry': 'cosmetic-dentistry',
+  'Orthodontics': 'orthodontics',
+  'Advanced & Specialty Care': 'general-dentistry',
+  'Sleep & Airway': 'sedation-dentistry',
 }
-const bodyImg = CAT_BODY[service.data.category] || '/images/stock/hero-office-b.webp'
-// Deterministic 0/1/2 per service so the body layout differs page-to-page:
-//   0 = full-width 16:9 image, 1 = cinematic 21:9 image, 2 = floated image text wraps.
-const variant = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 3
+const SITE_OFFSET = 2
+const slugSum = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0)
+const _label = CAT_LABEL[service.data.category]
+const bodyImg = _label
+  ? `/images/stock/${_label}-${((slugSum + SITE_OFFSET) % 4) + 1}.webp`
+  : `/images/stock/hero-office-${((slugSum + 2) % 4) + 1}.webp`
+// Deterministic 0/1/2 per service so the body layout differs page-to-page.
+const variant = slugSum % 3
 
 const related = services
   .filter((s) => s.data.category === service.data.category && s.slug !== service.slug)

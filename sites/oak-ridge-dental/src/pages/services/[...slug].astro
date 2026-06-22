@@ -22,40 +22,33 @@ const SLUG_IMG: Record<string, string> = {
   'teeth-whitening': '/images/oak/inoffice-whitening-bg.webp',
   'smile-makeover': '/images/oak/smile-makeover-bg.webp',
 }
-// Distinct hero per category so every service page looks different.
-const CAT_IMG: Record<string, string> = {
-  'Cosmetic Dentistry': '/images/oak/cosmetic-bg.webp',
-  'General Dentistry': '/images/stock/general-dentistry.webp',
-  'Pediatric Dentistry': '/images/stock/pediatric-dentistry.webp',
-  'Technology': '/images/stock/technology.webp',
-  'Restorative Dentistry': '/images/stock/restorative-dentistry.webp',
-  'Periodontics': '/images/stock/periodontics.webp',
-  'Sedation Dentistry': '/images/stock/sedation-dentistry.webp',
-  'Holistic Dentistry': '/images/stock/holistic-dentistry.webp',
-  'Orthodontics': '/images/stock/orthodontics.webp',
-  'Oral Surgery': '/images/stock/oral-surgery.webp',
-  'Endodontics': '/images/stock/endodontics.webp',
+// Category → stock image label. We pick a DIFFERENT variant per service so
+// pages within the same category don't share the same photo (sub-category variety).
+const CAT_LABEL: Record<string, string> = {
+  'Cosmetic Dentistry': 'cosmetic-dentistry',
+  'General Dentistry': 'general-dentistry',
+  'Pediatric Dentistry': 'pediatric-dentistry',
+  'Technology': 'technology',
+  'Restorative Dentistry': 'restorative-dentistry',
+  'Periodontics': 'periodontics',
+  'Sedation Dentistry': 'sedation-dentistry',
+  'Holistic Dentistry': 'holistic-dentistry',
+  'Orthodontics': 'orthodontics',
+  'Oral Surgery': 'oral-surgery',
+  'Endodontics': 'endodontics',
 }
-const heroImg = service.data.image || SLUG_IMG[service.slug] || CAT_IMG[service.data.category] || '/images/stock/hero-office.webp'
-
-// A second, DIFFERENT photo for the body so the page isn't the same image twice.
-const CAT_BODY: Record<string, string> = {
-  'General Dentistry': '/images/stock/general-dentistry-b.webp',
-  'Pediatric Dentistry': '/images/stock/pediatric-dentistry-b.webp',
-  'Technology': '/images/stock/technology-b.webp',
-  'Restorative Dentistry': '/images/stock/restorative-dentistry-b.webp',
-  'Periodontics': '/images/stock/periodontics-b.webp',
-  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry-b.webp',
-  'Sedation Dentistry': '/images/stock/sedation-dentistry-b.webp',
-  'Holistic Dentistry': '/images/stock/holistic-dentistry-b.webp',
-  'Orthodontics': '/images/stock/orthodontics-b.webp',
-  'Oral Surgery': '/images/stock/oral-surgery-b.webp',
-  'Endodontics': '/images/stock/endodontics-b.webp',
-}
-const bodyImg = CAT_BODY[service.data.category] || '/images/stock/hero-office-b.webp'
-// Deterministic 0/1/2 per service so the body layout differs page-to-page:
-//   0 = full-width 16:9 image, 1 = cinematic 21:9 image, 2 = floated image text wraps.
-const variant = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 3
+const SITE_OFFSET = 0   // shifts variant choice so each customer site differs too
+const slugSum = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0)
+const stockVariant = (label: string, extra: number) =>
+  `/images/stock/${label}-${((slugSum + SITE_OFFSET + extra) % 4) + 1}.webp`
+const _label = CAT_LABEL[service.data.category]
+// hero: real per-service photo if we have one, else a category variant
+const heroImg = service.data.image || SLUG_IMG[service.slug]
+  || (_label ? stockVariant(_label, 0) : `/images/stock/hero-office-${(slugSum % 4) + 1}.webp`)
+// body: a DIFFERENT variant of the same category so it's not the same image twice
+const bodyImg = _label ? stockVariant(_label, 2) : `/images/stock/hero-office-${((slugSum + 2) % 4) + 1}.webp`
+// Deterministic 0/1/2 per service so the body layout differs page-to-page.
+const variant = slugSum % 3
 
 const related = services
   .filter((s) => s.data.category === service.data.category && s.slug !== service.slug)

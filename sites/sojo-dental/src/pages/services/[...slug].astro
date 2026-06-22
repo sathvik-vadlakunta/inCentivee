@@ -26,30 +26,26 @@ const relatedServices = allServices
 // Format phone for tel: link
 const phoneDigits = practice.phone.replace(/[^+\d]/g, '')
 
-// Distinct hero photo per category so every service page looks different.
-const CAT_IMG: Record<string, string> = {
-  'General & Family Dentistry': '/images/stock/general-dentistry.webp',
-  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry.webp',
-  'Endodontics': '/images/stock/endodontics.webp',
-  'Implant Dentistry': '/images/stock/oral-surgery.webp',
-  'Pediatric Dentistry': '/images/stock/pediatric-dentistry.webp',
-  'Restorative Dentistry': '/images/stock/restorative-dentistry.webp',
+// Category → stock image label. A DIFFERENT variant per service so pages within
+// the same category don't share the same photo (sub-category variety).
+const CAT_LABEL: Record<string, string> = {
+  'General & Family Dentistry': 'general-dentistry',
+  'Cosmetic Dentistry': 'cosmetic-dentistry',
+  'Endodontics': 'endodontics',
+  'Implant Dentistry': 'oral-surgery',
+  'Pediatric Dentistry': 'pediatric-dentistry',
+  'Restorative Dentistry': 'restorative-dentistry',
 }
-const heroImg = service.data.image || CAT_IMG[service.data.category] || '/images/stock/hero-office.webp'
-
-// A second, DIFFERENT photo for the body (so the page isn't the same image twice).
-const CAT_BODY: Record<string, string> = {
-  'General & Family Dentistry': '/images/stock/general-dentistry-b.webp',
-  'Cosmetic Dentistry': '/images/stock/cosmetic-dentistry-b.webp',
-  'Endodontics': '/images/stock/endodontics-b.webp',
-  'Implant Dentistry': '/images/stock/oral-surgery-b.webp',
-  'Pediatric Dentistry': '/images/stock/pediatric-dentistry-b.webp',
-  'Restorative Dentistry': '/images/stock/restorative-dentistry-b.webp',
-}
-const bodyImg = CAT_BODY[service.data.category] || '/images/stock/hero-office-b.webp'
-// Deterministic 0/1/2 per service so the body layout differs page-to-page:
-//   0 = full-width 16:9 image, 1 = cinematic 21:9 image, 2 = floated image text wraps.
-const variant = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 3
+const SITE_OFFSET = 1   // shifts variant choice so each customer site differs too
+const slugSum = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0)
+const stockVariant = (label: string, extra: number) =>
+  `/images/stock/${label}-${((slugSum + SITE_OFFSET + extra) % 4) + 1}.webp`
+const _label = CAT_LABEL[service.data.category]
+const heroImg = service.data.image
+  || (_label ? stockVariant(_label, 0) : `/images/stock/hero-office-${((slugSum + 1) % 4) + 1}.webp`)
+const bodyImg = _label ? stockVariant(_label, 2) : `/images/stock/hero-office-${((slugSum + 3) % 4) + 1}.webp`
+// Deterministic 0/1/2 per service so the body layout differs page-to-page.
+const variant = slugSum % 3
 ---
 
 <Base
