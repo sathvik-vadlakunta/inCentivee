@@ -2459,6 +2459,17 @@
 
 <!-- ==================== EMAILS TAB ==================== -->
 <div id="tab-emails" class="tab-content">
+    <!-- VA quick-action: one-click Google access via Leadsie -->
+    <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+        <span style="font-size:1.1rem;">⚡</span>
+        <div style="flex:1;min-width:240px;font-size:0.82rem;color:#065f46;">
+            <strong>One-click client access (Leadsie):</strong> send this link to grant Google Business Profile, Analytics, Search Console &amp; Tag Manager at once — no passwords. It's already built into the access-request &amp; follow-up emails below.
+        </div>
+        <input type="text" id="leadsie-link" readonly value="https://app.leadsie.com/connect/practicerank/manage"
+               style="flex:1;min-width:220px;padding:0.4rem 0.55rem;font-size:0.78rem;border:1px solid #a7f3d0;border-radius:6px;background:#fff;color:#065f46;">
+        <button class="btn btn-sm" onclick="navigator.clipboard.writeText('https://app.leadsie.com/connect/practicerank/manage'); this.textContent='Copied!'; setTimeout(()=>this.textContent='Copy link',1500);"
+                style="background:#10b981;color:#fff;border:none;padding:0.4rem 0.9rem;font-size:0.78rem;border-radius:6px;cursor:pointer;font-weight:600;">Copy link</button>
+    </div>
     {% if email_templates %}
     <p style="color: var(--muted); margin-bottom: 0.6rem; font-size: 0.85rem;">
         Emails rendered for <strong>{{ customer.name }}</strong>. ⭐ = recommended for the current stage

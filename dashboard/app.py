@@ -2105,6 +2105,12 @@ def _content_rec_summary(recs: list[dict]) -> str:
 # client-facing "how to grant it" copy (may use {placeholders} — substituted in
 # the normal replacements pass). Built dynamically so the email only lists what's
 # still outstanding. See specs onboarding + local-relevancy work.
+# Leadsie one-click access link — grants all Google properties (Business
+# Profile, Analytics, Search Console, Tag Manager) in one secure flow, no
+# passwords. Covers the access_keys in LEADSIE_KEYS below.
+LEADSIE_LINK = "https://app.leadsie.com/connect/practicerank/manage"
+LEADSIE_KEYS = {"gsc", "ga", "gtm", "gbp"}
+
 ONBOARDING_REQUIREMENTS = [
     {"access_key": "gsc", "label": "Google Search Console — Full user",
      "how": "Search Console → Settings → Users and permissions → Add user → "
@@ -2167,6 +2173,7 @@ def _onboarding_blocks(customer: dict, access: list[dict] | None,
 
     full_lines, pending_lines = [], []
     n = 0
+    leadsie_pending = False
     for req in ONBOARDING_REQUIREMENTS:
         ak = req.get("access_key")
         if ak == "__cms__":
@@ -2181,13 +2188,33 @@ def _onboarding_blocks(customer: dict, access: list[dict] | None,
             satisfied = bool(checklist.get(req["checklist_key"]))
             how = req["how"]
 
+        if not satisfied and ak in LEADSIE_KEYS:
+            leadsie_pending = True
+
         label, how = req["label"], how or req["how"] or ""
         if satisfied:
             full_lines.append(f"- ✓ **{label}** — received, thank you!")
         else:
             n += 1
-            full_lines.append(f"**{n}. {label}**\n   - {how}")
-            pending_lines.append(f"**{label}**\n   - {how}")
+            note = "  *(or just use the one-click link above)*" if ak in LEADSIE_KEYS else ""
+            full_lines.append(f"**{n}. {label}**{note}\n   - {how}")
+            pending_lines.append(f"**{label}**{note}\n   - {how}")
+
+    # Lead with the Leadsie one-click block whenever any Google item is still
+    # outstanding — it grants all of them at once, no passwords.
+    if leadsie_pending:
+        leadsie_block = (
+            "### ⚡ Fastest way — connect everything Google in one click\n\n"
+            "Most of what we need (Google Business Profile, Analytics, Search Console "
+            "& Tag Manager) can be granted in about 2 minutes with one secure link — "
+            "no passwords, nothing to dig through in settings:\n\n"
+            f"**👉 [Connect your accounts]({LEADSIE_LINK})**\n\n"
+            "Sign in with Google and approve PracticeRank — that's it. The Google items "
+            "below are all covered by that link; the step-by-step instructions are only "
+            "there if you'd rather grant them manually.\n\n---"
+        )
+        full_lines.insert(0, leadsie_block)
+        pending_lines.insert(0, leadsie_block)
 
     if not pending_lines:
         pending_lines.append("- ✓ Everything's in — no outstanding items. Thank you!")
