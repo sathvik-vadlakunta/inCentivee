@@ -53,8 +53,9 @@ const CAT_BODY: Record<string, string> = {
   'Endodontics': '/images/stock/endodontics-b.webp',
 }
 const bodyImg = CAT_BODY[service.data.category] || '/images/stock/hero-office-b.webp'
-// Deterministic per-service flag so the body layout alternates (image left/right).
-const flip = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 2 === 1
+// Deterministic 0/1/2 per service so the body layout differs page-to-page:
+//   0 = full-width 16:9 image, 1 = cinematic 21:9 image, 2 = floated image text wraps.
+const variant = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0) % 3
 
 const related = services
   .filter((s) => s.data.category === service.data.category && s.slug !== service.slug)
@@ -91,22 +92,26 @@ const financingUrl = (practice as any).financingUrl || '/contact'
   <div class="container-px py-14 grid lg:grid-cols-12 gap-10">
     <!-- Main content -->
     <article class="lg:col-span-8">
+      {/* Prominent feature image near the top — layout varies per service */}
+      {variant !== 2 && (
+        <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`}
+          class={`w-full rounded-2xl mb-8 object-cover shadow-md ${variant === 1 ? 'aspect-[21/9]' : 'aspect-[16/9]'}`} loading="eager" />
+      )}
       <div class="prose-brand">
+        {variant === 2 && (
+          <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`}
+            class="rounded-2xl shadow-md object-cover w-full md:w-[42%] md:float-right md:ml-8 md:mb-4 aspect-[4/3]" loading="eager" />
+        )}
         <Content />
       </div>
 
-      {/* ── Body feature band — real photo + CTA, side alternates per service ── */}
-      <section class="mt-12 grid md:grid-cols-5 gap-6 sm:gap-8 items-center rounded-2xl bg-light p-6 sm:p-8">
-        <figure class={`md:col-span-2 ${flip ? 'md:order-2' : ''}`}>
-          <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`} class="w-full rounded-xl aspect-[4/3] object-cover shadow-md" loading="lazy" />
-        </figure>
-        <div class="md:col-span-3">
-          <h2 class="text-2xl sm:text-3xl font-semibold text-dark mb-3">{service.data.title} at {practice.name}</h2>
-          <p class="text-dark/70 leading-relaxed mb-5">{service.data.description}</p>
-          <div class="flex flex-col sm:flex-row gap-3">
-            <a href="/contact" class="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">Book Appointment</a>
-            <a href={`tel:${tel}`} class="inline-flex items-center justify-center border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold hover:bg-primary/5 transition">Call {practice.phone}</a>
-          </div>
+      {/* ── CTA closer ── */}
+      <section class="mt-12 rounded-2xl bg-primary p-8 sm:p-10 text-center text-white">
+        <h2 class="text-2xl sm:text-3xl font-semibold mb-2">Ready to get started?</h2>
+        <p class="text-white/85 max-w-xl mx-auto mb-6">{service.data.description}</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <a href="/contact" class="inline-flex items-center justify-center bg-white text-primary px-7 py-3 rounded-lg font-semibold hover:opacity-90 transition">Book Appointment</a>
+          <a href={`tel:${tel}`} class="inline-flex items-center justify-center border-2 border-white text-white px-7 py-3 rounded-lg font-semibold hover:bg-white/10 transition">Call {practice.phone}</a>
         </div>
       </section>
 
