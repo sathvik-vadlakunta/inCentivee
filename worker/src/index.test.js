@@ -1198,6 +1198,19 @@ Disallow: /admin`;
     expect(r.blockedAgents).toContain("gptbot");
   });
 
+  it("does NOT count a ByteSpider/CCBot-only block as blocking AI assistants", () => {
+    const robots = `User-agent: Bytespider\nDisallow: /\n\nUser-agent: CCBot\nDisallow: /\n\nUser-agent: *\nDisallow: /admin`;
+    const r = analyzeRobotsAiBlocking(robots);
+    expect(r.blocksAi).toBe(false); // ChatGPT/Claude/Perplexity are NOT blocked
+  });
+
+  it("counts a major-assistant block (GPTBot/ClaudeBot) as blocking AI", () => {
+    const robots = `User-agent: GPTBot\nUser-agent: ClaudeBot\nDisallow: /\n\nUser-agent: Bytespider\nDisallow: /`;
+    const r = analyzeRobotsAiBlocking(robots);
+    expect(r.blocksAi).toBe(true);
+    expect(r.blockedAgents).toEqual(expect.arrayContaining(["gptbot","claudebot"]));
+  });
+
   it("handles empty / missing robots.txt", () => {
     expect(analyzeRobotsAiBlocking("").blocksAi).toBe(false);
     expect(analyzeRobotsAiBlocking(null).hasRobots).toBe(false);

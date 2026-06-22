@@ -2612,6 +2612,16 @@ const AI_CRAWLER_UAS = [
   "facebookbot", "cohere-ai", "ai2bot", "youbot", "duckassistbot", "omgilibot",
 ];
 
+// The crawlers that actually feed the AI ASSISTANTS our reports talk about
+// (ChatGPT, Claude, Perplexity, Google AI). Blocking a minor training scraper
+// like ByteSpider (TikTok) or CCBot is NOT the same as being invisible to those
+// assistants — so only a MAJOR block should drive the "blocks AI crawlers"
+// narrative. Otherwise we'd falsely tell a prospect ChatGPT/Claude can't see them.
+const MAJOR_AI_CRAWLER_UAS = [
+  "gptbot", "oai-searchbot", "chatgpt-user", "claudebot", "anthropic-ai",
+  "claude-web", "perplexitybot", "perplexity-user", "google-extended", "gemini",
+];
+
 function analyzeRobotsAiBlocking(robotsTxt) {
   if (!robotsTxt || typeof robotsTxt !== "string") {
     return { hasRobots: false, blocksAi: false, blockedAgents: [] };
@@ -2653,7 +2663,10 @@ function analyzeRobotsAiBlocking(robotsTxt) {
       if (AI_CRAWLER_UAS.includes(ag)) blocked.add(ag);
     }
   }
-  return { hasRobots: true, blocksAi: blocked.size > 0, blockedAgents: [...blocked] };
+  const blockedMajor = [...blocked].filter((a) => MAJOR_AI_CRAWLER_UAS.includes(a));
+  // blocksAi reflects MAJOR assistant crawlers only — a ByteSpider/CCBot-only
+  // block does not make a site invisible to ChatGPT/Claude/Perplexity.
+  return { hasRobots: true, blocksAi: blockedMajor.length > 0, blockedAgents: blockedMajor, blockedAll: [...blocked] };
 }
 
 /**
