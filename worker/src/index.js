@@ -239,6 +239,9 @@ export default {
     try {
       const body = await request.json();
       const { practiceUrl, email, name, phone, vertical } = body;
+      // QA/test mode: run the full audit pipeline but skip all side effects
+      // (lead storage, report storage, and emails). For internal accuracy testing.
+      const testMode = body.test === true || body.test === "true";
       // vertical: "dental" (default), "legal", "medical", "financial", "generic".
       // detectVertical() re-checks against scraped content and may override this.
       let vert = ["dental", "legal", "medical", "financial", "generic"].includes(vertical) ? vertical : "dental";
@@ -432,7 +435,7 @@ export default {
         executive_summary: report.executive_summary,
         data_confidence: report.data_confidence,
       };
-      await env.LEADS.put(leadId, JSON.stringify(lead));
+      if (!testMode) await env.LEADS.put(leadId, JSON.stringify(lead));
 
       // Save full report JSON to KV for dashboard retrieval (non-blocking)
       const reportPayload = {
@@ -464,14 +467,16 @@ export default {
           competitor_count: (report.competitors || []).length,
         },
       };
-      ctx.waitUntil(
-        env.LEADS.put(`report_${leadId}`, JSON.stringify(reportPayload), {
-          expirationTtl: 365 * 86400,
-        })
-      );
+      if (!testMode) {
+        ctx.waitUntil(
+          env.LEADS.put(`report_${leadId}`, JSON.stringify(reportPayload), {
+            expirationTtl: 365 * 86400,
+          })
+        );
+      }
 
       // Send email notifications (non-blocking — don't fail the audit if email fails)
-      if (env.RESEND_API_KEY) {
+      if (env.RESEND_API_KEY && !testMode) {
         try {
           await sendAuditEmails(env, report, email, name, practiceUrl);
         } catch (emailErr) {
@@ -479,7 +484,16 @@ export default {
         }
       }
 
-      return new Response(JSON.stringify(report), {
+      // In test mode, expose the resolved vertical + a few verified inputs so QA
+      // can check classification/competitor accuracy without re-deriving them.
+      const responseBody = testMode
+        ? { ...report, _resolved_vertical: vert, _google_verified: report.google_verified,
+            _place_primary_type: placeData?.primaryType || null,
+            _place_type_display: placeData?.primaryTypeDisplay || null,
+            _competitor: report.categories?.reviews?.competitor_name || null }
+        : report;
+
+      return new Response(JSON.stringify(responseBody), {
         headers: { ...corsHeaders(env), "Content-Type": "application/json" },
       });
     } catch (e) {
