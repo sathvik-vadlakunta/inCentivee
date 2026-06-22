@@ -1,19 +1,20 @@
-Subject: Quick Follow-Up — {practice_name} Access
+Subject: Quick nudge — let's get {practice_name} started
 
 Hi {contact_name},
 
-Just a friendly follow-up on our onboarding for {practice_name}. We're ready to get started as soon as we have access to the remaining platforms.
+Just following up — we're ready to go the moment we have access. Still need two quick things:
 
-**Still pending:**
+**1. Google access** (about 2 minutes, no passwords):
 
-{pending_access_list}
+**👉 https://app.leadsie.com/connect/practicerank/manage**
 
-**Why this matters now:** Our initial scan shows {practice_name} is currently at {ai_mentions} AI search mentions. AI-powered search is growing rapidly, and every week without optimization is visibility you're missing out on. Potential customers are increasingly using AI assistants to find businesses like yours.
+**2. Domain access** — add **kdoherty@practicerank.ai** to your domain registrar (where {domain} is registered), or share the login.
 
-If you've already sent the invites, they may be in our spam folder — we'll double-check on our end. If you need help with any of the steps, just reply and we'll hop on a quick call.
+Since we host and optimize your site on our managed platform, that's really all we need to start — no website logins or plugins on your end. Once access is in, we kick off the audit and get to work, and you'll approve everything before it goes live.
 
-We're looking forward to getting {practice_name} optimized!
+Reply if anything's unclear — happy to hop on a 5-minute call and knock it out together.
 
 Best,
-Kody Doherty
-PracticeRank
+**Kody Doherty**
+Chief Technology Officer · PracticeRank
+(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai

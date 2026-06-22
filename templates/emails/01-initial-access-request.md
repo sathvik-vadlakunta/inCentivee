@@ -1,40 +1,20 @@
-Subject: Getting Started with PracticeRank — {practice_name}
+Subject: Quick start — 2 things we need
 
 Hi {contact_name},
 
-Welcome to PracticeRank! We're excited to start optimizing {practice_name}'s online presence for both traditional search and AI-powered search engines.
+Excited to get rolling with {practice_name}! To kick off, we just need two quick things from you:
 
-**What we already know about {practice_name}:**
+**1. Google access** (about 2 minutes, no passwords) — click the link, sign in with Google, and approve PracticeRank. This connects your Google Business Profile, Analytics, Search Console & Tag Manager in one step:
 
-{google_snapshot}
-- **Website**: {domain} (hosted on {cms_platform})
-- **DNS**: Registered with {dns_registrar}
+**👉 https://app.leadsie.com/connect/practicerank/manage**
 
-**Your AI Search Visibility:**
+**2. Domain access** — we host and optimize your site on our fast, secure managed platform (better speed, security, and AI discoverability). Add **kdoherty@practicerank.ai** to your domain registrar (where {domain} is registered), or share the login so we can point your domain when everything's ready.
 
-{ai_baseline_summary}
+**What's next:** once we're in, we run your full audit and get to work — and you'll review and approve anything before it goes live. We'll follow up with a couple of quick confirmations (business info, photos) as we go.
 
-**Your Competition:**
-
-{competitor_summary}
-
----
-
-To get started, here's everything we need and exactly how to send it over. (Anything already marked ✓ is taken care of — no action needed there.)
-
-{access_checklist}
-
----
-
-All access is used solely for SEO optimization and reporting. We never modify your site without your explicit approval — you'll review and approve all changes before they go live.
-
-If you have any questions about granting access, just reply to this email and we'll walk you through it.
+That's it — any questions, just reply and we'll walk you through it (or hop on a 5-minute call and do it together).
 
 Best,
 **Kody Doherty**
-Chief Technology Officer
-PracticeRank
-
-(925) 819-2663
-kdoherty@practicerank.ai
-practicerank.ai
+Chief Technology Officer · PracticeRank
+(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
