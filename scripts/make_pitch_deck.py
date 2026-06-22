@@ -56,10 +56,22 @@ CLIENT = {
     # Real PracticeRank Score history (the guaranteed metric).
     "score_start": 65, "score_start_date": "May 27",
     "score_now": 79, "score_now_date": "Jun 19",
-    "score_drivers": [   # what actually moved the score (real component deltas)
+    "score_drivers": [   # what actually moved the score (real, verifiable)
         ("Technical Health", "0 → 75", "Foundation built: schema, llms.txt & HTTPS-canonical fixes"),
         ("Content Velocity", "30 → 80", "Service & location landing pages + fresh content"),
-        ("Reputation", "56 → 81", "A stronger, more active review profile"),
+        ("Google Reviews", "64 → 95", "+31 real new reviews, holding a strong 4.8★ rating"),
+    ],
+    # Priced tiers slide (set show_tiers False for a no-pricing strategy review).
+    # Tuple: (name, tagline, regular $/mo, founding $/mo, [features])
+    "show_tiers": True,
+    "founding_note": "Founding Client rate — your first-customer pricing.  ·  Onboarding waived  ·  Website refactor billed at our exact cost.",
+    "tiers": [
+        ("Optimize", "The Foundation", "1,500", "1,250", ["Keep your current site", "Local SEO + AI-search foundation",
+         "100 citations + Google Business Profile", "2 content + 1 backlink / mo", "Review funnel + monthly report"]),
+        ("Grow", "The Growth Engine", "2,500", "2,000", ["Everything in Optimize, plus:", "Migrated, fast managed site",
+         "4 content + 2 backlinks / mo", "Location pages + keyword tracking"]),
+        ("Dominate", "Market Domination", "3,500", "2,500", ["Everything in Grow, plus:", "Pro website redesign",
+         "6–8 content + 4 backlinks / mo", "Advanced AI/entity building + CRO"]),
     ],
 }
 
@@ -426,6 +438,22 @@ if CLIENT.get("current_visits") and CLIENT.get("target_visits"):
     vals = [round(cur + (tgt - cur) * (i / 6)) for i in range(7)]
     column_chart(s, 1.3, 2.85, 10.7, 2.95, labels, vals, target=tgt, accent_last=True)
     text(s, 0.72, 6.35, 11.9, 0.6, "Illustrative trajectory toward the 500+ monthly-visit goal as on-page, local, and authority work compound — not a guarantee. Backed by our 90-day score-improvement guarantee.", size=12.5, color=FAINT, line_spacing=1.15)
+
+# ═══ 10c. YOUR OPTIONS (priced tiers) ═══
+if CLIENT.get("show_tiers"):
+    s = slide(); accent_bar(s); heading(s, "YOUR OPTIONS", "Three Ways to Grow")
+    for i, (name, tagline, reg, found, feats) in enumerate(CLIENT["tiers"]):
+        x = 0.7 + i * 4.1; pop = (i == 1)
+        rect(s, x, 2.2, 3.8, 4.25, fill=CARD2 if pop else CARD, line=GREEN if pop else None)
+        if pop:
+            rect(s, x + 1.05, 2.02, 1.7, 0.4, fill=GREEN)
+            text(s, x + 1.05, 2.03, 1.7, 0.38, "MOST POPULAR", size=9, color=DARKTXT, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+        text(s, x + 0.3, 2.42, 3.2, 0.45, name, size=19, bold=True)
+        text(s, x + 0.3, 2.87, 3.2, 0.32, tagline, size=12, color=GREEN, bold=True)
+        text(s, x + 0.3, 3.24, 3.2, 0.28, f"reg. ${reg}/mo", size=11, color=FAINT)
+        text(s, x + 0.3, 3.5, 3.2, 0.6, [(f"${found}", GREEN, True, 29), ("/mo", GREY, False, 14)])
+        bullets(s, x + 0.3, 4.3, 3.3, feats, size=10.5, marker="✓")
+    text(s, 0.72, 6.62, 11.9, 0.45, CLIENT.get("founding_note", ""), size=12, color=GREEN, bold=True, align=PP_ALIGN.CENTER)
 
 # ═══ 11. GUARANTEE ═══
 s = slide(green_corner=True); accent_bar(s)
