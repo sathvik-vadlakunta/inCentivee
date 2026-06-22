@@ -45,6 +45,49 @@ don't need to paste it manually.
 > Analytics, Search Console, and Tag Manager in about two minutes — you stay the
 > owner, and there are no passwords to share."
 
+## When the client doesn't have the Google accounts yet
+
+This is common (Paradigm had no Analytics / Search Console / Tag Manager). **Do
+not block onboarding waiting for them to create accounts.** Split it like this:
+
+**We create and own these — no client action needed:**
+
+- **Google Analytics (GA4), Tag Manager, Search Console.** Because we control the
+  site and DNS, we create all three under our agency account
+  (`kdoherty@practicerank.ai`) and install them ourselves. This is *better* than
+  using the client's — consistent across every client, and we never lose access.
+  - On a **managed-platform site** (we host it): we add GTM + GA to the site and
+    verify Search Console via DNS. Fully on us.
+  - On a **client-hosted site they're keeping** (e.g. Paradigm on Webflow): we
+    need **Webflow editor access + DNS access**, then we still create/own GA4,
+    GTM, and GSC under our account and install them via their site + a DNS record.
+
+**Only the client can own this one:**
+
+- **Google Business Profile.** Tied to their real address and verified by Google
+  (postcard / phone / video), so it must be theirs. Three cases:
+  1. *They have it* → they grant us **Manager** via the Leadsie link.
+  2. *It exists but unclaimed* → they claim it (link below), then grant Manager.
+  3. *No profile at all* → they create one (link below); we help optimize it.
+
+### Self-serve setup links (send only if they want to DIY)
+
+Most clients should just use the Leadsie link and let us handle the rest. But if
+a client prefers to set things up themselves, these are the official Google
+how-to pages — safe to paste into an email:
+
+- **Google Business Profile** (create / claim / verify):
+  https://support.google.com/business/answer/6300717
+- **Google Analytics (GA4)** — create account & property:
+  https://support.google.com/analytics/answer/9304153
+- **Google Search Console** — add your site:
+  https://support.google.com/webmasters/answer/34592
+- **Google Tag Manager** — create account & container:
+  https://support.google.com/tagmanager/answer/6103696
+
+After they create any of these, they grant us access via the **same Leadsie
+link** — no need to share passwords.
+
 ## Notes
 
 - The Leadsie link never changes — bookmark it.

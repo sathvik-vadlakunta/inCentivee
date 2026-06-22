@@ -11,6 +11,8 @@ You're all set with the **{plan_name}** plan — excited to get going! Two quick
 
 That's everything. The moment both are in, we run your audit and start optimizing — and you approve anything before it goes live.
 
+*Don't have a Google Business Profile yet? No problem — claim or create it here ([2 min](https://support.google.com/business/answer/6300717)) and approve us with the link above. We handle Analytics, Search Console, and Tag Manager for you — nothing to set up on your end.*
+
 Questions? Just reply, or we'll hop on a 5-min call and do it together.
 
 Best,
