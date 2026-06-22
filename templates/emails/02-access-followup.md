@@ -1,20 +1,17 @@
-Subject: Quick nudge — let's get {practice_name} started
+Subject: Quick nudge — {practice_name}
 
 Hi {contact_name},
 
-Just following up — we're ready to go the moment we have access. Still need two quick things:
+Ready to roll the moment we have access — still need two quick things:
 
-**1. Google access** (about 2 minutes, no passwords):
+**1. Connect Google** (2 min, no passwords):
+👉 https://app.leadsie.com/connect/practicerank/manage
 
-**👉 https://app.leadsie.com/connect/practicerank/manage**
+**2. Domain access** — add **kdoherty@practicerank.ai** at your registrar, or share the login.
 
-**2. Domain access** — add **kdoherty@practicerank.ai** to your domain registrar (where {domain} is registered), or share the login.
-
-Since we host and optimize your site on our managed platform, that's really all we need to start — no website logins or plugins on your end. Once access is in, we kick off the audit and get to work, and you'll approve everything before it goes live.
-
-Reply if anything's unclear — happy to hop on a 5-minute call and knock it out together.
+Reply if anything's unclear — happy to knock it out together on a 5-min call.
 
 Best,
 **Kody Doherty**
-Chief Technology Officer · PracticeRank
+CTO · PracticeRank
 (925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai

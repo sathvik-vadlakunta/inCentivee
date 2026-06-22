@@ -1,20 +1,19 @@
-Subject: Quick start — 2 things we need
+Subject: Let's get {practice_name} started — 2 quick things
 
 Hi {contact_name},
 
-Excited to get rolling with {practice_name}! To kick off, we just need two quick things from you:
+Excited to get going! Two quick things and we're off:
 
-**1. Google access** (about 2 minutes, no passwords) — click the link, sign in with Google, and approve PracticeRank. This connects your Google Business Profile, Analytics, Search Console & Tag Manager in one step:
+**1. Connect Google** (2 min, no passwords — sign in & approve):
+👉 https://app.leadsie.com/connect/practicerank/manage
 
-**👉 https://app.leadsie.com/connect/practicerank/manage**
+**2. Domain access** — add **kdoherty@practicerank.ai** at your registrar (where {domain} lives), or share the login.
 
-**2. Domain access** — we host and optimize your site on our fast, secure managed platform (better speed, security, and AI discoverability). Add **kdoherty@practicerank.ai** to your domain registrar (where {domain} is registered), or share the login so we can point your domain when everything's ready.
+That's it. Once we're in, we run your audit and start optimizing — you approve anything before it goes live.
 
-**What's next:** once we're in, we run your full audit and get to work — and you'll review and approve anything before it goes live. We'll follow up with a couple of quick confirmations (business info, photos) as we go.
-
-That's it — any questions, just reply and we'll walk you through it (or hop on a 5-minute call and do it together).
+Questions? Just reply, or we'll hop on a 5-min call and do it together.
 
 Best,
 **Kody Doherty**
-Chief Technology Officer · PracticeRank
+CTO · PracticeRank
 (925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
