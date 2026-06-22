@@ -132,6 +132,10 @@ def parse_subscription(sub) -> dict:
 
 
 _EXPAND = ["items.data.price.product", "latest_invoice", "customer"]
+# Stripe caps list-expansion depth at 4 levels, so a list call can't reach
+# `data.items.data.price.product` (5). Expand to the price and let _product_name()
+# resolve the product by id (cached) in the parser.
+_LIST_EXPAND = ["data.customer", "data.latest_invoice", "data.items.data.price"]
 
 
 def fetch_subscription(sub_id: str) -> dict | None:
@@ -156,7 +160,7 @@ def sync_all(db) -> int:
         return 0
     n = 0
     try:
-        for sub in stripe.Subscription.list(status="all", expand=["data." + e for e in _EXPAND], limit=100).auto_paging_iter():
+        for sub in stripe.Subscription.list(status="all", expand=_LIST_EXPAND, limit=100).auto_paging_iter():
             parsed = parse_subscription(sub)
             if db.upsert_subscription(parsed):
                 n += 1

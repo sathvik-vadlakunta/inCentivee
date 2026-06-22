@@ -2331,7 +2331,7 @@ def _onboarding_blocks(customer: dict, access: list[dict] | None,
     if leadsie_pending:
         leadsie_block = (
             "### ⚡ Fastest way — connect everything Google in one click\n\n"
-            "Most of what we need (Google Business Profile, Analytics, Search Console "
+            "Most of what we need (Business Profile, Analytics, Search Console "
             "& Tag Manager) can be granted in about 2 minutes with one secure link — "
             "no passwords, nothing to dig through in settings:\n\n"
             f"**👉 [Connect your accounts]({LEADSIE_LINK})**\n\n"
