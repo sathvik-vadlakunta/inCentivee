@@ -53,6 +53,9 @@ CLIENT = {
     "img_done": "deck-assets/paradigm/consult.jpg",
     "current_visits": 131,
     "target_visits": 520,   # "500+" goal, for the trajectory graph
+    # Real PracticeRank Score history (the guaranteed metric).
+    "score_start": 65, "score_start_date": "May 27",
+    "score_now": 79, "score_now_date": "Jun 19",
 }
 
 # ─────────────────────────── brand (matches practicerank.ai dark mode) ───────────────────────────
@@ -339,6 +342,30 @@ bullets(s, 0.9, 2.25, 7.5, CLIENT["done"], size=15)
 if CLIENT.get("img_done"):
     picture(s, CLIENT["img_done"], 8.55, 2.3, 4.1, 2.73)
 text(s, 0.9, 6.15, 11.4, 0.5, "Foundation set — now we scale visibility, authority, and content.", size=15, color=GREEN, bold=True)
+
+# ═══ 7b. PRACTICERANK SCORE (proof of momentum) ═══
+if CLIENT.get("score_now"):
+    s = slide(); accent_bar(s); heading(s, "PROOF OF MOMENTUM", "Your PracticeRank Score — Already Climbing")
+    text(s, 0.72, 1.95, 11.9, 0.7, "Your PracticeRank Score (0–100) is the one number we track and guarantee — your visibility across Google, Maps, reviews & AI search.", size=15, color=GREY, line_spacing=1.18)
+    start, now = CLIENT["score_start"], CLIENT["score_now"]; delta = now - start
+    # Starting card
+    rect(s, 0.9, 3.0, 3.3, 2.25, fill=CARD)
+    text(s, 0.9, 3.22, 3.3, 0.4, "WHERE YOU STARTED", size=12, color=GREY, bold=True, align=PP_ALIGN.CENTER)
+    text(s, 0.9, 3.5, 3.3, 1.3, str(start), size=78, color=WHITE, bold=True, align=PP_ALIGN.CENTER)
+    text(s, 0.9, 4.82, 3.3, 0.3, CLIENT.get("score_start_date", ""), size=12, color=FAINT, align=PP_ALIGN.CENTER)
+    # Delta in the middle
+    text(s, 4.3, 3.55, 1.5, 1.0, "→", size=46, color=GREEN, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    rect(s, 4.35, 4.55, 1.4, 0.55, fill=GREEN)
+    text(s, 4.35, 4.57, 1.4, 0.5, f"+{delta} pts", size=17, color=DARKTXT, bold=True, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
+    # Now card (highlighted)
+    rect(s, 5.85, 3.0, 3.3, 2.25, fill=CARD, line=GREEN)
+    text(s, 5.85, 3.22, 3.3, 0.4, "TODAY", size=12, color=GREEN, bold=True, align=PP_ALIGN.CENTER)
+    text(s, 5.85, 3.5, 3.3, 1.3, str(now), size=78, color=GREEN, bold=True, align=PP_ALIGN.CENTER)
+    text(s, 5.85, 4.82, 3.3, 0.3, CLIENT.get("score_now_date", "") + "  ·  and climbing", size=12, color=FAINT, align=PP_ALIGN.CENTER)
+    # Guarantee tie-in
+    rect(s, 9.6, 3.0, 3.0, 2.25, fill=CARD2)
+    text(s, 9.85, 3.25, 2.55, 1.75, f"That's already {delta} of the 20-point lift your guarantee is built on — in just a few weeks.", size=15, color=TXT2, line_spacing=1.22, anchor=MSO_ANCHOR.MIDDLE)
+    text(s, 0.72, 5.6, 11.9, 0.6, "Now pointed at your real Google search data and a backlink program — so the climb keeps compounding.", size=14, color=GREEN, bold=True)
 
 # ═══ 8. NEXT: BACKLINKS ═══
 s = slide(); accent_bar(s); heading(s, "NEXT STEPS · 1 OF 2", "Building Authority — High-Value Backlinks")
