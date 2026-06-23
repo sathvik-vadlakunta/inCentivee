@@ -29,16 +29,23 @@
       });
     });
 
-    // 4) nav dropdowns — CSS does hover; add click toggle for touch
+    // 4) nav dropdowns — click to open (robust; CSS shows .pr-open submenus)
     safe(function(){
-      document.querySelectorAll('.elementor-nav-menu .menu-item-has-children > a').forEach(function(a){
+      var nav=document.querySelector('.elementor-nav-menu--main') || document;
+      function closeAll(scope){ (scope||nav).querySelectorAll('.menu-item-has-children.pr-open').forEach(function(li){li.classList.remove('pr-open');}); }
+      nav.querySelectorAll('.menu-item-has-children > a').forEach(function(a){
         a.addEventListener('click', function(e){
-          if(matchMedia('(hover: none)').matches || innerWidth<1025){
-            var li=a.parentNode;
-            if(!li.classList.contains('pr-open')){ e.preventDefault(); li.classList.add('pr-open'); }
-          }
+          var li=a.parentNode, sub=li.querySelector(':scope > .sub-menu');
+          if(!sub) return;                      // no children → normal link
+          e.preventDefault(); e.stopPropagation();
+          var open=li.classList.contains('pr-open');
+          // close siblings at this level
+          Array.prototype.forEach.call(li.parentNode.children, function(s){ if(s!==li){ s.classList.remove('pr-open'); closeAll(s); } });
+          li.classList.toggle('pr-open', !open);
         });
       });
+      document.addEventListener('click', function(){ closeAll(); });
+      document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeAll(); });
     });
 
     // 5) count-up numbers (Elementor counters)
