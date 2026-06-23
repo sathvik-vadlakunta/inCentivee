@@ -4,6 +4,7 @@ import nav from '@data/nav.json'
 const tel = practice.phone.replace(/[^+\d]/g, '')
 type Item = { label: string; href: string; children?: Item[] }
 const items = nav as Item[]
+const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.children.length)
 ---
 
 <header class="pl-header" id="plHeader">
@@ -13,23 +14,32 @@ const items = nav as Item[]
     </a>
 
     <nav class="pl-nav" aria-label="Primary">
-      <ul class="pl-menu">
+      <ul class="pl-menu" id="plMenu">
         {items.map((it) => (
           <li class={it.children ? 'has-children' : ''}>
-            <a href={it.href}>{it.label}{it.children && <span class="caret">▾</span>}</a>
+            {it.children ? (
+              <button class="pl-top" type="button" aria-expanded="false">{it.label}<span class="caret">▾</span></button>
+            ) : (
+              <a class="pl-top" href={it.href}>{it.label}</a>
+            )}
             {it.children && (
-              <ul class="pl-sub">
-                {it.children.map((c) => (
-                  <li class={c.children ? 'has-children' : ''}>
-                    <a href={c.href}>{c.label}{c.children && <span class="caret">›</span>}</a>
-                    {c.children && (
-                      <ul class="pl-sub pl-sub--deep">
-                        {c.children.map((g) => (<li><a href={g.href}>{g.label}</a></li>))}
-                      </ul>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <div class={`mega ${hasGrand(it) ? 'mega--wide' : ''}`}>
+                {hasGrand(it) ? (
+                  <div class="mega__cols">
+                    {it.children.map((c) => (
+                      <div class="mega__col">
+                        <a class="mega__h" href={c.href}>{c.label}</a>
+                        <ul>{(c.children || [c]).map((g) => (<li><a href={g.href}>{g.label}</a></li>))}</ul>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <ul class="mega__grid">
+                    <li><a class="mega__all" href={it.href}>All {it.label} →</a></li>
+                    {it.children.map((c) => (<li><a href={c.href}>{c.label}</a></li>))}
+                  </ul>
+                )}
+              </div>
             )}
           </li>
         ))}
@@ -43,7 +53,6 @@ const items = nav as Item[]
     </div>
   </div>
 
-  <!-- mobile drawer -->
   <div class="pl-drawer" id="plDrawer">
     <ul>
       {items.map((it) => (
@@ -64,37 +73,40 @@ const items = nav as Item[]
 </header>
 
 <style is:global>
-  .pl-header{position:sticky;top:0;z-index:1000;background:#1a2238;color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.04);}
+  .pl-header{position:sticky;top:0;z-index:1000;background:#1a2238;color:#fff;}
   .pl-bar{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:1.5rem;padding:.6rem 1.25rem;}
   .pl-logo img{display:block;height:54px;width:auto;}
   .pl-nav{margin-left:auto;}
-  .pl-menu{list-style:none;display:flex;gap:.25rem;margin:0;padding:0;}
-  .pl-menu > li{position:relative;}
-  .pl-menu > li > a{display:flex;align-items:center;gap:4px;padding:1.05rem .85rem;color:#e7eaf2;font:600 13.5px/1 'Inter',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;transition:color .15s;}
-  .pl-menu > li:hover > a,.pl-menu > li > a:hover{color:#ffb400;}
-  .caret{font-size:.7em;opacity:.8;}
-  /* dropdowns */
-  .pl-sub{list-style:none;margin:0;padding:8px 0;position:absolute;top:100%;left:0;min-width:248px;background:#fff;border-top:3px solid #c18d15;border-radius:0 0 12px 12px;box-shadow:0 22px 50px rgba(16,24,40,.22);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s;}
-  /* open on hover OR while hover-intent class is set (keeps it open across gaps) */
-  .pl-menu li:hover > .pl-sub,.pl-menu li.pl-hover > .pl-sub{opacity:1;visibility:visible;transform:none;}
-  /* hover bridges so the diagonal path to nested menus stays "hot" */
-  .pl-menu > li.has-children::after{content:"";position:absolute;left:0;right:0;top:100%;height:16px;}
-  .pl-sub li.has-children::after{content:"";position:absolute;top:0;bottom:0;right:-16px;width:16px;}
-  .pl-sub li{position:relative;}
-  .pl-sub a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 18px;color:#27314f;font:500 14px/1.3 'Inter',system-ui,sans-serif;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;}
-  .pl-sub a:hover{background:rgba(193,141,21,.1);color:#c18d15;}
-  .pl-sub--deep{top:-11px;left:100%;border-top:0;border-left:3px solid #c18d15;border-radius:0 12px 12px 0;max-height:74vh;overflow:auto;}
-  .pl-sub li.has-children > a .caret{margin-left:auto;}
-  /* actions */
+  .pl-menu{list-style:none;display:flex;gap:.15rem;margin:0;padding:0;}
+  .pl-menu > li{position:static;}
+  .pl-top{display:flex;align-items:center;gap:5px;background:none;border:0;cursor:pointer;padding:1.15rem .85rem;color:#e7eaf2;font:600 13.5px/1 'Inter',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;transition:color .15s;}
+  .pl-menu > li:hover > .pl-top,.pl-menu > li.open > .pl-top{color:#ffb400;}
+  .caret{font-size:.7em;opacity:.8;transition:transform .2s;}
+  .pl-menu > li.open .caret{transform:rotate(180deg);}
+
+  /* MEGA panel — click to open, columns, no nested hover */
+  .pl-nav{position:relative;}
+  .mega{display:none;position:absolute;top:100%;left:0;right:auto;background:#fff;border-top:3px solid #c18d15;border-radius:0 0 14px 14px;box-shadow:0 26px 54px rgba(16,24,40,.24);padding:22px 26px;z-index:9999;min-width:260px;animation:megaIn .16s ease;}
+  @keyframes megaIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .pl-menu > li.open > .mega{display:block;}
+  .mega--wide{left:0;}
+  .mega__cols{display:flex;gap:36px;}
+  .mega__col{min-width:170px;}
+  .mega__h{display:block;font-family:Georgia,serif;color:#27314f;font-size:15px;font-weight:700;border-bottom:2px solid #c18d15;padding-bottom:7px;margin-bottom:8px;text-decoration:none;}
+  .mega__col ul,.mega__grid{list-style:none;margin:0;padding:0;}
+  .mega__grid{columns:2;column-gap:30px;min-width:380px;}
+  .mega a{color:#3a4250;text-decoration:none;font:500 14px/1.3 'Inter';display:block;padding:6px 0;transition:color .12s;}
+  .mega li a:hover,.mega__h:hover{color:#c18d15;}
+  .mega__all{color:#c18d15 !important;font-weight:700;break-inside:avoid;}
+
   .pl-actions{display:flex;align-items:center;gap:.85rem;}
   .pl-phone{display:flex;flex-direction:column;line-height:1.1;color:#fff;text-decoration:none;text-align:right;}
   .pl-phone span{font:600 10px/1 'Inter';text-transform:uppercase;letter-spacing:.08em;color:#ffb400;}
   .pl-phone strong{font:700 16px/1.2 'Inter';}
-  .pl-cta{background:#c18d15;color:#fff;font:700 13px/1 'Inter';text-transform:uppercase;letter-spacing:.03em;padding:.8rem 1.1rem;border-radius:9px;text-decoration:none;white-space:nowrap;transition:transform .18s,box-shadow .18s,background .18s;}
+  .pl-cta{background:#c18d15;color:#fff;font:700 13px/1 'Inter';text-transform:uppercase;letter-spacing:.03em;padding:.8rem 1.1rem;border-radius:9px;text-decoration:none;white-space:nowrap;transition:.2s;}
   .pl-cta:hover{background:#a9790f;transform:translateY(-2px);box-shadow:0 10px 24px rgba(193,141,21,.4);}
   .pl-burger{display:none;flex-direction:column;gap:5px;background:none;border:0;cursor:pointer;padding:8px;}
-  .pl-burger span{width:24px;height:2px;background:#fff;transition:.2s;}
-  /* mobile drawer */
+  .pl-burger span{width:24px;height:2px;background:#fff;}
   .pl-drawer{display:none;background:#141a2e;max-height:0;overflow:hidden;transition:max-height .3s ease;}
   .pl-drawer.open{max-height:85vh;overflow:auto;}
   .pl-drawer ul{list-style:none;margin:0;padding:0;}
@@ -104,25 +116,28 @@ const items = nav as Item[]
   .pl-drawer .dm-call{color:#ffb400;font-weight:700;}
   @media(max-width:1100px){
     .pl-nav,.pl-phone{display:none;}
-    .pl-burger{display:flex;}
-    .pl-drawer{display:block;}
-    .pl-actions{margin-left:auto;}
+    .pl-burger{display:flex;}.pl-drawer{display:block;}.pl-actions{margin-left:auto;}
   }
 </style>
 
 <script>
   function init(){
+    const menu=document.getElementById('plMenu');
+    if(menu&&!menu.dataset.w){ menu.dataset.w='1';
+      const close=()=>menu.querySelectorAll('li.open').forEach(li=>{li.classList.remove('open');const b=li.querySelector('.pl-top[aria-expanded]');if(b)b.setAttribute('aria-expanded','false');});
+      menu.querySelectorAll('li.has-children > button.pl-top').forEach(btn=>{
+        btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation();
+          const li=btn.parentNode, was=li.classList.contains('open'); close();
+          if(!was){ li.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+        });
+      });
+      document.addEventListener('click',e=>{ if(!e.target.closest('#plMenu')) close(); });
+      document.addEventListener('keydown',e=>{ if(e.key==='Escape') close(); });
+    }
     const b=document.getElementById('plBurger'), d=document.getElementById('plDrawer');
-    if(b&&d&&!b.dataset.wired){ b.dataset.wired='1';
+    if(b&&d&&!b.dataset.w){ b.dataset.w='1';
       b.addEventListener('click',()=>{ const o=d.classList.toggle('open'); b.setAttribute('aria-expanded',String(o)); });
     }
-    // hover-intent: keep a submenu open ~280ms after the mouse leaves so the
-    // diagonal path to nested (3rd-level) menus doesn't snap it shut.
-    document.querySelectorAll('.pl-menu li.has-children').forEach(li=>{
-      if(li.dataset.hi) return; li.dataset.hi='1'; let t;
-      li.addEventListener('mouseenter',()=>{ clearTimeout(t); li.classList.add('pl-hover'); });
-      li.addEventListener('mouseleave',()=>{ t=setTimeout(()=>li.classList.remove('pl-hover'),280); });
-    });
     const h=document.getElementById('plHeader');
     if(h) addEventListener('scroll',()=>h.style.boxShadow=scrollY>8?'0 6px 24px rgba(0,0,0,.28)':'',{passive:true});
   }
