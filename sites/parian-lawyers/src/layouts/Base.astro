@@ -1,6 +1,6 @@
 ---
-import Nav from '@components/Nav.astro'
-import Footer from '@components/Footer.astro'
+import SiteHeader from '@components/SiteHeader.astro'
+import SiteFooter from '@components/SiteFooter.astro'
 import SchemaMarkup from '@components/SchemaMarkup.astro'
 import practice from '@data/practice.json'
 import '@/styles/global.css'
@@ -36,23 +36,19 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
     <meta property="og:description" content={description} />
     {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
 
-    <!-- Preconnect fonts if custom -->
-    {practice.fonts.heading !== 'system-ui' && (
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-      <link
-        rel="stylesheet"
-        href={`https://fonts.googleapis.com/css2?family=${practice.fonts.heading.replace(/ /g, '+')}:wght@400;600;700&family=${practice.fonts.body.replace(/ /g, '+')}:wght@300;400;500;600&display=swap`}
-      />
-    )}
+    <!-- Brand type: Inter (body) + Georgia (headings, system serif) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 
     <SchemaMarkup />
   </head>
   <body class="min-h-screen flex flex-col">
-    <Nav />
+    <SiteHeader />
     <main class="flex-1">
       <slot />
     </main>
-    <Footer />
+    <SiteFooter />
   </body>
 </html>

@@ -1,0 +1,121 @@
+---
+import practice from '@data/practice.json'
+import nav from '@data/nav.json'
+const tel = practice.phone.replace(/[^+\d]/g, '')
+type Item = { label: string; href: string; children?: Item[] }
+const items = nav as Item[]
+---
+
+<header class="pl-header" id="plHeader">
+  <div class="pl-bar">
+    <a href="/" class="pl-logo" aria-label="Parian Lawyers — home">
+      <img src="/images/logo.png" alt="Parian Lawyers" width="190" height="58" />
+    </a>
+
+    <nav class="pl-nav" aria-label="Primary">
+      <ul class="pl-menu">
+        {items.map((it) => (
+          <li class={it.children ? 'has-children' : ''}>
+            <a href={it.href}>{it.label}{it.children && <span class="caret">▾</span>}</a>
+            {it.children && (
+              <ul class="pl-sub">
+                {it.children.map((c) => (
+                  <li class={c.children ? 'has-children' : ''}>
+                    <a href={c.href}>{c.label}{c.children && <span class="caret">›</span>}</a>
+                    {c.children && (
+                      <ul class="pl-sub pl-sub--deep">
+                        {c.children.map((g) => (<li><a href={g.href}>{g.label}</a></li>))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="pl-actions">
+      <a href={`tel:${tel}`} class="pl-phone"><span>Call 24/7</span><strong>{practice.phone}</strong></a>
+      <a href="/contact-us/" class="pl-cta">Free Consultation</a>
+      <button class="pl-burger" id="plBurger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+
+  <!-- mobile drawer -->
+  <div class="pl-drawer" id="plDrawer">
+    <ul>
+      {items.map((it) => (
+        <li>
+          <a href={it.href}>{it.label}</a>
+          {it.children && (
+            <ul>{it.children.map((c) => (
+              <li><a href={c.href}>{c.label}</a>
+                {c.children && <ul>{c.children.map((g)=>(<li><a href={g.href}>{g.label}</a></li>))}</ul>}
+              </li>
+            ))}</ul>
+          )}
+        </li>
+      ))}
+      <li><a href={`tel:${tel}`} class="dm-call">Call {practice.phone}</a></li>
+    </ul>
+  </div>
+</header>
+
+<style>
+  .pl-header{position:sticky;top:0;z-index:1000;background:#1a2238;color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.04);}
+  .pl-bar{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:1.5rem;padding:.6rem 1.25rem;}
+  .pl-logo img{display:block;height:54px;width:auto;}
+  .pl-nav{margin-left:auto;}
+  .pl-menu{list-style:none;display:flex;gap:.25rem;margin:0;padding:0;}
+  .pl-menu > li{position:relative;}
+  .pl-menu > li > a{display:flex;align-items:center;gap:4px;padding:1.05rem .85rem;color:#e7eaf2;font:600 13.5px/1 'Inter',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;transition:color .15s;}
+  .pl-menu > li:hover > a,.pl-menu > li > a:hover{color:#ffb400;}
+  .caret{font-size:.7em;opacity:.8;}
+  /* dropdowns */
+  .pl-sub{list-style:none;margin:0;padding:8px 0;position:absolute;top:100%;left:0;min-width:248px;background:#fff;border-top:3px solid #c18d15;border-radius:0 0 12px 12px;box-shadow:0 22px 50px rgba(16,24,40,.22);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s;}
+  .pl-menu li:hover > .pl-sub{opacity:1;visibility:visible;transform:none;}
+  /* hover bridge so the gap isn't dead */
+  .pl-menu > li.has-children::after{content:"";position:absolute;left:0;right:0;top:100%;height:14px;}
+  .pl-sub li{position:relative;}
+  .pl-sub a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 18px;color:#27314f;font:500 14px/1.3 'Inter',system-ui,sans-serif;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;}
+  .pl-sub a:hover{background:rgba(193,141,21,.1);color:#c18d15;}
+  .pl-sub--deep{top:-11px;left:100%;border-top:0;border-left:3px solid #c18d15;border-radius:0 12px 12px 0;max-height:74vh;overflow:auto;}
+  .pl-sub li.has-children > a .caret{margin-left:auto;}
+  /* actions */
+  .pl-actions{display:flex;align-items:center;gap:.85rem;}
+  .pl-phone{display:flex;flex-direction:column;line-height:1.1;color:#fff;text-decoration:none;text-align:right;}
+  .pl-phone span{font:600 10px/1 'Inter';text-transform:uppercase;letter-spacing:.08em;color:#ffb400;}
+  .pl-phone strong{font:700 16px/1.2 'Inter';}
+  .pl-cta{background:#c18d15;color:#fff;font:700 13px/1 'Inter';text-transform:uppercase;letter-spacing:.03em;padding:.8rem 1.1rem;border-radius:9px;text-decoration:none;white-space:nowrap;transition:transform .18s,box-shadow .18s,background .18s;}
+  .pl-cta:hover{background:#a9790f;transform:translateY(-2px);box-shadow:0 10px 24px rgba(193,141,21,.4);}
+  .pl-burger{display:none;flex-direction:column;gap:5px;background:none;border:0;cursor:pointer;padding:8px;}
+  .pl-burger span{width:24px;height:2px;background:#fff;transition:.2s;}
+  /* mobile drawer */
+  .pl-drawer{display:none;background:#141a2e;max-height:0;overflow:hidden;transition:max-height .3s ease;}
+  .pl-drawer.open{max-height:85vh;overflow:auto;}
+  .pl-drawer ul{list-style:none;margin:0;padding:0;}
+  .pl-drawer a{display:block;padding:11px 22px;color:#dfe4f0;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.05);font:500 15px 'Inter';}
+  .pl-drawer ul ul a{padding-left:38px;font-size:14px;color:#aeb6cc;}
+  .pl-drawer ul ul ul a{padding-left:54px;font-size:13px;}
+  .pl-drawer .dm-call{color:#ffb400;font-weight:700;}
+  @media(max-width:1100px){
+    .pl-nav,.pl-phone{display:none;}
+    .pl-burger{display:flex;}
+    .pl-drawer{display:block;}
+    .pl-actions{margin-left:auto;}
+  }
+</style>
+
+<script>
+  function init(){
+    const b=document.getElementById('plBurger'), d=document.getElementById('plDrawer');
+    if(b&&d&&!b.dataset.wired){ b.dataset.wired='1';
+      b.addEventListener('click',()=>{ const o=d.classList.toggle('open'); b.setAttribute('aria-expanded',String(o)); });
+    }
+    const h=document.getElementById('plHeader');
+    if(h) addEventListener('scroll',()=>h.style.boxShadow=scrollY>8?'0 6px 24px rgba(0,0,0,.28)':'',{passive:true});
+  }
+  document.addEventListener('astro:page-load',init); init();
+</script>

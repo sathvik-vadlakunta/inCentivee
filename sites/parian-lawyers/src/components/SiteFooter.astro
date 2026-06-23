@@ -1,0 +1,71 @@
+---
+import practice from '@data/practice.json'
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const d = (practice as any).disclaimers || {}
+const offices = (practice as any).locations || []
+const year = new Date().getFullYear()
+const areas = ['Car Accidents','Truck Accidents','Catastrophic Injury','Wrongful Death','Nursing Home Abuse','Workers’ Compensation']
+---
+
+<footer class="pl-foot">
+  <div class="pl-foot__grid">
+    <div>
+      <img src="/images/logo.png" alt="Parian Lawyers" class="pl-foot__logo" />
+      <p class="pl-foot__tag">{practice.tagline}</p>
+      <a href={`tel:${tel}`} class="pl-foot__phone">{practice.phone}</a>
+      <p class="pl-foot__247">Available 24/7 · No Fee Unless We Win</p>
+    </div>
+    <div>
+      <h4>Offices</h4>
+      {offices.map((o: any) => (
+        <p class="pl-foot__addr"><strong>{o.label}</strong><br/>{o.street}{o.suite ? `, ${o.suite}` : ''}<br/>{o.city}, {o.state} {o.zip}</p>
+      ))}
+    </div>
+    <div>
+      <h4>Practice Areas</h4>
+      <ul>{areas.map((a) => (<li><a href="/practice-areas/">{a}</a></li>))}</ul>
+    </div>
+    <div>
+      <h4>Firm</h4>
+      <ul>
+        <li><a href="/about-us/">Who We Are</a></li>
+        <li><a href="/areas-served/">Areas We Serve</a></li>
+        <li><a href="/client-testimonials/">Testimonials</a></li>
+        <li><a href="/scholarship-2021/">Scholarship</a></li>
+        <li><a href="/blog/">Blog</a></li>
+        <li><a href="/contact-us/">Free Consultation</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="pl-foot__legal">
+    {d.advertisingLabel && <p class="lbl">{d.advertisingLabel}</p>}
+    {d.contingency && <p>{d.contingency}</p>}
+    {d.pastResults && <p>{d.pastResults}</p>}
+    {d.siteWide && <p>{d.siteWide}</p>}
+    {d.responsibleAttorney && <p>{d.responsibleAttorney}</p>}
+  </div>
+  <div class="pl-foot__bar"><p>&copy; {year} Parian Lawyers. All rights reserved.</p></div>
+</footer>
+
+<style>
+  .pl-foot{background:#141a2e;color:#aeb6cc;font-family:'Inter',system-ui,sans-serif;}
+  .pl-foot__grid{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1.2fr 1fr 1fr;gap:2.5rem;padding:3.5rem 1.25rem 2rem;}
+  @media(max-width:900px){.pl-foot__grid{grid-template-columns:1fr 1fr;gap:2rem;}}
+  @media(max-width:560px){.pl-foot__grid{grid-template-columns:1fr;}}
+  .pl-foot__logo{height:50px;width:auto;margin-bottom:1rem;}
+  .pl-foot__tag{font-size:14px;line-height:1.6;max-width:34ch;}
+  .pl-foot__phone{display:inline-block;margin-top:1rem;color:#ffb400;font-size:22px;font-weight:800;text-decoration:none;font-family:Georgia,serif;}
+  .pl-foot__247{font-size:12.5px;margin-top:4px;color:#8893ad;}
+  .pl-foot h4{color:#fff;font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 1rem;}
+  .pl-foot__addr{font-size:13.5px;line-height:1.55;margin:0 0 1rem;}
+  .pl-foot__addr strong{color:#e7eaf2;}
+  .pl-foot ul{list-style:none;margin:0;padding:0;}
+  .pl-foot li{margin:0 0 .5rem;}
+  .pl-foot a{color:#aeb6cc;font-size:14px;text-decoration:none;transition:color .15s;}
+  .pl-foot a:hover{color:#ffb400;}
+  .pl-foot__legal{max-width:1280px;margin:0 auto;padding:1.5rem 1.25rem;border-top:1px solid rgba(255,255,255,.07);font-size:11.5px;line-height:1.6;color:#7e88a3;}
+  .pl-foot__legal .lbl{color:#aeb6cc;font-weight:700;margin:0 0 .4rem;}
+  .pl-foot__legal p{margin:0 0 .5rem;}
+  .pl-foot__bar{text-align:center;padding:1.2rem;border-top:1px solid rgba(255,255,255,.07);font-size:12.5px;color:#6b7593;}
+</style>

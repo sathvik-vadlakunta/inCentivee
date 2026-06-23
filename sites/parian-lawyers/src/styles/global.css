@@ -12,7 +12,7 @@
   --color-light: #f8fafc;
   --color-accent: #ffb400;
   --font-heading: Georgia, 'Times New Roman', serif;
-  --font-body: system-ui, -apple-system, sans-serif;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @theme {
