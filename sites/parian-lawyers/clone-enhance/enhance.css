@@ -1,84 +1,67 @@
 /* ===================================================================
-   PracticeRank enhancement layer — modernizes the cloned design without
-   rebuilding pages. Loaded site-wide. Overrides refine Elementor output:
-   better type, spacing, focus, motion. Brand colors/layout are preserved.
+   PracticeRank enhancement layer v2 — modernizes the cloned Elementor
+   site + restores interactivity broken by static export. Brand preserved.
    =================================================================== */
+:root{--pr-gold:#c18d15;--pr-gold-bright:#ffb400;--pr-navy:#27314f;--pr-charcoal:#32373c;--pr-ease:cubic-bezier(.22,1,.36,1);}
 
-:root {
-  --pr-gold: #c18d15;
-  --pr-gold-bright: #ffb400;
-  --pr-charcoal: #32373c;
-  --pr-ease: cubic-bezier(0.22, 1, 0.36, 1);
-}
+/* ---- global polish & fixes ---- */
+html{scroll-behavior:smooth;}
+*{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+body{overflow-x:hidden;text-rendering:optimizeLegibility;}
+img,video,svg,iframe{max-width:100%;height:auto;}
+a,button,.elementor-button,input,select,textarea{transition:color .2s var(--pr-ease),background-color .25s var(--pr-ease),border-color .2s var(--pr-ease),box-shadow .25s var(--pr-ease),transform .2s var(--pr-ease)!important;}
+a:focus-visible,button:focus-visible,.elementor-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid color-mix(in srgb,var(--pr-gold) 60%,transparent);outline-offset:2px;}
+.elementor-button,button[type=submit],.wp-block-button__link{border-radius:10px!important;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.elementor-button:hover,button[type=submit]:hover{transform:translateY(-2px);box-shadow:0 8px 22px color-mix(in srgb,var(--pr-gold) 35%,transparent);}
+h1,h2,h3,.elementor-heading-title{line-height:1.18;letter-spacing:-.01em;}
+p,li{line-height:1.7;}
+header.scrolled,.elementor-sticky--effects{box-shadow:0 4px 24px rgba(0,0,0,.10)!important;}
 
-/* ---- Global polish & common-issue fixes ---- */
-html { scroll-behavior: smooth; }
-* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-body { overflow-x: hidden; text-rendering: optimizeLegibility; }
-img, video, svg, iframe { max-width: 100%; height: auto; }   /* kill overflow */
-img { border-radius: 8px; }                                  /* soften hard corners */
-a, button, .elementor-button, input, select, textarea { transition:
-  color .2s var(--pr-ease), background-color .25s var(--pr-ease),
-  border-color .2s var(--pr-ease), box-shadow .25s var(--pr-ease),
-  transform .2s var(--pr-ease) !important; }
+/* logo is clickable */
+a[href="/"] img, .site-logo img, .elementor-widget-theme-site-logo img{cursor:pointer;}
 
-/* Accessible, modern focus ring (was missing/inconsistent) */
-a:focus-visible, button:focus-visible, .elementor-button:focus-visible,
-input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--pr-gold) 60%, transparent);
-  outline-offset: 2px;
-}
+/* ===== working nav dropdowns (Elementor nav menu, static) ===== */
+.elementor-nav-menu .menu-item-has-children{position:relative;}
+.elementor-nav-menu .sub-menu,.elementor-nav-menu--dropdown{
+  position:absolute;top:100%;left:0;min-width:230px;background:#fff;list-style:none;margin:0;padding:8px 0;
+  box-shadow:0 16px 40px rgba(16,24,40,.18);border-radius:12px;border-top:3px solid var(--pr-gold);
+  opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .22s var(--pr-ease),transform .22s var(--pr-ease),visibility .22s;z-index:9999;}
+.elementor-nav-menu .menu-item-has-children:hover>.sub-menu,
+.elementor-nav-menu .menu-item-has-children.pr-open>.sub-menu{opacity:1;visibility:visible;transform:none;}
+.elementor-nav-menu .sub-menu .menu-item{display:block;}
+.elementor-nav-menu .sub-menu .menu-item a{display:block;padding:9px 20px;white-space:nowrap;color:var(--pr-charcoal)!important;}
+.elementor-nav-menu .sub-menu .menu-item a:hover{background:color-mix(in srgb,var(--pr-gold) 12%,transparent);color:var(--pr-gold)!important;}
 
-/* ---- Buttons: modern weight, lift on hover ---- */
-.elementor-button, button[type="submit"], .wp-block-button__link {
-  border-radius: 10px !important;
-  letter-spacing: .01em;
-  box-shadow: 0 1px 2px rgba(0,0,0,.08);
-}
-.elementor-button:hover, button[type="submit"]:hover, .wp-block-button__link:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--pr-gold) 35%, transparent);
-}
+/* ===== hero overlay boxes: blend instead of solid blocks ===== */
+.pr-hero-overlay{background:linear-gradient(135deg,rgba(39,49,79,.62),rgba(39,49,79,.40))!important;
+  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.18);}
+.pr-hero-form{background:linear-gradient(160deg,rgba(39,49,79,.92),rgba(39,49,79,.80))!important;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:16px!important;box-shadow:0 24px 60px rgba(0,0,0,.30)!important;}
 
-/* ---- Cards / image boxes: subtle depth + hover ---- */
-.elementor-widget-image-box .elementor-image-box-wrapper,
-.elementor-widget-icon-box .elementor-icon-box-wrapper,
-.elementor-widget-image img {
-  transition: transform .35s var(--pr-ease), box-shadow .35s var(--pr-ease);
-}
-.elementor-widget-image-box:hover .elementor-image-box-img img,
-.elementor-widget-image:hover img { transform: scale(1.03); }
-.elementor-widget-image-box:hover, .elementor-widget-icon-box:hover { transform: translateY(-3px); }
+/* ===== count-up numbers ===== */
+.elementor-counter-number{font-variant-numeric:tabular-nums;}
 
-/* ---- Typography rhythm ---- */
-h1, h2, h3, .elementor-heading-title { line-height: 1.18; letter-spacing: -0.01em; }
-p, li { line-height: 1.7; }
+/* ===== testimonials: stars + lift + alternating polish ===== */
+.pr-stars{display:flex;gap:3px;margin-bottom:10px;color:var(--pr-gold-bright);font-size:16px;line-height:1;}
+[class*="testimonial"] .elementor-widget-container,.elementor-testimonial{transition:transform .3s var(--pr-ease),box-shadow .3s var(--pr-ease);}
+.pr-tcard{transition:transform .3s var(--pr-ease),box-shadow .3s var(--pr-ease)!important;border-radius:14px!important;}
+.pr-tcard:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(16,24,40,.16)!important;}
 
-/* ---- Sticky header: refined shadow once scrolled ---- */
-header.scrolled, .elementor-sticky--effects { box-shadow: 0 4px 24px rgba(0,0,0,.10) !important; }
+/* ===== video lightbox ===== */
+.pr-vmodal{position:fixed;inset:0;background:rgba(8,8,13,.86);display:flex;align-items:center;justify-content:center;z-index:100000;opacity:0;transition:opacity .25s var(--pr-ease);padding:20px;}
+.pr-vmodal.pr-show{opacity:1;}
+.pr-vmodal-inner{width:min(960px,94vw);aspect-ratio:16/9;position:relative;}
+.pr-vmodal iframe{width:100%;height:100%;border:0;border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.5);}
+.pr-vmodal-close{position:absolute;top:-44px;right:0;color:#fff;font-size:30px;cursor:pointer;background:none;border:0;line-height:1;}
+.mvp-play-button,.elementor-custom-embed-play{cursor:pointer;}
 
-/* ---- Links get a tasteful underline-grow ---- */
-.elementor-widget-text-editor a, .entry-content a {
-  background-image: linear-gradient(var(--pr-gold), var(--pr-gold));
-  background-size: 0% 2px; background-position: 0 100%; background-repeat: no-repeat;
-  transition: background-size .3s var(--pr-ease);
-  text-decoration: none;
-}
-.elementor-widget-text-editor a:hover, .entry-content a:hover { background-size: 100% 2px; }
+/* ===== scroll-reveal ===== */
+.pr-reveal{opacity:0;transform:translateY(24px);will-change:opacity,transform;transition:opacity .7s var(--pr-ease),transform .7s var(--pr-ease);}
+.pr-reveal.pr-in{opacity:1;transform:none;}
+.pr-reveal-d1{transition-delay:.08s;}.pr-reveal-d2{transition-delay:.16s;}.pr-reveal-d3{transition-delay:.24s;}
 
-/* ===================================================================
-   Scroll-reveal animations (added by enhance.js → .pr-reveal)
-   Performant: transform/opacity only. Reduced-motion safe.
-   =================================================================== */
-.pr-reveal { opacity: 0; transform: translateY(24px); will-change: opacity, transform;
-  transition: opacity .7s var(--pr-ease), transform .7s var(--pr-ease); }
-.pr-reveal.pr-in { opacity: 1; transform: none; }
-.pr-reveal-d1 { transition-delay: .08s; }
-.pr-reveal-d2 { transition-delay: .16s; }
-.pr-reveal-d3 { transition-delay: .24s; }
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .pr-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
-  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto;}
+  .pr-reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;}
 }
