@@ -22,6 +22,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--monthly-fatjoe", action="store_true", help="Send the monthly FATJOE order digest")
     ap.add_argument("--daily-attention", action="store_true", help="Send the daily needs-attention digest")
+    ap.add_argument("--weekly-ai", action="store_true", help="Send the weekly AI-visibility digest")
     args = ap.parse_args()
 
     db = CustomerDB()
@@ -32,8 +33,11 @@ def main():
         if args.daily_attention:
             sent = digests.daily_attention_digest(db)
             logger.info("Daily attention digest %s", "sent" if sent else "skipped (nothing urgent)")
-        if not (args.monthly_fatjoe or args.daily_attention):
-            ap.error("choose --monthly-fatjoe and/or --daily-attention")
+        if args.weekly_ai:
+            sent = digests.weekly_ai_digest(db)
+            logger.info("Weekly AI digest %s", "sent" if sent else "skipped (no data)")
+        if not (args.monthly_fatjoe or args.daily_attention or args.weekly_ai):
+            ap.error("choose --monthly-fatjoe, --daily-attention and/or --weekly-ai")
     finally:
         db.close()
 

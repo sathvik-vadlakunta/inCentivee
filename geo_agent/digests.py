@@ -191,3 +191,65 @@ def daily_attention_digest(db, now: datetime | None = None) -> bool:
         logger.info("Daily attention digest: nothing urgent — not sending.")
         return False
     return _send(subject, html)
+
+
+# ───────────────────────────── Weekly AI-visibility digest ─────────────────────────────
+
+def build_weekly_ai(db, now: datetime | None = None) -> tuple[str, str, int]:
+    """AI-search visibility per client, from the latest stored AI-mention run
+    (no re-run). Returns (subject, html, customer_count)."""
+    now = now or datetime.now(timezone.utc)
+    week = now.strftime("Week of %b %-d, %Y")
+    rows = []
+    total_m = total_q = 0
+    for cust in db.list_customers():
+        if cust["status"] not in ("active", "onboarding"):
+            continue
+        s = db.get_latest_ai_run_summary(cust["id"])
+        if not s:
+            continue
+        m, q, rate = s["mention_count"], s["total_queries"], s["mention_rate"]
+        total_m += m or 0
+        total_q += q or 0
+        prev = db.get_kpis(cust["id"], "ai_mentions", limit=2)
+        if len(prev) >= 2:
+            d = (m or 0) - int(prev[1]["value"])
+            color = "#16a34a" if d > 0 else "#dc2626" if d < 0 else "#64748b"
+            trend = f"<span style='color:{color};'>{'+' if d > 0 else ''}{d}</span>"
+        else:
+            trend = "<span style='color:#64748b;'>baseline</span>"
+        rate_color = "#16a34a" if (rate or 0) >= 30 else "#f59e0b" if (rate or 0) > 0 else "#dc2626"
+        rows.append(
+            f"<tr style='border-bottom:1px solid #f1f5f9;'>"
+            f"<td style='padding:8px 10px;'><a href='{DASHBOARD_URL}/customer/{cust['id']}' "
+            f"style='color:#0f172a;text-decoration:none;font-weight:600;'>{cust['name']}</a></td>"
+            f"<td style='padding:8px 10px;text-align:center;'>{m}/{q}</td>"
+            f"<td style='padding:8px 10px;text-align:center;color:{rate_color};font-weight:700;'>{rate}%</td>"
+            f"<td style='padding:8px 10px;text-align:center;'>{trend}</td></tr>"
+        )
+
+    if not rows:
+        return ("", "", 0)  # no AI data yet — caller skips
+
+    table = (
+        "<table style='width:100%;border-collapse:collapse;font-size:14px;background:#fff;"
+        "border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;'>"
+        "<tr style='background:#f8fafc;font-size:11px;text-transform:uppercase;color:#64748b;'>"
+        "<th style='text-align:left;padding:8px 10px;'>Client</th>"
+        "<th style='padding:8px 10px;'>Mentions</th><th style='padding:8px 10px;'>Visibility</th>"
+        "<th style='padding:8px 10px;'>vs last</th></tr>" + "".join(rows) + "</table>"
+    )
+    pct = round(total_m / total_q * 100) if total_q else 0
+    inner = (f"<p style='font-size:15px;margin-top:0;'>AI-search visibility across "
+             f"<b>{len(rows)} client(s)</b> — {total_m}/{total_q} queries mention them ({pct}%).</p>"
+             + table)
+    return (f"AI Visibility — {week} ({total_m} mentions)",
+            _shell("Weekly AI Visibility", week, inner), len(rows))
+
+
+def weekly_ai_digest(db, now: datetime | None = None) -> bool:
+    subject, html, n = build_weekly_ai(db, now)
+    if not n:
+        logger.info("Weekly AI digest: no AI run data yet — not sending.")
+        return False
+    return _send(subject, html)
