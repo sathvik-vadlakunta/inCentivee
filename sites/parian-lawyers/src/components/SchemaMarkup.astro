@@ -1,0 +1,58 @@
+---
+import practice from '@data/practice.json'
+
+// Legal entity schema: LegalService + LocalBusiness, attorneys as Attorney with
+// entity-authority sameAs (state bar / Justia / Avvo), practice areas as knowsAbout.
+const offices = (practice.locations && practice.locations.length
+  ? practice.locations
+  : [{ ...practice.address, phone: practice.phone }]) as any[]
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': ['LegalService', 'LocalBusiness'],
+  name: practice.name,
+  description: practice.tagline,
+  url: `https://${practice.domain}`,
+  telephone: practice.phone,
+  email: practice.email || undefined,
+  priceRange: practice.feePromise || undefined,
+  address: offices.map((o) => ({
+    '@type': 'PostalAddress',
+    streetAddress: o.street,
+    addressLocality: o.city,
+    addressRegion: o.state,
+    postalCode: o.zip,
+    addressCountry: 'US',
+  })),
+  geo: practice.geo && practice.geo.lat
+    ? { '@type': 'GeoCoordinates', latitude: practice.geo.lat, longitude: practice.geo.lng }
+    : undefined,
+  openingHoursSpecification: practice.available247
+    ? [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'], opens: '00:00', closes: '23:59' }]
+    : practice.hours
+        .filter((h: { note?: string }) => !h.note)
+        .map((h: { days: string; open?: string; close?: string }) => ({
+          '@type': 'OpeningHoursSpecification',
+          dayOfWeek: h.days,
+          opens: h.open,
+          closes: h.close,
+        })),
+  areaServed: (practice.areaServed || []).map((a: string) => ({ '@type': 'City', name: a })),
+  knowsAbout: practice.serviceCategories,
+  ...(practice.reviews && practice.reviews.verified && practice.reviews.rating
+    ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: practice.reviews.rating, reviewCount: practice.reviews.count } }
+    : {}),
+  employee: (practice.providers || []).map((p: any) => ({
+    '@type': 'Attorney',
+    name: p.name,
+    jobTitle: p.title,
+    alumniOf: p.education,
+    knowsAbout: p.specialties,
+    ...(p.sameAs && p.sameAs.length ? { sameAs: p.sameAs } : {}),
+    ...(p.barAdmissions ? { memberOf: p.barAdmissions } : {}),
+  })),
+  sameAs: Object.values(practice.social).filter(Boolean),
+}
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

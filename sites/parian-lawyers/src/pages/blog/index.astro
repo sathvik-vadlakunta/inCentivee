@@ -1,0 +1,38 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import BlogCard from '@components/BlogCard.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const posts = (await getCollection('blog'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+---
+
+<Base title="Blog" description={`Legal resources and updates from ${practice.name}.`}>
+  <Hero title="Blog" subtitle="Guides and answers for your case" />
+
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {posts.length > 0 ? (
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts.map((post) => (
+            <BlogCard
+              title={post.data.title}
+              description={post.data.description}
+              href={`/blog/${post.slug}`}
+              pubDate={post.data.pubDate}
+              image={post.data.image}
+              tags={post.data.tags}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="text-center text-gray-500 text-lg">
+          Resources coming soon — check back for guides on your rights and your case.
+        </p>
+      )}
+    </div>
+  </section>
+</Base>

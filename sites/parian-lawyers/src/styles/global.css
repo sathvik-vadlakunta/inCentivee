@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+
+/*
+  Brand colors — override in each customer site's global.css.
+  These are read by Tailwind via @theme and used throughout components.
+*/
+:root {
+  /* Parian Lawyers — gold + charcoal (from the live site brand) */
+  --color-primary: #c18d15;
+  --color-secondary: #8a6300;
+  --color-dark: #32373c;
+  --color-light: #f8fafc;
+  --color-accent: #ffb400;
+  --font-heading: Georgia, 'Times New Roman', serif;
+  --font-body: system-ui, -apple-system, sans-serif;
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
+  --color-accent: var(--color-accent);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-dark);
+  background: white;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
