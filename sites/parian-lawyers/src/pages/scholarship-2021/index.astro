@@ -1,0 +1,59 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import mirror from '@data/mirror.json'
+import { marked } from 'marked'
+
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const src = (mirror as any).pages.find((p: any) => p.path === '/scholarship-2021')
+// repair the WordPress smart-quote corruption in the firm's own copy
+function fix(s: string) {
+  return (s || '')
+    .replace(/([A-Za-z])�(s|t|re|ll|ve|d|m)\b/g, "$1'$2")
+    .replace(/([A-Za-z0-9])�([A-Za-z0-9])/g, '$1 $2')
+    .replace(/�/g, "'")
+}
+const body = marked.parse(fix(src ? src.content_md : ''))
+---
+
+<Base title="Education Equality Scholarship" description="Parian Lawyers awards the Education Equality Scholarship each year to a dedicated student furthering their education.">
+  <div class="sch-hero">
+    <div class="sch-hero__in">
+      <span class="ey">Giving Back</span>
+      <h1>Education Equality Scholarship</h1>
+      <p>Parian Lawyers believes every student deserves equal access to higher education. Each year we award our Education Equality Scholarship to a dedicated student investing in their future.</p>
+    </div>
+  </div>
+
+  <div class="sch">
+    <div class="sch__card">
+      <div class="prose" set:html={body} />
+      <div class="sch__cta">
+        <a href="/contact-us/" class="btn btn--gold">Questions? Contact Us</a>
+        <a href={`tel:${tel}`} class="btn btn--navy">Call {practice.phone}</a>
+      </div>
+    </div>
+    <p class="sch__note">Scholarship details and deadlines may change year to year — contact our office to confirm current eligibility and how to apply.</p>
+  </div>
+</Base>
+
+<style>
+  .btn{display:inline-flex;align-items:center;gap:8px;font:700 14px 'Inter';text-decoration:none;padding:.85rem 1.4rem;border-radius:10px;transition:.2s;}
+  .btn--gold{background:#c18d15;color:#fff;}.btn--gold:hover{background:#a9790f;}
+  .btn--navy{background:#27314f;color:#fff;}.btn--navy:hover{background:#1a2238;}
+  .ey{display:block;color:#ffb400;font:800 12px 'Inter';text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem;}
+  .sch-hero{background:#1a2238;color:#fff;}
+  .sch-hero__in{max-width:820px;margin:0 auto;padding:54px 20px;text-align:center;}
+  .sch-hero h1{font-family:Georgia,serif;font-size:42px;margin:0 0 14px;}
+  .sch-hero p{color:#cfd6e6;font-size:17px;line-height:1.7;margin:0;}
+  .sch{max-width:880px;margin:0 auto;padding:48px 20px 76px;}
+  .sch__card{background:#fff;border:1px solid #eceef1;border-radius:18px;padding:38px 42px;box-shadow:0 6px 26px rgba(16,24,40,.06);}
+  @media(max-width:560px){.sch__card{padding:26px 22px;}}
+  .prose{color:#3a4250;line-height:1.8;font-size:16.5px;}
+  .prose :global(h2){font-family:Georgia,serif;color:#27314f;font-size:24px;margin:30px 0 12px;}
+  .prose :global(p){margin:0 0 16px;}
+  .prose :global(strong){color:#27314f;}
+  .prose :global(a){color:#c18d15;font-weight:600;}
+  .sch__cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:30px;padding-top:24px;border-top:1px solid #eceef1;}
+  .sch__note{text-align:center;color:#8a93a0;font-size:12.5px;font-style:italic;margin-top:18px;}
+</style>

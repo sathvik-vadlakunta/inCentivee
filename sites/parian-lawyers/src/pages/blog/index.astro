@@ -1,0 +1,109 @@
+---
+import Base from '@layouts/Base.astro'
+import posts from '@data/blog-index.json'
+const cats = Array.from(new Set((posts as any[]).map((p) => p.cat))).sort()
+function fmt(d: string) {
+  if (!d) return ''
+  const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const p = d.split('-'); return p.length === 3 ? `${m[+p[1]-1]} ${+p[2]}, ${p[0]}` : ''
+}
+---
+
+<Base title="Resources & Insights" description="Guides and updates on Georgia personal injury law from Parian Lawyers.">
+  <div class="bl">
+    <div class="bl__head">
+      <span class="ey">From Our Attorneys</span>
+      <h1>Resources &amp; Insights</h1><div class="bar"></div>
+      <p>Straight answers on Georgia personal injury law — what to do, what your case is worth, and how to protect your claim.</p>
+    </div>
+
+    <div class="bl__search">
+      <i class="fas fa-magnifying-glass"></i>
+      <input id="blSearch" type="search" placeholder="Search articles…" autocomplete="off" />
+    </div>
+
+    <div class="bl__cats" id="blCats">
+      <button class="chip is-on" data-cat="">All</button>
+      {cats.map((c) => (<button class="chip" data-cat={c}>{c}</button>))}
+    </div>
+
+    <div class="bl__grid" id="blGrid">
+      {(posts as any[]).map((p) => (
+        <a class="bcard" href={p.url} data-cat={p.cat} data-t={(p.title + ' ' + p.excerpt).toLowerCase()}>
+          <span class="bcard__img" style={`background-image:url(${p.image})`}></span>
+          <span class="bcard__body">
+            <span class="bcard__meta"><span class="badge">{p.cat}</span><span class="date">{fmt(p.date)}</span></span>
+            <span class="bcard__title">{p.title}</span>
+            <span class="bcard__ex">{p.excerpt}</span>
+            <span class="bcard__more">Read more →</span>
+          </span>
+        </a>
+      ))}
+    </div>
+    <div class="bl__empty" id="blEmpty" hidden>No articles match your search.</div>
+    <div class="bl__pag" id="blPag"></div>
+  </div>
+</Base>
+
+<style>
+  .bl{max-width:1200px;margin:0 auto;padding:56px 20px 72px;}
+  .ey{display:block;color:#c18d15;font:800 12px 'Inter';text-transform:uppercase;letter-spacing:.12em;}
+  .bl__head{text-align:center;max-width:720px;margin:0 auto 30px;}
+  .bl__head h1{font-family:Georgia,serif;font-size:42px;color:#27314f;margin:.4rem 0 0;}
+  .bar{width:64px;height:3px;background:#c18d15;margin:14px auto 16px;}
+  .bl__head p{color:#5b6472;font-size:17px;}
+  .bl__search{display:flex;align-items:center;max-width:520px;margin:0 auto 22px;position:relative;}
+  .bl__search i{position:absolute;left:16px;color:#9aa6b2;}
+  .bl__search input{width:100%;padding:13px 16px 13px 44px;border:1px solid #d8dee6;border-radius:12px;font:16px 'Inter';outline:none;transition:border .2s,box-shadow .2s;}
+  .bl__search input:focus{border-color:#c18d15;box-shadow:0 0 0 4px rgba(193,141,21,.14);}
+  .bl__cats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 auto 34px;max-width:900px;}
+  .chip{border:1px solid #d8dee6;background:#fff;color:#27314f;font:600 13px 'Inter';padding:7px 14px;border-radius:999px;cursor:pointer;transition:.15s;}
+  .chip:hover{border-color:#c18d15;color:#c18d15;}
+  .chip.is-on{background:#27314f;color:#fff;border-color:#27314f;}
+  .bl__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;}
+  @media(max-width:880px){.bl__grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.bl__grid{grid-template-columns:1fr;}}
+  .bcard{display:flex;flex-direction:column;background:#fff;border:1px solid #eceef1;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s;}
+  .bcard:hover{transform:translateY(-5px);box-shadow:0 20px 44px rgba(16,24,40,.14);}
+  .bcard__img{aspect-ratio:16/10;background:#27314f center/cover no-repeat;}
+  .bcard__body{padding:18px 20px 22px;display:flex;flex-direction:column;flex:1;}
+  .bcard__meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .badge{background:rgba(193,141,21,.12);color:#a9790f;font:700 10.5px 'Inter';text-transform:uppercase;letter-spacing:.04em;padding:3px 9px;border-radius:6px;}
+  .date{font-size:12px;color:#9aa6b2;}
+  .bcard__title{font-family:Georgia,serif;font-size:18px;color:#27314f;line-height:1.32;margin-bottom:8px;}
+  .bcard__ex{font-size:14px;color:#5b6472;line-height:1.6;flex:1;}
+  .bcard__more{margin-top:14px;color:#c18d15;font-weight:700;font-size:14px;}
+  .bl__empty{text-align:center;color:#5b6472;padding:40px;}
+  .bl__pag{display:flex;justify-content:center;align-items:center;gap:6px;margin-top:44px;flex-wrap:wrap;}
+  .bl__pag button{min-width:40px;height:40px;border:1px solid #d8dee6;background:#fff;border-radius:10px;cursor:pointer;font-weight:600;color:#27314f;transition:.15s;}
+  .bl__pag button:hover:not(:disabled){border-color:#c18d15;color:#c18d15;}
+  .bl__pag button[aria-current=true]{background:#27314f;color:#fff;border-color:#27314f;}
+  .bl__pag button:disabled{opacity:.4;cursor:default;}
+</style>
+
+<script>
+  function blInit(){
+    const grid=document.getElementById('blGrid'); if(!grid||grid.dataset.w) return; grid.dataset.w='1';
+    const cards=[].slice.call(grid.children), pag=document.getElementById('blPag'),
+      empty=document.getElementById('blEmpty'), search=document.getElementById('blSearch'),
+      cats=document.getElementById('blCats'); const PER=12; let page=1,q='',cat='';
+    function matched(){return cards.filter(function(c){
+      return (!cat||c.dataset.cat===cat)&&(!q||c.dataset.t.indexOf(q)>-1);});}
+    function render(){
+      const m=matched(),pages=Math.max(1,Math.ceil(m.length/PER)); if(page>pages)page=pages;
+      cards.forEach(function(c){c.style.display='none';});
+      m.slice((page-1)*PER,page*PER).forEach(function(c){c.style.display='';});
+      empty.hidden=m.length>0;
+      let h=''; h+='<button '+(page<=1?'disabled':'')+' data-p="'+(page-1)+'">←</button>';
+      for(let i=1;i<=pages;i++){if(i===1||i===pages||Math.abs(i-page)<=1)h+='<button aria-current="'+(i===page)+'" data-p="'+i+'">'+i+'</button>';else if(Math.abs(i-page)===2)h+='<span style="padding:0 4px;color:#9aa6b2">…</span>';}
+      h+='<button '+(page>=pages?'disabled':'')+' data-p="'+(page+1)+'">→</button>';
+      pag.innerHTML=pages>1?h:'';
+      [].forEach.call(pag.querySelectorAll('button[data-p]'),function(b){b.onclick=function(){page=+b.dataset.p;render();window.scrollTo({top:grid.offsetTop-130,behavior:'smooth'});};});
+    }
+    let t;search.addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){q=search.value.toLowerCase();page=1;render();},160);});
+    cats.addEventListener('click',function(e){const b=e.target.closest('button[data-cat]');if(!b)return;
+      [].forEach.call(cats.children,function(x){x.classList.toggle('is-on',x===b);});cat=b.dataset.cat;page=1;render();});
+    render();
+  }
+  document.addEventListener('astro:page-load',blInit);blInit();
+</script>

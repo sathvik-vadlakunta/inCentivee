@@ -8,8 +8,15 @@ import { marked } from 'marked'
 // Renders every mirrored page from the original site at its ORIGINAL URL (1:1
 // parity), in our branded layout with legal schema + bar disclaimers layered on.
 export async function getStaticPaths() {
+  // Paths that have bespoke, hand-built pages (home, blog, contact, scholarship)
+  // are excluded so the catch-all doesn't collide with those routes.
+  const exclude = (p: string) =>
+    p === '/' ||
+    p === '/blog' || p.startsWith('/blog/') ||
+    p === '/contact-us' ||
+    p === '/scholarship-2021'
   return (mirror as any).pages
-    .filter((p: any) => p.path && p.path !== '/' && p.content_md)
+    .filter((p: any) => p.path && p.content_md && !exclude(p.path))
     .map((p: any) => ({ params: { path: p.path.replace(/^\//, '') }, props: { page: p } }))
 }
 

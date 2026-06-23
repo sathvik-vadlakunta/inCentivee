@@ -1,0 +1,110 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import mirror from '@data/mirror.json'
+import index from '@data/blog-index.json'
+import { marked } from 'marked'
+
+export async function getStaticPaths() {
+  const meta: Record<string, any> = {}
+  ;(index as any[]).forEach((p) => (meta[p.url] = p))
+  return (mirror as any).pages
+    .filter((p: any) => p.path.startsWith('/blog/') && p.path !== '/blog/' && p.path !== '/blog' && p.content_md)
+    .map((p: any) => ({
+      params: { slug: p.path.replace(/^\/blog\//, '').replace(/\/$/, '') },
+      props: { page: p, meta: meta[p.path] || {} },
+    }))
+}
+
+const { page, meta } = Astro.props
+const tel = practice.phone.replace(/[^+\d]/g, '')
+const d = (practice as any).disclaimers || {}
+const html = marked.parse(page.content_md)
+const h1 = page.h1 || (page.title || '').split('|')[0].trim()
+const cats = Array.from(new Set((index as any[]).map((p) => p.cat))).sort()
+const recent = (index as any[]).filter((p) => p.url !== page.path).slice(0, 5)
+function fmt(s: string) {
+  if (!s) return ''
+  const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const p = s.split('-'); return p.length === 3 ? `${m[+p[1]-1]} ${+p[2]}, ${p[0]}` : ''
+}
+---
+
+<Base title={h1} description={page.description || h1} image={meta.image}>
+  <div class="post-hero">
+    <div class="post-hero__in">
+      <nav class="bc"><a href="/">Home</a> / <a href="/blog/">Blog</a> / <span>{meta.cat || 'Article'}</span></nav>
+      <h1>{h1}</h1>
+      <div class="post-hero__meta">{meta.cat && <span class="badge">{meta.cat}</span>}{meta.date && <span>{fmt(meta.date)}</span>}</div>
+    </div>
+  </div>
+
+  <div class="post">
+    <article class="post__main">
+      {meta.image && <img class="post__feat" src={meta.image} alt={h1} loading="eager" />}
+      <div class="prose" set:html={html} />
+      {d.pastResults && <p class="post__discl">{d.pastResults}</p>}
+      <div class="post__cta">
+        <h3>Injured? Talk to Parian Lawyers.</h3>
+        <p>Free, confidential consultation — 24/7, no fee unless we win.</p>
+        <div class="post__cta-btns">
+          <a href="/contact-us/" class="btn btn--gold">Free Consultation</a>
+          <a href={`tel:${tel}`} class="btn btn--navy">Call {practice.phone}</a>
+        </div>
+      </div>
+    </article>
+
+    <aside class="post__side">
+      <div class="card">
+        <h4>Categories</h4>
+        <ul class="catlist">{cats.map((c) => (<li><a href={`/blog/?cat=${encodeURIComponent(c)}`}><i class="fas fa-angle-right"></i>{c}</a></li>))}</ul>
+      </div>
+      <div class="card">
+        <h4>Recent Articles</h4>
+        <ul class="recent">{recent.map((r) => (<li><a href={r.url}>{r.title}</a></li>))}</ul>
+      </div>
+      <div class="card card--cta">
+        <h4>Free Consultation</h4>
+        <p>Available 24/7. No fee unless we win.</p>
+        <a href={`tel:${tel}`} class="btn btn--gold" style="width:100%;justify-content:center;">{practice.phone}</a>
+      </div>
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .btn{display:inline-flex;align-items:center;gap:8px;font:700 14px 'Inter';text-decoration:none;padding:.85rem 1.3rem;border-radius:10px;transition:.2s;}
+  .btn--gold{background:#c18d15;color:#fff;}.btn--gold:hover{background:#a9790f;}
+  .btn--navy{background:#27314f;color:#fff;}.btn--navy:hover{background:#1a2238;}
+  .post-hero{background:#1a2238;color:#fff;}
+  .post-hero__in{max-width:1100px;margin:0 auto;padding:38px 20px;}
+  .bc{font-size:13px;color:#aeb6cc;margin-bottom:10px;}.bc a{color:#aeb6cc;text-decoration:none;}.bc a:hover{color:#ffb400;}.bc span{color:#fff;}
+  .post-hero h1{font-family:Georgia,serif;font-size:34px;line-height:1.2;margin:0;max-width:30ch;}
+  .post-hero__meta{display:flex;gap:12px;align-items:center;margin-top:12px;font-size:13px;color:#cfd6e6;}
+  .post-hero__meta .badge{background:rgba(255,180,0,.16);color:#ffb400;font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:.04em;padding:3px 9px;border-radius:6px;}
+  .post{max-width:1100px;margin:0 auto;padding:48px 20px 72px;display:grid;grid-template-columns:1fr 320px;gap:44px;align-items:start;}
+  @media(max-width:880px){.post{grid-template-columns:1fr;}}
+  .post__feat{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin-bottom:26px;}
+  .prose{color:#3a4250;line-height:1.8;font-size:16.5px;}
+  .prose :global(h2){font-family:Georgia,serif;color:#27314f;font-size:25px;margin:34px 0 12px;}
+  .prose :global(h3){font-family:Georgia,serif;color:#27314f;font-size:20px;margin:26px 0 10px;}
+  .prose :global(p){margin:0 0 16px;} .prose :global(ul),.prose :global(ol){margin:0 0 16px;padding-left:22px;}
+  .prose :global(a){color:#c18d15;font-weight:600;}
+  .prose :global(img){border-radius:12px;max-width:100%;height:auto;margin:18px 0;}
+  .post__discl{margin-top:26px;border-top:1px solid #eceef1;padding-top:16px;font-size:12.5px;color:#8a93a0;font-style:italic;}
+  .post__cta{margin-top:30px;background:#f6f7f9;border:1px solid #eceef1;border-radius:16px;padding:26px;text-align:center;}
+  .post__cta h3{font-family:Georgia,serif;color:#27314f;margin:0 0 6px;font-size:22px;}
+  .post__cta p{color:#5b6472;margin:0 0 16px;}
+  .post__cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .post__side{position:sticky;top:90px;display:flex;flex-direction:column;gap:18px;}
+  .card{background:#fff;border:1px solid #eceef1;border-radius:14px;padding:20px 22px;}
+  .card h4{font-family:Georgia,serif;color:#27314f;font-size:17px;margin:0 0 14px;border-bottom:2px solid #c18d15;padding-bottom:8px;display:inline-block;}
+  .catlist{list-style:none;margin:0;padding:0;} .catlist li{margin:0;}
+  .catlist a{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f3f5;color:#3a4250;text-decoration:none;font-size:14px;transition:color .15s;}
+  .catlist a:hover{color:#c18d15;} .catlist i{color:#c18d15;font-size:12px;}
+  .recent{list-style:none;margin:0;padding:0;} .recent li{margin:0 0 12px;}
+  .recent a{color:#27314f;text-decoration:none;font-size:14px;line-height:1.4;display:block;transition:color .15s;}.recent a:hover{color:#c18d15;}
+  .card--cta{background:#27314f;color:#fff;text-align:center;}
+  .card--cta h4{color:#fff;border-color:#ffb400;}
+  .card--cta p{color:#cfd6e6;font-size:14px;margin:0 0 14px;}
+</style>

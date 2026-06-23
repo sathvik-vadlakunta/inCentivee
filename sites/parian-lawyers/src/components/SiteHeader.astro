@@ -75,9 +75,11 @@ const items = nav as Item[]
   .caret{font-size:.7em;opacity:.8;}
   /* dropdowns */
   .pl-sub{list-style:none;margin:0;padding:8px 0;position:absolute;top:100%;left:0;min-width:248px;background:#fff;border-top:3px solid #c18d15;border-radius:0 0 12px 12px;box-shadow:0 22px 50px rgba(16,24,40,.22);opacity:0;visibility:hidden;transform:translateY(8px);transition:opacity .18s ease,transform .18s ease,visibility .18s;}
-  .pl-menu li:hover > .pl-sub{opacity:1;visibility:visible;transform:none;}
-  /* hover bridge so the gap isn't dead */
-  .pl-menu > li.has-children::after{content:"";position:absolute;left:0;right:0;top:100%;height:14px;}
+  /* open on hover OR while hover-intent class is set (keeps it open across gaps) */
+  .pl-menu li:hover > .pl-sub,.pl-menu li.pl-hover > .pl-sub{opacity:1;visibility:visible;transform:none;}
+  /* hover bridges so the diagonal path to nested menus stays "hot" */
+  .pl-menu > li.has-children::after{content:"";position:absolute;left:0;right:0;top:100%;height:16px;}
+  .pl-sub li.has-children::after{content:"";position:absolute;top:0;bottom:0;right:-16px;width:16px;}
   .pl-sub li{position:relative;}
   .pl-sub a{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 18px;color:#27314f;font:500 14px/1.3 'Inter',system-ui,sans-serif;text-decoration:none;white-space:nowrap;transition:background .12s,color .12s;}
   .pl-sub a:hover{background:rgba(193,141,21,.1);color:#c18d15;}
@@ -114,6 +116,13 @@ const items = nav as Item[]
     if(b&&d&&!b.dataset.wired){ b.dataset.wired='1';
       b.addEventListener('click',()=>{ const o=d.classList.toggle('open'); b.setAttribute('aria-expanded',String(o)); });
     }
+    // hover-intent: keep a submenu open ~280ms after the mouse leaves so the
+    // diagonal path to nested (3rd-level) menus doesn't snap it shut.
+    document.querySelectorAll('.pl-menu li.has-children').forEach(li=>{
+      if(li.dataset.hi) return; li.dataset.hi='1'; let t;
+      li.addEventListener('mouseenter',()=>{ clearTimeout(t); li.classList.add('pl-hover'); });
+      li.addEventListener('mouseleave',()=>{ t=setTimeout(()=>li.classList.remove('pl-hover'),280); });
+    });
     const h=document.getElementById('plHeader');
     if(h) addEventListener('scroll',()=>h.style.boxShadow=scrollY>8?'0 6px 24px rgba(0,0,0,.28)':'',{passive:true});
   }
