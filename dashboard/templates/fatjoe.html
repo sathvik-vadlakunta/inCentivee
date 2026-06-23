@@ -49,7 +49,7 @@
 {% if overdue_rows %}
 <div class="alarmbar">⛔ {{ overdue_rows|length }} client{{ 's' if overdue_rows|length != 1 }} past the buying window this month — order now: {{ overdue_rows | map(attribute='customer.name') | join(', ') }}</div>
 {% endif %}
-<p class="muted" style="margin:-.5rem 0 1rem;">Buying window: place each month's orders within the first <b>{{ order_by_day }} days</b>. After that the client turns <span style="color:#991b1b;font-weight:700;">overdue</span>.</p>
+<p class="muted" style="margin:-.5rem 0 1rem;">Buying window: place each month's orders within the first <b>{{ order_by_day }} days</b>. After that the client turns <span style="color:#991b1b;font-weight:700;">overdue</span>. <b>Log every order the moment you place it</b> — an unlogged order keeps showing as due, so you'd re-order and double-pay.</p>
 
 {% for r in rows %}
 <div class="fj-cust sev-{{ r.plan.severity }}">

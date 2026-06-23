@@ -7,6 +7,11 @@ citations, brand mentions) through FATJOE, per client, every month.
 unbranded — we ingest them and re-present the work as our own. Never forward a
 FATJOE CSV to a client.
 
+**⚠️ Log every order the moment you place it.** The queue only knows an order
+happened once it's logged in the app. If you order in FATJOE but forget to log
+it, the queue will keep showing it as "due" — and you'll re-order and double-pay.
+Order → log → done, every time.
+
 ---
 
 ## The loop, every month
