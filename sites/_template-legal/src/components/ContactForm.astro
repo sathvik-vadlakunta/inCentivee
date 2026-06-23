@@ -1,0 +1,91 @@
+---
+import practice from '@data/practice.json'
+---
+
+<form id="contact-form" class="space-y-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        required
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+        placeholder="Your name"
+      />
+    </div>
+    <div>
+      <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+      <input
+        type="tel"
+        id="phone"
+        name="phone"
+        required
+        class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+        placeholder="(555) 000-0000"
+      />
+    </div>
+  </div>
+  <div>
+    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+    <input
+      type="email"
+      id="email"
+      name="email"
+      required
+      class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+      placeholder="your@email.com"
+    />
+  </div>
+  <div>
+    <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+    <textarea
+      id="message"
+      name="message"
+      rows="4"
+      class="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-y"
+      placeholder="How can we help?"
+    ></textarea>
+  </div>
+  <button
+    type="submit"
+    class="w-full bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-secondary transition-colors"
+  >
+    Free Consultation
+  </button>
+  <p id="form-status" class="text-sm text-center hidden"></p>
+</form>
+
+<script define:vars={{ practiceName: practice.name }}>
+  const form = document.getElementById('contact-form')
+  const status = document.getElementById('form-status')
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const data = Object.fromEntries(new FormData(form))
+    data.site = practiceName
+
+    status.textContent = 'Sending...'
+    status.className = 'text-sm text-center text-gray-500'
+    status.classList.remove('hidden')
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) {
+        status.textContent = 'Thank you! We\'ll be in touch shortly.'
+        status.className = 'text-sm text-center text-green-600'
+        form.reset()
+      } else {
+        throw new Error('Failed')
+      }
+    } catch {
+      status.textContent = 'Something went wrong. Please call us instead.'
+      status.className = 'text-sm text-center text-red-600'
+    }
+  })
+</script>

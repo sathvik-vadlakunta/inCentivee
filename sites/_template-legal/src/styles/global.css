@@ -1,0 +1,39 @@
+@import 'tailwindcss';
+
+/*
+  Brand colors — override in each customer site's global.css.
+  These are read by Tailwind via @theme and used throughout components.
+*/
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #1e40af;
+  --color-dark: #1e293b;
+  --color-light: #f8fafc;
+  --color-accent: #10b981;
+  --font-heading: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
+  --color-accent: var(--color-accent);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-dark);
+  background: white;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}

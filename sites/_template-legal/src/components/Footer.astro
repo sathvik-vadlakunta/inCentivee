@@ -1,0 +1,81 @@
+---
+import practice from '@data/practice.json'
+
+const currentYear = new Date().getFullYear()
+const offices = (practice.locations && practice.locations.length
+  ? practice.locations
+  : [{ ...practice.address, phone: practice.phone }]) as any[]
+const d = (practice as any).disclaimers || {}
+// Required legal disclaimers, rendered with equal prominence. Filled per firm from
+// the compliance matrix (docs/legal-site-conversion-playbook.html §3–4).
+const disclaimers = [d.contingency, d.pastResults, d.notLicensed, d.siteWide].filter(Boolean)
+---
+
+<footer class="bg-dark text-gray-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Firm + offices -->
+      <div>
+        <h3 class="text-white text-lg font-bold font-heading mb-4">{practice.name}</h3>
+        {offices.map((o: any) => (
+          <div class="mb-3 text-sm">
+            {o.label && <p class="text-gray-400 font-medium">{o.label}</p>}
+            <p>{o.street}{o.suite ? `, ${o.suite}` : ''}</p>
+            <p>{o.city}, {o.state} {o.zip}</p>
+          </div>
+        ))}
+        <a
+          href={`tel:${practice.phone.replace(/[^+\d]/g, '')}`}
+          class="text-primary hover:text-white transition-colors font-semibold"
+        >
+          {practice.phone}{practice.available247 ? ' · Available 24/7' : ''}
+        </a>
+        {practice.email && (
+          <p class="mt-1">
+            <a href={`mailto:${practice.email}`} class="text-sm hover:text-white transition-colors">{practice.email}</a>
+          </p>
+        )}
+      </div>
+
+      <!-- Hours -->
+      <div>
+        <h3 class="text-white text-lg font-bold font-heading mb-4">Hours</h3>
+        {practice.available247 ? (
+          <p class="text-sm">Open 24 hours — call anytime.</p>
+        ) : (
+          <ul class="space-y-1 text-sm">
+            {practice.hours.map((h: { days: string; open?: string; close?: string; note?: string }) => (
+              <li class="flex justify-between">
+                <span>{h.days}</span>
+                <span class="text-gray-400">{h.note ? h.note : `${h.open} – ${h.close}`}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <!-- Quick Links -->
+      <div>
+        <h3 class="text-white text-lg font-bold font-heading mb-4">Quick Links</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="/services" class="hover:text-white transition-colors">Practice Areas</a></li>
+          <li><a href="/about" class="hover:text-white transition-colors">Our Attorneys</a></li>
+          <li><a href="/areas-served" class="hover:text-white transition-colors">Areas We Serve</a></li>
+          <li><a href="/blog" class="hover:text-white transition-colors">Resources</a></li>
+          <li><a href="/contact" class="hover:text-white transition-colors">Free Consultation</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Legal disclaimers (bar-compliance, equal prominence) -->
+    <div class="border-t border-gray-700 mt-8 pt-6 text-xs text-gray-400 space-y-2 leading-relaxed">
+      {d.advertisingLabel && <p class="font-semibold text-gray-300">{d.advertisingLabel}</p>}
+      {disclaimers.map((line: string) => <p>{line}</p>)}
+      {d.responsibleAttorney && <p>{d.responsibleAttorney}</p>}
+    </div>
+
+    <div class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-500">
+      <p>&copy; {currentYear} {practice.name}. All rights reserved.</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,45 @@
+---
+import Base from '@layouts/Base.astro'
+import Hero from '@components/Hero.astro'
+import ServiceCard from '@components/ServiceCard.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+
+// Group by category
+const categories = [...new Set(services.map((s) => s.data.category))]
+const grouped = categories.map((cat) => ({
+  name: cat,
+  services: services.filter((s) => s.data.category === cat),
+}))
+---
+
+<Base title="Practice Areas" description={`Practice areas handled by ${practice.name} in ${practice.address.city}, ${practice.address.state}.`}>
+  <Hero title="Practice Areas" subtitle="How we help the people we represent" />
+
+  <section class="py-16 sm:py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {grouped.map((group) => (
+        <div class="mb-16 last:mb-0">
+          <h2 class="text-2xl font-bold font-heading mb-6 border-b border-gray-200 pb-2">
+            {group.name}
+          </h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {group.services.map((service) => (
+              <ServiceCard
+                title={service.data.title}
+                description={service.data.description}
+                href={`/services/${service.slug}`}
+                image={service.data.image}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <CTABanner />
+</Base>
