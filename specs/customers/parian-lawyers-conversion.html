@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parian Lawyers — Site Conversion Spec (First Legal Client)</title>
+<style>
+  :root{
+    --ink:#1a1a2e; --muted:#62707f; --line:#e6e8ec; --bg:#f4f5f7; --card:#fff;
+    --accent:#16a34a; --bad:#dc2626; --warn:#d97706; --legal:#7c3aed;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:28px;margin:14px 0 0}
+  h2{font-size:20px;margin:34px 0 12px;border-bottom:2px solid #dcdfe4;padding-bottom:8px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  .pill{display:inline-block;background:#08080d;color:#a78bfa;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;letter-spacing:.03em}
+  .lead{color:var(--muted);font-size:16px;max-width:84ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+  .doc.legal{border-left:4px solid var(--legal)}
+  .doc.warnbox{border-left:4px solid var(--warn);background:#fffbeb}
+  .p1{color:var(--bad);font-weight:700} .p2{color:var(--warn);font-weight:700}
+  .p3{color:var(--muted);font-weight:700} .ok{color:var(--accent);font-weight:700}
+  .diff{color:var(--legal);font-weight:700}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px ui-monospace,monospace}
+  ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em}
+  .tag.same{background:#dcfce7;color:#166534} .tag.diff{background:#ede9fe;color:#5b21b6}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .kv{font-size:13.5px} .kv b{display:inline-block;min-width:130px;color:var(--muted);font-weight:600}
+  blockquote{margin:8px 0;padding:8px 14px;border-left:3px solid var(--legal);background:#faf8ff;color:#4b3a6b;font-size:13.5px}
+  .src{font-size:12px;color:var(--muted)} .src a{color:var(--legal)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · CUSTOMER CONVERSION · ⚖️ FIRST LEGAL CLIENT</span>
+  <h1>Parian Lawyers — West Georgia Personal Injury</h1>
+  <p class="lead">Convert <code>westgalawyer.com</code> (currently WordPress) to our managed Cloudflare/Astro platform using the <b>same pattern as our dental builds</b> — then layer on what's different for a <b>law firm</b>. This is our first legal client, so this spec doubles as the reusable <b>law-firm playbook</b>. The build mechanics are vertical-agnostic; the compliance, schema, content tone, GBP, and directories are not.</p>
+
+  <!-- ─────────────────────────── FIRM SNAPSHOT ─────────────────────────── -->
+  <h2>1 · Firm snapshot (verify all against the live site + Google API at build)</h2>
+  <div class="doc">
+    <div class="grid2">
+      <div>
+        <p class="kv"><b>Firm</b> Parian Lawyers (dba "West Georgia Personal Injury Lawyers")</p>
+        <p class="kv"><b>Focus</b> Personal injury (PI) — "The only thing we do is represent personal injury victims"</p>
+        <p class="kv"><b>Attorneys</b> Cade Parian (principal), Tyler Paul Smith, Ryan Farmer</p>
+        <p class="kv"><b>Taglines</b> "Call Cade. Get Paid." · "No Fee Unless We Win"</p>
+        <p class="kv"><b>Phone</b> (770) 727-5550 · <b>available 24/7</b></p>
+      </div>
+      <div>
+        <p class="kv"><b>Offices (3)</b> Carrollton (314 Bradley St) · Bremen (604 Alabama Ave) · Atlanta (1201 West Peachtree St)</p>
+        <p class="kv"><b>Service area</b> West Georgia + metro Atlanta + parts of Alabama (LaGrange, Rome, Columbus, Bremen, Carrollton, Clayton/DeKalb/Henry counties…)</p>
+        <p class="kv"><b>Reviews</b> Google ~5.0★ (site) / 4.9★·162 (our June scan) — <b>pull live via Places API, don't hardcode</b></p>
+        <p class="kv"><b>Trust</b> "Top 40 National Recognition", case results, scholarship/STEM community work</p>
+        <p class="kv"><b>Current platform</b> WordPress (<code>wp-content/uploads/</code>)</p>
+      </div>
+    </div>
+    <p class="src" style="margin-top:8px">⚠️ The site also references <b>family law</b> and <b>criminal</b> services. PI is the stated focus and the money vertical — confirm with Parian whether to carry family/criminal pages over or drop them. Default: build PI deep, list others only if confirmed active.</p>
+  </div>
+
+  <!-- ─────────────────────────── WHAT'S THE SAME ─────────────────────────── -->
+  <h2>2 · What stays identical to the dental builds <span class="tag same">reuse as-is</span></h2>
+  <div class="doc">
+    <p>The whole conversion machine is vertical-agnostic. Reuse <code>docs/site-conversion-playbook.md</code> phases A–I verbatim:</p>
+    <table>
+      <tr><th>Layer</th><th>Reused without change</th></tr>
+      <tr><td>Stack</td><td>Fork <code>sites/_template/</code> → <code>sites/parian-lawyers/</code> (Astro + Tailwind + Cloudflare Pages)</td></tr>
+      <tr><td>Data model</td><td><code>src/data/practice.json</code> (firm NAP, attorneys = <code>providers[]</code>, colors, analytics, reviews), <code>testimonials.json</code></td></tr>
+      <tr><td>Content collections</td><td><code>src/content/{services,team,blog}/*.md</code> + <code>config.ts</code> — same schema (services → <b>practice areas</b>, team → <b>attorneys</b>)</td></tr>
+      <tr><td>Pages</td><td><code>index</code>, dynamic <code>services/[...slug]</code>, <code>team/[...slug]</code>, <code>blog</code>, <code>reviews</code>, <code>contact</code>, <code>404.astro</code>, location pages</td></tr>
+      <tr><td>AEO files</td><td><code>llms.txt</code> + <code>llms-full.txt</code>, <code>robots.txt</code> (ALLOW GPTBot/ClaudeBot/Google-Extended/PerplexityBot…), sitemap, <code>_redirects</code> (old WP URLs → new)</td></tr>
+      <tr><td>Deploy + QA</td><td><code>scripts/deploy-customer-site.sh parian-lawyers</code> (same robots/sitemap/llms validation gate)</td></tr>
+      <tr><td>Review funnel + FATJOE</td><td>Same review funnel + monthly authority cadence (tier-driven, per <code>fatjoe_plan.py</code>)</td></tr>
+    </table>
+    <p>Don't re-litigate the dental gotchas — they all still apply: install <code>@tailwindcss/typography</code>, add <code>404.astro</code>, brand colors in <code>global.css :root</code> (not practice.json), View-Transition scripts on <code>astro:page-load</code>, <code>grep -ril</code> the template for prior-client tokens, curl-verify the live alias after deploy.</p>
+  </div>
+
+  <!-- ─────────────────────────── THE DIFFERENCES ─────────────────────────── -->
+  <h2>3 · ⚖️ What we do DIFFERENTLY for a law firm <span class="tag diff">legal-specific</span></h2>
+  <div class="doc legal">
+    <p>This is the part that matters. Nine differences vs. our dental playbook, highest-risk first.</p>
+    <table>
+      <tr><th>#</th><th>Area</th><th>Dental</th><th>Law firm</th><th>Risk</th></tr>
+      <tr><td>1</td><td>Bar advertising compliance</td><td>Light (health claims)</td><td><b>Heavy — GA Bar Rules 7.1–7.2</b>; mandatory disclaimers</td><td class="p1">P1</td></tr>
+      <tr><td>2</td><td>Schema @types</td><td>Dentist / MedicalProcedure / Physician</td><td><b>LegalService / Attorney / Service / Person+bar</b></td><td class="p1">P1</td></tr>
+      <tr><td>3</td><td>E-E-A-T / YMYL</td><td>Matters</td><td><b>Critical</b> — attorney-authored, bar-verified, entity authority</td><td class="p1">P1</td></tr>
+      <tr><td>4</td><td>GBP primary category</td><td>"Dentist"</td><td><b>"Personal Injury Attorney"</b> (never generic "Lawyer")</td><td class="p1">P1</td></tr>
+      <tr><td>5</td><td>Content tone</td><td>Upbeat / cosmetic</td><td><b>Gentle, reassuring</b> — clients are scared & vulnerable</td><td class="p2">P2</td></tr>
+      <tr><td>6</td><td>Page taxonomy</td><td>Procedures</td><td><b>Practice areas</b> (PI subtypes) + question-based AEO</td><td class="p2">P2</td></tr>
+      <tr><td>7</td><td>Directories / citations</td><td>Healthgrades, Zocdoc, ADA…</td><td><b>Avvo, Justia, FindLaw, Martindale, Super Lawyers, State Bar of GA</b></td><td class="p2">P2</td></tr>
+      <tr><td>8</td><td>Multi-location</td><td>Usually single office</td><td><b>3 offices</b> → 3 GBPs, location pages, multi-NAP schema</td><td class="p2">P2</td></tr>
+      <tr><td>9</td><td>Trust signals</td><td>Before/after, financing</td><td><b>Case results (disclaimered), bar admissions, "No Fee" disclaimer</b></td><td class="p2">P2</td></tr>
+    </table>
+  </div>
+
+  <!-- COMPLIANCE -->
+  <h2>4 · ⚠️ Compliance — Georgia Bar advertising rules (P1, do not skip)</h2>
+  <div class="doc warnbox">
+    <p>Legal advertising is regulated by the <b>Georgia Rules of Professional Conduct (Rules 7.1–7.2)</b>. Getting this wrong can get the <b>client sanctioned</b> — it's not just an SEO nicety. Every item below is a build requirement, not optional polish. <b>Have Parian's counsel sign off before go-live.</b></p>
+    <table>
+      <tr><th>Required</th><th>Trigger on their site</th><th>What we add</th></tr>
+      <tr><td><b>Contingency-fee disclaimer</b></td><td>They use "No Fee Unless We Win" prominently</td><td>Conspicuous disclaimer, equal prominence: <i>"No fee unless we win" refers to attorney fees only; the client is usually responsible for court costs and case expenses.</i></td></tr>
+      <tr><td><b>Past-results disclaimer</b></td><td>They display case results / settlements</td><td>On every results display: <i>"Prior results do not guarantee a similar outcome. Each case is different and must be judged on its own facts."</i> Tie figures to specific factual/legal circumstances.</td></tr>
+      <tr><td><b>Testimonial handling</b></td><td>Client testimonials carousel</td><td>Use only real, client-permissioned testimonials; disclose any paid/portrayed endorsement. Don't edit into misleading claims.</td></tr>
+      <tr><td><b>No prohibited superlatives</b></td><td>SEO instinct = "best", "expert", "specialist"</td><td><b>Avoid in titles, meta, schema, and copy.</b> "Specialist/expert" implies board certification GA doesn't recognize for PI → ethics violation. Use "experienced", "dedicated", "focused on personal injury".</td></tr>
+      <tr><td><b>Site-wide legal disclaimer</b></td><td>—</td><td>Footer on every page: <i>"This website is for general information only and is not legal advice. Contacting us does not create an attorney-client relationship."</i> Plus "Attorney Advertising" label.</td></tr>
+      <tr><td><b>2-year record retention</b></td><td>Rule 7.2</td><td>Keep a copy of the published site/files for 2 years after last publish. (We snapshot each deploy anyway — formalize it for Parian.)</td></tr>
+    </table>
+    <blockquote>GA Rule 7.1 comment: statements about past results "could be misleading or deceptive… and may create an unjustified expectation" unless tied to specific facts. "No fee unless you win" requires the costs-vs-fees disclaimer. (See sources.)</blockquote>
+  </div>
+
+  <!-- SCHEMA -->
+  <h2>5 · Schema markup — swap the @types</h2>
+  <div class="doc legal">
+    <p>Adapt <code>SchemaMarkup.astro</code> and <code>services/[...slug].astro</code>. Same machinery, legal types:</p>
+    <table>
+      <tr><th>Where</th><th>Dental @type</th><th>→ Law firm @type</th></tr>
+      <tr><td>Homepage entity</td><td><code>Dentist</code> + <code>LocalBusiness</code></td><td><code>["LegalService","LocalBusiness"]</code> — areaServed, openingHours (24/7), aggregateRating, sameAs (Justia/Avvo/LinkedIn/GBP)</td></tr>
+      <tr><td>Practice-area page</td><td><code>MedicalProcedure</code></td><td><code>Service</code> (<code>serviceType:"Car Accident Lawyer"</code>, <code>provider</code>→the LegalService, <code>areaServed</code>)</td></tr>
+      <tr><td>Attorney page</td><td><code>Dentist</code>/<code>Physician</code></td><td><code>Attorney</code> or <code>Person</code> with <code>jobTitle</code>, <code>memberOf</code>→State Bar of Georgia, <code>alumniOf</code>→law school, <code>knowsAbout</code>→practice areas</td></tr>
+      <tr><td>FAQ / blog</td><td><code>FAQPage</code> / <code>BlogPosting</code></td><td>Same — but <code>author</code>/<code>reviewedBy</code> must be a real named attorney (E-E-A-T)</td></tr>
+    </table>
+    <p><b>Entity authority (the AEO unlock):</b> link each attorney as a verified entity — <code>sameAs</code> to their State Bar of GA profile, Justia, Avvo, LinkedIn. AI engines trust lawyers they can verify against the bar. This is the legal equivalent of the dental "knowsAbout" play, but stricter.</p>
+  </div>
+
+  <!-- CONTENT + AEO -->
+  <h2>6 · Content, tone & AEO</h2>
+  <div class="doc">
+    <h3 style="margin-top:0">Tone — the opposite of cosmetic dentistry</h3>
+    <p>PI prospects are <b>scared, injured, and vulnerable</b>. Aggressive "BOOK NOW" sales energy backfires. Lead with <b>reassurance, empathy, and "here's what to do next"</b> — then the firm's track record as quiet proof. Keep their voice ("Call Cade. Get Paid.") but wrap it in trust, not hype.</p>
+    <h3>Practice-area pages (replaces "procedures")</h3>
+    <p>One page per PI subtype (verify against live site): car accidents · truck accidents · motorcycle · pedestrian · bus · catastrophic injury · wrongful death · slip &amp; fall / premises · nursing-home abuse · product liability / mass torts · dog bites · disability (ERISA / SSD / workers' comp / LTD). Each: empathetic intro → "what to do after a ___" → how we help → case-value factors → 3–5 FAQs (FAQPage schema) → area-served line → disclaimered results.</p>
+    <h3>AEO — answer the real questions people ask AI</h3>
+    <p>AI Overviews now overlap traditional top-10 only ~17–38% (down from 76%) — being <i>citable</i> matters as much as ranking. Build question-first content + FAQ schema around the queries PI clients actually ask assistants:</p>
+    <ul>
+      <li>"How much is my car accident case worth in Georgia?"</li>
+      <li>"How long do I have to file a personal injury claim in Georgia?" (statute of limitations)</li>
+      <li>"What should I do after a truck accident?"</li>
+      <li>"Do I need a lawyer for a slip and fall?"</li>
+    </ul>
+    <p>Answer concisely up top, cite real sources (GA Code, court data, bar guidance — never fabricate figures), attribute to a named attorney.</p>
+  </div>
+
+  <!-- GBP + DIRECTORIES + LOCATIONS -->
+  <h2>7 · Local: GBP, directories & 3 offices</h2>
+  <div class="doc">
+    <div class="grid2">
+      <div>
+        <h3 style="margin-top:0">Google Business Profile</h3>
+        <ul>
+          <li><b>Primary category: "Personal Injury Attorney"</b> — the #1 local-pack factor; never the generic "Lawyer".</li>
+          <li>Secondary: "Law Firm", "Trial Attorney".</li>
+          <li>Fill every service (car/truck/wrongful-death…), full 750-char description, real photos, posts, Q&amp;A.</li>
+          <li><b>3 separate GBP listings</b> (Carrollton, Bremen, Atlanta) — each its own NAP, each verified.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Directories (legal vertical)</h3>
+        <p>Use <code>VERTICAL_DIRECTORIES["legal"]</code> in <code>directory_profiles.py</code> (already defined): Avvo, Justia, FindLaw, Lawyers.com, Martindale-Hubbell, Super Lawyers, Nolo, LegalMatch, <b>State Bar of Georgia directory</b>. Plus universal (GBP, Apple, Bing, Yelp, BBB, Chamber). <b>Drop</b> the dental set (Healthgrades, Zocdoc, ADA).</p>
+      </div>
+    </div>
+    <h3>Multi-office NAP (harder than single-location dental)</h3>
+    <p>Three offices = three NAPs that must stay perfectly consistent across the site, schema, and every directory. A location page per office (with embedded map, local content, the office's own GBP link). NAP inconsistency across 3 locations is the easiest way to tank the map pack — citation cleanup is bigger here than a one-office dental practice.</p>
+  </div>
+
+  <!-- PHASES -->
+  <h2>8 · Conversion plan (dental phases A–I, legal-adapted)</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Phase</th><th>Legal-specific notes</th></tr>
+      <tr><td>A · Scrape</td><td>Crawl WordPress site + all 3 GBPs. Capture real attorney bios, bar numbers, practice areas, case results (with their existing disclaimers), testimonials, old WP URL inventory for redirects.</td></tr>
+      <tr><td>B · Scaffold + practice.json</td><td>3 offices in NAP; attorneys → <code>providers[]</code> with <code>credentials:"JD"</code>, bar admissions, law school.</td></tr>
+      <tr><td>C · Brand</td><td>Pull real palette/logo from site (their maroon/dark from the deck work). Colors in <code>global.css :root</code>.</td></tr>
+      <tr><td>D · Content</td><td>Practice-area pages + attorney bios (bar-verified) + 5–8 blog posts answering GA PI questions, cited. <b>Apply compliance §4 to every page.</b></td></tr>
+      <tr><td>E · Assets</td><td>Real attorney headshots (<code>object-top</code>), office photos for the 3 locations.</td></tr>
+      <tr><td>F · SEO/AEO</td><td>LegalService/Attorney/Service schema (§5), llms.txt, robots (allow AI), sitemap, <code>_redirects</code> from old WP slugs, 404.astro.</td></tr>
+      <tr><td>G · Conversion</td><td>24/7 click-to-call sticky bar, free-consultation forms, real review badge + AggregateRating, "No Fee" with disclaimer, case results with disclaimer.</td></tr>
+      <tr><td>H · Build/deploy/verify</td><td><code>deploy-customer-site.sh parian-lawyers</code> → curl-verify status/schema/redirects/404 + <b>confirm every required disclaimer renders</b>.</td></tr>
+      <tr><td>I · Domain cutover</td><td>Test on <code>parian.practicerank.ai</code> → cut <code>westgalawyer.com</code> over. Keep WordPress reachable until parity confirmed.</td></tr>
+    </table>
+  </div>
+
+  <!-- SCORECARD / OPEN ITEMS -->
+  <h2>9 · Pre-launch compliance checklist (must all be ✓ before cutover)</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Item</th><th>Status</th></tr>
+      <tr><td>Contingency "No Fee" disclaimer, equal prominence, on every page it appears</td><td class="p1">☐ required</td></tr>
+      <tr><td>"Prior results do not guarantee…" on every case-results display</td><td class="p1">☐ required</td></tr>
+      <tr><td>Testimonials real + client permission on file; paid/portrayed disclosed</td><td class="p1">☐ required</td></tr>
+      <tr><td>No "best / expert / specialist" in titles, meta, schema, copy</td><td class="p1">☐ required</td></tr>
+      <tr><td>Site-wide "not legal advice / no attorney-client relationship" + "Attorney Advertising"</td><td class="p1">☐ required</td></tr>
+      <tr><td>LegalService + Attorney + Service schema validates (no Dentist/MedicalProcedure leftovers)</td><td class="p2">☐ required</td></tr>
+      <tr><td>3 office NAPs identical across site, schema, all directories</td><td class="p2">☐ required</td></tr>
+      <tr><td>GBP primary = "Personal Injury Attorney" on all 3 listings</td><td class="p2">☐ required</td></tr>
+      <tr><td><b>Parian's counsel signed off on the advertising compliance</b></td><td class="p1">☐ required</td></tr>
+    </table>
+  </div>
+
+  <h2>10 · What we need from Parian</h2>
+  <div class="doc">
+    <ul>
+      <li>Confirm scope: PI only, or carry over family/criminal pages too?</li>
+      <li>Attorney bar numbers + law schools + admissions (for entity-authority schema).</li>
+      <li>Which case results we may display, and confirm the disclaimers/permissions.</li>
+      <li>Written testimonial permissions.</li>
+      <li>Access: WordPress export (or just DNS — we rebuild), all 3 GBPs, GA4/GTM, registrar/DNS. (Standard onboarding; access grants to Kody as CTO, emails from Dan.)</li>
+      <li>Counsel sign-off on the final compliance pass.</li>
+    </ul>
+  </div>
+
+  <h2 style="border:none">Sources</h2>
+  <div class="doc">
+    <p class="src">Legal best-practice & compliance research (June 2026):</p>
+    <ul class="src">
+      <li><a href="https://www.lawyerlegion.com/bar-rules/georgia">Georgia Bar Rules for Attorney Advertising — Lawyer Legion</a></li>
+      <li><a href="https://consumer.georgia.gov/consumer-topics/legal-advertisements">Legal Advertisements — Georgia AG Consumer Protection</a></li>
+      <li><a href="https://www.gabar.org/newsandpublications/georgiabarjournal/advertisingpolicy.cfm">State Bar of Georgia — Advertising Policy</a></li>
+      <li><a href="https://rankings.io/seo-for-lawyers/">SEO for Lawyers 2026 — Rankings.io</a> · <a href="https://www.matadorsolutions.net/seo-for-personal-injury-lawyers-complete-guide/">PI Lawyer SEO Guide — Matador</a></li>
+      <li><a href="https://semnexus.com/aeo-for-lawyers/">AEO for Lawyers 2026 — SEM Nexus</a> · <a href="https://www.lexiconlegalcontent.com/aeo-for-law-firms/">AEO for Law Firms — Lexicon</a></li>
+      <li><a href="https://www.clio.com/blog/personal-injury-law-firm-seo/">PI Law Firm SEO — Clio</a> · <a href="https://lawrank.com/personal-injury-lawyer-marketing-ideas/">PI Marketing Ideas — LawRank</a></li>
+    </ul>
+    <p class="src">Internal pattern: <code>docs/site-conversion-playbook.md</code>, <code>specs/customers/sojo-site-audit.html</code>, <code>geo_agent/directory_profiles.py</code> (<code>VERTICAL_DIRECTORIES["legal"]</code>), <code>SchemaMarkup.astro</code>.</p>
+  </div>
+</div>
+</body>
+</html>
