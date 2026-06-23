@@ -42,6 +42,13 @@
 </div>
 {% endif %}
 
+{% set unmatched_paid = subscriptions | selectattr('customer_id', 'none') | selectattr('status', 'in', ok_statuses) | list %}
+{% if unmatched_paid %}
+<div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:10px;margin-bottom:1rem;font-size:.88rem;font-weight:600;">
+  ⛔ {{ unmatched_paid|length }} paid subscription(s) aren't linked to a client — match them below so billing &amp; FATJOE orders track correctly.
+</div>
+{% endif %}
+
 <div class="bil-cards">
   <div class="bil-card mrr">
     <div class="k">Monthly recurring revenue</div>

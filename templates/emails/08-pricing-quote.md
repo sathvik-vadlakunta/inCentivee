@@ -162,6 +162,6 @@ Plans are month-to-month — cancel anytime. No long-term contracts.
 I'd recommend the **{recommended_tier}** tier for {practice_name} based on what we saw in your audit. Happy to jump on a quick call to walk through the details — what does your schedule look like this week?
 
 Best,
-**Kody Doherty**
-CTO · PracticeRank
-(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
+**Dan Toone**
+Account Manager · PracticeRank
+dtoone@practicerank.ai · practicerank.ai

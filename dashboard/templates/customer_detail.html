@@ -2550,6 +2550,9 @@
       }
     </script>
     {% if email_templates %}
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:9px 13px;margin-bottom:0.7rem;font-size:0.85rem;">
+        ✉️ Send all client emails <strong>from dtoone@practicerank.ai</strong> and <strong>CC kdoherty@practicerank.ai</strong>. (Access still grants to Kody as CTO.)
+    </div>
     <p style="color: var(--muted); margin-bottom: 0.6rem; font-size: 0.85rem;">
         Emails rendered for <strong>{{ customer.name }}</strong>. ⭐ = recommended for the current stage
         (<strong>{{ customer.onboarding_step | replace('_',' ') | title }}</strong>). Click "Copy" to paste into any email client.
@@ -2560,7 +2563,7 @@
         <input type="text" id="email-search" oninput="applyEmailFilter()" placeholder="Search emails…"
                style="flex:1;min-width:200px;padding:0.45rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;">
         <div style="display:flex;gap:0.25rem;flex-wrap:wrap;">
-            {% for cat in ['All','Sales','Access','Onboarding','Approvals','Reporting'] %}
+            {% for cat in ['All','Sales','Access','Onboarding','Approvals','Reporting','Reviews'] %}
             <button class="email-cat-chip{% if cat == 'All' %} active{% endif %}" data-cat="{{ cat }}"
                     onclick="filterEmailCat('{{ cat }}', this)"
                     style="padding:0.3rem 0.7rem;font-size:0.78rem;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer;">{{ cat }}</button>

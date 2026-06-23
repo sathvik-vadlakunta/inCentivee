@@ -11,6 +11,6 @@ We're in — {practice_name} is fully set up with PracticeRank and work has star
 **No action needed.** We'll reach out when the first batch is ready for your review.
 
 Best,
-**Kody Doherty**
-CTO · PracticeRank
-(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
+**Dan Toone**
+Account Manager · PracticeRank
+dtoone@practicerank.ai · practicerank.ai

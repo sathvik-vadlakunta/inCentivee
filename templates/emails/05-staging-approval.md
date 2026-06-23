@@ -21,6 +21,6 @@ We have updates ready for {practice_name}. These are "invisible" technical chang
 If we don't hear back within 7 days, we'll follow up. Nothing gets published without your approval.
 
 Best,
-**Kody Doherty**
-CTO · PracticeRank
-(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
+**Dan Toone**
+Account Manager · PracticeRank
+dtoone@practicerank.ai · practicerank.ai

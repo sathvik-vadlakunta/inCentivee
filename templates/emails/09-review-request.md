@@ -32,9 +32,9 @@ Below are two ready-to-paste messages — just drop in the link.
 Reply if you'd like the QR code for your front desk or want us to automate the sending.
 
 Best,
-**Kody Doherty**
-CTO · PracticeRank
-(925) 819-2663 · kdoherty@practicerank.ai · practicerank.ai
+**Dan Toone**
+Account Manager · PracticeRank
+dtoone@practicerank.ai · practicerank.ai
 
 ---
 

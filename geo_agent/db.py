@@ -1052,14 +1052,39 @@ class CustomerDB:
         self.conn.commit()
 
     def _customer_id_for_email(self, email: str) -> str | None:
-        """Auto-match: find a customer whose email matches the Stripe customer
-        email (case-insensitive). Returns None if no/ambiguous match."""
-        if not email:
+        """Auto-match a Stripe customer to one of ours. Tries, in order:
+        1. exact email match (case-insensitive),
+        2. email-domain ↔ practice website domain (e.g. danny@paradigmexperts.com
+           → the customer whose domain is paradigmexperts.com), skipping generic
+           mail hosts so gmail.com never matches.
+        Returns None on no match or an ambiguous (>1) match."""
+        if not email or "@" not in email:
             return None
+        email = email.strip()
         rows = self.conn.execute(
-            "SELECT id FROM customers WHERE lower(email) = lower(?)", (email.strip(),)
+            "SELECT id FROM customers WHERE lower(email) = lower(?)", (email,)
         ).fetchall()
-        return rows[0]["id"] if len(rows) == 1 else None
+        if len(rows) == 1:
+            return rows[0]["id"]
+        if rows:
+            return None  # ambiguous exact match — don't guess
+
+        # Domain fallback.
+        def _norm(d: str) -> str:
+            d = (d or "").lower().strip()
+            for p in ("https://", "http://", "www."):
+                if d.startswith(p):
+                    d = d[len(p):]
+            return d.rstrip("/")
+
+        mail_domain = _norm(email.rsplit("@", 1)[1])
+        if not mail_domain or mail_domain in _GENERIC_EMAIL_DOMAINS:
+            return None
+        matches = [
+            r["id"] for r in self.conn.execute("SELECT id, domain FROM customers").fetchall()
+            if _norm(r["domain"]) == mail_domain
+        ]
+        return matches[0] if len(matches) == 1 else None
 
     def upsert_subscription(self, data: dict) -> dict | None:
         """Insert or update a subscription by stripe_subscription_id. Auto-matches
