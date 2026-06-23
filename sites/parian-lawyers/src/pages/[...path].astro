@@ -1,20 +1,12 @@
 ---
 import Base from '@layouts/Base.astro'
-import CTABanner from '@components/CTABanner.astro'
 import practice from '@data/practice.json'
 import mirror from '@data/mirror.json'
 import { marked } from 'marked'
 
-// Renders every mirrored page from the original site at its ORIGINAL URL (1:1
-// parity), in our branded layout with legal schema + bar disclaimers layered on.
 export async function getStaticPaths() {
-  // Paths that have bespoke, hand-built pages (home, blog, contact, scholarship)
-  // are excluded so the catch-all doesn't collide with those routes.
   const exclude = (p: string) =>
-    p === '/' ||
-    p === '/blog' || p.startsWith('/blog/') ||
-    p === '/contact-us' ||
-    p === '/scholarship-2021'
+    p === '/' || p === '/blog' || p.startsWith('/blog/') || p === '/contact-us' || p === '/scholarship-2021'
   return (mirror as any).pages
     .filter((p: any) => p.path && p.content_md && !exclude(p.path))
     .map((p: any) => ({ params: { path: p.path.replace(/^\//, '') }, props: { page: p } }))
@@ -23,81 +15,123 @@ export async function getStaticPaths() {
 const { page } = Astro.props
 const tel = practice.phone.replace(/[^+\d]/g, '')
 const d = (practice as any).disclaimers || {}
-const html = marked.parse(page.content_md)
-const h1 = page.h1 || page.title?.split('|')[0].trim() || page.title
-const isBlog = page.section === 'blog'
 
-// Deterministic layout variety so the 900 pages don't read as clones.
-const sum = [...page.path].reduce((a: number, c: string) => a + c.charCodeAt(0), 0)
-const heroVariant = sum % 3
-const accent = ['border-primary', 'border-accent', 'border-secondary'][sum % 3]
+// repair the WordPress smart-quote corruption baked into the source content
+function fix(s: string) {
+  return (s || '')
+    .replace(/([A-Za-z])�(s|t|re|ll|ve|d|m|S|T)\b/g, "$1'$2")
+    .replace(/([A-Za-z0-9])�([A-Za-z0-9])/g, '$1 $2')
+    .replace(/�/g, "'")
+}
+const html = marked.parse(fix(page.content_md))
+const h1 = fix(page.h1 || (page.title || '').split('|')[0].trim() || page.title)
+const desc = fix(page.description || '')
 
-// Breadcrumb from the URL segments.
 const segs = page.path.replace(/^\//, '').split('/').filter(Boolean)
 let acc = ''
 const crumbs = segs.map((s: string) => {
   acc += '/' + s
   return { name: s.replace(/-/g, ' ').replace(/\b\w/g, (m: string) => m.toUpperCase()), href: acc }
 })
-
-const schemaType = isBlog ? 'Article' : 'LegalService'
+const practiceLinks = [
+  ['Car Accidents','/carrollton-car-accident-lawyer/'],['Truck Accidents','/carrollton-truck-accident-lawyer/'],
+  ['Catastrophic Injury','/carrollton-catastrophic-injury-lawyer/'],['Wrongful Death','/carrollton-wrongful-death-lawyer/'],
+  ['Nursing Home Abuse','/carrollton-nursing-home-abuse-lawyer/'],["Workers' Comp",'/carrollton-workers-compensation-lawyer/'],
+]
 ---
 
-<Base title={page.title || `${h1} | ${practice.name}`} description={page.description || h1}>
-  <nav class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-gray-500">
-    <a href="/" class="hover:text-primary">Home</a>
-    {crumbs.map((c: any, i: number) => (
-      <span>
-        <span class="mx-2">/</span>
-        {i === crumbs.length - 1 ? <span class="text-gray-900">{c.name}</span> : <a href={c.href} class="hover:text-primary">{c.name}</a>}
-      </span>
-    ))}
-  </nav>
+<Base title={page.title || `${h1} | ${practice.name}`} description={desc || h1}>
+  <header class="ph">
+    <div class="ph__in">
+      <nav class="bc">
+        <a href="/">Home</a>
+        {crumbs.map((c: any, i: number) => (<span>{' / '}{i === crumbs.length - 1 ? <span class="cur">{c.name}</span> : <a href={c.href}>{c.name}</a>}</span>))}
+      </nav>
+      <h1>{h1}</h1>
+      {desc && <p>{desc}</p>}
+    </div>
+  </header>
 
-  {heroVariant === 0 && (
-    <header class="bg-dark text-white"><div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 class="text-3xl sm:text-4xl font-bold font-heading">{h1}</h1>
-      {page.description && <p class="mt-3 text-lg text-gray-200 max-w-2xl">{page.description}</p>}
-      <a href={`tel:${tel}`} class="inline-block mt-5 bg-accent text-dark px-6 py-3 rounded-lg font-semibold">Call {practice.phone}</a>
-    </div></header>
-  )}
-  {heroVariant === 1 && (
-    <header class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-9">
-      <h1 class="text-3xl sm:text-4xl font-bold font-heading">{h1}</h1>
-      {page.description && <p class="mt-3 text-lg text-gray-600">{page.description}</p>}
-    </header>
-  )}
-  {heroVariant === 2 && (
-    <header class={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-9 border-l-4 ${accent} pl-6 mt-4`}>
-      <h1 class="text-3xl sm:text-4xl font-bold font-heading">{h1}</h1>
-      {page.description && <p class="mt-3 text-lg text-gray-600">{page.description}</p>}
-    </header>
-  )}
-
-  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-    <div class="prose prose-lg max-w-none mt-8" set:html={html} />
-
-    {d.pastResults && <p class="mt-8 text-xs text-gray-500 border-t border-gray-200 pt-4 italic">{d.pastResults}</p>}
-
-    {!isBlog && (
-      <div class={`mt-10 bg-gray-50 rounded-xl p-8 text-center border-t-4 ${accent}`}>
-        <h3 class="text-xl font-bold font-heading mb-2">Injured? Talk to {practice.name}.</h3>
-        <p class="text-gray-600 mb-4">{practice.feePromise} — free, confidential consultation.</p>
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="/contact" class="inline-block bg-primary text-white px-6 py-3 rounded-lg font-semibold">Free Consultation</a>
-          <a href={`tel:${tel}`} class="inline-block border-2 border-primary text-primary px-6 py-3 rounded-lg font-semibold">Call {practice.phone}</a>
+  <div class="pw">
+    <article class="pw__main">
+      <div class="prose" set:html={html} />
+      {d.pastResults && <p class="pw__discl">{d.pastResults}</p>}
+      <div class="pw__cta">
+        <h3>Injured? Talk to Parian Lawyers.</h3>
+        <p>{practice.feePromise} — free, confidential consultation, available 24/7.</p>
+        <div class="pw__cta-b">
+          <a href="/contact-us/" class="btn btn--gold">Free Consultation</a>
+          <a href={`tel:${tel}`} class="btn btn--navy">Call {practice.phone}</a>
         </div>
       </div>
-    )}
+    </article>
+    <aside class="pw__side">
+      <div class="card">
+        <h4>Practice Areas</h4>
+        <ul>{practiceLinks.map(([t,h]) => (<li><a href={h}><i class="fas fa-angle-right"></i>{t}</a></li>))}</ul>
+      </div>
+      <div class="card card--cta">
+        <h4>Free Consultation</h4>
+        <p>Available 24/7. No fee unless we win.</p>
+        <a href={`tel:${tel}`} class="btn btn--gold" style="width:100%;justify-content:center;">{practice.phone}</a>
+        <a href="/contact-us/" class="card--cta__link">Or send us a message →</a>
+      </div>
+    </aside>
+  </div>
 
-    <script type="application/ld+json" set:html={JSON.stringify({
-      '@context': 'https://schema.org',
-      '@type': schemaType,
-      ...(isBlog
-        ? { headline: h1, description: page.description, author: { '@type': 'Organization', name: practice.name } }
-        : { name: `${h1} — ${practice.name}`, telephone: practice.phone, areaServed: (practice.areaServed || []).map((a: string) => ({ '@type': 'City', name: a })) }),
-      url: `https://${practice.domain}${page.path}`,
-    })} />
-  </article>
-  <CTABanner />
+  <script type="application/ld+json" set:html={JSON.stringify({
+    '@context': 'https://schema.org', '@type': 'LegalService',
+    name: `${h1} — ${practice.name}`, telephone: practice.phone,
+    areaServed: (practice.areaServed || []).map((a: string) => ({ '@type': 'City', name: a })),
+    url: `https://${practice.domain}${page.path}`,
+  })} />
 </Base>
+
+<script>
+  // hide broken inline images (e.g. the original's tiny phone/email icon imgs that 404)
+  function fixImgs(){document.querySelectorAll('.prose img').forEach(function(img){
+    img.addEventListener('error',function(){img.style.display='none';});
+    if(img.complete&&img.naturalWidth===0)img.style.display='none';
+    // drop tiny tracking/icon imgs whose alt is a label
+    if(/^(phone|email|fax|icon)$/i.test(img.getAttribute('alt')||''))img.style.display='none';
+  });}
+  document.addEventListener('astro:page-load',fixImgs);fixImgs();
+</script>
+
+<style>
+  .btn{display:inline-flex;align-items:center;gap:8px;font:700 14px 'Inter';text-decoration:none;padding:.85rem 1.3rem;border-radius:10px;transition:.2s;}
+  .btn--gold{background:#c18d15;color:#fff;}.btn--gold:hover{background:#a9790f;}
+  .btn--navy{background:#27314f;color:#fff;}.btn--navy:hover{background:#1a2238;}
+  .ph{background:#1a2238;color:#fff;}
+  .ph__in{max-width:1120px;margin:0 auto;padding:36px 20px;}
+  .bc{font-size:13px;color:#aeb6cc;margin-bottom:10px;}.bc a{color:#aeb6cc;text-decoration:none;}.bc a:hover{color:#ffb400;}.bc .cur{color:#fff;}
+  .ph h1{font-family:Georgia,serif;font-size:32px;line-height:1.2;margin:0;max-width:34ch;}
+  .ph p{margin:.7rem 0 0;color:#cfd6e6;font-size:16px;max-width:60ch;line-height:1.6;}
+  .pw{max-width:1120px;margin:0 auto;padding:44px 20px 72px;display:grid;grid-template-columns:1fr 312px;gap:42px;align-items:start;}
+  @media(max-width:880px){.pw{grid-template-columns:1fr;}}
+  .prose{color:#3a4250;line-height:1.8;font-size:16.5px;}
+  .prose :global(h2){font-family:Georgia,serif;color:#27314f;font-size:25px;margin:34px 0 12px;}
+  .prose :global(h3){font-family:Georgia,serif;color:#27314f;font-size:20px;margin:26px 0 10px;}
+  .prose :global(p){margin:0 0 16px;}
+  .prose :global(ul),.prose :global(ol){margin:0 0 16px;padding-left:22px;}
+  .prose :global(li){margin:0 0 6px;}
+  .prose :global(a){color:#c18d15;font-weight:600;}
+  .prose :global(img){max-width:240px;height:auto;border-radius:10px;margin:8px 0;}
+  .prose :global(table){width:100%;border-collapse:collapse;margin:0 0 16px;font-size:15px;}
+  .prose :global(td),.prose :global(th){border:1px solid #eceef1;padding:8px 10px;text-align:left;}
+  .pw__discl{margin-top:26px;border-top:1px solid #eceef1;padding-top:16px;font-size:12.5px;color:#8a93a0;font-style:italic;}
+  .pw__cta{margin-top:30px;background:#f6f7f9;border:1px solid #eceef1;border-radius:16px;padding:26px;text-align:center;}
+  .pw__cta h3{font-family:Georgia,serif;color:#27314f;margin:0 0 6px;font-size:22px;}
+  .pw__cta p{color:#5b6472;margin:0 0 16px;}
+  .pw__cta-b{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .pw__side{position:sticky;top:90px;display:flex;flex-direction:column;gap:18px;}
+  .card{background:#fff;border:1px solid #eceef1;border-radius:14px;padding:20px 22px;}
+  .card h4{font-family:Georgia,serif;color:#27314f;font-size:17px;margin:0 0 14px;border-bottom:2px solid #c18d15;padding-bottom:8px;display:inline-block;}
+  .card ul{list-style:none;margin:0;padding:0;}
+  .card li a{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f3f5;color:#3a4250;text-decoration:none;font-size:14px;transition:color .15s;}
+  .card li a:hover{color:#c18d15;}.card li i{color:#c18d15;font-size:12px;}
+  .card--cta{background:#27314f;color:#fff;text-align:center;}
+  .card--cta h4{color:#fff;border-color:#ffb400;}
+  .card--cta p{color:#cfd6e6;font-size:14px;margin:0 0 14px;}
+  .card--cta__link{display:block;margin-top:12px;color:#ffb400;font-size:13px;text-decoration:none;}
+</style>

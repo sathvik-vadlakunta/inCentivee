@@ -35,13 +35,13 @@ function fmt(s: string) {
     <div class="post-hero__in">
       <nav class="bc"><a href="/">Home</a> / <a href="/blog/">Blog</a> / <span>{meta.cat || 'Article'}</span></nav>
       <h1>{h1}</h1>
-      <div class="post-hero__meta">{meta.cat && <span class="badge">{meta.cat}</span>}{meta.date && <span>{fmt(meta.date)}</span>}</div>
+      <div class="post-hero__meta">{meta.cat && <a class="badge" href={`/blog/?cat=${encodeURIComponent(meta.cat)}`}>{meta.cat}</a>}{meta.date && <span>{fmt(meta.date)}</span>}</div>
     </div>
   </div>
 
   <div class="post">
     <article class="post__main">
-      {meta.image && <img class="post__feat" src={meta.image} alt={h1} loading="eager" />}
+      {meta.image && <img class="post__feat" src={meta.image} alt={h1} loading="eager" onerror="this.remove()" />}
       <div class="prose" set:html={html} />
       {d.pastResults && <p class="post__discl">{d.pastResults}</p>}
       <div class="post__cta">
