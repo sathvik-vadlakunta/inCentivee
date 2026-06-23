@@ -7,10 +7,16 @@
   function safe(fn){ try{ fn(); }catch(e){ /* never let one feature break the rest */ } }
 
   ready(function () {
-    // 1) perf: lazy + async images
+    // 1) perf: lazy + async images; hide broken / tiny icon-label images
     safe(function(){
       document.querySelectorAll('img:not([loading])').forEach(function(img,i){
         if(i>1) img.setAttribute('loading','lazy'); img.setAttribute('decoding','async');
+      });
+      document.querySelectorAll('img').forEach(function(img){
+        // the original's bio "Phone"/"Email" icon imgs 404 -> hide instead of showing alt
+        if(/^(phone|email|fax|icon)$/i.test(img.getAttribute('alt')||'')) img.style.display='none';
+        img.addEventListener('error',function(){ img.style.display='none'; });
+        if(img.complete && img.naturalWidth===0) img.style.display='none';
       });
     });
 

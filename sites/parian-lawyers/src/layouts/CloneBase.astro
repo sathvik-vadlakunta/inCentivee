@@ -1,0 +1,27 @@
+---
+// Renders an ingested clone page: its exact <head> (pixel-exact CSS) + content,
+// wrapped in our clean shared header/footer + enhancement layer. On our stack.
+import SiteHeader from '@components/SiteHeader.astro'
+import SiteFooter from '@components/SiteFooter.astro'
+interface Props { head: string; body: string }
+const { head, body } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Fragment set:html={head} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <link rel="stylesheet" href="/enhance.css" />
+  </head>
+  <body>
+    <SiteHeader />
+    <main><Fragment set:html={body} /></main>
+    <SiteFooter />
+    <script src="/enhance.js" is:inline defer></script>
+  </body>
+</html>
