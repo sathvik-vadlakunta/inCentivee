@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legal Site Conversion Playbook (State-Agnostic)</title>
+<style>
+  :root{--ink:#1a1a2e;--muted:#62707f;--line:#e6e8ec;--bg:#f4f5f7;--card:#fff;--accent:#16a34a;--bad:#dc2626;--warn:#d97706;--legal:#7c3aed;--shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06)}
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:28px;margin:14px 0 0} h2{font-size:20px;margin:34px 0 12px;border-bottom:2px solid #dcdfe4;padding-bottom:8px} h3{font-size:15.5px;margin:18px 0 6px}
+  .pill{display:inline-block;background:#08080d;color:#a78bfa;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;letter-spacing:.03em}
+  .lead{color:var(--muted);font-size:16px;max-width:84ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+  .doc.legal{border-left:4px solid var(--legal)} .doc.warnbox{border-left:4px solid var(--warn);background:#fffbeb}
+  .p1{color:var(--bad);font-weight:700} .p2{color:var(--warn);font-weight:700} .ok{color:var(--accent);font-weight:700}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0} th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:12.5px ui-monospace,monospace}
+  ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
+  blockquote{margin:8px 0;padding:8px 14px;border-left:3px solid var(--legal);background:#faf8ff;color:#4b3a6b;font-size:13.5px}
+  .src{font-size:12px;color:var(--muted)} .src a{color:var(--legal)}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase}
+  .tag.same{background:#dcfce7;color:#166534} .tag.diff{background:#ede9fe;color:#5b21b6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">PLAYBOOK · ⚖️ LEGAL VERTICAL · STATE-AGNOSTIC</span>
+  <h1>Legal Site Conversion Playbook</h1>
+  <p class="lead">The reusable, <b>any-state</b> process for converting a law firm's website to our Astro/Cloudflare platform. The build machinery is the same as our dental/general conversions (<code>docs/site-conversion-playbook.md</code>, the <code>convert-site</code> skill) — this layers on the <b>legal-specific</b> schema, content, directories, and the part that makes legal hard: a <b>state-agnostic compliance engine</b>, because bar advertising rules vary by state and a mistake can get the <i>client sanctioned</i>.</p>
+
+  <div class="doc warnbox">
+    <b>⚠️ We are not lawyers and this is not legal advice.</b> This playbook produces a compliant-by-default draft and a checklist, but <b>a licensed attorney in every state the firm practices in or advertises into must review and sign off before go-live.</b> Bar rules change; always pull the current version (§3 process).
+  </div>
+
+  <!-- WHEN -->
+  <h2>0 · When to use</h2>
+  <div class="doc">
+    <p>Any law-firm conversion: <code>/convert-legal-site &lt;url&gt;</code>, "build a site for &lt;firm&gt;", "port this attorney/law firm to our platform". Works for any practice type (PI, family, criminal, estate, business) in any US state. First reference build: <b>Parian Lawyers</b> (PI, GA + AL) — see <code>specs/customers/parian-lawyers-conversion.html</code>.</p>
+  </div>
+
+  <!-- WHAT'S DIFFERENT -->
+  <h2>1 · Legal vs. dental/general — the swaps <span class="tag diff">vertical-specific</span></h2>
+  <div class="doc legal">
+    <table>
+      <tr><th>Layer</th><th>General/dental</th><th>Legal</th></tr>
+      <tr><td>Schema entity</td><td><code>Dentist</code>/<code>LocalBusiness</code></td><td><code>["LegalService","LocalBusiness"]</code></td></tr>
+      <tr><td>Service page schema</td><td><code>MedicalProcedure</code></td><td><code>Service</code> (<code>serviceType</code>=practice area)</td></tr>
+      <tr><td>Provider schema</td><td><code>Dentist</code>/<code>Physician</code></td><td><code>Attorney</code>/<code>Person</code> + <code>memberOf</code> state bar, <code>alumniOf</code> law school, <code>knowsAbout</code></td></tr>
+      <tr><td>Page taxonomy</td><td>Procedures</td><td>Practice areas (+ subtypes, e.g. PI → car/truck/wrongful-death)</td></tr>
+      <tr><td>GBP primary category</td><td>"Dentist"</td><td>The <b>specific</b> practice category ("Personal Injury Attorney", "Family Law Attorney") — never generic "Lawyer"</td></tr>
+      <tr><td>Directories</td><td>Healthgrades, Zocdoc, ADA…</td><td><code>VERTICAL_DIRECTORIES["legal"]</code>: Avvo, Justia, FindLaw, Martindale, Super Lawyers, Nolo, state bar directory</td></tr>
+      <tr><td>Trust / E-E-A-T</td><td>Matters</td><td><b>Critical (YMYL)</b> — attorney-authored, bar-verified, entity authority via <code>sameAs</code> to bar/Justia/Avvo</td></tr>
+      <tr><td>Tone</td><td>Upbeat</td><td>Reassuring — clients are stressed/injured; trust over hype</td></tr>
+      <tr><td>AEO</td><td>FAQ on services</td><td>Question-first ("how much is my case worth in &lt;state&gt;", "statute of limitations") + FAQ schema, named-attorney authorship</td></tr>
+      <tr><td>Reviews engine</td><td>Standard funnel</td><td><b>Constrained</b> — no incentives/drafting/quotas; confidential responses (§5)</td></tr>
+      <tr><td>Compliance</td><td>Light</td><td><b>Heavy + state-specific</b> — the compliance engine (§2–§3)</td></tr>
+    </table>
+    <p>Everything else — Astro stack, <code>practice.json</code>, content collections, llms.txt/robots/sitemap/redirects, deploy + curl QA, the dental gotcha library — is reused unchanged. Don't re-solve it.</p>
+  </div>
+
+  <!-- COMPLIANCE ENGINE -->
+  <h2>2 · The state-agnostic compliance engine (the core)</h2>
+  <div class="doc legal">
+    <p>Don't hardcode one state's rules. For every firm, run this <b>fixed set of compliance dimensions</b> against the firm's state(s). The dimensions are universal; the answers are looked up per state (§3). Each dimension that applies becomes a build requirement.</p>
+    <table>
+      <tr><th>#</th><th>Dimension — ask of each state's rules</th><th>Typical output</th></tr>
+      <tr><td>1</td><td>Contingency/"no fee unless you win" disclaimer required? <b>Exact mandated wording?</b></td><td>Verbatim disclaimer, equal prominence, wherever fee claims appear</td></tr>
+      <tr><td>2</td><td>Past-results / case-results disclaimer required?</td><td>"Prior results do not guarantee a similar outcome" + tie to specific facts</td></tr>
+      <tr><td>3</td><td>Testimonial / endorsement disclosure rules?</td><td>Real + permissioned; disclose paid/portrayed</td></tr>
+      <tr><td>4</td><td>"Specialist / expert / certified" restricted?</td><td>Ban those terms unless board-certified; use "experienced/focused on"</td></tr>
+      <tr><td>5</td><td>"Attorney Advertising" / "Advertisement" label required?</td><td>Footer label (include by default for multi-state safety)</td></tr>
+      <tr><td>6</td><td>Responsible-attorney name &amp; office disclosure required?</td><td>Named lawyer + a bona-fide office city/address in footer</td></tr>
+      <tr><td>7</td><td>Trade-name restrictions? (no gov't implication, not misleading)</td><td>Validate the firm's trade/dba name</td></tr>
+      <tr><td>8</td><td>Solicitation limits? (anti-30-day accident mail, targeted-mail filing, live-contact bans)</td><td>Constrain outreach/lead automation; never solicit fresh accident victims</td></tr>
+      <tr><td>9</td><td>Ad pre-filing / bar submission required?</td><td>A few states require filing ads with the bar — flag for counsel</td></tr>
+      <tr><td>10</td><td>Record-retention period for ads?</td><td>Retain site snapshots N years (e.g. GA = 2)</td></tr>
+      <tr><td>11</td><td>Comparative/superlative &amp; awards substantiation? ("best", ratings)</td><td>Drop unverifiable superlatives; name the rating org + criteria</td></tr>
+      <tr><td>12</td><td><b>Multi-state:</b> serves/advertises into other states?</td><td>Apply each state; "not licensed in &lt;state&gt;" disclosure if no bar admission there; referral disclosure if cases referred out</td></tr>
+    </table>
+    <blockquote><b>Multi-state rule of thumb:</b> a firm is bound by the advertising rules of every state it <i>solicits or advertises into</i>, not just where it's licensed. Resolve conflicts to the <b>strictest</b> applicable rule.</blockquote>
+  </div>
+
+  <!-- PER-STATE RESEARCH -->
+  <h2>3 · How to fill the engine for a given firm (the research step)</h2>
+  <div class="doc">
+    <ol>
+      <li><b>Identify the jurisdictions:</b> state(s) of licensure (from the attorneys' bar admissions) + every state in the firm's advertised service area. That's the compliance set.</li>
+      <li><b>Pull current rules per state.</b> For each, web-research the state's Rules of Professional Conduct 7.1–7.5 (advertising/solicitation). Authoritative sources: the <b>state bar's official rules page</b>, then secondary summaries (Lawyer Legion per-state pages, the state AG). Answer all 12 dimensions. Capture <b>exact mandated disclaimer wording</b> where it exists (states differ — don't paraphrase).</li>
+      <li><b>Build the per-firm compliance matrix</b> (12 dimensions × each state) and turn every "required" into a concrete build task + a checklist row.</li>
+      <li><b>Inject disclaimers</b> from the matrix into the footer + relevant pages (§4 library).</li>
+      <li><b>🚦 HUMAN GATE — counsel sign-off.</b> Send the firm's licensed attorney (per state) the compliance matrix + the rendered disclaimers for approval before cutover. This gate is non-negotiable.</li>
+    </ol>
+    <p>Re-run the research at each new build (rules change — e.g. Alabama overhauled its ad rules effective 1/1/2026). Never reuse a cached ruleset older than the current build.</p>
+  </div>
+
+  <!-- DISCLAIMER LIBRARY -->
+  <h2>4 · Disclaimer library (adapt wording per state from §3)</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Disclaimer</th><th>Default template (replace with state's exact wording where mandated)</th></tr>
+      <tr><td>Site-wide</td><td><i>"This website is for general information only and is not legal advice. Use of this site or contacting us does not create an attorney-client relationship."</i></td></tr>
+      <tr><td>Advertising label</td><td><i>"Attorney Advertising."</i> (footer)</td></tr>
+      <tr><td>Responsible lawyer</td><td><i>"Responsible attorney: [Name], [Office City/Address]."</i></td></tr>
+      <tr><td>Contingency fee</td><td>Use the state's <b>exact</b> wording. GA example: <i>"Contingent attorneys' fees refers only to those fees charged by attorneys for their legal services. Such fees are not permitted in all types of cases. Court costs and other additional expenses of legal action usually must be paid by the client."</i></td></tr>
+      <tr><td>Past results</td><td><i>"Prior results do not guarantee a similar outcome. Every case is different and must be evaluated on its own facts."</i></td></tr>
+      <tr><td>Not licensed in X</td><td><i>"[Firm] attorneys are licensed in [states]. We are not licensed in [other-state] and [associate/refer/comply as required]."</i></td></tr>
+      <tr><td>Referral</td><td><i>"Some matters may be referred to or handled in association with other counsel."</i></td></tr>
+    </table>
+  </div>
+
+  <!-- REVIEW ENGINE -->
+  <h2>5 · Review engine for lawyers (stricter than dental)</h2>
+  <div class="doc warnbox">
+    <ul>
+      <li><b>Ask only past clients</b> — permitted in most states. <b>Never incentivize, pay, gift, or run contests/quotas</b> for reviews (bar + Google + FTC violation; a firm lost all its reviews over a review contest).</li>
+      <li><b>Never draft the review or tell the client what to write.</b></li>
+      <li><b>Confidentiality in responses:</b> never confirm representation or reveal case details in a public reply — that's an ethics breach. Keep responses generic and gracious.</li>
+      <li>Keep the compliant private-feedback path for unhappy clients (no gating of public reviews) — same standard as our dental review-funnel fix.</li>
+    </ul>
+  </div>
+
+  <!-- PHASES -->
+  <h2>6 · Conversion phases (general A–I + the compliance gate)</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Phase</th><th>Legal additions</th></tr>
+      <tr><td>A · Scrape</td><td>Capture attorneys + bar admissions/numbers, practice areas, case results (with existing disclaimers), testimonials, all office NAPs, old URL inventory.</td></tr>
+      <tr><td>—  · <b>Compliance research</b></td><td><b>Run §2–§3:</b> jurisdictions → per-state rules → compliance matrix. Do this before content.</td></tr>
+      <tr><td>B · Scaffold</td><td>All offices in NAP; attorneys → <code>providers[]</code> with credentials + admissions.</td></tr>
+      <tr><td>C · Brand</td><td>Real palette/logo; colors in <code>global.css :root</code>.</td></tr>
+      <tr><td>D · Content</td><td>Practice-area pages + bar-verified bios + cited, question-first blogs. <b>Apply the disclaimer matrix to every page</b>; strip "specialist/expert/best".</td></tr>
+      <tr><td>E · Assets</td><td>Real headshots (<code>object-top</code>), office photos per location.</td></tr>
+      <tr><td>F · SEO/AEO</td><td>LegalService/Attorney/Service schema; entity-authority <code>sameAs</code>; llms.txt; robots allow AI; redirects; 404.</td></tr>
+      <tr><td>G · Conversion</td><td>Click-to-call, free-consult forms, real review badge + AggregateRating, fee/results claims <b>with their disclaimers</b>.</td></tr>
+      <tr><td>H · Deploy/verify</td><td>curl-verify status/schema/redirects/404 <b>+ assert every required disclaimer renders</b>.</td></tr>
+      <tr><td>—  · <b>🚦 Counsel sign-off</b></td><td>Licensed attorney (each state) approves compliance before cutover.</td></tr>
+      <tr><td>I · Cutover</td><td>Stage on <code>&lt;slug&gt;.practicerank.ai</code> → cut the domain over; keep old site reachable until parity confirmed; start retention snapshots.</td></tr>
+    </table>
+  </div>
+
+  <!-- CHECKLIST -->
+  <h2>7 · Generic pre-launch compliance checklist</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Item (per applicable state)</th><th>Status</th></tr>
+      <tr><td>Contingency disclaimer — state's exact wording, equal prominence</td><td class="p1">☐</td></tr>
+      <tr><td>Past-results disclaimer on every results display</td><td class="p1">☐</td></tr>
+      <tr><td>Responsible-attorney name (+ office) in footer</td><td class="p1">☐</td></tr>
+      <tr><td>Site-wide "not legal advice / no attorney-client relationship" + "Attorney Advertising"</td><td class="p1">☐</td></tr>
+      <tr><td>No "best / expert / specialist / certified" (unless certified)</td><td class="p1">☐</td></tr>
+      <tr><td>Testimonials real + permissioned; review engine constrained (§5)</td><td class="p1">☐</td></tr>
+      <tr><td>Outreach/lead automation respects solicitation limits</td><td class="p1">☐</td></tr>
+      <tr><td>Multi-state: "not licensed in X" + referral disclosures where applicable</td><td class="p1">☐</td></tr>
+      <tr><td>Ad pre-filing done if the state requires it</td><td class="p2">☐</td></tr>
+      <tr><td>LegalService/Attorney/Service schema validates (no health-vertical leftovers)</td><td class="p2">☐</td></tr>
+      <tr><td>All office NAPs consistent across site, schema, directories</td><td class="p2">☐</td></tr>
+      <tr><td>GBP primary = the specific practice category (not "Lawyer")</td><td class="p2">☐</td></tr>
+      <tr><td>Retention snapshot stored; retention clock started</td><td class="p2">☐</td></tr>
+      <tr><td><b>Licensed counsel (each state) signed off</b></td><td class="p1">☐</td></tr>
+    </table>
+  </div>
+
+  <h2 style="border:none">Sources</h2>
+  <div class="doc">
+    <ul class="src">
+      <li>Internal: <code>docs/site-conversion-playbook.md</code>, <code>.claude/skills/convert-site/</code>, <code>geo_agent/directory_profiles.py</code> (<code>VERTICAL_DIRECTORIES["legal"]</code>), <code>specs/customers/parian-lawyers-conversion.html</code></li>
+      <li><a href="https://www.lawyerlegion.com/bar-rules">Lawyer Legion — per-state bar advertising rules</a> (research starting point for any state)</li>
+      <li><a href="https://www.gabar.org/general-counsel/georgia-rules-of-professional-conduct">GA Rules of Professional Conduct</a> · <a href="https://www.alabar.org/news/your-guide-to-alabamas-updated-lawyer-advertising-rules/">Alabama updated ad rules (1/1/2026)</a></li>
+      <li><a href="https://rankings.io/seo-for-lawyers/">Law-firm SEO 2026</a> · <a href="https://semnexus.com/aeo-for-lawyers/">AEO for lawyers 2026</a> · <a href="https://nysba.org/ethics-opinion-1286-requesting-former-clients-to-write-google-reviews/">NYSBA Ethics Op. 1286 (client reviews)</a></li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

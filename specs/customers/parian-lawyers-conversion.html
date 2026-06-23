@@ -86,7 +86,7 @@
   <!-- ─────────────────────────── THE DIFFERENCES ─────────────────────────── -->
   <h2>3 · ⚖️ What we do DIFFERENTLY for a law firm <span class="tag diff">legal-specific</span></h2>
   <div class="doc legal">
-    <p>This is the part that matters. Nine differences vs. our dental playbook, highest-risk first.</p>
+    <p>This is the part that matters. Eleven differences vs. our dental playbook, highest-risk first.</p>
     <table>
       <tr><th>#</th><th>Area</th><th>Dental</th><th>Law firm</th><th>Risk</th></tr>
       <tr><td>1</td><td>Bar advertising compliance</td><td>Light (health claims)</td><td><b>Heavy — GA Bar Rules 7.1–7.2</b>; mandatory disclaimers</td><td class="p1">P1</td></tr>
@@ -98,6 +98,8 @@
       <tr><td>7</td><td>Directories / citations</td><td>Healthgrades, Zocdoc, ADA…</td><td><b>Avvo, Justia, FindLaw, Martindale, Super Lawyers, State Bar of GA</b></td><td class="p2">P2</td></tr>
       <tr><td>8</td><td>Multi-location</td><td>Usually single office</td><td><b>3 offices</b> → 3 GBPs, location pages, multi-NAP schema</td><td class="p2">P2</td></tr>
       <tr><td>9</td><td>Trust signals</td><td>Before/after, financing</td><td><b>Case results (disclaimered), bar admissions, "No Fee" disclaimer</b></td><td class="p2">P2</td></tr>
+      <tr><td>10</td><td>Solicitation (Rule 7.3)</td><td>No restriction</td><td><b>No written outreach to accident victims &lt;30 days; review/lead automation constrained</b></td><td class="p1">P1</td></tr>
+      <tr><td>11</td><td>Multi-state (Alabama)</td><td>N/A</td><td><b>Serves AL too → AL ad rules (new 1/1/2026) + "not licensed in AL" disclosure if applicable</b></td><td class="p1">P1</td></tr>
     </table>
   </div>
 
@@ -106,15 +108,39 @@
   <div class="doc warnbox">
     <p>Legal advertising is regulated by the <b>Georgia Rules of Professional Conduct (Rules 7.1–7.2)</b>. Getting this wrong can get the <b>client sanctioned</b> — it's not just an SEO nicety. Every item below is a build requirement, not optional polish. <b>Have Parian's counsel sign off before go-live.</b></p>
     <table>
-      <tr><th>Required</th><th>Trigger on their site</th><th>What we add</th></tr>
-      <tr><td><b>Contingency-fee disclaimer</b></td><td>They use "No Fee Unless We Win" prominently</td><td>Conspicuous disclaimer, equal prominence: <i>"No fee unless we win" refers to attorney fees only; the client is usually responsible for court costs and case expenses.</i></td></tr>
-      <tr><td><b>Past-results disclaimer</b></td><td>They display case results / settlements</td><td>On every results display: <i>"Prior results do not guarantee a similar outcome. Each case is different and must be judged on its own facts."</i> Tie figures to specific factual/legal circumstances.</td></tr>
-      <tr><td><b>Testimonial handling</b></td><td>Client testimonials carousel</td><td>Use only real, client-permissioned testimonials; disclose any paid/portrayed endorsement. Don't edit into misleading claims.</td></tr>
-      <tr><td><b>No prohibited superlatives</b></td><td>SEO instinct = "best", "expert", "specialist"</td><td><b>Avoid in titles, meta, schema, and copy.</b> "Specialist/expert" implies board certification GA doesn't recognize for PI → ethics violation. Use "experienced", "dedicated", "focused on personal injury".</td></tr>
-      <tr><td><b>Site-wide legal disclaimer</b></td><td>—</td><td>Footer on every page: <i>"This website is for general information only and is not legal advice. Contacting us does not create an attorney-client relationship."</i> Plus "Attorney Advertising" label.</td></tr>
-      <tr><td><b>2-year record retention</b></td><td>Rule 7.2</td><td>Keep a copy of the published site/files for 2 years after last publish. (We snapshot each deploy anyway — formalize it for Parian.)</td></tr>
+      <tr><th>Required (GA Rules 7.1–7.3)</th><th>Trigger on their site</th><th>What we add</th></tr>
+      <tr><td><b>Contingency-fee disclaimer — exact GA wording</b></td><td>"No Fee Unless We Win" used prominently</td><td>Conspicuous, equal-prominence, verbatim: <i>"Contingent attorneys' fees refers only to those fees charged by attorneys for their legal services. Such fees are not permitted in all types of cases. Court costs and other additional expenses of legal action usually must be paid by the client."</i> Do not paraphrase — GA specifies this language.</td></tr>
+      <tr><td><b>Past-results disclaimer</b></td><td>They display case results / settlements</td><td>On every results display: <i>"Prior results do not guarantee a similar outcome."</i> Tie figures to the specific factual/legal circumstances (Rule 7.1 — unqualified results can create "unjustified expectations").</td></tr>
+      <tr><td><b>Responsible-attorney name</b></td><td>Rule 7.2</td><td>The site (advertising) must identify the name of <b>at least one lawyer responsible</b> for its content — put it in the footer.</td></tr>
+      <tr><td><b>Testimonials &amp; reviews</b></td><td>Testimonial carousel + our review funnel</td><td>Real, client-permissioned only; disclose any paid/portrayed endorsement; don't edit into misleading claims. <b>Review funnel for lawyers ≠ dental</b> — see §4b.</td></tr>
+      <tr><td><b>No "specialist / expert / certified"</b></td><td>SEO instinct = "best / expert / specialist"</td><td><b>Banned in titles, meta, schema, copy</b> unless actually board-certified. Implying specialization is an ethics violation. Use "experienced", "dedicated", "focused on personal injury". (Rules were consolidated — confirm current numbering with counsel.)</td></tr>
+      <tr><td><b>Site-wide legal disclaimer</b></td><td>—</td><td>Footer every page: <i>"This website is for general information only and is not legal advice. Contacting us does not create an attorney-client relationship."</i> Add an "Attorney Advertising" label (not strictly required in GA, but expected in several states and harmless — keep it for the multi-state footprint).</td></tr>
+      <tr><td><b>2-year record retention</b></td><td>Rule 7.2</td><td>Keep a copy of the published site/files for 2 years after last publish. We snapshot each deploy — formalize retention for Parian.</td></tr>
     </table>
-    <blockquote>GA Rule 7.1 comment: statements about past results "could be misleading or deceptive… and may create an unjustified expectation" unless tied to specific facts. "No fee unless you win" requires the costs-vs-fees disclaimer. (See sources.)</blockquote>
+    <blockquote>GA Rule 7.1 prohibits communications that create "unjustified expectations" and <b>specifically requires</b> the contingent-fee / "no fee unless you win" disclaimer above. Rule 7.2 requires a responsible-lawyer name and 2-year retention. Rule 7.3 governs solicitation (§4b). We are not lawyers — <b>Parian's GA (and AL) counsel must sign off before go-live.</b> (See sources.)</blockquote>
+  </div>
+
+  <!-- 4b SOLICITATION + REVIEWS + MULTI-STATE -->
+  <h2>4b · ⚠️ Solicitation (Rule 7.3), the review funnel, and Alabama</h2>
+  <div class="doc warnbox">
+    <h3 style="margin-top:0">Direct solicitation — Rule 7.3 (no dental equivalent)</h3>
+    <p>Georgia <b>prohibits written solicitation of personal-injury/wrongful-death prospects within 30 days of the accident</b>, and bars live phone/in-person solicitation of people who haven't asked for a lawyer. The website itself isn't solicitation, but <b>our outreach and lead automation must respect this</b>: no automated texts/emails to accident victims, no buying accident-lead lists that trigger sub-30-day contact. Georgia is actively scrutinizing this in 2025–26.</p>
+    <h3>The review funnel runs differently for lawyers</h3>
+    <p>Bar rules + Google + FTC are stricter than for a dental office. Configure the review engine to:</p>
+    <ul>
+      <li><b>Ask only past clients</b> for reviews (permitted) — never incentivize, pay, or gift for a review.</li>
+      <li><b>Never draft the review or tell the client what to write</b>, and no quotas/contests/per-staff incentives (a firm lost all its reviews over a review contest).</li>
+      <li><b>Confidentiality:</b> when responding to reviews, never confirm representation or reveal case details — a lawyer disclosing client info in a public reply is an ethics breach.</li>
+      <li>Keep the compliant "private feedback for unhappy clients" path (no gating of public reviews) — same as our dental compliance fix.</li>
+    </ul>
+    <h3>Alabama / multi-state — Parian serves AL too</h3>
+    <p>Parian's service area includes Alabama markets (Birmingham, Talladega…). <b>Alabama overhauled its lawyer-advertising rules effective Jan 1, 2026.</b> If the firm advertises to or takes AL clients:</p>
+    <ul>
+      <li>Out-of-state lawyers soliciting AL clients are <b>held to Alabama's rules</b>, and lawyers not licensed in AL <b>must disclose they aren't licensed in Alabama.</b> → Confirm which Parian attorneys are AL-barred.</li>
+      <li>If the firm advertises for case types it <b>refers out</b> rather than handles, that must be disclosed (GA and AL).</li>
+      <li>AL has its own disclaimers (e.g., "no representation that the quality of services is greater than other lawyers"); disclaimers must be legible/clear and reachable in one click from short-form ads.</li>
+    </ul>
+    <p>Net: this is a <b>two-state compliance problem</b>. The reusable, state-agnostic process for handling any firm's state(s) lives in <code>docs/legal-site-conversion-playbook.html</code> — apply it here for GA + AL.</p>
   </div>
 
   <!-- SCHEMA -->
@@ -193,15 +219,19 @@
   <div class="doc">
     <table>
       <tr><th>Item</th><th>Status</th></tr>
-      <tr><td>Contingency "No Fee" disclaimer, equal prominence, on every page it appears</td><td class="p1">☐ required</td></tr>
-      <tr><td>"Prior results do not guarantee…" on every case-results display</td><td class="p1">☐ required</td></tr>
+      <tr><td>Contingency disclaimer — <b>exact GA wording</b>, equal prominence, everywhere "No Fee" appears</td><td class="p1">☐ required</td></tr>
+      <tr><td>"Prior results do not guarantee a similar outcome" on every case-results display</td><td class="p1">☐ required</td></tr>
+      <tr><td>Responsible-attorney name in footer (Rule 7.2)</td><td class="p1">☐ required</td></tr>
       <tr><td>Testimonials real + client permission on file; paid/portrayed disclosed</td><td class="p1">☐ required</td></tr>
+      <tr><td>Review funnel: no incentives/drafting/quotas; confidential review responses</td><td class="p1">☐ required</td></tr>
+      <tr><td>Outreach/lead automation respects Rule 7.3 (no sub-30-day accident-victim solicitation)</td><td class="p1">☐ required</td></tr>
       <tr><td>No "best / expert / specialist" in titles, meta, schema, copy</td><td class="p1">☐ required</td></tr>
       <tr><td>Site-wide "not legal advice / no attorney-client relationship" + "Attorney Advertising"</td><td class="p1">☐ required</td></tr>
+      <tr><td>Alabama: "not licensed in Alabama" disclosure if attorneys aren't AL-barred; referral disclosure if applicable</td><td class="p1">☐ required</td></tr>
       <tr><td>LegalService + Attorney + Service schema validates (no Dentist/MedicalProcedure leftovers)</td><td class="p2">☐ required</td></tr>
       <tr><td>3 office NAPs identical across site, schema, all directories</td><td class="p2">☐ required</td></tr>
       <tr><td>GBP primary = "Personal Injury Attorney" on all 3 listings</td><td class="p2">☐ required</td></tr>
-      <tr><td><b>Parian's counsel signed off on the advertising compliance</b></td><td class="p1">☐ required</td></tr>
+      <tr><td><b>Parian's GA <i>and</i> AL counsel signed off on the advertising compliance</b></td><td class="p1">☐ required</td></tr>
     </table>
   </div>
 
@@ -209,7 +239,8 @@
   <div class="doc">
     <ul>
       <li>Confirm scope: PI only, or carry over family/criminal pages too?</li>
-      <li>Attorney bar numbers + law schools + admissions (for entity-authority schema).</li>
+      <li>Attorney bar numbers + law schools + admissions (for entity-authority schema) — <b>and which attorneys are licensed in Alabama</b> (drives the AL disclosure).</li>
+      <li>Which case types (if any) the firm advertises but refers out (triggers a referral disclosure in GA + AL).</li>
       <li>Which case results we may display, and confirm the disclaimers/permissions.</li>
       <li>Written testimonial permissions.</li>
       <li>Access: WordPress export (or just DNS — we rebuild), all 3 GBPs, GA4/GTM, registrar/DNS. (Standard onboarding; access grants to Kody as CTO, emails from Dan.)</li>
@@ -221,9 +252,10 @@
   <div class="doc">
     <p class="src">Legal best-practice & compliance research (June 2026):</p>
     <ul class="src">
-      <li><a href="https://www.lawyerlegion.com/bar-rules/georgia">Georgia Bar Rules for Attorney Advertising — Lawyer Legion</a></li>
+      <li><a href="https://www.lawyerlegion.com/bar-rules/georgia">Georgia Bar Rules for Attorney Advertising — Lawyer Legion</a> · <a href="https://www.gabar.org/general-counsel/georgia-rules-of-professional-conduct">GA Rules of Professional Conduct (official)</a></li>
       <li><a href="https://consumer.georgia.gov/consumer-topics/legal-advertisements">Legal Advertisements — Georgia AG Consumer Protection</a></li>
-      <li><a href="https://www.gabar.org/newsandpublications/georgiabarjournal/advertisingpolicy.cfm">State Bar of Georgia — Advertising Policy</a></li>
+      <li><a href="https://www.alabar.org/news/your-guide-to-alabamas-updated-lawyer-advertising-rules/">Alabama's Updated Lawyer Advertising Rules (eff. 1/1/2026) — Alabama State Bar</a> · <a href="https://www.lawyerlegion.com/bar-rules/alabama">AL Bar Rules — Lawyer Legion</a></li>
+      <li><a href="https://nysba.org/ethics-opinion-1286-requesting-former-clients-to-write-google-reviews/">NYSBA Ethics Op. 1286 — soliciting client Google reviews</a> · <a href="https://searchengineland.com/law-firm-used-contest-solicit-google-reviews-sees-one-disappear-292721">Review-contest cautionary case</a></li>
       <li><a href="https://rankings.io/seo-for-lawyers/">SEO for Lawyers 2026 — Rankings.io</a> · <a href="https://www.matadorsolutions.net/seo-for-personal-injury-lawyers-complete-guide/">PI Lawyer SEO Guide — Matador</a></li>
       <li><a href="https://semnexus.com/aeo-for-lawyers/">AEO for Lawyers 2026 — SEM Nexus</a> · <a href="https://www.lexiconlegalcontent.com/aeo-for-law-firms/">AEO for Law Firms — Lexicon</a></li>
       <li><a href="https://www.clio.com/blog/personal-injury-law-firm-seo/">PI Law Firm SEO — Clio</a> · <a href="https://lawrank.com/personal-injury-lawyer-marketing-ideas/">PI Marketing Ideas — LawRank</a></li>
