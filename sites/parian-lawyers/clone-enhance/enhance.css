@@ -1,0 +1,84 @@
+/* ===================================================================
+   PracticeRank enhancement layer — modernizes the cloned design without
+   rebuilding pages. Loaded site-wide. Overrides refine Elementor output:
+   better type, spacing, focus, motion. Brand colors/layout are preserved.
+   =================================================================== */
+
+:root {
+  --pr-gold: #c18d15;
+  --pr-gold-bright: #ffb400;
+  --pr-charcoal: #32373c;
+  --pr-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---- Global polish & common-issue fixes ---- */
+html { scroll-behavior: smooth; }
+* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body { overflow-x: hidden; text-rendering: optimizeLegibility; }
+img, video, svg, iframe { max-width: 100%; height: auto; }   /* kill overflow */
+img { border-radius: 8px; }                                  /* soften hard corners */
+a, button, .elementor-button, input, select, textarea { transition:
+  color .2s var(--pr-ease), background-color .25s var(--pr-ease),
+  border-color .2s var(--pr-ease), box-shadow .25s var(--pr-ease),
+  transform .2s var(--pr-ease) !important; }
+
+/* Accessible, modern focus ring (was missing/inconsistent) */
+a:focus-visible, button:focus-visible, .elementor-button:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--pr-gold) 60%, transparent);
+  outline-offset: 2px;
+}
+
+/* ---- Buttons: modern weight, lift on hover ---- */
+.elementor-button, button[type="submit"], .wp-block-button__link {
+  border-radius: 10px !important;
+  letter-spacing: .01em;
+  box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.elementor-button:hover, button[type="submit"]:hover, .wp-block-button__link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--pr-gold) 35%, transparent);
+}
+
+/* ---- Cards / image boxes: subtle depth + hover ---- */
+.elementor-widget-image-box .elementor-image-box-wrapper,
+.elementor-widget-icon-box .elementor-icon-box-wrapper,
+.elementor-widget-image img {
+  transition: transform .35s var(--pr-ease), box-shadow .35s var(--pr-ease);
+}
+.elementor-widget-image-box:hover .elementor-image-box-img img,
+.elementor-widget-image:hover img { transform: scale(1.03); }
+.elementor-widget-image-box:hover, .elementor-widget-icon-box:hover { transform: translateY(-3px); }
+
+/* ---- Typography rhythm ---- */
+h1, h2, h3, .elementor-heading-title { line-height: 1.18; letter-spacing: -0.01em; }
+p, li { line-height: 1.7; }
+
+/* ---- Sticky header: refined shadow once scrolled ---- */
+header.scrolled, .elementor-sticky--effects { box-shadow: 0 4px 24px rgba(0,0,0,.10) !important; }
+
+/* ---- Links get a tasteful underline-grow ---- */
+.elementor-widget-text-editor a, .entry-content a {
+  background-image: linear-gradient(var(--pr-gold), var(--pr-gold));
+  background-size: 0% 2px; background-position: 0 100%; background-repeat: no-repeat;
+  transition: background-size .3s var(--pr-ease);
+  text-decoration: none;
+}
+.elementor-widget-text-editor a:hover, .entry-content a:hover { background-size: 100% 2px; }
+
+/* ===================================================================
+   Scroll-reveal animations (added by enhance.js → .pr-reveal)
+   Performant: transform/opacity only. Reduced-motion safe.
+   =================================================================== */
+.pr-reveal { opacity: 0; transform: translateY(24px); will-change: opacity, transform;
+  transition: opacity .7s var(--pr-ease), transform .7s var(--pr-ease); }
+.pr-reveal.pr-in { opacity: 1; transform: none; }
+.pr-reveal-d1 { transition-delay: .08s; }
+.pr-reveal-d2 { transition-delay: .16s; }
+.pr-reveal-d3 { transition-delay: .24s; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .pr-reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
