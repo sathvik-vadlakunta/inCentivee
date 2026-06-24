@@ -413,6 +413,37 @@ describe("findBestMatch", () => {
     const match = findBestMatch([], "Test", "test.com", "", "");
     expect(match).toBeNull();
   });
+
+  // Regression: a same-named practice in a DIFFERENT state must NOT be matched on
+  // name alone (this produced a Houston, TX report for a California "Sunrise Dental
+  // Center"). The CA practice's real domain (sunrisedds.com) ≠ the TX GBP's website.
+  it("does not match a same-named business in a different state (Sunrise bug)", () => {
+    const houston = [
+      {
+        displayName: { text: "Sunrise Dental Center" },
+        formattedAddress: "1234 Main St, Houston, TX 77002",
+        websiteUri: "https://www.sunrisedentalsmile.com/",
+        nationalPhoneNumber: "(713) 555-0100",
+        userRatingCount: 806,
+        rating: 4.9,
+        id: "houston",
+      },
+    ];
+    // CA practice (domain sunrisedds.com, state CA) — only Houston results returned.
+    const match = findBestMatch(houston, "Sunrise Dental Center", "sunrisedds.com", "", "Roseville", "CA");
+    expect(match).toBeNull();
+  });
+
+  it("still matches the right business when state agrees", () => {
+    const ca = [{
+      displayName: { text: "Sunrise Dental Center" },
+      formattedAddress: "500 Oak Ave, Roseville, CA 95661",
+      websiteUri: "https://www.sunrisedds.com/",
+      userRatingCount: 120, rating: 4.8, id: "ca",
+    }];
+    const match = findBestMatch(ca, "Sunrise Dental Center", "sunrisedds.com", "", "Roseville", "CA");
+    expect(match?.id).toBe("ca");
+  });
 });
 
 // ════════════════════════════════════════════════════════════════

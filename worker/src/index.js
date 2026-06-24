@@ -566,7 +566,7 @@ async function fetchGooglePlaceData(practiceName, city, state, domain, phone, ap
       const data = await res.json();
 
       if (data.places && data.places.length > 0) {
-        bestPlace = findBestMatch(data.places, practiceName, domain, phone, city);
+        bestPlace = findBestMatch(data.places, practiceName, domain, phone, city, state);
         if (bestPlace) break;
       }
     }
@@ -747,59 +747,63 @@ function nameSimilarity(a, b) {
   return overlap / Math.max(sigA.length, sigB.length);
 }
 
-function findBestMatch(results, practiceName, domain, phone, city) {
+// US state from a formatted address, e.g. "…, TX 77002" -> "tx"
+function stateFromAddress(addr) {
+  const m = (addr || "").match(/,\s*([A-Za-z]{2})\s+\d{5}(?:-\d{4})?\b/);
+  return m ? m[1].toLowerCase() : "";
+}
+
+function findBestMatch(results, practiceName, domain, phone, city, state) {
   const inputDomain = normalizeDomain(domain);
   const inputPhone = normalizePhone(phone);
   const inputCity = (city || "").toLowerCase();
+  const inputState = (state || "").toLowerCase().replace(/[^a-z]/g, "").slice(0, 2);
 
-  let bestScore = -1;
-  let bestResult = null;
+  let best = null;
 
   for (const r of results) {
-    let score = 0;
     const rName = r.displayName?.text || "";
+    const rAddr = (r.formattedAddress || "").toLowerCase();
 
-    // Domain match (strongest signal — this is definitive)
     const rWebsite = normalizeDomain(r.websiteUri);
-    const domainMatches = inputDomain && rWebsite &&
-      (rWebsite === inputDomain || rWebsite.startsWith(inputDomain) || inputDomain.startsWith(rWebsite));
-    if (domainMatches) {
-      score += 10;
-    }
+    const domainMatches = !!(inputDomain && rWebsite &&
+      (rWebsite === inputDomain || rWebsite.startsWith(inputDomain) || inputDomain.startsWith(rWebsite)));
 
-    // Phone match (very strong signal)
     const rPhone = normalizePhone(r.nationalPhoneNumber);
-    if (inputPhone && rPhone && inputPhone === rPhone) {
-      score += 7;
-    }
+    const phoneMatches = !!(inputPhone && rPhone && inputPhone === rPhone);
 
-    // Name similarity (use proper comparison, not 10-char prefix)
     const sim = nameSimilarity(practiceName, rName);
+    const cityMatches = !!(inputCity && rAddr.includes(inputCity));
+    const rState = stateFromAddress(r.formattedAddress);
+    const stateMatches = !!(inputState && rState && rState === inputState);
+
+    // A same-named business in a DIFFERENT, known state (with no domain/phone proof)
+    // is almost certainly the wrong practice — skip it entirely. This is what made a
+    // California "Sunrise Dental Center" report on a Houston, TX business.
+    if (inputState && rState && !stateMatches && !domainMatches && !phoneMatches) continue;
+
+    let score = 0;
+    if (domainMatches) score += 10;
+    if (phoneMatches) score += 7;
     if (sim >= 0.8) score += 4;
     else if (sim >= 0.5) score += 2;
     else if (sim >= 0.3) score += 1;
+    if (cityMatches) score += 2;
+    if (stateMatches) score += 1;
+    // Tiebreaker only — never enough to override a real location signal.
+    score += Math.min((r.userRatingCount || 0) / 100, 0.9);
 
-    // City match
-    const rAddr = (r.formattedAddress || "").toLowerCase();
-    if (inputCity && rAddr.includes(inputCity)) {
-      score += 2;
-    }
-
-    // Tiebreaker: prefer locations with more reviews (more established/primary office)
-    const reviewBonus = Math.min((r.userRatingCount || 0) / 100, 0.9); // up to 0.9 bonus, never enough to override a real signal
-    score += reviewBonus;
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestResult = r;
-    }
+    const cand = { r, domainMatches, phoneMatches, sim, cityMatches, score };
+    if (!best || score > best.score) best = cand;
   }
 
-  // Require a minimum confidence — domain match, phone match, or strong name+city match
-  // Never return a random first result as fallback
-  if (bestScore >= 4) return bestResult;  // domain, phone, or strong name match
-  if (bestScore >= 3) return bestResult;  // name + city
-  return null; // No confident match — better to return nothing than wrong data
+  if (!best) return null;
+  // Acceptance REQUIRES a location anchor. Name similarity alone is unreliable —
+  // common practice names ("Sunrise Dental Center", "Smile Dental") collide across
+  // cities/states, so a name-only match must NOT be accepted.
+  if (best.domainMatches || best.phoneMatches) return best.r;   // definitive
+  if (best.sim >= 0.5 && best.cityMatches) return best.r;        // name corroborated by city
+  return null; // no confident, location-anchored match — return nothing, not wrong data
 }
 
 /**
