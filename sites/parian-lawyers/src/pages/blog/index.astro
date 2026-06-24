@@ -1,7 +1,9 @@
 ---
 import Base from '@layouts/Base.astro'
-import posts from '@data/blog-index.json'
-const cats = Array.from(new Set((posts as any[]).map((p) => p.cat))).sort()
+import rawPosts from '@data/blog-index.json'
+// Always show newest first by default (the index is pre-sorted, but make it explicit).
+const posts = [...(rawPosts as any[])].sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+const cats = Array.from(new Set(posts.map((p) => p.cat))).sort()
 function fmt(d: string) {
   if (!d) return ''
   const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']

@@ -209,6 +209,9 @@
 
       // category from slug
       var slug=location.pathname.toLowerCase();
+      // informational / non-service pages should NOT get a generic stock photo (e.g.
+      // the law-book "legal" fallback that was showing on both About sub-pages).
+      var skipImg=/(^|\/)(about-us|what-to-expect|who-we-represent|areas-served|practice-areas|our-team|choosing-the|awards-honors|scholarship|testimonials|client-testimonials|contact)(\/|$)/.test(slug);
       var MAP=[['truck','truck-accident'],['motorcycle','motorcycle'],['pedestrian','pedestrian'],
         ['dog','dog-bite'],['slip','slip-and-fall'],['fall','slip-and-fall'],['nursing','nursing-home'],
         ['workers','workers-compensation'],['workman','workers-compensation'],['social-security','social-security'],
@@ -232,7 +235,7 @@
 
       // category image — float before the first subheading (or after para 2)
       var anchor=col.querySelector(':scope > h2, :scope > h3') || ps[2] || ps[1];
-      if(anchor){
+      if(anchor && !skipImg){
         var fig=document.createElement('figure');
         fig.className='pr-figure pr-figure--'+side;
         fig.innerHTML='<img src="/images/stock/'+cat+'-'+variant+'.jpg" alt="" loading="lazy" decoding="async">';
