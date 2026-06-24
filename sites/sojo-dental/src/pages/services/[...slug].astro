@@ -41,11 +41,16 @@ const slugSum = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0)
 const stockVariant = (label: string, extra: number) =>
   `/images/stock/${label}-${((slugSum + SITE_OFFSET + extra) % 4) + 1}.webp`
 const _label = CAT_LABEL[service.data.category]
-const heroImg = service.data.image
-  || (_label ? stockVariant(_label, 0) : `/images/stock/hero-office-${((slugSum + 1) % 4) + 1}.webp`)
-const bodyImg = _label ? stockVariant(_label, 2) : `/images/stock/hero-office-${((slugSum + 3) % 4) + 1}.webp`
+// A custom service photo (frontmatter `image:`) is showcased as the body feature
+// image (portrait-friendly), not stretched behind the hero text. The hero keeps a
+// wide stock banner so the headline stays readable.
+const hasCustomImg = !!service.data.image
+const heroImg = _label ? stockVariant(_label, 0) : `/images/stock/hero-office-${((slugSum + 1) % 4) + 1}.webp`
+const bodyImg = service.data.image
+  || (_label ? stockVariant(_label, 2) : `/images/stock/hero-office-${((slugSum + 3) % 4) + 1}.webp`)
 // Deterministic 0/1/2 per service so the body layout differs page-to-page.
-const variant = slugSum % 3
+// Custom photos always use the side-by-side layout (variant 2 style).
+const variant = hasCustomImg ? 2 : slugSum % 3
 ---
 
 <Base
@@ -108,7 +113,7 @@ const variant = slugSum % 3
         {/* Prominent feature image near the top — layout varies per service */}
         {variant === 2 ? (
           <div class="grid md:grid-cols-2 gap-6 sm:gap-8 items-center mb-10">
-            <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`} class="w-full rounded-2xl aspect-[4/3] object-cover shadow-md" loading="eager" />
+            <img src={bodyImg} alt={`${service.data.title} at ${practice.name}`} class={`w-full rounded-2xl object-cover shadow-md ${hasCustomImg ? 'aspect-[3/4] max-h-[520px] object-top' : 'aspect-[4/3]'}`} loading="eager" />
             <div>
               <p class="text-gray-600 leading-relaxed mb-4">{service.data.description}</p>
               <a href="/contact" class="inline-flex items-center justify-center bg-primary text-white px-6 py-3 rounded-lg font-semibold hover:bg-secondary transition-colors">Book Appointment</a>

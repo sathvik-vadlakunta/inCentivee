@@ -3,6 +3,7 @@ title: IV Sedation
 description: IV sedation dentistry for anxious patients — safe, monitored sedation so you can receive dental care in complete comfort at SoJo Dental.
 category: General & Family Dentistry
 order: 6
+image: /images/services/iv-sedation.webp
 faqs:
   - question: Is IV sedation safe?
     answer: Yes. Our team is trained and certified in IV sedation administration. Your vital signs are monitored continuously throughout the procedure.
