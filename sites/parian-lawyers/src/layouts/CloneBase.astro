@@ -28,13 +28,14 @@ const { head, body, bodyClass = '' } = Astro.props
     <link rel="stylesheet" href="/enhance.css" />
   </head>
   <body class={bodyClass}>
+    <a href="#pr-main" class="pr-skip">Skip to main content</a>
     <SiteHeader />
     <!-- The cloned theme lays its sections out with float:left (.fullwidth, etc.).
          Wrap them in a flow-root so the floats are contained — otherwise our footer
          rises up behind the content and paints its navy bg over the whole page. -->
-    <div class="pl-clone-main" style="display:flow-root">
+    <main id="pr-main" class="pl-clone-main" style="display:flow-root">
       <Fragment set:html={body} />
-    </div>
+    </main>
     <SiteFooter />
     <script src="/enhance.js" is:inline defer></script>
   </body>

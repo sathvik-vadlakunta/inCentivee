@@ -49,8 +49,9 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
     <SchemaMarkup />
   </head>
   <body class="min-h-screen flex flex-col">
+    <a href="#pr-main" class="pr-skip">Skip to main content</a>
     <SiteHeader />
-    <main class="flex-1">
+    <main id="pr-main" class="flex-1">
       <slot />
     </main>
     <SiteFooter />

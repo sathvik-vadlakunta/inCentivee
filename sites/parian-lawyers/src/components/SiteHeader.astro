@@ -1,7 +1,7 @@
 ---
 import practice from '@data/practice.json'
 import nav from '@data/nav.json'
-const tel = practice.phone.replace(/[^+\d]/g, '')
+const tel = '+1' + practice.phone.replace(/\D/g, '')
 type Item = { label: string; href: string; children?: Item[] }
 const items = nav as Item[]
 const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.children.length)
@@ -18,7 +18,7 @@ const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.c
         {items.map((it) => (
           <li class={it.children ? 'has-children' : ''}>
             {it.children ? (
-              <button class="pl-top" type="button" aria-expanded="false">{it.label}<span class="caret">▾</span></button>
+              <button class="pl-top" type="button" aria-haspopup="true" aria-expanded="false">{it.label}<span class="caret">▾</span></button>
             ) : (
               <a class="pl-top" href={it.href}>{it.label}</a>
             )}
@@ -100,9 +100,9 @@ const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.c
   .mega__all{color:#c18d15 !important;font-weight:700;break-inside:avoid;}
 
   .pl-actions{display:flex;align-items:center;gap:.85rem;}
-  .pl-phone{display:flex;flex-direction:column;line-height:1.1;color:#fff;text-decoration:none;text-align:right;}
-  .pl-phone span{font:600 10px/1 'Inter';text-transform:uppercase;letter-spacing:.08em;color:#ffb400;}
-  .pl-phone strong{font:700 16px/1.2 'Inter';}
+  .pl-phone{display:flex;flex-direction:column;line-height:1.1;color:#fff;text-decoration:none;text-align:right;white-space:nowrap;flex-shrink:0;}
+  .pl-phone span{font:600 10px/1 'Inter';text-transform:uppercase;letter-spacing:.08em;color:#ffb400;white-space:nowrap;}
+  .pl-phone strong{font:700 16px/1.2 'Inter';white-space:nowrap;}
   .pl-cta{background:#c18d15;color:#fff;font:700 13px/1 'Inter';text-transform:uppercase;letter-spacing:.03em;padding:.8rem 1.1rem;border-radius:9px;text-decoration:none;white-space:nowrap;transition:.2s;}
   .pl-cta:hover{background:#a9790f;transform:translateY(-2px);box-shadow:0 10px 24px rgba(193,141,21,.4);}
   .pl-burger{display:none;flex-direction:column;gap:5px;background:none;border:0;cursor:pointer;padding:8px;}
@@ -114,7 +114,7 @@ const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.c
   .pl-drawer ul ul a{padding-left:38px;font-size:14px;color:#aeb6cc;}
   .pl-drawer ul ul ul a{padding-left:54px;font-size:13px;}
   .pl-drawer .dm-call{color:#ffb400;font-weight:700;}
-  @media(max-width:1100px){
+  @media(max-width:1240px){
     .pl-nav,.pl-phone{display:none;}
     .pl-burger{display:flex;}.pl-drawer{display:block;}.pl-actions{margin-left:auto;}
   }

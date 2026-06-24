@@ -126,9 +126,9 @@
     safe(function(){
       if(document.querySelector('.pr-modal')) return;
       var m=document.createElement('div'); m.className='pr-modal'; m.setAttribute('aria-hidden','true');
-      m.innerHTML='<div class="pr-modal-card" role="dialog" aria-modal="true" aria-label="Request a free consultation">'+
-        '<button class="pr-modal-x" type="button" aria-label="Close">&times;</button>'+
-        '<h3>Request a Free Consultation</h3>'+
+      m.innerHTML='<div class="pr-modal-card" role="dialog" aria-modal="true" aria-labelledby="prModalTitle">'+
+        '<button class="pr-modal-x" type="button" aria-label="Close consultation form">&times;</button>'+
+        '<h3 id="prModalTitle">Request a Free Consultation</h3>'+
         '<p class="pr-modal-sub">Tell us what happened — we’ll review your case at no cost. Or call <a href="tel:+17707275550">(770) 727-5550</a>.</p>'+
         '<form class="pr-modal-form">'+
           '<label>Full name<input name="name" autocomplete="name" required></label>'+
@@ -144,7 +144,19 @@
       var close=function(){ m.classList.remove('pr-show'); m.setAttribute('aria-hidden','true'); document.body.style.overflow=''; if(lastFocus&&lastFocus.focus) lastFocus.focus(); };
       document.addEventListener('click',function(e){ if(e.target.closest('[data-pr-open-modal]')){ e.preventDefault(); open(); } });
       m.addEventListener('click',function(e){ if(e.target===m||e.target.closest('.pr-modal-x')) close(); });
-      document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&m.classList.contains('pr-show')) close(); });
+      // keyboard: Esc closes; Tab is trapped within the dialog (a11y)
+      document.addEventListener('keydown',function(e){
+        if(!m.classList.contains('pr-show')) return;
+        if(e.key==='Escape'){ close(); return; }
+        if(e.key==='Tab'){
+          var f=m.querySelectorAll('a[href],button,input,textarea,select');
+          f=[].slice.call(f).filter(function(el){return !el.disabled&&el.offsetParent!==null;});
+          if(!f.length) return;
+          var first=f[0], last=f[f.length-1];
+          if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+          else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+        }
+      });
       m.querySelector('.pr-modal-form').addEventListener('submit',function(e){
         e.preventDefault(); var fd=new FormData(e.target);
         var body=encodeURIComponent('Name: '+fd.get('name')+'\nPhone: '+fd.get('phone')+'\nEmail: '+fd.get('email')+'\n\n'+fd.get('message'));
@@ -240,15 +252,8 @@
       }
     });
 
-    // 12) hero entrance — fade-up the hero content + slow ken-burns on the bg image.
-    if(!reduce) safe(function(){
-      var hero=document.querySelector('.pr-hero'); if(hero) hero.classList.add('pr-hero-anim');
-      var content=document.querySelector('.pr-hero .banner-content'); if(content) content.classList.add('pr-hero-in');
-      // also animate clean (Base-layout) hero intros — bio + scholarship
-      ['.bio__intro','.bio__photo','.sch__hero .sch__wrap'].forEach(function(s){
-        var el=document.querySelector(s); if(el) el.classList.add('pr-hero-in');
-      });
-    });
+    // (hero entrance + ken-burns are now pure CSS keyed on .page-banner / .bio / .sch
+    //  so they run on first paint — see enhance.css "hero entrance + subtle motion".)
 
     // 9) scroll-reveal
     if(reduce || !('IntersectionObserver' in window)) return;

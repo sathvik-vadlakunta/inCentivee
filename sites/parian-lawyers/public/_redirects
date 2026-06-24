@@ -1,0 +1,27 @@
+# Index-less stubs from the WordPress site that have no landing content of their own
+# (they were redirects or archive roots on the original). Exact-path 301s so their
+# real child pages (e.g. /carrollton-injury/truck-accident-lawyer/driver-fatigue/)
+# keep working. Targets match the original site's 301s where it has them.
+
+# location "injury" hubs (original 301'd /carrollton-injury/ -> home)
+/carrollton-injury/                          /                                                     301
+/carrollton-injury/truck-accident-lawyer/    /carrollton-truck-accident-lawyer/                    301
+/carrollton-injury/workers-compensation-lawyer/  /carrollton-workers-compensation-lawyer/          301
+/atlanta-injury/                             /                                                     301
+/atlanta-injury/truck-accident-lawyer/       /                                                     301
+/austell-injury/                             /                                                     301
+/peachtree-injury/                           /peachtree-injury/car-accident-lawyer/                301
+/mcdonough-injury/                           /                                                     301
+/mcdonough-injury/catastrophic-injury/       /                                                     301
+
+# practice-area stubs (match original 301 targets)
+/carrollton-dangerous-drug-lawyer/           /carrollton-mass-torts-lawyer/dangerous-drug/actos/   301
+/carrollton-dangerous-drug-lawyer/invokana/  /carrollton-mass-torts-lawyer/                        301
+/carrollton-medical-malpractice-lawyer/      /                                                     301
+
+# WordPress archive roots (no real page)
+/category/                                   /blog/                                                301
+/tag/                                        /blog/                                                301
+/testimonials-category/                      /testimonials/                                        301
+/author/                                     /                                                     301
+/nap/                                        /                                                     301
