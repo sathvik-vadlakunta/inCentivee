@@ -104,19 +104,52 @@
       });
     });
 
-    // 8) hero overlay boxes — blend solid blocks into the image
+    // 8) modern hero — replace the boxy text + non-functional inline CF7 form on the
+    //    cloned .page-banner with clean text + a "Free Consultation" CTA that opens a modal.
     safe(function(){
-      var hero=document.querySelector('.elementor-section, section'); if(!hero) return;
-      var widgets=hero.querySelectorAll('.elementor-widget-heading,.elementor-widget-text-editor,.elementor-widget-form,form');
-      widgets.forEach(function(w){
-        var bg=getComputedStyle(w.querySelector('.elementor-widget-container')||w).backgroundColor;
-        var m=bg && bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-        if(!m) return; var a=m[4]===undefined?1:parseFloat(m[4]);
-        var dark=(+m[1]+ +m[2]+ +m[3])/3 < 170;
-        if(a>=0.95 && dark){ // opaque dark block sitting over the hero
-          (w.querySelector('form')||w.querySelector('.elementor-widget-container')) ?
-            w.classList.add(w.querySelector('form')?'pr-hero-form':'pr-hero-overlay') : w.classList.add('pr-hero-overlay');
-        }
+      var banner=document.querySelector('.page-banner'); if(!banner) return;
+      banner.classList.add('pr-hero');
+      // drop the inline form column (it can't submit on a static deploy anyway)
+      var form=banner.querySelector('.banner-form');
+      if(form){ var fc=form.closest('[class*="col-"]'); if(fc) fc.classList.add('pr-hide'); else form.style.display='none'; }
+      // inject the CTA cluster into the content column
+      var content=banner.querySelector('.banner-content');
+      if(content && !content.querySelector('.pr-hero-cta')){
+        var cta=document.createElement('div'); cta.className='pr-hero-cta';
+        cta.innerHTML='<button type="button" class="pr-cta-btn" data-pr-open-modal>Free Consultation</button>'+
+          '<a class="pr-cta-call" href="tel:+17707275550"><span>Call 24/7 · Free Case Review</span><strong>(770) 727-5550</strong></a>';
+        content.appendChild(cta);
+      }
+    });
+
+    // 8b) consultation modal — built once, opened by any [data-pr-open-modal] trigger.
+    safe(function(){
+      if(document.querySelector('.pr-modal')) return;
+      var m=document.createElement('div'); m.className='pr-modal'; m.setAttribute('aria-hidden','true');
+      m.innerHTML='<div class="pr-modal-card" role="dialog" aria-modal="true" aria-label="Request a free consultation">'+
+        '<button class="pr-modal-x" type="button" aria-label="Close">&times;</button>'+
+        '<h3>Request a Free Consultation</h3>'+
+        '<p class="pr-modal-sub">Tell us what happened — we’ll review your case at no cost. Or call <a href="tel:+17707275550">(770) 727-5550</a>.</p>'+
+        '<form class="pr-modal-form">'+
+          '<label>Full name<input name="name" autocomplete="name" required></label>'+
+          '<div class="pr-modal-row"><label>Phone<input name="phone" type="tel" autocomplete="tel" required></label>'+
+          '<label>Email<input name="email" type="email" autocomplete="email" required></label></div>'+
+          '<label>How can we help?<textarea name="message" rows="4" required></textarea></label>'+
+          '<button type="submit" class="pr-cta-btn pr-modal-submit">Send Message</button>'+
+          '<p class="pr-modal-fine">Submitting this form does not create an attorney-client relationship.</p>'+
+        '</form></div>';
+      document.body.appendChild(m);
+      var lastFocus=null;
+      var open=function(){ lastFocus=document.activeElement; m.classList.add('pr-show'); m.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; var f=m.querySelector('input'); if(f) setTimeout(function(){f.focus();},60); };
+      var close=function(){ m.classList.remove('pr-show'); m.setAttribute('aria-hidden','true'); document.body.style.overflow=''; if(lastFocus&&lastFocus.focus) lastFocus.focus(); };
+      document.addEventListener('click',function(e){ if(e.target.closest('[data-pr-open-modal]')){ e.preventDefault(); open(); } });
+      m.addEventListener('click',function(e){ if(e.target===m||e.target.closest('.pr-modal-x')) close(); });
+      document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&m.classList.contains('pr-show')) close(); });
+      m.querySelector('.pr-modal-form').addEventListener('submit',function(e){
+        e.preventDefault(); var fd=new FormData(e.target);
+        var body=encodeURIComponent('Name: '+fd.get('name')+'\nPhone: '+fd.get('phone')+'\nEmail: '+fd.get('email')+'\n\n'+fd.get('message'));
+        var subj=encodeURIComponent('Free Consultation Request — '+fd.get('name'));
+        window.location.href='mailto:cade@westgalawyer.com?subject='+subj+'&body='+body;
       });
     });
 

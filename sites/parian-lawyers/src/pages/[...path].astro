@@ -16,8 +16,21 @@ export async function getStaticPaths() {
       else if (e.name === 'index.html') {
         const rel = path.relative(root, fp).replace(/\/index\.html$/, '').replace(/index\.html$/, '')
         const html = fs.readFileSync(fp, 'utf8')
-        const head = (html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1]
-        const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1]
+        // Strip the firm's inherited 3rd-party tracking: their old Google Tag Manager
+        // container injects a call-tracking DNI script that swaps our real phone number
+        // for a stale tracking number we don't own. Also drop WP.com stats. We'll add
+        // our OWN GA4/GTM later. (See platform plan.)
+        const sanitize = (s: string) =>
+          s
+            // GTM bootstrap <script> + any script referencing googletagmanager / dataLayer
+            .replace(/<script[^>]*>[\s\S]*?googletagmanager\.com[\s\S]*?<\/script>/gi, '')
+            .replace(/<script[^>]*src="[^"]*googletagmanager\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
+            // GTM <noscript> iframe fallback
+            .replace(/<noscript[^>]*>\s*<iframe[^>]*googletagmanager\.com[\s\S]*?<\/noscript>/gi, '')
+            // WordPress.com / Jetpack stats pixel
+            .replace(/<script[^>]*src="[^"]*stats\.wp\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
+        const head = sanitize((html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1])
+        const body = sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1])
         // preserve the original <body> classes — the theme/Elementor uses them for
         // page background, text colors, and layout scoping.
         const bodyOpen = (html.match(/<body([^>]*)>/i) || [, ''])[1]
