@@ -1,59 +1,218 @@
 [
-  { "label": "Who We Are", "href": "/about-us/", "children": [
-    { "label": "Cade Parian", "href": "/about-us/cade-parian/" },
-    { "label": "Tyler Paul Smith", "href": "/about-us/tyler-paul-smith/" },
-    { "label": "Ryan Farmer", "href": "/about-us/ryan-farmer/" },
-    { "label": "Awards & Honors", "href": "/about-us/awards-honors/" },
-    { "label": "What to Expect", "href": "/about-us/what-to-expect/" },
-    { "label": "Who We Represent", "href": "/about-us/who-we-represent/" }
-  ]},
-  { "label": "Practice Areas", "href": "/practice-areas/", "children": [
-    { "label": "Personal Injury", "href": "/practice-areas/", "children": [
-      { "label": "Car Accident", "href": "/carrollton-car-accident-lawyer/" },
-      { "label": "Truck Accident", "href": "/carrollton-truck-accident-lawyer/" },
-      { "label": "Motorcycle Accident", "href": "/carrollton-motorcycle-accident-lawyer/" },
-      { "label": "Pedestrian Accident", "href": "/carrollton-pedestrian-accident-lawyer/" },
-      { "label": "Bus Accident", "href": "/carrollton-bus-accident-lawyer/" },
-      { "label": "Catastrophic Injury", "href": "/carrollton-catastrophic-injury-lawyer/" },
-      { "label": "Wrongful Death", "href": "/carrollton-wrongful-death-lawyer/" },
-      { "label": "Slip & Fall", "href": "/carrollton-slip-and-fall-accident-lawyer/" },
-      { "label": "Dog Bite", "href": "/carrollton-dog-bite-lawyer/" },
-      { "label": "Nursing Home Abuse", "href": "/carrollton-nursing-home-abuse-lawyer/" },
-      { "label": "Mass Torts", "href": "/carrollton-mass-torts-lawyer/" },
-      { "label": "Product Liability", "href": "/carrollton-mass-torts-lawyer/product-liability/" },
-      { "label": "Dangerous Drugs", "href": "/carrollton-mass-torts-lawyer/dangerous-drug/" },
-      { "label": "Workers' Compensation", "href": "/carrollton-workers-compensation-lawyer/" },
-      { "label": "Social Security", "href": "/carrollton-social-security-lawyer/" },
-      { "label": "ERISA Disability", "href": "/carrollton-erisa-disability-lawyer/" },
-      { "label": "Long-Term Disability", "href": "/carrollton-long-term-disability-lawyer/" }
-    ]},
-    { "label": "Family Law", "href": "/practice-areas/", "children": [
-      { "label": "Divorce", "href": "/divorce-attorney-in-carrollton-ga/" },
-      { "label": "Child Custody", "href": "/carrollton-divorce-child-custody-support/" },
-      { "label": "Child Support", "href": "/child-support-attorney-in-carrollton-ga/" },
-      { "label": "Adult Adoptions", "href": "/carrollton-adult-adoptions/" }
-    ]},
-    { "label": "Criminal Law", "href": "/practice-areas/", "children": [
-      { "label": "DUI", "href": "/dui-attorney-in-carrollton-ga/" },
-      { "label": "Drug Charges", "href": "/drug-charges-attorney-in-carrollton-ga/" },
-      { "label": "Assault & Battery", "href": "/assault-battery-attorney-in-carrollton/" },
-      { "label": "Theft Crimes", "href": "/theft-crimes-attorney-in-carrollton-ga/" }
-    ]}
-  ]},
-  { "label": "Areas Served", "href": "/areas-served/", "children": [
-    { "label": "Carrollton", "href": "/carrollton-personal-injury-lawyers/" },
-    { "label": "Bremen", "href": "/bremen-injury/" },
-    { "label": "Newnan", "href": "/newnan-injury/" },
-    { "label": "Douglasville", "href": "/douglasville-injury/" },
-    { "label": "Villa Rica", "href": "/villa-rica-injury/" },
-    { "label": "Rome", "href": "/rome-injury/" },
-    { "label": "LaGrange", "href": "/lagrange-injury/" },
-    { "label": "Columbus", "href": "/columbus-injury/" },
-    { "label": "Atlanta Metro", "href": "/clayton-county-injury/" },
-    { "label": "Birmingham, AL", "href": "/birmingham-injury/" }
-  ]},
-  { "label": "Testimonials", "href": "/client-testimonials/" },
-  { "label": "Scholarship", "href": "/scholarship-2021/" },
-  { "label": "Blog", "href": "/blog/" },
-  { "label": "Contact", "href": "/contact-us/" }
+  {
+    "label": "Who We Are",
+    "href": "/about-us/",
+    "children": [
+      {
+        "label": "Cade Parian",
+        "href": "/about-us/cade-parian/"
+      },
+      {
+        "label": "Tyler Paul Smith",
+        "href": "/about-us/tyler-paul-smith/"
+      },
+      {
+        "label": "Ryan Farmer",
+        "href": "/about-us/ryan-farmer/"
+      },
+      {
+        "label": "Awards & Honors",
+        "href": "/about-us/awards-honors/"
+      },
+      {
+        "label": "What to Expect",
+        "href": "/about-us/what-to-expect/"
+      },
+      {
+        "label": "Who We Represent",
+        "href": "/about-us/who-we-represent/"
+      }
+    ]
+  },
+  {
+    "label": "Practice Areas",
+    "href": "/practice-areas/",
+    "children": [
+      {
+        "label": "Personal Injury",
+        "href": "/practice-areas/",
+        "children": [
+          {
+            "label": "Car Accident",
+            "href": "/carrollton-car-accident-lawyer/"
+          },
+          {
+            "label": "Truck Accident",
+            "href": "/carrollton-truck-accident-lawyer/"
+          },
+          {
+            "label": "Motorcycle Accident",
+            "href": "/carrollton-motorcycle-accident-lawyer/"
+          },
+          {
+            "label": "Pedestrian Accident",
+            "href": "/carrollton-pedestrian-accident-lawyer/"
+          },
+          {
+            "label": "Bus Accident",
+            "href": "/carrollton-bus-accident-lawyer/"
+          },
+          {
+            "label": "Catastrophic Injury",
+            "href": "/carrollton-catastrophic-injury-lawyer/"
+          },
+          {
+            "label": "Wrongful Death",
+            "href": "/carrollton-wrongful-death-lawyer/"
+          },
+          {
+            "label": "Slip & Fall",
+            "href": "/carrollton-slip-and-fall-accident-lawyer/"
+          },
+          {
+            "label": "Dog Bite",
+            "href": "/carrollton-dog-bite-lawyer/"
+          },
+          {
+            "label": "Nursing Home Abuse",
+            "href": "/carrollton-nursing-home-abuse-lawyer/"
+          },
+          {
+            "label": "Mass Torts",
+            "href": "/carrollton-mass-torts-lawyer/"
+          },
+          {
+            "label": "Product Liability",
+            "href": "/carrollton-mass-torts-lawyer/product-liability/"
+          },
+          {
+            "label": "Dangerous Drugs",
+            "href": "/carrollton-mass-torts-lawyer/dangerous-drug/"
+          },
+          {
+            "label": "Workers' Compensation",
+            "href": "/carrollton-workers-compensation-lawyer/"
+          },
+          {
+            "label": "Social Security",
+            "href": "/carrollton-social-security-lawyer/"
+          },
+          {
+            "label": "ERISA Disability",
+            "href": "/carrollton-erisa-disability-lawyer/"
+          },
+          {
+            "label": "Long-Term Disability",
+            "href": "/carrollton-long-term-disability-lawyer/"
+          }
+        ]
+      },
+      {
+        "label": "Family Law",
+        "href": "/family-law/",
+        "children": [
+          {
+            "label": "Divorce",
+            "href": "/divorce-attorney-in-carrollton-ga/"
+          },
+          {
+            "label": "Child Custody",
+            "href": "/carrollton-divorce-child-custody-support/"
+          },
+          {
+            "label": "Child Support",
+            "href": "/child-support-attorney-in-carrollton-ga/"
+          },
+          {
+            "label": "Adult Adoptions",
+            "href": "/carrollton-adult-adoptions/"
+          }
+        ]
+      },
+      {
+        "label": "Criminal Law",
+        "href": "/criminal-law/",
+        "children": [
+          {
+            "label": "DUI",
+            "href": "/dui-attorney-in-carrollton-ga/"
+          },
+          {
+            "label": "Drug Charges",
+            "href": "/drug-charges-attorney-in-carrollton-ga/"
+          },
+          {
+            "label": "Assault & Battery",
+            "href": "/assault-battery-attorney-in-carrollton/"
+          },
+          {
+            "label": "Theft Crimes",
+            "href": "/theft-crimes-attorney-in-carrollton-ga/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "Areas Served",
+    "href": "/areas-served/",
+    "children": [
+      {
+        "label": "Carrollton",
+        "href": "/carrollton-personal-injury-lawyers/"
+      },
+      {
+        "label": "Bremen",
+        "href": "/bremen-injury/"
+      },
+      {
+        "label": "Newnan",
+        "href": "/newnan-injury/"
+      },
+      {
+        "label": "Douglasville",
+        "href": "/douglasville-injury/"
+      },
+      {
+        "label": "Villa Rica",
+        "href": "/villa-rica-injury/"
+      },
+      {
+        "label": "Rome",
+        "href": "/rome-injury/"
+      },
+      {
+        "label": "LaGrange",
+        "href": "/lagrange-injury/"
+      },
+      {
+        "label": "Columbus",
+        "href": "/columbus-injury/"
+      },
+      {
+        "label": "Atlanta Metro",
+        "href": "/clayton-county-injury/"
+      },
+      {
+        "label": "Birmingham, AL",
+        "href": "/birmingham-injury/"
+      }
+    ]
+  },
+  {
+    "label": "Testimonials",
+    "href": "/client-testimonials/"
+  },
+  {
+    "label": "Scholarship",
+    "href": "/scholarship-2021/"
+  },
+  {
+    "label": "Blog",
+    "href": "/blog/"
+  },
+  {
+    "label": "Contact",
+    "href": "/contact-us/"
+  }
 ]

@@ -1,0 +1,23 @@
+---
+import Base from '@layouts/Base.astro'
+import CategoryHub from '@components/CategoryHub.astro'
+
+const areas = [
+  { label: 'Divorce', href: '/divorce-attorney-in-carrollton-ga/', icon: 'fa-file-signature', desc: 'Contested and uncontested divorce in Carroll County and west Georgia.' },
+  { label: 'Child Custody', href: '/carrollton-divorce-child-custody-support/', icon: 'fa-children', desc: 'Custody, visitation, and parenting plans focused on your children.' },
+  { label: 'Child Support', href: '/child-support-attorney-in-carrollton-ga/', icon: 'fa-hand-holding-dollar', desc: 'Establishing, modifying, and enforcing child support orders.' },
+  { label: 'Adult Adoptions', href: '/carrollton-adult-adoptions/', icon: 'fa-people-roof', desc: 'Making family official through the adult adoption process.' },
+]
+---
+
+<Base
+  title="Family Law Attorneys"
+  description="Parian Lawyers handles divorce, child custody, child support, and adult adoptions in Carrollton and west Georgia. Free consultation — (770) 727-5550."
+>
+  <CategoryHub
+    eyebrow="Practice Areas · Family Law"
+    title="Family Law"
+    intro="Family matters are personal. Whether you're facing divorce, a custody dispute, or a child support issue, our Carrollton attorneys guide you through it with straight answers and steady support."
+    areas={areas}
+  />
+</Base>

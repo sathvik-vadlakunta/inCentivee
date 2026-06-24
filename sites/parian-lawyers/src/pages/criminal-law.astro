@@ -1,0 +1,23 @@
+---
+import Base from '@layouts/Base.astro'
+import CategoryHub from '@components/CategoryHub.astro'
+
+const areas = [
+  { label: 'DUI', href: '/dui-attorney-in-carrollton-ga/', icon: 'fa-car-side', desc: 'DUI defense to protect your license, record, and freedom.' },
+  { label: 'Drug Charges', href: '/drug-charges-attorney-in-carrollton-ga/', icon: 'fa-pills', desc: 'Defense against possession, distribution, and related charges.' },
+  { label: 'Assault & Battery', href: '/assault-battery-attorney-in-carrollton/', icon: 'fa-hand-fist', desc: 'Defending assault and battery allegations in Georgia courts.' },
+  { label: 'Theft Crimes', href: '/theft-crimes-attorney-in-carrollton-ga/', icon: 'fa-fingerprint', desc: 'Defense for theft, shoplifting, and property-crime charges.' },
+]
+---
+
+<Base
+  title="Criminal Defense Attorneys"
+  description="Parian Lawyers defends DUI, drug charges, assault & battery, and theft crimes in Carrollton and west Georgia. Free consultation — (770) 727-5550."
+>
+  <CategoryHub
+    eyebrow="Practice Areas · Criminal Law"
+    title="Criminal Law"
+    intro="A criminal charge can put your job, your record, and your freedom at risk. Our Carrollton defense attorneys stand between you and the State — protecting your rights at every step."
+    areas={areas}
+  />
+</Base>

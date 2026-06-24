@@ -1,0 +1,90 @@
+---
+// Reusable practice-category hub (Family Law, Criminal Law, …): hero + reviews,
+// a card grid linking each sub-practice-area, and a closing CTA. Mirrors the
+// Carrollton / Areas-Served hubs so the site stays consistent.
+interface Area { label: string; href: string; icon: string; desc?: string }
+interface Props { eyebrow: string; title: string; intro: string; areas: Area[] }
+const { eyebrow, title, intro, areas } = Astro.props as Props
+const tel = '+17707275550'
+const phone = '(770) 727-5550'
+---
+
+<article class="ch">
+  <header class="ch__hero">
+    <div class="ch__wrap">
+      <span class="ch__eyebrow">{eyebrow}</span>
+      <h1>{title}</h1>
+      <p class="ch__sub">{intro}</p>
+      <div class="ch__cta">
+        <button type="button" class="ch__btn" data-pr-open-modal>Free Consultation</button>
+        <a class="ch__call" href={`tel:${tel}`}><span>Call 24/7 · Free Case Review</span><strong>{phone}</strong></a>
+      </div>
+      <div class="ch__rev"><span class="ch__stars">★★★★★</span><span><strong>4.9</strong> · 1,000+ <i class="fab fa-google"></i> Google reviews</span></div>
+    </div>
+  </header>
+
+  <section class="ch__areas">
+    <div class="ch__wrap">
+      <span class="ch__eyebrow ch__eyebrow--dark">How We Help</span>
+      <h2>{title} Services</h2>
+      <div class="ch__grid">
+        {areas.map((a) => (
+          <a class="ch__card" href={a.href}>
+            <i class={`fas ${a.icon}`}></i>
+            <span class="ch__card-name">{a.label}</span>
+            {a.desc && <span class="ch__card-desc">{a.desc}</span>}
+            <i class="fas fa-arrow-right ch__card-go"></i>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="ch__close">
+    <div class="ch__wrap">
+      <h2>Talk to a {title.replace(/ Law$/, '')} attorney today</h2>
+      <p>Free, confidential consultation — no obligation, no fee to ask.</p>
+      <div class="ch__cta ch__cta--center">
+        <button type="button" class="ch__btn" data-pr-open-modal>Request a Free Consultation</button>
+        <a class="ch__call" href={`tel:${tel}`}><span>Call 24/7</span><strong>{phone}</strong></a>
+      </div>
+    </div>
+  </section>
+</article>
+
+<style>
+  .ch__wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .ch__eyebrow { display: inline-block; font: 700 13px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #ffb400; margin-bottom: 12px; }
+  .ch__eyebrow--dark { color: #c18d15; }
+  .ch h2 { font: 800 clamp(26px, 3.6vw, 36px)/1.12 'Inter', sans-serif; color: #1a2238; letter-spacing: -.01em; margin: 0 0 22px; }
+
+  .ch__hero { background: radial-gradient(1100px 460px at 80% -20%, rgba(193,141,21,.22), transparent 60%), linear-gradient(135deg, #1a2238 0%, #232c4a 100%); color: #fff; padding: 78px 0 64px; }
+  .ch__hero h1 { font: 800 clamp(34px, 5vw, 56px)/1.05 'Inter', sans-serif; letter-spacing: -.02em; margin: 0; }
+  .ch__sub { font: 400 19px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 660px; margin: 18px 0 30px; }
+  .ch__cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .ch__cta--center { justify-content: center; }
+  .ch__btn { background: linear-gradient(135deg, #dcab27, #c18d15); color: #15203a; font: 800 15px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .045em; border: 0; border-radius: 12px; padding: 17px 30px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 9px; box-shadow: 0 14px 34px rgba(193,141,21,.4); transition: transform .2s, box-shadow .2s; }
+  .ch__btn:hover { transform: translateY(-3px); box-shadow: 0 22px 46px rgba(193,141,21,.55); }
+  .ch__call { display: flex; flex-direction: column; color: #fff; text-decoration: none; line-height: 1.1; }
+  .ch__call span { font: 600 11px/1 'Inter'; text-transform: uppercase; letter-spacing: .09em; color: #ffb400; margin-bottom: 4px; }
+  .ch__call strong { font: 800 23px/1 'Inter'; }
+  .ch__rev { display: flex; align-items: center; gap: 11px; margin-top: 26px; }
+  .ch__stars { color: #ffc94d; letter-spacing: 2px; font-size: 16px; }
+  .ch__rev span { color: #e7eaf2; font: 500 14px/1 'Inter'; }
+  .ch__rev strong { color: #fff; font-weight: 800; }
+  .ch__rev .fa-google { margin: 0 2px; }
+
+  .ch__areas { padding: 64px 0; }
+  .ch__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+  .ch__card { position: relative; display: flex; flex-direction: column; background: #fff; border: 1px solid #e8ecf3; border-radius: 16px; padding: 28px 26px; text-decoration: none; box-shadow: 0 6px 18px rgba(16,24,40,.05); transition: transform .22s, box-shadow .22s, border-color .22s; }
+  .ch__card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(16,24,40,.12); border-color: #e7d4a6; }
+  .ch__card > i:first-child { color: #c18d15; font-size: 24px; margin-bottom: 14px; }
+  .ch__card-name { font: 800 18px/1.25 'Inter', sans-serif; color: #1a2238; }
+  .ch__card-desc { font: 400 14px/1.6 'Inter', sans-serif; color: #56607a; margin-top: 8px; }
+  .ch__card-go { position: absolute; top: 26px; right: 24px; color: #c4ccd9; font-size: 13px; transition: transform .22s, color .22s; }
+  .ch__card:hover .ch__card-go { color: #c18d15; transform: translateX(3px); }
+
+  .ch__close { background: linear-gradient(135deg, #1a2238, #232c4a); color: #fff; padding: 70px 0; text-align: center; }
+  .ch__close h2 { color: #fff; }
+  .ch__close p { font: 400 17px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 520px; margin: 0 auto 30px; }
+</style>
