@@ -1,0 +1,252 @@
+---
+import Base from '@layouts/Base.astro'
+
+const tel = '+17707275550'
+const phone = '(770) 727-5550'
+
+const caseResults = [
+  { amt: '$9M', label: 'Multi-Vehicle Collision' },
+  { amt: '$6M', label: 'Catastrophic Injury' },
+  { amt: '$4.5M', label: 'Truck Accident' },
+  { amt: '$3M', label: 'Wrongful Death' },
+]
+
+const areas = [
+  { label: 'Car Accidents', href: '/carrollton-car-accident-lawyer/', icon: 'fa-car-burst' },
+  { label: 'Truck Accidents', href: '/carrollton-truck-accident-lawyer/', icon: 'fa-truck' },
+  { label: 'Motorcycle Accidents', href: '/carrollton-motorcycle-accident-lawyer/', icon: 'fa-motorcycle' },
+  { label: 'Pedestrian Accidents', href: '/carrollton-pedestrian-accident-lawyer/', icon: 'fa-person-walking' },
+  { label: 'Catastrophic Injury', href: '/carrollton-catastrophic-injury-lawyer/', icon: 'fa-house-medical-circle-exclamation' },
+  { label: 'Wrongful Death', href: '/carrollton-wrongful-death-lawyer/', icon: 'fa-heart-crack' },
+  { label: 'Slip & Fall', href: '/carrollton-slip-and-fall-accident-lawyer/', icon: 'fa-person-falling' },
+  { label: 'Dog Bites', href: '/carrollton-dog-bite-lawyer/', icon: 'fa-dog' },
+  { label: 'Nursing Home Abuse', href: '/carrollton-nursing-home-abuse-lawyer/', icon: 'fa-wheelchair' },
+  { label: 'Mass Torts', href: '/carrollton-mass-torts-lawyer/', icon: 'fa-scale-balanced' },
+  { label: "Workers' Comp", href: '/carrollton-workers-compensation-lawyer/', icon: 'fa-helmet-safety' },
+  { label: 'Social Security', href: '/carrollton-social-security-lawyer/', icon: 'fa-id-card' },
+]
+
+const testimonials = [
+  { quote: 'Cade fought for me. Fought hard. Wouldn’t give up and wouldn’t back down. I appreciate him as my lawyer and now as my friend.', who: 'Personal Injury Client' },
+  { quote: 'After the first phone conversation with Cade he restored my faith in lawyers. Cade and his colleagues were very professional with a friendly, almost family approach.', who: 'Personal Injury Client' },
+  { quote: 'If you want an attorney that is professional, dedicated, dependable and that gives you one-on-one service, Cade Parian would be a great choice.', who: 'Personal Injury Client' },
+]
+
+const offices = [
+  { label: 'Carrollton (Main)', street: '314 Bradley Street', city: 'Carrollton, GA 30117' },
+  { label: 'Bremen', street: '604 Alabama Avenue, Suite A', city: 'Bremen, GA 30110' },
+  { label: 'Atlanta', street: '1201 West Peachtree Street, Suite 2342', city: 'Atlanta, GA 30308' },
+]
+---
+
+<Base
+  title="Parian Lawyers"
+  description="West Georgia's personal injury law firm — the only thing we do is represent injury victims. Call Cade. Get Paid! Free consultation, available 24/7: (770) 727-5550."
+>
+  <article class="hm">
+    <!-- hero -->
+    <header class="hm__hero">
+      <div class="hm__wrap hm__hero-grid">
+        <div class="hm__intro">
+          <span class="hm__eyebrow">Proven · Personal · Parian</span>
+          <h1>West Georgia <span>Personal Injury</span> Lawyers</h1>
+          <p class="hm__tag">The only thing we do is represent injury victims. <strong>Call Cade. Get Paid.</strong></p>
+          <div class="hm__cta">
+            <button type="button" class="hm__btn" data-pr-open-modal>Free Consultation</button>
+            <a class="hm__call" href={`tel:${tel}`}><span>Call 24/7</span><strong>{phone}</strong></a>
+          </div>
+          <div class="hm__rev"><span class="hm__stars">★★★★★</span><span><strong>4.9</strong> · 1,000+ <i class="fab fa-google"></i> Google reviews</span></div>
+        </div>
+        <div class="hm__photo">
+          <img src="/wp-content/uploads/2026/02/cade-parian-D36mMTuN.png" alt="Cade Parian, founding attorney at Parian Lawyers" width="520" height="640" loading="eager" />
+        </div>
+      </div>
+    </header>
+
+    <!-- case results -->
+    <section class="hm__results">
+      <div class="hm__wrap">
+        <div class="hm__results-grid">
+          {caseResults.map((r) => (
+            <div class="hm__stat"><span class="hm__stat-n">{r.amt}</span><span class="hm__stat-l">{r.label}</span></div>
+          ))}
+        </div>
+        <p class="hm__results-note">Prior results do not guarantee a similar outcome. Every case is different and must be evaluated on its own facts.</p>
+      </div>
+    </section>
+
+    <!-- practice areas -->
+    <section class="hm__areas">
+      <div class="hm__wrap">
+        <span class="hm__eyebrow hm__eyebrow--dark">How We Help</span>
+        <h2>We handle all types of injury cases</h2>
+        <div class="hm__areas-grid">
+          {areas.map((a) => (
+            <a class="hm__card" href={a.href}>
+              <i class={`fas ${a.icon}`}></i>
+              <span>{a.label}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- why parian -->
+    <section class="hm__why">
+      <div class="hm__wrap hm__why-grid">
+        <div>
+          <span class="hm__eyebrow">Why Parian Lawyers</span>
+          <h2>Personal injury law is our <em>only</em> practice</h2>
+          <p>We don't dabble. Representing injury victims is all we do — so when you call Cade, you get a firm that knows west Georgia's roads, courts, and insurance companies inside and out. Local, relentless, and available 24/7.</p>
+          <a class="hm__btn hm__btn--ghost" href="/practice-areas/">Explore our practice areas</a>
+        </div>
+        <ul class="hm__why-list">
+          <li><i class="fas fa-circle-check"></i> Local attorneys, headquartered in Carrollton</li>
+          <li><i class="fas fa-circle-check"></i> We come to you — home, hospital, or video</li>
+          <li><i class="fas fa-circle-check"></i> Available 24/7, free case review</li>
+          <li><i class="fas fa-circle-check"></i> Rated 4.9★ across 1,000+ reviews</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- testimonials -->
+    <section class="hm__tmt">
+      <div class="hm__wrap">
+        <span class="hm__eyebrow">What Our Clients Say</span>
+        <h2>Trusted across west Georgia</h2>
+        <div class="hm__tmt-grid">
+          {testimonials.map((t) => (
+            <figure class="hm__tcard">
+              <div class="hm__tstars">★★★★★</div>
+              <blockquote>{t.quote}</blockquote>
+              <figcaption>— {t.who}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- offices -->
+    <section class="hm__offices">
+      <div class="hm__wrap">
+        <span class="hm__eyebrow hm__eyebrow--dark">Our Offices</span>
+        <h2>Three offices across the region</h2>
+        <div class="hm__off-grid">
+          {offices.map((o) => (
+            <div class="hm__off">
+              <h3>{o.label}</h3>
+              <p>{o.street}<br />{o.city}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- closing CTA -->
+    <section class="hm__close">
+      <div class="hm__wrap">
+        <h2>Injured? Let's talk today.</h2>
+        <p>Free, confidential case review — no obligation, available 24/7.</p>
+        <div class="hm__cta hm__cta--center">
+          <button type="button" class="hm__btn" data-pr-open-modal>Request a Free Consultation</button>
+          <a class="hm__call" href={`tel:${tel}`}><span>Call 24/7</span><strong>{phone}</strong></a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .hm__wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .hm__eyebrow { display: inline-block; font: 700 13px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #ffb400; margin-bottom: 14px; }
+  .hm__eyebrow--dark { color: #c18d15; }
+  .hm h2 { font: 800 clamp(26px, 4vw, 40px)/1.1 'Inter', sans-serif; color: #1a2238; letter-spacing: -.02em; margin: 0 0 22px; }
+  .hm h2 em { color: #c18d15; font-style: italic; }
+
+  /* hero */
+  .hm__hero { position: relative; color: #fff; background:
+      linear-gradient(115deg, #161d33 0%, rgba(22,29,51,.86) 52%, rgba(22,29,51,.55) 100%),
+      url('/images/stock/courthouse-1.jpg') center/cover; overflow: hidden; }
+  .hm__hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 24px; align-items: end; min-height: 540px; }
+  .hm__intro { padding: 86px 0 86px; }
+  .hm__intro h1 { font: 800 clamp(34px, 5.2vw, 62px)/1.02 'Inter', sans-serif; letter-spacing: -.025em; margin: 0; }
+  .hm__intro h1 span { color: #ffb400; }
+  .hm__tag { font: 400 19px/1.55 'Inter', sans-serif; color: #cdd4e6; max-width: 30ch; margin: 20px 0 30px; }
+  .hm__tag strong { color: #fff; }
+  .hm__cta { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .hm__cta--center { justify-content: center; }
+  .hm__btn { background: linear-gradient(135deg, #dcab27, #c18d15); color: #15203a; font: 800 15px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .045em; border: 0; border-radius: 12px; padding: 17px 30px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 9px; box-shadow: 0 14px 34px rgba(193,141,21,.4); transition: transform .2s, box-shadow .2s; }
+  .hm__btn:hover { transform: translateY(-3px); box-shadow: 0 22px 46px rgba(193,141,21,.55); }
+  .hm__btn--ghost { background: transparent; color: #1a2238; box-shadow: none; border: 2px solid #d8dee9; margin-top: 24px; }
+  .hm__btn--ghost:hover { border-color: #c18d15; color: #c18d15; box-shadow: none; }
+  .hm__call { display: flex; flex-direction: column; color: #fff; text-decoration: none; line-height: 1.1; }
+  .hm__call span { font: 600 11px/1 'Inter'; text-transform: uppercase; letter-spacing: .09em; color: #ffb400; margin-bottom: 4px; }
+  .hm__call strong { font: 800 23px/1 'Inter'; }
+  .hm__rev { display: flex; align-items: center; gap: 11px; margin-top: 26px; }
+  .hm__stars { color: #ffc94d; letter-spacing: 2px; font-size: 16px; }
+  .hm__rev span { color: #e7eaf2; font: 500 14px/1 'Inter'; }
+  .hm__rev strong { color: #fff; font-weight: 800; }
+  .hm__photo { align-self: end; }
+  .hm__photo img { display: block; width: 100%; max-width: 460px; height: auto; margin: 0 auto; filter: drop-shadow(0 24px 40px rgba(0,0,0,.45)); }
+
+  /* case results */
+  .hm__results { background: #141a2e; padding: 36px 0 30px; }
+  .hm__results-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .hm__stat { text-align: center; padding: 8px 6px; border-right: 1px solid rgba(255,255,255,.1); }
+  .hm__stat:last-child { border-right: 0; }
+  .hm__stat-n { display: block; font: 800 clamp(30px, 4vw, 46px)/1 'Inter', sans-serif; color: #ffb400; }
+  .hm__stat-l { display: block; font: 500 13px/1.35 'Inter', sans-serif; color: #c3cbe0; margin-top: 8px; }
+  .hm__results-note { font: 400 12px/1.5 'Inter', sans-serif; color: #8a93ab; text-align: center; margin: 22px 0 0; }
+
+  /* practice areas */
+  .hm__areas { padding: 70px 0; }
+  .hm__areas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+  .hm__card { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 20px 22px; text-decoration: none; box-shadow: 0 5px 16px rgba(16,24,40,.05); transition: transform .2s, box-shadow .2s, border-color .2s; }
+  .hm__card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(16,24,40,.12); border-color: #e7d4a6; }
+  .hm__card i { color: #c18d15; font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
+  .hm__card span { font: 700 15px/1.25 'Inter', sans-serif; color: #1a2238; }
+
+  /* why */
+  .hm__why { background: #f8fafc; padding: 70px 0; border-top: 1px solid #eef1f6; }
+  .hm__why-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  .hm__why p { font: 400 17px/1.7 'Inter', sans-serif; color: #46506a; margin: 0; }
+  .hm__why-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+  .hm__why-list li { display: flex; align-items: center; gap: 12px; font: 600 16px/1.4 'Inter', sans-serif; color: #1a2238; background: #fff; border: 1px solid #e8ecf3; border-radius: 12px; padding: 16px 20px; }
+  .hm__why-list i { color: #1f8a4c; font-size: 18px; }
+
+  /* testimonials */
+  .hm__tmt { padding: 70px 0; }
+  .hm__tmt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .hm__tcard { margin: 0; background: #fff; border: 1px solid #e8ecf3; border-radius: 16px; padding: 28px 26px; box-shadow: 0 6px 20px rgba(16,24,40,.05); }
+  .hm__tstars { color: #ffc94d; letter-spacing: 2px; font-size: 16px; margin-bottom: 14px; }
+  .hm__tcard blockquote { margin: 0 0 14px; font: italic 400 16px/1.65 Georgia, serif; color: #2a334d; }
+  .hm__tcard figcaption { font: 700 13px/1 'Inter', sans-serif; color: #c18d15; }
+
+  /* offices */
+  .hm__offices { background: #f8fafc; padding: 64px 0; border-top: 1px solid #eef1f6; }
+  .hm__off-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .hm__off { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 26px 24px; box-shadow: 0 6px 18px rgba(16,24,40,.05); }
+  .hm__off h3 { font: 800 18px/1.2 'Inter', sans-serif; color: #1a2238; margin: 0 0 10px; }
+  .hm__off p { font: 400 15px/1.6 'Inter', sans-serif; color: #56607a; margin: 0; }
+
+  /* closing */
+  .hm__close { background: linear-gradient(135deg, #1a2238, #232c4a); color: #fff; padding: 76px 0; text-align: center; }
+  .hm__close h2 { color: #fff; }
+  .hm__close p { font: 400 17px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 520px; margin: 0 auto 30px; }
+
+  /* ── responsive ── */
+  @media (max-width: 900px) {
+    .hm__hero-grid { grid-template-columns: 1fr; gap: 0; min-height: 0; align-items: stretch; }
+    .hm__intro { padding: 64px 0 8px; text-align: center; }
+    .hm__tag { margin-left: auto; margin-right: auto; }
+    .hm__cta, .hm__rev { justify-content: center; }
+    .hm__photo { max-width: 320px; margin: 0 auto; }
+    .hm__why-grid { grid-template-columns: 1fr; gap: 30px; }
+  }
+  @media (max-width: 640px) {
+    .hm__results-grid { grid-template-columns: repeat(2, 1fr); gap: 18px 10px; }
+    .hm__stat:nth-child(2) { border-right: 0; }
+    .hm__cta { flex-direction: column; align-items: center; gap: 16px; }
+    .hm__btn { width: 100%; max-width: 320px; justify-content: center; }
+  }
+</style>

@@ -9,6 +9,7 @@ import CloneBase from '@layouts/CloneBase.astro'
 export async function getStaticPaths() {
   // Bespoke pages we render with clean Astro templates instead of the raw clone.
   const OVERRIDDEN = new Set([
+    '',                       // home / landing page — clean rebuild in src/pages/index.astro
     'about-us/cade-parian',
     'about-us/tyler-paul-smith',
     'about-us/ryan-farmer',
