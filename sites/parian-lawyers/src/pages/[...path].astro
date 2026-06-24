@@ -13,7 +13,7 @@ export async function getStaticPaths() {
     'about-us/tyler-paul-smith',
     'about-us/ryan-farmer',
     'scholarship-2021',
-    'carrollton-injury',
+    'carrollton-personal-injury-lawyers',
   ])
   const root = path.resolve('clone-pages')
   const out: any[] = []
@@ -34,6 +34,10 @@ export async function getStaticPaths() {
         // (a naive [\s\S]*? would run from the first <script> through the banner to GTM).
         const sanitize = (s: string) =>
           s
+            // Cutover: rewrite the WordPress staging domain to the real domain so
+            // og:url/og:image/canonical/internal links + assets resolve on westgalawyer.com
+            // (same-origin after the DNS cutover) instead of leaking the staging host.
+            .replace(/https?:\/\/mediatorworks\.wpcomstaging\.com/gi, 'https://westgalawyer.com')
             // inline GTM bootstrap / dataLayer script (its own content references GTM)
             .replace(/<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?googletagmanager\.com(?:(?!<\/script>)[\s\S])*?<\/script>/gi, '')
             // external GTM script tag

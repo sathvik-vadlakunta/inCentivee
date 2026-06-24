@@ -83,7 +83,7 @@ llms = [
         ("Home", "/", "Firm overview, results, and contact."),
         ("About / Our Attorneys", "/about-us/", "Meet the attorneys and the firm."),
         ("Areas We Serve", "/areas-served/", "Cities served across Georgia and Alabama."),
-        ("Carrollton Personal Injury Lawyers", "/carrollton-injury/", "Local landing page for the firm's home city."),
+        ("Carrollton Personal Injury Lawyers", "/carrollton-personal-injury-lawyers/", "Local landing page for the firm's home city."),
         ("Testimonials", "/client-testimonials/", "Client reviews and results."),
         ("Blog", "/blog/", "Guides on Georgia personal injury law."),
         ("Contact", "/contact-us/", "Free, confidential consultation request."),

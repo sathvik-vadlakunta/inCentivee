@@ -8,6 +8,10 @@
 # 302 won't get cached hard by browsers the way a 301 does. Only the genuinely-dead
 # WordPress archive roots use 301.
 
+# Carrollton landing page moved to a keyword-rich slug; old URL points to it (302
+# so browsers that cached the earlier /carrollton-injury/->home 301 aren't stuck).
+/carrollton-injury/                              /carrollton-personal-injury-lawyers/                  302
+
 # location "injury" hubs (no landing content; candidates for future real pages)
 /carrollton-injury/truck-accident-lawyer/        /carrollton-truck-accident-lawyer/                    302
 /carrollton-injury/workers-compensation-lawyer/  /carrollton-workers-compensation-lawyer/              302

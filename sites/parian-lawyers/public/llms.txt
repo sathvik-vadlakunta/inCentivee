@@ -8,7 +8,7 @@ Parian Lawyers represents injury victims in personal injury, workers' compensati
 - [Home](https://westgalawyer.com/): Firm overview, results, and contact.
 - [About / Our Attorneys](https://westgalawyer.com/about-us/): Meet the attorneys and the firm.
 - [Areas We Serve](https://westgalawyer.com/areas-served/): Cities served across Georgia and Alabama.
-- [Carrollton Personal Injury Lawyers](https://westgalawyer.com/carrollton-injury/): Local landing page for the firm's home city.
+- [Carrollton Personal Injury Lawyers](https://westgalawyer.com/carrollton-personal-injury-lawyers/): Local landing page for the firm's home city.
 - [Testimonials](https://westgalawyer.com/client-testimonials/): Client reviews and results.
 - [Blog](https://westgalawyer.com/blog/): Guides on Georgia personal injury law.
 - [Contact](https://westgalawyer.com/contact-us/): Free, confidential consultation request.
@@ -38,7 +38,7 @@ Parian Lawyers represents injury victims in personal injury, workers' compensati
 - [Long-Term Disability](https://westgalawyer.com/carrollton-long-term-disability-lawyer/)
 
 ## Areas We Serve
-- [Carrollton](https://westgalawyer.com/carrollton-injury/)
+- [Carrollton](https://westgalawyer.com/carrollton-personal-injury-lawyers/)
 - [Bremen](https://westgalawyer.com/bremen-injury/)
 - [Newnan](https://westgalawyer.com/newnan-injury/)
 - [Douglasville](https://westgalawyer.com/douglasville-injury/)
