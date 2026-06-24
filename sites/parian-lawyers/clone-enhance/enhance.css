@@ -141,6 +141,29 @@ a[href="/"] img, .site-logo img, .elementor-widget-theme-site-logo img{cursor:po
 .pr-vmodal-close{position:absolute;top:-44px;right:0;color:#fff;font-size:30px;cursor:pointer;background:none;border:0;line-height:1;}
 .mvp-play-button,.elementor-custom-embed-play{cursor:pointer;}
 
+/* ===== hero entrance + subtle motion ===== */
+@media (prefers-reduced-motion: no-preference) {
+  /* very subtle vertical drift keeps the photo hero feeling alive (cover preserved) */
+  .pr-hero-anim { animation: prHeroPan 32s ease-in-out infinite alternate; }
+  @keyframes prHeroPan { from { background-position: 50% 47%; } to { background-position: 50% 53%; } }
+  /* staggered fade-up of hero content (class added by JS, so no-JS/reduced-motion stays visible) */
+  .pr-hero-in > * { opacity: 0; transform: translateY(20px); animation: prUp .75s cubic-bezier(.22,1,.36,1) forwards; }
+  .pr-hero-in > *:nth-child(1) { animation-delay: .06s; }
+  .pr-hero-in > *:nth-child(2) { animation-delay: .16s; }
+  .pr-hero-in > *:nth-child(3) { animation-delay: .26s; }
+  .pr-hero-in > *:nth-child(4) { animation-delay: .36s; }
+  .pr-hero-in > *:nth-child(5) { animation-delay: .46s; }
+  @keyframes prUp { to { opacity: 1; transform: none; } }
+}
+/* gold underline grows in as accented service headings reveal */
+.pr-acc-1 h2::after, .pr-acc-1 h3::after { width: 0; transition: width .6s .15s var(--pr-ease); }
+.pr-acc-1 h2.pr-in::after, .pr-acc-1 h3.pr-in::after { width: 54px; }
+/* button sheen on hover */
+.pr-cta-btn { position: relative; overflow: hidden; }
+.pr-cta-btn::after { content: ""; position: absolute; top: 0; left: -130%; width: 60%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-18deg); transition: left .6s var(--pr-ease); }
+.pr-cta-btn:hover::after { left: 130%; }
+
 /* ===== scroll-reveal ===== */
 .pr-reveal{opacity:0;transform:translateY(24px);will-change:opacity,transform;transition:opacity .7s var(--pr-ease),transform .7s var(--pr-ease);}
 .pr-reveal.pr-in{opacity:1;transform:none;}

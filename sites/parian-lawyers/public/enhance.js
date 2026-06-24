@@ -240,13 +240,31 @@
       }
     });
 
+    // 12) hero entrance — fade-up the hero content + slow ken-burns on the bg image.
+    if(!reduce) safe(function(){
+      var hero=document.querySelector('.pr-hero'); if(hero) hero.classList.add('pr-hero-anim');
+      var content=document.querySelector('.pr-hero .banner-content'); if(content) content.classList.add('pr-hero-in');
+      // also animate clean (Base-layout) hero intros — bio + scholarship
+      ['.bio__intro','.bio__photo','.sch__hero .sch__wrap'].forEach(function(s){
+        var el=document.querySelector(s); if(el) el.classList.add('pr-hero-in');
+      });
+    });
+
     // 9) scroll-reveal
     if(reduce || !('IntersectionObserver' in window)) return;
     safe(function(){
-      var sel='.elementor-widget-heading,.elementor-widget-text-editor,.elementor-widget-image,.elementor-widget-image-box,.elementor-widget-icon-box,.elementor-widget-button,.pr-tcard,.entry-content > *,.wp-block-image';
+      var sel=[
+        '.elementor-widget-heading','.elementor-widget-text-editor','.elementor-widget-image',
+        '.elementor-widget-image-box','.elementor-widget-icon-box','.elementor-widget-button',
+        '.pr-tcard','.entry-content > *','.wp-block-image',
+        // service-page enrichment + cross-site sections
+        '.pr-figure','.pr-enriched > h2','.pr-enriched > h3','.pr-inline-cta','.pr-rev-band',
+        '.bio__quote','.bio__award','.bio__prose > p','.bio__close',
+        '.sch__gap-card','.sch__stat','.sch__award-card','.sch__elig-item','.sch__req-card','.sch__apply .sch__wrap'
+      ].join(',');
       var els=[].slice.call(document.querySelectorAll(sel)).filter(function(el){
-        if(el.closest('header,footer,nav,.elementor-location-header,.elementor-location-footer')) return false;
-        var r=el.getBoundingClientRect(); return r.top>80 && r.height<innerHeight*1.4;
+        if(el.closest('header,footer,nav,.elementor-location-header,.elementor-location-footer,.pr-hero')) return false;
+        var r=el.getBoundingClientRect(); return r.top>80 && r.height<innerHeight*1.6;
       });
       els.forEach(function(el,i){ el.classList.add('pr-reveal'); var d=i%3; if(d) el.classList.add('pr-reveal-d'+d); });
       var io=new IntersectionObserver(function(es){es.forEach(function(e){ if(e.isIntersecting){e.target.classList.add('pr-in');io.unobserve(e.target);} });},{rootMargin:'0px 0px -8% 0px',threshold:.08});
