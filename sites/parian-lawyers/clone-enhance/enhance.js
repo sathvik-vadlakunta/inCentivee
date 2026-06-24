@@ -153,6 +153,32 @@
       });
     });
 
+    // 10) Google-review social proof — a star badge in the hero + a conversion band
+    //     before the footer on inner clone pages. Numbers are verified (see
+    //     practice.json reviews): 4.9★, 1,000+ reviews (Birdeye aggregate, Google-dominant).
+    safe(function(){
+      var RATING='4.9', COUNT='1,000+';
+      var starsHTML='<span class="pr-rev-stars">★★★★★</span>';
+      // a) hero badge (under the CTA cluster)
+      var ctaWrap=document.querySelector('.pr-hero-cta');
+      if(ctaWrap && !document.querySelector('.pr-rev-badge')){
+        var b=document.createElement('div'); b.className='pr-rev-badge';
+        b.innerHTML=starsHTML+'<span class="pr-rev-txt"><strong>'+RATING+'</strong> · '+COUNT+' <i class="fab fa-google"></i> Google reviews</span>';
+        ctaWrap.parentNode.insertBefore(b, ctaWrap.nextSibling);
+      }
+      // b) pre-footer conversion band (inner clone pages only — they have .page-banner)
+      var foot=document.querySelector('footer.pl-foot');
+      if(foot && document.querySelector('.page-banner') && !document.querySelector('.pr-rev-band')){
+        var band=document.createElement('section'); band.className='pr-rev-band';
+        band.innerHTML='<div class="pr-rev-band-in">'+
+          '<div class="pr-rev-band-rate">'+starsHTML+'<span><strong>'+RATING+'</strong> rating · '+COUNT+' <i class="fab fa-google"></i> Google reviews</span></div>'+
+          '<div class="pr-rev-band-cta"><span class="pr-rev-band-h">Trusted by west Georgia. Let’s talk about your case.</span>'+
+          '<button type="button" class="pr-cta-btn" data-pr-open-modal>Free Consultation</button></div>'+
+          '</div>';
+        foot.parentNode.insertBefore(band, foot);
+      }
+    });
+
     // 9) scroll-reveal
     if(reduce || !('IntersectionObserver' in window)) return;
     safe(function(){

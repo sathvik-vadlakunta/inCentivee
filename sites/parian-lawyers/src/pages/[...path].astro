@@ -28,15 +28,19 @@ export async function getStaticPaths() {
         // container injects a call-tracking DNI script that swaps our real phone number
         // for a stale tracking number we don't own. Also drop WP.com stats. We'll add
         // our OWN GA4/GTM later. (See platform plan.)
+        // NOTE: each regex is bounded with a (?!<\/script>) / (?!<\/noscript>) negative
+        // lookahead so a match can't span across element boundaries and eat page content
+        // (a naive [\s\S]*? would run from the first <script> through the banner to GTM).
         const sanitize = (s: string) =>
           s
-            // GTM bootstrap <script> + any script referencing googletagmanager / dataLayer
-            .replace(/<script[^>]*>[\s\S]*?googletagmanager\.com[\s\S]*?<\/script>/gi, '')
-            .replace(/<script[^>]*src="[^"]*googletagmanager\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
+            // inline GTM bootstrap / dataLayer script (its own content references GTM)
+            .replace(/<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?googletagmanager\.com(?:(?!<\/script>)[\s\S])*?<\/script>/gi, '')
+            // external GTM script tag
+            .replace(/<script\b[^>]*\bsrc="[^"]*googletagmanager\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
             // GTM <noscript> iframe fallback
-            .replace(/<noscript[^>]*>\s*<iframe[^>]*googletagmanager\.com[\s\S]*?<\/noscript>/gi, '')
+            .replace(/<noscript\b[^>]*>(?:(?!<\/noscript>)[\s\S])*?googletagmanager\.com(?:(?!<\/noscript>)[\s\S])*?<\/noscript>/gi, '')
             // WordPress.com / Jetpack stats pixel
-            .replace(/<script[^>]*src="[^"]*stats\.wp\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
+            .replace(/<script\b[^>]*\bsrc="[^"]*stats\.wp\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
         const head = sanitize((html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1])
         const body = sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1])
         // preserve the original <body> classes — the theme/Elementor uses them for

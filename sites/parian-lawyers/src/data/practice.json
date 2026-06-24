@@ -1,0 +1,78 @@
+{
+  "name": "Parian Lawyers",
+  "domain": "westgalawyer.com",
+  "tagline": "West Georgia's personal injury law firm. The only thing we do is represent injury victims.",
+  "feePromise": "No Fee Unless We Win",
+  "phone": "(770) 727-5550",
+  "available247": true,
+  "email": "",
+  "practiceType": "Personal Injury Attorney",
+  "address": { "street": "314 Bradley Street", "city": "Carrollton", "state": "GA", "zip": "30117" },
+  "geo": { "lat": 33.5801, "lng": -85.0766 },
+  "locations": [
+    { "label": "Carrollton (Main)", "street": "314 Bradley Street", "city": "Carrollton", "state": "GA", "zip": "30117" },
+    { "label": "Bremen", "street": "604 Alabama Avenue", "suite": "Suite A", "city": "Bremen", "state": "GA", "zip": "30110" },
+    { "label": "Atlanta", "street": "1201 West Peachtree Street", "suite": "Suite 2342", "city": "Atlanta", "state": "GA", "zip": "30308" }
+  ],
+  "hours": [{ "days": "Every day", "note": "Open 24/7" }],
+  "providers": [
+    {
+      "name": "Cade Parian",
+      "slug": "cade-parian",
+      "credentials": "Attorney",
+      "title": "Founder & Personal Injury Attorney",
+      "specialties": ["Car Accidents", "Truck Accidents", "Catastrophic Injury", "Wrongful Death"],
+      "education": [],
+      "barAdmissions": ["State Bar of Georgia"],
+      "sameAs": []
+    },
+    {
+      "name": "Tyler Paul Smith",
+      "slug": "tyler-paul-smith",
+      "credentials": "Attorney",
+      "title": "Attorney & Litigator",
+      "specialties": ["Litigation", "Personal Injury"],
+      "education": ["The Citadel", "John Marshall Law School (Atlanta)"],
+      "barAdmissions": ["State Bar of Georgia"],
+      "sameAs": []
+    },
+    {
+      "name": "Ryan Farmer",
+      "slug": "ryan-farmer",
+      "credentials": "Attorney",
+      "title": "Attorney (Bremen Office)",
+      "specialties": ["Personal Injury", "Workers' Compensation", "Criminal Defense"],
+      "education": ["University of North Georgia", "Mercer University School of Law"],
+      "barAdmissions": ["State Bar of Georgia"],
+      "sameAs": []
+    }
+  ],
+  "serviceCategories": [
+    "Car Accidents", "Truck Accidents", "Motorcycle Accidents", "Catastrophic Injury",
+    "Wrongful Death", "Slip & Fall", "Nursing Home Abuse", "Workers' Compensation",
+    "Mass Torts & Product Liability", "Dog Bites", "Social Security Disability"
+  ],
+  "areaServed": ["Carrollton", "Bremen", "Villa Rica", "Douglasville", "Newnan", "Rome", "Atlanta", "Austell"],
+  "licensedStates": ["Georgia"],
+  "social": { "google": "", "facebook": "" },
+  "reviews": { "rating": 4.9, "count": 1125, "displayCount": "1,000+", "source": "Birdeye aggregate (Google-dominant) — verify exact Google-only count from GBP", "googleReviewUrl": "", "googleReadUrl": "", "placeId": "", "verified": true },
+  "colors": {
+    "primary": "#c18d15",
+    "secondary": "#8a6300",
+    "accent": "#ffb400",
+    "dark": "#32373c",
+    "light": "#f8fafc"
+  },
+  "fonts": { "heading": "Georgia, serif", "body": "system-ui" },
+  "analytics": { "ga4": "", "gtm": "GTM-T37M53Q", "googleSiteVerification": "" },
+  "disclaimers": {
+    "siteWide": "This website is for general information only and is not legal advice. Use of this site or contacting the firm does not create an attorney-client relationship.",
+    "advertisingLabel": "Attorney Advertising.",
+    "responsibleAttorney": "Responsible attorney: Cade Parian, 314 Bradley Street, Carrollton, GA 30117.",
+    "contingency": "Contingent attorneys' fees refers only to those fees charged by attorneys for their legal services. Such fees are not permitted in all types of cases. Court costs and other additional expenses of legal action usually must be paid by the client.",
+    "pastResults": "Prior results do not guarantee a similar outcome. Every case is different and must be evaluated on its own facts.",
+    "notLicensed": ""
+  },
+  "maps": "",
+  "mapsApiKey": ""
+}
