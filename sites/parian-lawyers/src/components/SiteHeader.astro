@@ -79,7 +79,7 @@ const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.c
   .pl-nav{margin-left:auto;}
   .pl-menu{list-style:none;display:flex;gap:.15rem;margin:0;padding:0;}
   .pl-menu > li{position:static;}
-  .pl-top{display:flex;align-items:center;gap:5px;background:none;border:0;cursor:pointer;padding:1.15rem .85rem;color:#e7eaf2;font:600 13.5px/1 'Inter',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;transition:color .15s;}
+  .pl-top{display:flex;align-items:center;gap:5px;background:none;border:0;cursor:pointer;padding:1.15rem .85rem;color:#e7eaf2;font:600 13.5px/1 'Inter',system-ui,sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;transition:color .15s;white-space:nowrap;flex-shrink:0;}
   .pl-menu > li:hover > .pl-top,.pl-menu > li.open > .pl-top{color:#ffb400;}
   .caret{font-size:.7em;opacity:.8;transition:transform .2s;}
   .pl-menu > li.open .caret{transform:rotate(180deg);}

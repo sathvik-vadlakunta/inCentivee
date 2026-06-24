@@ -1,10 +1,11 @@
 ---
-// Renders an ingested clone page: its exact <head> (pixel-exact CSS) + content,
-// wrapped in our clean shared header/footer + enhancement layer. On our stack.
+// Renders an ingested clone page: its exact <head> (pixel-exact CSS) + original
+// <body> classes (theme/Elementor-kit scoping for backgrounds + text colors) +
+// content, wrapped in our clean shared header/footer + enhancement layer.
 import SiteHeader from '@components/SiteHeader.astro'
 import SiteFooter from '@components/SiteFooter.astro'
-interface Props { head: string; body: string }
-const { head, body } = Astro.props
+interface Props { head: string; body: string; bodyClass?: string }
+const { head, body, bodyClass = '' } = Astro.props
 ---
 
 <!doctype html>
@@ -12,15 +13,28 @@ const { head, body } = Astro.props
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- This is a light-only design (no dark variant). Pin the page to light so a
+         visitor's dark-mode OS doesn't make the UA paint the canvas + form controls
+         dark, which rendered content navy-on-navy / unreadable. -->
+    <meta name="color-scheme" content="light" />
+    <style is:global>
+      :root { color-scheme: light; }
+      html, body { background-color: #fff; }
+    </style>
     <Fragment set:html={head} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="/enhance.css" />
   </head>
-  <body>
+  <body class={bodyClass}>
     <SiteHeader />
-    <main><Fragment set:html={body} /></main>
+    <!-- The cloned theme lays its sections out with float:left (.fullwidth, etc.).
+         Wrap them in a flow-root so the floats are contained — otherwise our footer
+         rises up behind the content and paints its navy bg over the whole page. -->
+    <div class="pl-clone-main" style="display:flow-root">
+      <Fragment set:html={body} />
+    </div>
     <SiteFooter />
     <script src="/enhance.js" is:inline defer></script>
   </body>

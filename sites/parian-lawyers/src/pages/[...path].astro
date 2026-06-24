@@ -18,7 +18,11 @@ export async function getStaticPaths() {
         const html = fs.readFileSync(fp, 'utf8')
         const head = (html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1]
         const body = (html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1]
-        out.push({ params: { path: rel || undefined }, props: { head, body } })
+        // preserve the original <body> classes — the theme/Elementor uses them for
+        // page background, text colors, and layout scoping.
+        const bodyOpen = (html.match(/<body([^>]*)>/i) || [, ''])[1]
+        const bodyClass = (bodyOpen.match(/class="([^"]*)"/i) || [, ''])[1]
+        out.push({ params: { path: rel || undefined }, props: { head, body, bodyClass } })
       }
     }
   }
@@ -26,7 +30,7 @@ export async function getStaticPaths() {
   return out
 }
 
-const { head, body } = Astro.props
+const { head, body, bodyClass } = Astro.props
 ---
 
-<CloneBase head={head} body={body} />
+<CloneBase head={head} body={body} bodyClass={bodyClass} />
