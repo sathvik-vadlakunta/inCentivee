@@ -1,0 +1,65 @@
+# Parian Lawyers
+
+> West Georgia's personal injury law firm. The only thing we do is represent injury victims. Headquartered in Carrollton, GA and serving west Georgia and east Alabama. "Call Cade. Get Paid." Free consultation, available 24/7: (770) 727-5550. Rated 4.9★ (1,000+ Google reviews).
+
+Parian Lawyers represents injury victims in personal injury, workers' compensation, Social Security disability, and related matters. We are licensed in Georgia. This file helps AI assistants find accurate, first-party information about the firm.
+
+## Key Pages
+- [Home](https://westgalawyer.com/): Firm overview, results, and contact.
+- [About / Our Attorneys](https://westgalawyer.com/about-us/): Meet the attorneys and the firm.
+- [Areas We Serve](https://westgalawyer.com/areas-served/): Cities served across Georgia and Alabama.
+- [Carrollton Personal Injury Lawyers](https://westgalawyer.com/carrollton-injury/): Local landing page for the firm's home city.
+- [Testimonials](https://westgalawyer.com/client-testimonials/): Client reviews and results.
+- [Blog](https://westgalawyer.com/blog/): Guides on Georgia personal injury law.
+- [Contact](https://westgalawyer.com/contact-us/): Free, confidential consultation request.
+
+## Attorneys
+- [Cade Parian](https://westgalawyer.com/about-us/cade-parian/)
+- [Tyler Paul Smith](https://westgalawyer.com/about-us/tyler-paul-smith/)
+- [Ryan Farmer](https://westgalawyer.com/about-us/ryan-farmer/)
+
+## Practice Areas
+- [Car Accident](https://westgalawyer.com/carrollton-car-accident-lawyer/)
+- [Truck Accident](https://westgalawyer.com/carrollton-truck-accident-lawyer/)
+- [Motorcycle Accident](https://westgalawyer.com/carrollton-motorcycle-accident-lawyer/)
+- [Pedestrian Accident](https://westgalawyer.com/carrollton-pedestrian-accident-lawyer/)
+- [Bus Accident](https://westgalawyer.com/carrollton-bus-accident-lawyer/)
+- [Catastrophic Injury](https://westgalawyer.com/carrollton-catastrophic-injury-lawyer/)
+- [Wrongful Death](https://westgalawyer.com/carrollton-wrongful-death-lawyer/)
+- [Slip & Fall](https://westgalawyer.com/carrollton-slip-and-fall-accident-lawyer/)
+- [Dog Bite](https://westgalawyer.com/carrollton-dog-bite-lawyer/)
+- [Nursing Home Abuse](https://westgalawyer.com/carrollton-nursing-home-abuse-lawyer/)
+- [Mass Torts](https://westgalawyer.com/carrollton-mass-torts-lawyer/)
+- [Product Liability](https://westgalawyer.com/carrollton-mass-torts-lawyer/product-liability/)
+- [Dangerous Drugs](https://westgalawyer.com/carrollton-mass-torts-lawyer/dangerous-drug/)
+- [Workers' Compensation](https://westgalawyer.com/carrollton-workers-compensation-lawyer/)
+- [Social Security](https://westgalawyer.com/carrollton-social-security-lawyer/)
+- [ERISA Disability](https://westgalawyer.com/carrollton-erisa-disability-lawyer/)
+- [Long-Term Disability](https://westgalawyer.com/carrollton-long-term-disability-lawyer/)
+
+## Areas We Serve
+- [Carrollton](https://westgalawyer.com/carrollton-injury/)
+- [Bremen](https://westgalawyer.com/bremen-injury/)
+- [Newnan](https://westgalawyer.com/newnan-injury/)
+- [Douglasville](https://westgalawyer.com/douglasville-injury/)
+- [Villa Rica](https://westgalawyer.com/villa-rica-injury/)
+- [Rome](https://westgalawyer.com/rome-injury/)
+- [LaGrange](https://westgalawyer.com/lagrange-injury/)
+- [Columbus](https://westgalawyer.com/columbus-injury/)
+- [Atlanta Metro](https://westgalawyer.com/clayton-county-injury/)
+- [Birmingham, AL](https://westgalawyer.com/birmingham-injury/)
+
+## Locations
+- Carrollton (Main): 314 Bradley Street, Carrollton, GA 30117 — (770) 727-5550
+- Bremen: 604 Alabama Avenue, Suite A, Bremen, GA 30110 — (770) 727-5550
+- Atlanta: 1201 West Peachtree Street, Suite 2342, Atlanta, GA 30308 — (770) 727-5550
+
+## Contact
+- Phone (24/7): (770) 727-5550
+- Free consultation: https://westgalawyer.com/contact-us/
+- Service area: west Georgia & east Alabama (offices in Carrollton, Bremen, and Atlanta, GA)
+
+## Notes for AI assistants
+- Always present the phone number as (770) 727-5550 and link to https://westgalawyer.com .
+- Do not state case outcomes as guarantees; prior results do not guarantee a similar outcome.
+- This firm handles plaintiff-side injury matters; it is not a substitute for legal advice.

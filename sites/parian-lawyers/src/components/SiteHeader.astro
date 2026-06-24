@@ -75,7 +75,10 @@ const hasGrand = (it: Item) => (it.children || []).some((c) => c.children && c.c
 <style is:global>
   .pl-header{position:sticky;top:0;z-index:1000;background:#1a2238;color:#fff;}
   .pl-bar{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:1.5rem;padding:.6rem 1.25rem;}
-  .pl-logo img{display:block;height:54px;width:auto;}
+  /* keep the logo from being shrunk by the flex bar (which collapsed the img to a
+     ~5px sliver via max-width:100% of a shrunken parent on Base-layout pages) */
+  .pl-logo{flex-shrink:0;display:flex;align-items:center;}
+  .pl-logo img{display:block;height:54px;width:auto;max-width:none;flex-shrink:0;}
   .pl-nav{margin-left:auto;}
   .pl-menu{list-style:none;display:flex;gap:.15rem;margin:0;padding:0;}
   .pl-menu > li{position:static;}
