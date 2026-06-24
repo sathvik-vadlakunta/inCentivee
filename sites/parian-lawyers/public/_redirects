@@ -3,8 +3,8 @@
 # real child pages (e.g. /carrollton-injury/truck-accident-lawyer/driver-fatigue/)
 # keep working. Targets match the original site's 301s where it has them.
 
-# location "injury" hubs (original 301'd /carrollton-injury/ -> home)
-/carrollton-injury/                          /                                                     301
+# location "injury" hubs (/carrollton-injury/ is now a real landing page — see
+# src/pages/carrollton-injury.astro — so it is NOT redirected)
 /carrollton-injury/truck-accident-lawyer/    /carrollton-truck-accident-lawyer/                    301
 /carrollton-injury/workers-compensation-lawyer/  /carrollton-workers-compensation-lawyer/          301
 /atlanta-injury/                             /                                                     301

@@ -1,0 +1,163 @@
+---
+import Base from '@layouts/Base.astro'
+
+const tel = '+17707275550'
+const phone = '(770) 727-5550'
+
+const areas = [
+  { label: 'Car Accidents', href: '/carrollton-car-accident-lawyer/', icon: 'fa-car-burst' },
+  { label: 'Truck Accidents', href: '/carrollton-truck-accident-lawyer/', icon: 'fa-truck' },
+  { label: 'Motorcycle Accidents', href: '/carrollton-motorcycle-accident-lawyer/', icon: 'fa-motorcycle' },
+  { label: 'Pedestrian Accidents', href: '/carrollton-pedestrian-accident-lawyer/', icon: 'fa-person-walking' },
+  { label: 'Bus Accidents', href: '/carrollton-bus-accident-lawyer/', icon: 'fa-bus' },
+  { label: 'Catastrophic Injury', href: '/carrollton-catastrophic-injury-lawyer/', icon: 'fa-house-medical-circle-exclamation' },
+  { label: 'Wrongful Death', href: '/carrollton-wrongful-death-lawyer/', icon: 'fa-heart-crack' },
+  { label: 'Slip & Fall', href: '/carrollton-slip-and-fall-accident-lawyer/', icon: 'fa-person-falling' },
+  { label: 'Dog Bites', href: '/carrollton-dog-bite-lawyer/', icon: 'fa-dog' },
+  { label: 'Nursing Home Abuse', href: '/carrollton-nursing-home-abuse-lawyer/', icon: 'fa-wheelchair' },
+  { label: 'Mass Torts', href: '/carrollton-mass-torts-lawyer/', icon: 'fa-scale-balanced' },
+  { label: "Workers' Compensation", href: '/carrollton-workers-compensation-lawyer/', icon: 'fa-helmet-safety' },
+  { label: 'Social Security Disability', href: '/carrollton-social-security-lawyer/', icon: 'fa-id-card' },
+]
+const mapsUrl = 'https://www.google.com/maps/search/?api=1&query=Parian+Lawyers+314+Bradley+Street+Carrollton+GA+30117'
+---
+
+<Base
+  title="Carrollton Personal Injury Lawyers"
+  description="Parian Lawyers is headquartered in Carrollton, GA at 314 Bradley Street. Local personal injury attorneys serving Carrollton and Carroll County. Free consultation — (770) 727-5550."
+>
+  <article class="ca">
+    <!-- hero -->
+    <header class="ca__hero">
+      <div class="ca__wrap">
+        <span class="ca__eyebrow">Areas We Serve · Carroll County</span>
+        <h1>Carrollton Personal Injury Lawyers</h1>
+        <p class="ca__sub">
+          Parian Lawyers is <strong>headquartered in Carrollton</strong> — local attorneys who
+          know Carroll County's roads, courts, and community. If you've been injured, we'll come
+          to you and handle the rest.
+        </p>
+        <div class="ca__cta">
+          <button type="button" class="ca__btn" data-pr-open-modal>Free Consultation</button>
+          <a class="ca__call" href={`tel:${tel}`}><span>Call 24/7 · Free Case Review</span><strong>{phone}</strong></a>
+        </div>
+        <div class="ca__rev"><span class="ca__stars">★★★★★</span><span><strong>4.9</strong> · 1,000+ <i class="fab fa-google"></i> Google reviews</span></div>
+      </div>
+    </header>
+
+    <!-- practice areas hub -->
+    <section class="ca__areas">
+      <div class="ca__wrap">
+        <span class="ca__eyebrow ca__eyebrow--dark">How We Help in Carrollton</span>
+        <h2>Our Carrollton Practice Areas</h2>
+        <p class="ca__lead">From car wrecks on US‑27 to workplace injuries and nursing‑home neglect — choose your situation to learn how we can help.</p>
+        <div class="ca__grid">
+          {areas.map((a) => (
+            <a class="ca__card" href={a.href}>
+              <i class={`fas ${a.icon}`}></i>
+              <span>{a.label}</span>
+              <i class="fas fa-arrow-right ca__card-go"></i>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- office -->
+    <section class="ca__office">
+      <div class="ca__wrap ca__office-grid">
+        <div>
+          <span class="ca__eyebrow ca__eyebrow--dark">Visit Us</span>
+          <h2>Our Carrollton Office</h2>
+          <p class="ca__addr">
+            <strong>Parian Lawyers — Main Office</strong><br />
+            314 Bradley Street<br />
+            Carrollton, GA 30117
+          </p>
+          <p class="ca__office-note">Available 24/7. Can't make it in? We'll come to you, or set up a call or video meeting — whatever's easiest.</p>
+          <div class="ca__office-actions">
+            <a class="ca__btn ca__btn--sm" href={`tel:${tel}`}><i class="fas fa-phone"></i> Call {phone}</a>
+            <a class="ca__btn ca__btn--ghost" href={mapsUrl} target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> Get Directions</a>
+          </div>
+        </div>
+        <iframe
+          class="ca__map"
+          title="Map to Parian Lawyers, 314 Bradley Street, Carrollton, GA"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          src="https://www.google.com/maps?q=314+Bradley+Street+Carrollton+GA+30117&output=embed"
+        ></iframe>
+      </div>
+    </section>
+
+    <!-- closing CTA -->
+    <section class="ca__close">
+      <div class="ca__wrap">
+        <h2>Hurt in Carrollton? Let's talk.</h2>
+        <p>Free, confidential case review — no obligation, no fee to ask.</p>
+        <div class="ca__cta ca__cta--center">
+          <button type="button" class="ca__btn" data-pr-open-modal>Request a Free Consultation</button>
+          <a class="ca__call" href={`tel:${tel}`}><span>Call 24/7</span><strong>{phone}</strong></a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .ca__wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .ca__eyebrow { display: inline-block; font: 700 13px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #ffb400; margin-bottom: 12px; }
+  .ca__eyebrow--dark { color: #c18d15; }
+  .ca h2 { font: 800 clamp(26px, 3.6vw, 38px)/1.12 'Inter', sans-serif; color: #1a2238; letter-spacing: -.01em; margin: 0 0 14px; }
+
+  /* hero */
+  .ca__hero { background: radial-gradient(1100px 460px at 80% -20%, rgba(193,141,21,.22), transparent 60%), linear-gradient(135deg, #1a2238 0%, #232c4a 100%); color: #fff; padding: 78px 0 64px; }
+  .ca__hero h1 { font: 800 clamp(34px, 5vw, 56px)/1.05 'Inter', sans-serif; letter-spacing: -.02em; margin: 0; max-width: 18ch; }
+  .ca__sub { font: 400 19px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 640px; margin: 18px 0 30px; }
+  .ca__sub strong { color: #fff; }
+  .ca__cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .ca__cta--center { justify-content: center; }
+  .ca__btn { background: linear-gradient(135deg, #dcab27, #c18d15); color: #15203a; font: 800 15px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .045em; border: 0; border-radius: 12px; padding: 17px 30px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 9px; box-shadow: 0 14px 34px rgba(193,141,21,.4); transition: transform .2s, box-shadow .2s; }
+  .ca__btn:hover { transform: translateY(-3px); box-shadow: 0 22px 46px rgba(193,141,21,.55); }
+  .ca__btn--sm { padding: 13px 22px; font-size: 14px; }
+  .ca__btn--ghost { background: transparent; color: #1a2238; box-shadow: none; border: 2px solid #d8dee9; }
+  .ca__btn--ghost:hover { border-color: #c18d15; color: #c18d15; box-shadow: none; }
+  .ca__call { display: flex; flex-direction: column; color: #fff; text-decoration: none; line-height: 1.1; }
+  .ca__call span { font: 600 11px/1 'Inter'; text-transform: uppercase; letter-spacing: .09em; color: #ffb400; margin-bottom: 4px; }
+  .ca__call strong { font: 800 23px/1 'Inter'; }
+  .ca__rev { display: flex; align-items: center; gap: 11px; margin-top: 26px; }
+  .ca__stars { color: #ffc94d; letter-spacing: 2px; font-size: 16px; }
+  .ca__rev span { color: #e7eaf2; font: 500 14px/1 'Inter'; }
+  .ca__rev strong { color: #fff; font-weight: 800; }
+  .ca__rev .fa-google { margin: 0 2px; }
+
+  /* areas */
+  .ca__areas { padding: 64px 0; }
+  .ca__lead { font: 400 17px/1.7 'Inter', sans-serif; color: #56607a; max-width: 640px; margin: 0 0 30px; }
+  .ca__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+  .ca__card { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 20px 22px; text-decoration: none; box-shadow: 0 6px 18px rgba(16,24,40,.05); transition: transform .22s, box-shadow .22s, border-color .22s; }
+  .ca__card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(16,24,40,.12); border-color: #e7d4a6; }
+  .ca__card > i:first-child { color: #c18d15; font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
+  .ca__card span { font: 700 15.5px/1.3 'Inter', sans-serif; color: #1a2238; flex: 1; }
+  .ca__card-go { color: #c4ccd9; font-size: 13px; transition: transform .22s, color .22s; }
+  .ca__card:hover .ca__card-go { color: #c18d15; transform: translateX(3px); }
+
+  /* office */
+  .ca__office { background: #f8fafc; padding: 64px 0; border-top: 1px solid #eef1f6; }
+  .ca__office-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .ca__addr { font: 400 17px/1.7 'Inter', sans-serif; color: #3a4250; margin: 0 0 14px; }
+  .ca__addr strong { color: #1a2238; }
+  .ca__office-note { font: 400 15px/1.65 'Inter', sans-serif; color: #56607a; margin: 0 0 22px; }
+  .ca__office-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+  .ca__map { width: 100%; height: 320px; border: 0; border-radius: 16px; box-shadow: 0 18px 44px rgba(16,24,40,.12); }
+
+  /* closing */
+  .ca__close { background: linear-gradient(135deg, #1a2238, #232c4a); color: #fff; padding: 70px 0; text-align: center; }
+  .ca__close h2 { color: #fff; }
+  .ca__close p { font: 400 17px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 520px; margin: 0 auto 30px; }
+
+  @media (max-width: 820px) {
+    .ca__office-grid { grid-template-columns: 1fr; }
+    .ca__map { height: 260px; }
+  }
+</style>
