@@ -1,0 +1,149 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+
+const tel = '+17707275550'
+const phone = '(770) 727-5550'
+
+const regions = [
+  {
+    state: 'Georgia',
+    cities: [
+      { label: 'Carrollton', href: '/carrollton-injury/', note: 'Main office' },
+      { label: 'Bremen', href: '/bremen-injury/' },
+      { label: 'Newnan', href: '/newnan-injury/' },
+      { label: 'Douglasville', href: '/douglasville-injury/' },
+      { label: 'Villa Rica', href: '/villa-rica-injury/' },
+      { label: 'Rome', href: '/rome-injury/' },
+      { label: 'LaGrange', href: '/lagrange-injury/' },
+      { label: 'Columbus', href: '/columbus-injury/' },
+      { label: 'Atlanta Metro', href: '/clayton-county-injury/' },
+    ],
+  },
+  {
+    state: 'Alabama',
+    cities: [{ label: 'Birmingham', href: '/birmingham-injury/' }],
+  },
+]
+const locations = practice.locations as { label: string; street: string; suite?: string; city: string; state: string; zip: string }[]
+---
+
+<Base
+  title="Areas We Serve"
+  description="Parian Lawyers serves injury victims across west Georgia and east Alabama — Carrollton, Bremen, Newnan, Douglasville, Villa Rica, Rome, LaGrange, Columbus, Atlanta Metro, and Birmingham, AL."
+>
+  <article class="as">
+    <!-- hero -->
+    <header class="as__hero">
+      <div class="as__wrap">
+        <span class="as__eyebrow">Local Representation</span>
+        <h1>Areas We Serve</h1>
+        <p class="as__sub">
+          Parian Lawyers represents injury victims across <strong>west Georgia and east Alabama</strong>.
+          Wherever you are, we'll come to you — pick your area to get started.
+        </p>
+        <div class="as__cta">
+          <button type="button" class="as__btn" data-pr-open-modal>Free Consultation</button>
+          <a class="as__call" href={`tel:${tel}`}><span>Call 24/7 · Free Case Review</span><strong>{phone}</strong></a>
+        </div>
+        <div class="as__rev"><span class="as__stars">★★★★★</span><span><strong>4.9</strong> · 1,000+ <i class="fab fa-google"></i> Google reviews</span></div>
+      </div>
+    </header>
+
+    <!-- city grids by state -->
+    <section class="as__cities">
+      <div class="as__wrap">
+        {regions.map((r) => (
+          <div class="as__region">
+            <h2><i class="fas fa-location-dot"></i> {r.state}</h2>
+            <div class="as__grid">
+              {r.cities.map((c) => (
+                <a class="as__card" href={c.href}>
+                  <span class="as__card-name">{c.label}{c.note && <em>{c.note}</em>}</span>
+                  <i class="fas fa-arrow-right as__card-go"></i>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- offices -->
+    <section class="as__offices">
+      <div class="as__wrap">
+        <span class="as__eyebrow as__eyebrow--dark">Our Offices</span>
+        <h2>Three offices across the region</h2>
+        <div class="as__off-grid">
+          {locations.map((o) => (
+            <div class="as__off">
+              <h3>{o.label}</h3>
+              <p>{o.street}{o.suite && <>, {o.suite}</>}<br />{o.city}, {o.state} {o.zip}</p>
+              <a class="as__off-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`Parian Lawyers ${o.street} ${o.city} ${o.state} ${o.zip}`)}`} target="_blank" rel="noopener">
+                <i class="fas fa-location-dot"></i> Get Directions
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- closing CTA -->
+    <section class="as__close">
+      <div class="as__wrap">
+        <h2>Not sure which office is closest?</h2>
+        <p>It doesn't matter — call us 24/7 and we'll come to you, anywhere in the region.</p>
+        <div class="as__cta as__cta--center">
+          <button type="button" class="as__btn" data-pr-open-modal>Request a Free Consultation</button>
+          <a class="as__call" href={`tel:${tel}`}><span>Call 24/7</span><strong>{phone}</strong></a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .as__wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .as__eyebrow { display: inline-block; font: 700 13px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #ffb400; margin-bottom: 12px; }
+  .as__eyebrow--dark { color: #c18d15; }
+  .as h2 { font: 800 clamp(24px, 3.2vw, 34px)/1.12 'Inter', sans-serif; color: #1a2238; letter-spacing: -.01em; margin: 0 0 22px; }
+
+  .as__hero { background: radial-gradient(1100px 460px at 80% -20%, rgba(193,141,21,.22), transparent 60%), linear-gradient(135deg, #1a2238 0%, #232c4a 100%); color: #fff; padding: 78px 0 64px; }
+  .as__hero h1 { font: 800 clamp(34px, 5vw, 56px)/1.05 'Inter', sans-serif; letter-spacing: -.02em; margin: 0; }
+  .as__sub { font: 400 19px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 640px; margin: 18px 0 30px; }
+  .as__sub strong { color: #fff; }
+  .as__cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .as__cta--center { justify-content: center; }
+  .as__btn { background: linear-gradient(135deg, #dcab27, #c18d15); color: #15203a; font: 800 15px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .045em; border: 0; border-radius: 12px; padding: 17px 30px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 9px; box-shadow: 0 14px 34px rgba(193,141,21,.4); transition: transform .2s, box-shadow .2s; }
+  .as__btn:hover { transform: translateY(-3px); box-shadow: 0 22px 46px rgba(193,141,21,.55); }
+  .as__call { display: flex; flex-direction: column; color: #fff; text-decoration: none; line-height: 1.1; }
+  .as__call span { font: 600 11px/1 'Inter'; text-transform: uppercase; letter-spacing: .09em; color: #ffb400; margin-bottom: 4px; }
+  .as__call strong { font: 800 23px/1 'Inter'; }
+  .as__rev { display: flex; align-items: center; gap: 11px; margin-top: 26px; }
+  .as__stars { color: #ffc94d; letter-spacing: 2px; font-size: 16px; }
+  .as__rev span { color: #e7eaf2; font: 500 14px/1 'Inter'; }
+  .as__rev strong { color: #fff; font-weight: 800; }
+
+  .as__cities { padding: 60px 0 20px; }
+  .as__region { margin-bottom: 44px; }
+  .as__region h2 i { color: #c18d15; margin-right: 8px; }
+  .as__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .as__card { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border: 1px solid #e8ecf3; border-radius: 13px; padding: 18px 20px; text-decoration: none; box-shadow: 0 5px 16px rgba(16,24,40,.05); transition: transform .2s, box-shadow .2s, border-color .2s; }
+  .as__card:hover { transform: translateY(-3px); box-shadow: 0 16px 36px rgba(16,24,40,.12); border-color: #e7d4a6; }
+  .as__card-name { font: 700 16px/1.2 'Inter', sans-serif; color: #1a2238; }
+  .as__card-name em { display: block; font: 600 11px/1 'Inter'; font-style: normal; text-transform: uppercase; letter-spacing: .06em; color: #c18d15; margin-top: 5px; }
+  .as__card-go { color: #c4ccd9; font-size: 13px; transition: transform .2s, color .2s; }
+  .as__card:hover .as__card-go { color: #c18d15; transform: translateX(3px); }
+
+  .as__offices { background: #f8fafc; padding: 60px 0; border-top: 1px solid #eef1f6; }
+  .as__off-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .as__off { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 26px 24px; box-shadow: 0 6px 18px rgba(16,24,40,.05); }
+  .as__off h3 { font: 800 18px/1.2 'Inter', sans-serif; color: #1a2238; margin: 0 0 10px; }
+  .as__off p { font: 400 15px/1.6 'Inter', sans-serif; color: #56607a; margin: 0 0 14px; }
+  .as__off-link { font: 700 13.5px/1 'Inter', sans-serif; color: #c18d15; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .as__off-link:hover { color: #a9790f; }
+
+  .as__close { background: linear-gradient(135deg, #1a2238, #232c4a); color: #fff; padding: 70px 0; text-align: center; }
+  .as__close h2 { color: #fff; }
+  .as__close p { font: 400 17px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 520px; margin: 0 auto 30px; }
+</style>
