@@ -60,6 +60,11 @@ a[href="/"] img, .site-logo img, .elementor-widget-theme-site-logo img{cursor:po
 .pr-cta-call span{font:600 11px/1 'Inter';text-transform:uppercase;letter-spacing:.1em;color:var(--pr-gold-bright);margin-bottom:4px;}
 .pr-cta-call strong{font:800 24px/1 'Inter';}
 
+/* The "Personal Injury Lawyers" box (practice-areas) has white text over a theme
+   background IMAGE with no color fallback — if that image is missing it renders
+   white-on-white (invisible). Give it a navy fallback so it's always readable. */
+.peronalinjury-lawer{background-color:#243257;}
+
 /* ===== service-page enrichment (image + text break-ups, varied per page) ===== */
 .pr-enriched > p { font-size: 16.5px; line-height: 1.8; color: #3a4250; }
 .pr-lead { font-size: 20px !important; line-height: 1.6 !important; color: #232c4a !important; font-weight: 500; }

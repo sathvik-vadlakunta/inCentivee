@@ -258,6 +258,28 @@
     // (hero entrance + ken-burns are now pure CSS keyed on .page-banner / .bio / .sch
     //  so they run on first paint — see enhance.css "hero entrance + subtle motion".)
 
+    // 13) fix stray opening apostrophes in the imported content (a WordPress migration
+    //     artifact: ". 'Many times…", "cars,'trucks"). TEXT NODES ONLY — never touch
+    //     <script>/<style> text, so we can't corrupt inline JS like (window,'script').
+    safe(function(){
+      var fix=function(t){
+        return t
+          .replace(/([.!?])\s+'(?=[A-Za-z])/g, '$1 ')   // ". 'Word"   -> ". Word"
+          .replace(/,\s*'(?=[A-Za-z])/g, ', ')           // "cars,'trucks" -> "cars, trucks"
+          .replace(/(:\s+)'(?=[A-Za-z])/g, '$1');        // ": 'Word"   -> ": Word"
+      };
+      var SKIP={SCRIPT:1,STYLE:1,CODE:1,PRE:1,TEXTAREA:1,NOSCRIPT:1};
+      var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, {
+        acceptNode:function(n){
+          if(n.parentNode && SKIP[n.parentNode.nodeName]) return NodeFilter.FILTER_REJECT;
+          return /[.!?,:]\s*'[A-Za-z]/.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        }
+      });
+      var nodes=[], cur;
+      while((cur=w.nextNode())) nodes.push(cur);
+      nodes.forEach(function(n){ var v=fix(n.nodeValue); if(v!==n.nodeValue) n.nodeValue=v; });
+    });
+
     // 9) scroll-reveal
     if(reduce || !('IntersectionObserver' in window)) return;
     safe(function(){
