@@ -1,0 +1,232 @@
+---
+import Base from '@layouts/Base.astro'
+
+const eligibility = [
+  'Be a U.S. citizen or otherwise authorized to work in the United States.',
+  'Be enrolled in an accredited degree program in the U.S. — community college, junior college, undergraduate, or graduate.',
+  'Be passionate about closing the financial gap to education.',
+]
+const requirements = [
+  { icon: 'fa-file-lines', title: 'Updated résumé', body: 'Including contact information and your current student status.' },
+  { icon: 'fa-pen-nib', title: '750-word creative essay', body: 'On how to close the financial gap to education and why access to higher education matters for all.' },
+  { icon: 'fa-graduation-cap', title: 'Current transcript', body: 'From your current institution. Unofficial transcripts are accepted; first-year students may submit an unofficial transcript.' },
+]
+const stats = [
+  { n: '$32,731', l: "Avg. 2019 bachelor's-degree debt", src: 'Forbes' },
+  { n: '$1,000', l: 'Award paid toward tuition' },
+  { n: '750', l: 'Words — the creative essay' },
+]
+const applyEmail = 'help@westgalawyer.com'
+---
+
+<Base
+  title="The Education Equality Scholarship"
+  description="The Parian Lawyers Education Equality Scholarship — a $1,000 needs-based award helping students close the financial gap to higher education."
+>
+  <article class="sch">
+    <!-- hero -->
+    <header class="sch__hero">
+      <div class="sch__wrap">
+        <span class="sch__pill">Parian Lawyers Gives Back</span>
+        <h1>The Education Equality Scholarship</h1>
+        <p class="sch__sub">
+          A <strong>$1,000</strong> needs-based award helping hard-working students close the
+          financial gap to higher education — regardless of major or year of study.
+        </p>
+        <span class="sch__status"><i class="fas fa-circle-info"></i> The 2021 application cycle has closed. Watch this page for future opportunities.</span>
+      </div>
+    </header>
+
+    <!-- mission -->
+    <section class="sch__mission sch__wrap">
+      <p>
+        Today's economy, educational policy changes, and ever-shifting personal circumstances place
+        undergraduate students under great strain. In the last decade, undergraduate costs have
+        skyrocketed. Parian Lawyers believes that all students should have equal access to
+        high-quality educational institutions.
+      </p>
+      <p>
+        In 2019, students graduating with a bachelor's degree owed debts around $32,731, according to
+        <a href="https://www.forbes.com/sites/zackfriedman/2020/02/03/student-loan-debt-statistics/" target="_blank" rel="noopener">Forbes</a>.
+        The earnings gap between those who attended college and those who didn't continues to widen,
+        reducing chances of upward mobility for those without a degree, according to the
+        <a href="https://www.nytimes.com/2015/09/23/business/economy/education-gap-between-rich-and-poor-is-growing-wider.html" target="_blank" rel="noopener">New York Times</a>.
+      </p>
+    </section>
+
+    <!-- the gap: 2-col (fixes the empty space next to the blue box) -->
+    <section class="sch__gap">
+      <div class="sch__wrap sch__gap-grid">
+        <div class="sch__gap-card">
+          <span class="sch__eyebrow">The Problem</span>
+          <h2>Identifying the Gap</h2>
+          <p>
+            <strong>Parian Lawyers</strong> applauds those seeking higher education — it brightens the
+            future of America. But in higher education, a paradigm called <em>"The Gap"</em> exists.
+          </p>
+          <p>
+            A student may receive a Pell Grant and other financial aid yet still struggle to pay the
+            remaining balance to attend class — often due to circumstances beyond their control, like
+            growing up in an economically disadvantaged household. Many simply give up on their dream
+            of a college education.
+          </p>
+          <p class="sch__gap-kicker">We simply cannot let that happen.</p>
+        </div>
+        <aside class="sch__stats">
+          {stats.map((s) => (
+            <div class="sch__stat">
+              <span class="sch__stat-n">{s.n}</span>
+              <span class="sch__stat-l">{s.l}{s.src && <em> · {s.src}</em>}</span>
+            </div>
+          ))}
+        </aside>
+      </div>
+    </section>
+
+    <!-- award -->
+    <section class="sch__award sch__wrap">
+      <div class="sch__award-card">
+        <div class="sch__award-amt"><span>$</span>1,000</div>
+        <div class="sch__award-txt">
+          <h2>A needs-based aid-gap award</h2>
+          <p>
+            We offer $1,000 to a student currently enrolled in a community college, junior college,
+            undergraduate, or graduate program — paid directly toward tuition at the recipient's
+            college or university. The award rewards hard-working individuals seeking education,
+            security, and financial stability, regardless of major or year.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- eligibility -->
+    <section class="sch__elig">
+      <div class="sch__wrap">
+        <span class="sch__eyebrow sch__eyebrow--dark">Who Can Apply</span>
+        <h2>Eligibility</h2>
+        <div class="sch__elig-grid">
+          {eligibility.map((e) => (
+            <div class="sch__elig-item"><i class="fas fa-circle-check"></i><p>{e}</p></div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- requirements -->
+    <section class="sch__req sch__wrap">
+      <span class="sch__eyebrow sch__eyebrow--dark">What to Submit</span>
+      <h2>Application Requirements</h2>
+      <div class="sch__req-grid">
+        {requirements.map((r) => (
+          <div class="sch__req-card">
+            <i class={`fas ${r.icon}`}></i>
+            <h3>{r.title}</h3>
+            <p>{r.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- how to apply -->
+    <section class="sch__apply">
+      <div class="sch__wrap">
+        <span class="sch__eyebrow">How to Apply</span>
+        <h2>Submitting your application</h2>
+        <p class="sch__apply-lead">
+          All required materials — résumé, essay, and transcript — were due to
+          <a href={`mailto:${applyEmail}`}>{applyEmail}</a> by the official program deadline of
+          <strong>December 30, 2021</strong>.
+        </p>
+        <p class="sch__apply-fmt">
+          Email subject line format:
+          <code>Candidate's First and Last Name — Parian Lawyers Education Equality Scholarship</code>
+        </p>
+        <p class="sch__apply-note">
+          Interested in future scholarship opportunities? Email us at
+          <a href={`mailto:${applyEmail}`}>{applyEmail}</a> and we'll keep you posted.
+        </p>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .sch__wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .sch__eyebrow { display: inline-block; font: 700 13px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; color: #ffb400; margin-bottom: 12px; }
+  .sch__eyebrow--dark { color: #c18d15; }
+  .sch h2 { font: 800 clamp(26px, 3.6vw, 38px)/1.12 'Inter', sans-serif; color: #1a2238; letter-spacing: -.01em; margin: 0 0 18px; }
+
+  /* hero */
+  .sch__hero {
+    background:
+      radial-gradient(1100px 460px at 78% -20%, rgba(193,141,21,.24), transparent 60%),
+      linear-gradient(135deg, #1a2238 0%, #232c4a 100%);
+    color: #fff; padding: 78px 0 66px; text-align: center;
+  }
+  .sch__pill { display: inline-block; font: 700 12.5px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .14em; color: #15203a; background: linear-gradient(135deg, #ffd45e, #c18d15); padding: 8px 16px; border-radius: 999px; margin-bottom: 22px; }
+  .sch__hero h1 { font: 800 clamp(34px, 5vw, 56px)/1.06 'Inter', sans-serif; letter-spacing: -.02em; margin: 0 auto; max-width: 16ch; }
+  .sch__sub { font: 400 19px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 620px; margin: 20px auto 0; }
+  .sch__sub strong { color: #ffb400; }
+  .sch__status { display: inline-flex; align-items: center; gap: 8px; margin-top: 26px; font: 500 13.5px/1.4 'Inter', sans-serif; color: #aeb6cc; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); padding: 10px 16px; border-radius: 10px; }
+  .sch__status i { color: #ffb400; }
+
+  /* mission */
+  .sch__mission { padding: 60px 24px 10px; max-width: 760px; }
+  .sch__mission p { font: 400 17px/1.8 'Inter', sans-serif; color: #3a4250; margin: 0 0 20px; }
+  .sch a { color: #c18d15; font-weight: 600; text-decoration: none; }
+  .sch a:hover { text-decoration: underline; }
+
+  /* the gap */
+  .sch__gap { padding: 40px 0 60px; }
+  .sch__gap-grid { display: grid; grid-template-columns: 1.35fr .85fr; gap: 32px; align-items: stretch; }
+  .sch__gap-card { background: linear-gradient(150deg, #1a2238, #2a3354); color: #fff; border-radius: 18px; padding: 40px 40px 36px; }
+  .sch__gap-card h2 { color: #fff; }
+  .sch__gap-card p { font: 400 16px/1.75 'Inter', sans-serif; color: #cdd4e6; margin: 0 0 16px; }
+  .sch__gap-card em { color: #ffd45e; font-style: italic; }
+  .sch__gap-kicker { font: 700 18px/1.4 'Inter', sans-serif !important; color: #ffb400 !important; margin-top: 6px !important; }
+  .sch__stats { display: flex; flex-direction: column; gap: 16px; }
+  .sch__stat { background: #fff; border: 1px solid #e8ecf3; border-left: 4px solid #c18d15; border-radius: 14px; padding: 22px 24px; box-shadow: 0 6px 20px rgba(16,24,40,.05); flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .sch__stat-n { font: 800 34px/1 'Inter', sans-serif; color: #1a2238; }
+  .sch__stat-l { font: 500 13.5px/1.4 'Inter', sans-serif; color: #6b7488; margin-top: 8px; }
+  .sch__stat-l em { font-style: normal; color: #c18d15; }
+
+  /* award */
+  .sch__award { padding: 24px 24px 60px; }
+  .sch__award-card { display: flex; align-items: center; gap: 38px; background: #f7f4ec; border: 1px solid #ece3cf; border-radius: 18px; padding: 38px 42px; }
+  .sch__award-amt { font: 800 64px/1 'Inter', sans-serif; color: #c18d15; flex-shrink: 0; }
+  .sch__award-amt span { font-size: 36px; vertical-align: super; }
+  .sch__award-txt h2 { margin-bottom: 10px; }
+  .sch__award-txt p { font: 400 16px/1.7 'Inter', sans-serif; color: #46506a; margin: 0; }
+
+  /* eligibility */
+  .sch__elig { background: #f8fafc; padding: 64px 0; border-top: 1px solid #eef1f6; }
+  .sch__elig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .sch__elig-item { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 26px 24px; display: flex; gap: 14px; box-shadow: 0 6px 20px rgba(16,24,40,.05); }
+  .sch__elig-item i { color: #1f8a4c; font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .sch__elig-item p { font: 500 15px/1.6 'Inter', sans-serif; color: #3a4250; margin: 0; }
+
+  /* requirements */
+  .sch__req { padding: 64px 24px; }
+  .sch__req-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .sch__req-card { background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 30px 26px; box-shadow: 0 6px 20px rgba(16,24,40,.05); transition: transform .25s, box-shadow .25s; }
+  .sch__req-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(16,24,40,.1); }
+  .sch__req-card i { color: #c18d15; font-size: 26px; margin-bottom: 16px; display: block; }
+  .sch__req-card h3 { font: 700 18px/1.3 'Inter', sans-serif; color: #1a2238; margin: 0 0 8px; }
+  .sch__req-card p { font: 400 14.5px/1.65 'Inter', sans-serif; color: #56607a; margin: 0; }
+
+  /* apply */
+  .sch__apply { background: linear-gradient(135deg, #1a2238, #232c4a); color: #fff; padding: 66px 0; }
+  .sch__apply .sch__eyebrow { color: #ffb400; }
+  .sch__apply h2 { color: #fff; }
+  .sch__apply-lead { font: 400 18px/1.7 'Inter', sans-serif; color: #c3cbe0; max-width: 640px; }
+  .sch__apply-lead strong { color: #fff; }
+  .sch__apply-fmt { font: 400 15px/1.7 'Inter', sans-serif; color: #aeb6cc; margin-top: 18px; }
+  .sch__apply-fmt code { display: inline-block; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 6px 12px; color: #ffd45e; font-size: 14px; margin-top: 6px; }
+  .sch__apply-note { font: 400 15px/1.7 'Inter', sans-serif; color: #aeb6cc; margin-top: 26px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,.1); }
+  .sch__apply a { color: #ffd45e; }
+
+  @media (max-width: 800px) {
+    .sch__gap-grid { grid-template-columns: 1fr; }
+    .sch__award-card { flex-direction: column; text-align: center; gap: 20px; }
+  }
+</style>
