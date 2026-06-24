@@ -7,6 +7,12 @@ import CloneBase from '@layouts/CloneBase.astro'
 // our shared header/footer on our Astro stack. Blog + its posts are handled by
 // the clean components (src/pages/blog/*), so they aren't in clone-pages.
 export async function getStaticPaths() {
+  // Bespoke pages we render with clean Astro templates instead of the raw clone.
+  const OVERRIDDEN = new Set([
+    'about-us/cade-parian',
+    'about-us/tyler-paul-smith',
+    'about-us/ryan-farmer',
+  ])
   const root = path.resolve('clone-pages')
   const out: any[] = []
   const walk = (dir: string) => {
@@ -15,6 +21,7 @@ export async function getStaticPaths() {
       if (e.isDirectory()) walk(fp)
       else if (e.name === 'index.html') {
         const rel = path.relative(root, fp).replace(/\/index\.html$/, '').replace(/index\.html$/, '')
+        if (OVERRIDDEN.has(rel)) continue
         const html = fs.readFileSync(fp, 'utf8')
         // Strip the firm's inherited 3rd-party tracking: their old Google Tag Manager
         // container injects a call-tracking DNI script that swaps our real phone number

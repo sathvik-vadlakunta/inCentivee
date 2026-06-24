@@ -43,6 +43,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <!-- shared enhancement layer: consultation modal, scroll-reveal, polish -->
+    <link rel="stylesheet" href="/enhance.css" />
 
     <SchemaMarkup />
   </head>
@@ -52,5 +54,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site)
       <slot />
     </main>
     <SiteFooter />
+    <script src="/enhance.js" is:inline defer></script>
   </body>
 </html>

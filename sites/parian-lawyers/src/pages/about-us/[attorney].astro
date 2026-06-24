@@ -1,0 +1,176 @@
+---
+import Base from '@layouts/Base.astro'
+import attorneys from '@data/attorneys.json'
+
+export function getStaticPaths() {
+  return (attorneys as Attorney[]).map((a) => ({ params: { attorney: a.slug }, props: { a } }))
+}
+
+type Attorney = {
+  slug: string
+  name: string
+  title: string
+  headshot: string
+  email: string
+  lead: string
+  bio: string[]
+  awards: string[]
+}
+
+const { a } = Astro.props as { a: Attorney }
+const phone = '(770) 727-5550'
+const tel = '+17707275550'
+---
+
+<Base
+  title={`${a.name} — ${a.title}`}
+  description={`Meet ${a.name}, ${a.title.toLowerCase()} at Parian Lawyers serving west Georgia and east Alabama.`}
+  image={a.headshot}
+>
+  <article class="bio">
+    <!-- hero -->
+    <header class="bio__hero">
+      <div class="bio__wrap bio__hero-grid">
+        <div class="bio__intro">
+          <span class="bio__eyebrow">Parian Lawyers Attorney</span>
+          <h1>{a.name}</h1>
+          <p class="bio__role">{a.title}</p>
+          <div class="bio__cta">
+            <button type="button" class="bio__btn" data-pr-open-modal>Free Consultation</button>
+            <a class="bio__call" href={`tel:${tel}`}>
+              <span>Call 24/7</span><strong>{phone}</strong>
+            </a>
+          </div>
+          {a.email && (
+            <a class="bio__email" href={`mailto:${a.email}`}>
+              <i class="fas fa-envelope"></i> {a.email}
+            </a>
+          )}
+        </div>
+        <div class="bio__photo">
+          <img src={a.headshot} alt={`${a.name}, ${a.title}`} width="480" height="600" />
+        </div>
+      </div>
+    </header>
+
+    <!-- body -->
+    <div class="bio__body bio__wrap">
+      {a.lead && (
+        <blockquote class="bio__quote">
+          <i class="fas fa-quote-left"></i>
+          <p>{a.lead}</p>
+          <cite>— {a.name}</cite>
+        </blockquote>
+      )}
+      <div class="bio__prose">
+        {a.bio.map((p) => <p>{p}</p>)}
+      </div>
+    </div>
+
+    <!-- recognition -->
+    {a.awards.length > 0 && (
+      <section class="bio__awards">
+        <div class="bio__wrap">
+          <span class="bio__eyebrow bio__eyebrow--dark">Recognition</span>
+          <h2>Honors &amp; Awards</h2>
+          <div class="bio__award-grid">
+            {a.awards.map((aw) => (
+              <div class="bio__award">
+                <i class="fas fa-award"></i>
+                <p>{aw}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- closing CTA -->
+    <section class="bio__close">
+      <div class="bio__wrap">
+        <h2>Work with {a.name.split(' ')[0]}</h2>
+        <p>Tell us what happened — we’ll review your case at no cost, wherever you are.</p>
+        <div class="bio__cta bio__cta--center">
+          <button type="button" class="bio__btn" data-pr-open-modal>Request a Free Consultation</button>
+          <a class="bio__call bio__call--light" href={`tel:${tel}`}><span>Call 24/7</span><strong>{phone}</strong></a>
+        </div>
+      </div>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .bio__wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  .bio__eyebrow {
+    display: inline-block; font: 700 13px/1 'Inter', sans-serif; text-transform: uppercase;
+    letter-spacing: .16em; color: #ffb400; margin-bottom: 14px;
+  }
+  .bio__eyebrow--dark { color: #c18d15; }
+
+  /* hero */
+  .bio__hero {
+    background:
+      radial-gradient(1200px 500px at 80% -10%, rgba(193,141,21,.22), transparent 60%),
+      linear-gradient(135deg, #1a2238 0%, #232c4a 100%);
+    color: #fff; padding: 76px 0 64px;
+  }
+  .bio__hero-grid { display: grid; grid-template-columns: 1.25fr .85fr; gap: 56px; align-items: center; }
+  .bio__intro h1 { font: 800 clamp(38px, 5vw, 60px)/1.04 'Inter', sans-serif; letter-spacing: -.02em; margin: 0; }
+  .bio__role { font: 500 19px/1.3 'Inter', sans-serif; color: #c3cbe0; margin: 10px 0 26px; }
+  .bio__cta { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .bio__cta--center { justify-content: center; }
+  .bio__btn {
+    background: linear-gradient(135deg, #dcab27, #c18d15); color: #15203a;
+    font: 800 15px/1 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .045em;
+    border: 0; border-radius: 12px; padding: 17px 30px; cursor: pointer;
+    box-shadow: 0 14px 34px rgba(193,141,21,.4); transition: transform .2s, box-shadow .2s;
+  }
+  .bio__btn:hover { transform: translateY(-3px); box-shadow: 0 22px 46px rgba(193,141,21,.55); }
+  .bio__call { display: flex; flex-direction: column; color: #fff; text-decoration: none; line-height: 1.1; }
+  .bio__call span { font: 600 11px/1 'Inter'; text-transform: uppercase; letter-spacing: .1em; color: #ffb400; margin-bottom: 4px; }
+  .bio__call strong { font: 800 23px/1 'Inter'; }
+  .bio__email { display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; color: #aab3cc; font: 500 14px/1 'Inter'; text-decoration: none; }
+  .bio__email:hover { color: #ffb400; }
+  .bio__email i { color: #c18d15; }
+  .bio__photo img {
+    width: 100%; aspect-ratio: 4/5; object-fit: cover; object-position: center top;
+    border-radius: 18px; box-shadow: 0 30px 70px rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.1);
+  }
+
+  /* body */
+  .bio__body { padding: 64px 24px; }
+  .bio__quote {
+    max-width: 760px; margin: 0 auto 38px; position: relative;
+    background: #f7f4ec; border-left: 4px solid #c18d15; border-radius: 0 14px 14px 0;
+    padding: 28px 30px 24px;
+  }
+  .bio__quote i { color: #c18d15; font-size: 22px; opacity: .55; }
+  .bio__quote p { font: italic 500 21px/1.5 Georgia, serif; color: #2a334d; margin: 10px 0 12px; }
+  .bio__quote cite { font: 700 14px/1 'Inter', sans-serif; color: #c18d15; font-style: normal; }
+  .bio__prose { max-width: 760px; margin: 0 auto; }
+  .bio__prose p { font: 400 17px/1.8 'Inter', sans-serif; color: #3a4250; margin: 0 0 22px; }
+
+  /* awards */
+  .bio__awards { background: #f8fafc; padding: 64px 0; border-top: 1px solid #eef1f6; }
+  .bio__awards h2 { font: 800 clamp(26px, 3.4vw, 36px)/1.1 'Inter', sans-serif; color: #1a2238; margin: 0 0 30px; }
+  .bio__award-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .bio__award {
+    background: #fff; border: 1px solid #e8ecf3; border-radius: 14px; padding: 26px 24px;
+    box-shadow: 0 6px 20px rgba(16,24,40,.05); transition: transform .25s, box-shadow .25s;
+  }
+  .bio__award:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(16,24,40,.1); }
+  .bio__award i { color: #c18d15; font-size: 26px; margin-bottom: 14px; display: block; }
+  .bio__award p { font: 400 15px/1.65 'Inter', sans-serif; color: #46506a; margin: 0; }
+
+  /* closing */
+  .bio__close { background: linear-gradient(135deg, #1a2238, #232c4a); color: #fff; padding: 70px 0; text-align: center; }
+  .bio__close h2 { font: 800 clamp(28px, 3.6vw, 40px)/1.1 'Inter', sans-serif; margin: 0 0 12px; }
+  .bio__close p { font: 400 17px/1.6 'Inter', sans-serif; color: #c3cbe0; max-width: 520px; margin: 0 auto 30px; }
+  .bio__call--light { align-items: center; }
+
+  @media (max-width: 860px) {
+    .bio__hero-grid { grid-template-columns: 1fr; gap: 36px; }
+    .bio__photo { max-width: 360px; }
+    .bio__hero { padding: 56px 0 48px; }
+  }
+</style>
