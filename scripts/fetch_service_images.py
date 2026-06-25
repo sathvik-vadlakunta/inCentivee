@@ -12,6 +12,23 @@ API_KEY = os.environ.get("PEXELS_API_KEY", "").strip()
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 UA = "Mozilla/5.0 (compatible; PracticeRankImager/1.0)"
 
+# Exact slug -> hand-tuned query (for services whose name returns off-topic stock).
+SLUG_OVERRIDE = {
+    "retainers": "clear orthodontic retainer teeth",
+    "pulpotomy": "child at dentist pediatric chair",
+    "night-guards": "dental night guard occlusal splint",
+    "sports-mouth-guards": "sports mouthguard athlete",
+    "dental-sealants": "dentist examining patient teeth",
+    "cone-beam-cbct-imaging": "dental panoramic x-ray machine",
+    "botox": "botox cosmetic injection face",
+    "pediatric-tooth-extractions": "child patient dentist chair",
+    "amalgam-removal": "dentist drilling tooth treatment",
+    "mercury-free-dentistry": "dentist composite tooth filling",
+    "tooth-extractions": "dental tooth extraction forceps",
+    "baby-tooth-crowns": "child teeth dentist pediatric",
+    "braces": "orthodontic metal braces teeth",
+}
+
 # title/slug keyword -> a better Pexels query than the raw title
 REFINE = [
     (r"whitening", "teeth whitening dentist"),
@@ -56,7 +73,9 @@ def fetch_webp(src_url, dest):
     os.unlink(tmp)
 
 
-def query_for(title):
+def query_for(title, slug=""):
+    if slug in SLUG_OVERRIDE:
+        return SLUG_OVERRIDE[slug]
     low = title.lower()
     for pat, q in REFINE:
         if re.search(pat, low):
@@ -86,7 +105,7 @@ def main():
         if re.search(r"^image:", s, re.M):
             print("  · skip (frontmatter image):", slug); continue
         title = (re.search(r"^title:\s*(.+)$", s, re.M) or [None, slug])[1].strip()
-        q = query_for(title)
+        q = query_for(title, slug)
         dest = os.path.join(out, f"svc-{slug}.webp")
         try:
             photos = search(q)
