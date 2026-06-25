@@ -47,8 +47,32 @@ export async function getStaticPaths() {
             .replace(/<noscript\b[^>]*>(?:(?!<\/noscript>)[\s\S])*?googletagmanager\.com(?:(?!<\/noscript>)[\s\S])*?<\/noscript>/gi, '')
             // WordPress.com / Jetpack stats pixel
             .replace(/<script\b[^>]*\bsrc="[^"]*stats\.wp\.com[^"]*"[^>]*>\s*<\/script>/gi, '')
+
+        // Fix the stray opening apostrophes from the WP migration (". 'Many times",
+        // "cars,'trucks", and "injuries</a>'are" — the last one has NO space, so the
+        // browser can't break between the link and the next word, which is why inline
+        // links drop onto their own line on mobile). Done at BUILD time over TEXT
+        // BETWEEN TAGS ONLY (scripts/styles are stashed first), so inline JS and
+        // attributes are never touched — and there's no runtime flash.
+        const fixApostrophes = (s: string) => {
+          const stash: string[] = []
+          s = s.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, (m) => {
+            stash.push(m)
+            return `${stash.length - 1}`
+          })
+          s = s.replace(/>([^<]+)</g, (_m, text: string) =>
+            '>' +
+            text
+              .replace(/([.!?:,])\s*'(?=[A-Za-z])/g, '$1 ') // ". 'Word" / ",'word" -> ". Word" / ", word"
+              .replace(/^'(?!s\b)(?=[A-Za-z])/, ' ')        // "</a>'are" -> "</a> are" (not possessive 's)
+              .replace(/ {2,}/g, ' ') +
+            '<'
+          )
+          return s.replace(/(\d+)/g, (_x, i) => stash[+i])
+        }
+
         const head = sanitize((html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1])
-        const body = sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1])
+        const body = fixApostrophes(sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1]))
         // preserve the original <body> classes — the theme/Elementor uses them for
         // page background, text colors, and layout scoping.
         const bodyOpen = (html.match(/<body([^>]*)>/i) || [, ''])[1]
