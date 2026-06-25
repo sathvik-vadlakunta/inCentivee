@@ -104,23 +104,9 @@
       });
     });
 
-    // 8) modern hero — replace the boxy text + non-functional inline CF7 form on the
-    //    cloned .page-banner with clean text + a "Free Consultation" CTA that opens a modal.
-    safe(function(){
-      var banner=document.querySelector('.page-banner'); if(!banner) return;
-      banner.classList.add('pr-hero');
-      // drop the inline form column (it can't submit on a static deploy anyway)
-      var form=banner.querySelector('.banner-form');
-      if(form){ var fc=form.closest('[class*="col-"]'); if(fc) fc.classList.add('pr-hide'); else form.style.display='none'; }
-      // inject the CTA cluster into the content column
-      var content=banner.querySelector('.banner-content');
-      if(content && !content.querySelector('.pr-hero-cta')){
-        var cta=document.createElement('div'); cta.className='pr-hero-cta';
-        cta.innerHTML='<button type="button" class="pr-cta-btn" data-pr-open-modal>Free Consultation</button>'+
-          '<a class="pr-cta-call" href="tel:+17707275550"><span>Call 24/7 · Free Case Review</span><strong>(770) 727-5550</strong></a>';
-        content.appendChild(cta);
-      }
-    });
+    // (hero CTA, review badge/band, and service-page enrichment are now baked in at
+    //  BUILD time — see src/lib/enrich.ts — so they're in the HTML on first paint and
+    //  there's no flash. Only the modal + scroll-reveal remain at runtime below.)
 
     // 8b) consultation modal — built once, opened by any [data-pr-open-modal] trigger.
     safe(function(){
@@ -163,96 +149,6 @@
         var subj=encodeURIComponent('Free Consultation Request — '+fd.get('name'));
         window.location.href='mailto:cade@westgalawyer.com?subject='+subj+'&body='+body;
       });
-    });
-
-    // 10) Google-review social proof — a star badge in the hero + a conversion band
-    //     before the footer on inner clone pages. Numbers are verified (see
-    //     practice.json reviews): 4.9★, 1,000+ reviews (Birdeye aggregate, Google-dominant).
-    safe(function(){
-      var RATING='4.9', COUNT='1,000+';
-      var starsHTML='<span class="pr-rev-stars">★★★★★</span>';
-      // a) hero badge (under the CTA cluster)
-      var ctaWrap=document.querySelector('.pr-hero-cta');
-      if(ctaWrap && !document.querySelector('.pr-rev-badge')){
-        var b=document.createElement('div'); b.className='pr-rev-badge';
-        b.innerHTML=starsHTML+'<span class="pr-rev-txt"><strong>'+RATING+'</strong> · '+COUNT+' <i class="fab fa-google"></i> Google reviews</span>';
-        ctaWrap.parentNode.insertBefore(b, ctaWrap.nextSibling);
-      }
-      // b) pre-footer conversion band (inner clone pages only — they have .page-banner)
-      var foot=document.querySelector('footer.pl-foot');
-      if(foot && document.querySelector('.page-banner') && !document.querySelector('.pr-rev-band')){
-        var band=document.createElement('section'); band.className='pr-rev-band';
-        band.innerHTML='<div class="pr-rev-band-in">'+
-          '<div class="pr-rev-band-rate">'+starsHTML+'<span><strong>'+RATING+'</strong> rating · '+COUNT+' <i class="fab fa-google"></i> Google reviews</span></div>'+
-          '<div class="pr-rev-band-cta"><span class="pr-rev-band-h">Trusted by west Georgia. Let’s talk about your case.</span>'+
-          '<button type="button" class="pr-cta-btn" data-pr-open-modal>Free Consultation</button></div>'+
-          '</div>';
-        foot.parentNode.insertBefore(band, foot);
-      }
-    });
-
-    // 11) service-page enrichment — break up the wall of text with a category-relevant
-    //     image, a lead paragraph, accented headings, and a mid-content callout. Varied
-    //     per page (image variant + side + accent) by a slug hash so pages don't all match.
-    safe(function(){
-      if(!document.querySelector('.page-banner')) return;            // inner pages only
-      var col=null, best=0;
-      document.querySelectorAll('.col-sm-8').forEach(function(c){
-        if(c.closest('.banner-form,.page-banner,footer')) return;
-        var ps=c.querySelectorAll(':scope > p'); var n=0; ps.forEach(function(p){n+=p.textContent.trim().length;});
-        if(n>best){best=n;col=c;}
-      });
-      if(!col) return;
-      var ps=[].slice.call(col.querySelectorAll(':scope > p')).filter(function(p){return p.textContent.trim().length>40;});
-      if(ps.length<4 || col.dataset.prEnriched) return;
-      col.dataset.prEnriched='1';
-
-      // category from slug
-      var slug=location.pathname.toLowerCase();
-      // informational / non-service pages should NOT get a generic stock photo (e.g.
-      // the law-book "legal" fallback that was showing on both About sub-pages).
-      var skipImg=/(^|\/)(about-us|what-to-expect|who-we-represent|areas-served|practice-areas|our-team|choosing-the|awards-honors|scholarship|testimonials|client-testimonials|contact)(\/|$)/.test(slug);
-      var MAP=[['truck','truck-accident'],['motorcycle','motorcycle'],['pedestrian','pedestrian'],
-        ['dog','dog-bite'],['slip','slip-and-fall'],['fall','slip-and-fall'],['nursing','nursing-home'],
-        ['workers','workers-compensation'],['workman','workers-compensation'],['social-security','social-security'],
-        ['disability','social-security'],['wrongful','wrongful-death'],['mass-tort','mass-torts'],['drug','mass-torts'],
-        ['catastrophic','catastrophic'],['brain','catastrophic'],['spinal','catastrophic'],['malpractice','injury'],
-        ['medical','injury'],['car','car-accident'],['auto','car-accident'],['wreck','car-accident'],['bus','car-accident'],
-        ['divorce','legal'],['custody','legal'],['child-support','legal'],['family','legal'],['adoption','legal'],
-        ['criminal','courthouse'],['dui','courthouse'],['assault','courthouse'],['charge','courthouse'],['injury','injury']];
-      var cat='legal';
-      for(var i=0;i<MAP.length;i++){ if(slug.indexOf(MAP[i][0])>-1){ cat=MAP[i][1]; break; } }
-
-      // stable hash → variety
-      var h=0; for(var j=0;j<slug.length;j++){ h=((h<<5)-h+slug.charCodeAt(j))|0; }
-      h=Math.abs(h);
-      var variant=(h%2)+1;                  // -1 or -2 image
-      var side=(h>>1)%2 ? 'right':'left';   // float side
-      col.classList.add('pr-enriched','pr-acc-'+(h%3)); // 3 heading-accent flavors
-
-      // lead paragraph
-      if(ps[0]) ps[0].classList.add('pr-lead');
-
-      // category image — float before the first subheading (or after para 2)
-      var anchor=col.querySelector(':scope > h2, :scope > h3') || ps[2] || ps[1];
-      if(anchor && !skipImg){
-        var fig=document.createElement('figure');
-        fig.className='pr-figure pr-figure--'+side;
-        fig.innerHTML='<img src="/images/stock/'+cat+'-'+variant+'.jpg" alt="" loading="lazy" decoding="async">';
-        anchor.parentNode.insertBefore(fig, anchor);
-      }
-
-      // mid-content callout CTA (before a heading in the lower half)
-      var heads=col.querySelectorAll(':scope > h2, :scope > h3');
-      if(heads.length>=2){
-        var target=heads[Math.min(heads.length-1, Math.floor(heads.length/2)+ (h%2))];
-        if(target && !col.querySelector('.pr-inline-cta')){
-          var box=document.createElement('div'); box.className='pr-inline-cta';
-          box.innerHTML='<div><strong>Hurt and not sure what your case is worth?</strong><span>Get a free, confidential review — no obligation.</span></div>'+
-            '<button type="button" class="pr-cta-btn" data-pr-open-modal>Free Consultation</button>';
-          target.parentNode.insertBefore(box, target);
-        }
-      }
     });
 
     // (hero entrance + ken-burns are now pure CSS keyed on .page-banner / .bio / .sch

@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import CloneBase from '@layouts/CloneBase.astro'
+import { enrich } from '../lib/enrich'
 
 // Serve every ingested clone page (exact content) at its original URL, through
 // our shared header/footer on our Astro stack. Blog + its posts are handled by
@@ -96,7 +97,9 @@ export async function getStaticPaths() {
         // WordPress enqueues most heavy scripts in the FOOTER, so strip both head + body.
         const rawBody = fixApostrophes(sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1]))
         const head = stripAssets(sanitize((html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1]), rawBody)
-        const body = stripAssets(rawBody, rawBody)
+        // Bake the enhancements (hero CTA + review badge, service image/lead/accents/CTA,
+        // pre-footer review band) into the HTML at build time so there's no runtime flash.
+        const body = enrich(stripAssets(rawBody, rawBody), rel)
         // preserve the original <body> classes — the theme/Elementor uses them for
         // page background, text colors, and layout scoping.
         const bodyOpen = (html.match(/<body([^>]*)>/i) || [, ''])[1]
