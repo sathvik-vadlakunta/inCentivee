@@ -65,6 +65,7 @@ export async function getStaticPaths() {
             '>' +
             text
               .replace(/([.!?:,])\s*'(?=[A-Za-z])/g, '$1 ') // ". 'Word" / ",'word" -> ". Word" / ", word"
+              .replace(/(\w)\s'\s(?=[A-Z])/g, '$1 — ')       // "Duty ' In" -> "Duty — In" (stray separator; spaces both sides so it can't be a possessive 's or matched 'quote')
               .replace(/^'(?!s\b)(?=[A-Za-z])/, ' ')        // "</a>'are" -> "</a> are" (not possessive 's)
               .replace(/ {2,}/g, ' ') +
             '<'
