@@ -1,4 +1,5 @@
-sites/parian-lawyers/.mirror/
+.mirror/
 public/wp-content
+public/wp-includes
 public/images/stock
 clone-pages
