@@ -1,4 +1,5 @@
 ---
+import fs from 'node:fs'
 import Base from '@layouts/Base.astro'
 import CTABanner from '@components/CTABanner.astro'
 import practice from '@data/practice.json'
@@ -38,16 +39,27 @@ const CAT_LABEL: Record<string, string> = {
 }
 const SITE_OFFSET = 1   // shifts variant choice so each customer site differs too
 const slugSum = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0)
-const stockVariant = (label: string, extra: number) =>
-  `/images/stock/${label}-${((slugSum + SITE_OFFSET + extra) % 4) + 1}.webp`
+// Use EVERY stock variant we have for a category (not just -1..-4) so categories
+// with several services cycle through more distinct photos. Auto-scales — drop more
+// <label>-N.webp into public/images/stock and they're picked up automatically.
+const STOCK = fs.existsSync('public/images/stock')
+  ? fs.readdirSync('public/images/stock').filter((f) => f.endsWith('.webp'))
+  : []
+const variantsFor = (label: string) =>
+  STOCK.filter((f) => f === `${label}.webp` || f.startsWith(`${label}-`)).sort()
+const stockVariant = (label: string, extra: number) => {
+  const v = variantsFor(label).length ? variantsFor(label) : variantsFor('hero-office')
+  return v.length ? `/images/stock/${v[(slugSum + SITE_OFFSET + extra) % v.length]}` : '/images/stock/hero-office-1.webp'
+}
 const _label = CAT_LABEL[service.data.category]
+// Every service gets its OWN feature photo (svc-<slug>.webp from Pexels) — unique per service.
+const svcImg = STOCK.includes(`svc-${service.slug}.webp`) ? `/images/stock/svc-${service.slug}.webp` : null
 // A custom service photo (frontmatter `image:`) is showcased as the body feature
 // image (portrait-friendly), not stretched behind the hero text. The hero keeps a
 // wide stock banner so the headline stays readable.
-const hasCustomImg = !!service.data.image
-const heroImg = _label ? stockVariant(_label, 0) : `/images/stock/hero-office-${((slugSum + 1) % 4) + 1}.webp`
-const bodyImg = service.data.image
-  || (_label ? stockVariant(_label, 2) : `/images/stock/hero-office-${((slugSum + 3) % 4) + 1}.webp`)
+const hasCustomImg = !!(service.data.image || svcImg)
+const heroImg = stockVariant(_label || 'hero-office', 0)
+const bodyImg = service.data.image || svcImg || stockVariant(_label || 'hero-office', 2)
 // Deterministic 0/1/2 per service so the body layout differs page-to-page.
 // Custom photos always use the side-by-side layout (variant 2 style).
 const variant = hasCustomImg ? 2 : slugSum % 3

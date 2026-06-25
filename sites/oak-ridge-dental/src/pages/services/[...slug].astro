@@ -1,4 +1,5 @@
 ---
+import fs from 'node:fs'
 import Base from '@layouts/Base.astro'
 import CTABanner from '@components/CTABanner.astro'
 import practice from '@data/practice.json'
@@ -39,14 +40,24 @@ const CAT_LABEL: Record<string, string> = {
 }
 const SITE_OFFSET = 0   // shifts variant choice so each customer site differs too
 const slugSum = [...service.slug].reduce((a, c) => a + c.charCodeAt(0), 0)
-const stockVariant = (label: string, extra: number) =>
-  `/images/stock/${label}-${((slugSum + SITE_OFFSET + extra) % 4) + 1}.webp`
+// Use EVERY stock variant we have for a category (not just -1..-4) so big
+// categories (16 General Dentistry services!) cycle through more distinct photos.
+// Auto-scales — drop more <label>-N.webp into public/images/stock and they're used.
+const STOCK = fs.existsSync('public/images/stock')
+  ? fs.readdirSync('public/images/stock').filter((f) => f.endsWith('.webp'))
+  : []
+const variantsFor = (label: string) =>
+  STOCK.filter((f) => f === `${label}.webp` || f.startsWith(`${label}-`)).sort()
+const stockVariant = (label: string, extra: number) => {
+  const v = variantsFor(label).length ? variantsFor(label) : variantsFor('hero-office')
+  return v.length ? `/images/stock/${v[(slugSum + SITE_OFFSET + extra) % v.length]}` : '/images/stock/hero-office-1.webp'
+}
 const _label = CAT_LABEL[service.data.category]
-// hero: real per-service photo if we have one, else a category variant
-const heroImg = service.data.image || SLUG_IMG[service.slug]
-  || (_label ? stockVariant(_label, 0) : `/images/stock/hero-office-${(slugSum % 4) + 1}.webp`)
-// body: a DIFFERENT variant of the same category so it's not the same image twice
-const bodyImg = _label ? stockVariant(_label, 2) : `/images/stock/hero-office-${((slugSum + 2) % 4) + 1}.webp`
+// Every service gets its OWN feature photo (svc-<slug>.webp from Pexels, one unique
+// image per service) for the prominent body image; the hero stays a category banner.
+const svcImg = STOCK.includes(`svc-${service.slug}.webp`) ? `/images/stock/svc-${service.slug}.webp` : null
+const heroImg = service.data.image || SLUG_IMG[service.slug] || stockVariant(_label || 'hero-office', 0)
+const bodyImg = svcImg || stockVariant(_label || 'hero-office', 2)
 // Deterministic 0/1/2 per service so the body layout differs page-to-page.
 const variant = slugSum % 3
 
