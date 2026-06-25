@@ -3,6 +3,7 @@ title: Denture Care
 description: Professional denture adjustments, relines, and maintenance to keep your dentures fitting comfortably at SoJo Dental.
 category: Restorative Dentistry
 order: 14
+image: /images/services/denture-care.webp
 faqs:
   - question: "How often should I have my dentures checked?"
     answer: "We recommend a professional denture evaluation at least once a year. Your jawbone and gums change over time, and adjustments help maintain a comfortable fit."

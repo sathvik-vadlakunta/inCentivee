@@ -3,6 +3,7 @@ title: Dental Bridges
 description: Fixed dental bridges to replace missing teeth — restoring your bite, appearance, and ability to eat and speak comfortably.
 category: Restorative Dentistry
 order: 12
+image: /images/services/dental-bridges.webp
 faqs:
   - question: How long does a dental bridge last?
     answer: With proper care, dental bridges typically last 10 to 15 years or longer. Regular dental checkups and good oral hygiene help extend the life of your bridge.

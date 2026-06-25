@@ -3,6 +3,7 @@ title: Dentures
 description: Custom full and partial dentures at SoJo Dental — comfortable, natural-looking removable prosthetics to restore your smile and function.
 category: Restorative Dentistry
 order: 13
+image: /images/services/dentures.webp
 faqs:
   - question: How long does it take to get used to dentures?
     answer: Most patients adjust to new dentures within 2-4 weeks. Eating soft foods and practicing speaking helps speed the adjustment period.

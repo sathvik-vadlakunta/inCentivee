@@ -3,6 +3,7 @@ title: Dental Fillings
 description: Tooth-colored composite fillings to repair cavities and restore teeth — mercury-free, natural-looking results at SoJo Dental.
 category: Restorative Dentistry
 order: 14
+image: /images/services/dental-fillings.webp
 faqs:
   - question: "Do tooth-colored fillings last as long as metal fillings?"
     answer: "Modern composite fillings are very durable and typically last 7 to 10 years or more with proper care. They bond directly to your tooth, which can actually strengthen the remaining structure."

@@ -3,6 +3,7 @@ title: Dental Implant Placement
 description: Permanent dental implant placement by Dr. Brian Call — replace missing teeth with titanium implants that look, feel, and function like natural teeth.
 category: Implant Dentistry
 order: 8
+image: /images/services/dental-implant-placement.webp
 faqs:
   - question: How long do dental implants last?
     answer: With proper care, dental implants can last a lifetime. The implant post fuses with your jawbone and becomes a permanent part of your mouth.
