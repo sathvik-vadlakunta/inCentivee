@@ -102,7 +102,9 @@ a[href="/"] img, .site-logo img, .elementor-widget-theme-site-logo img{cursor:po
 .pr-rev-badge .pr-rev-txt strong{color:#fff;font-weight:800;}
 .pr-rev-badge .fa-google{color:#fff;margin:0 1px 0 3px;}
 /* pre-footer conversion band */
-.pr-rev-band{background:linear-gradient(135deg,#161d33,#243057);padding:30px 24px;border-top:3px solid var(--pr-gold);}
+/* clear:both + full width — the band is appended after the clone's float:left
+   content, so without clearing it sits beside a float (off-screen) and overflows. */
+.pr-rev-band{clear:both;width:100%;box-sizing:border-box;background:linear-gradient(135deg,#161d33,#243057);padding:30px 24px;border-top:3px solid var(--pr-gold);}
 .pr-rev-band-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap;}
 .pr-rev-band-rate{display:flex;align-items:center;gap:13px;}
 .pr-rev-band-rate .pr-rev-stars{font-size:22px;}
