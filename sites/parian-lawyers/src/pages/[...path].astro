@@ -71,8 +71,32 @@ export async function getStaticPaths() {
           return s.replace(/(\d+)/g, (_x, i) => stash[+i])
         }
 
-        const head = sanitize((html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1])
-        const body = fixApostrophes(sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1]))
+        // Speed: the clone hauls the whole WordPress asset stack (~1.5MB CSS+JS). Most
+        // of it is dead weight on these theme-template pages — strip the heavy libraries
+        // that are replaced (nav SmartMenus), dead (CleanTalk/CF7 for the disabled form,
+        // wp-emoji), or simply unused here (Elementor, Swiper, Owl, Isotope). Carousel/
+        // Elementor libs are only dropped when the page body doesn't actually use them.
+        // Font Awesome + jQuery are left alone so icons/behaviour don't break.
+        const stripAssets = (h: string, b: string) => {
+          const drop = ['smartmenus', 'cleantalk', 'apbct', 'wp-emoji', 'contact-form-7', 'isotope', 'jquery-migrate']
+          if (!/class="[^"]*swiper/i.test(b)) drop.push('swiper')
+          if (!/class="[^"]*owl-carousel/i.test(b)) drop.push('owl.carousel', 'owl.theme')
+          if (!/class="[^"]*elementor-(?:widget|element)|data-elementor-type/i.test(b)) {
+            drop.push('elementor/assets/js/frontend', 'elements-handlers', 'frontend-modules',
+                      'elementor/assets/css/frontend', 'elementor/assets/css/widget-', 'pro-elements/assets')
+          }
+          const tokens = drop.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+          const re = new RegExp(`<(?:script|link)\\b[^>]*\\b(?:src|href)="[^"]*(?:${tokens})[^"]*"[^>]*>(?:\\s*</script>)?`, 'gi')
+          return h
+            .replace(re, '')
+            .replace(/<script\b[^>]*>(?:(?!<\/script>)[\s\S])*?wpemoji(?:(?!<\/script>)[\s\S])*?<\/script>/gi, '')
+            .replace(/<style\b[^>]*>\s*img\.wp-smiley[\s\S]*?<\/style>/gi, '')
+        }
+
+        // WordPress enqueues most heavy scripts in the FOOTER, so strip both head + body.
+        const rawBody = fixApostrophes(sanitize((html.match(/<body[^>]*>([\s\S]*?)<\/body>/i) || [, ''])[1]))
+        const head = stripAssets(sanitize((html.match(/<head[^>]*>([\s\S]*?)<\/head>/i) || [, ''])[1]), rawBody)
+        const body = stripAssets(rawBody, rawBody)
         // preserve the original <body> classes — the theme/Elementor uses them for
         // page background, text colors, and layout scoping.
         const bodyOpen = (html.match(/<body([^>]*)>/i) || [, ''])[1]
