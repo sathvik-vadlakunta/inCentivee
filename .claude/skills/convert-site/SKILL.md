@@ -34,8 +34,26 @@ skill is the runbook that ties the sub-skills together.
 12. **Full schema set + both llms files + cited 1,500-word blogs + persistent chat widget.**
     [§12.3–12.5]
 
-> Read **playbook §12 "Lessons from the Oak Ridge full build"** before starting — it captures the
-> data-sourcing shortcuts and the gotchas that cost the most time on the first full run.
+**When porting an EXISTING WordPress/Elementor site (clone-then-clean — playbook §13):**
+13. **Clone for breadth, rebuild high-value pages clean.** Pixel-match first (clients reject
+    redesign-from-scratch). Serve clones via a catch-all; rebuild home/bios/hubs/scholarship as
+    clean responsive Astro pages, excluded via an `OVERRIDDEN` set. **Elementor-heavy pages don't
+    survive static cloning (render empty) — always rebuild them.** [§13.1–13.2]
+14. **Do all enhancements at BUILD time, never runtime** (runtime = FOUC "flashes legacy then
+    new"; verify with JS disabled). Wrap ingested bodies in `display:flow-root`; pin
+    `color-scheme:light`. [§13.3–13.4, §13.7]
+15. **Strip the firm's inherited GTM** (it can swap your phone for a stale call-tracking number)
+    — bound the regex with `(?!</script>)` lookahead or it eats page content. Rewrite the staging
+    domain → real domain; pull every referenced asset local before cutover. [§13.5–13.6]
+16. **Strip the dead WP asset stack** (~570 KB/page: CF7/CleanTalk/SmartMenus/Swiper/Owl/Isotope/
+    Elementor) at build, head + footer; keep Font Awesome + jQuery. Fix WP stray-apostrophe
+    artifacts on text-between-tags only. Blog: pull via the **WP REST API** (slug from `link`, not
+    `slug`; newest-first). Use **302** for convertible stub redirects (cached-301 gotcha). Run a
+    **390px mobile QA sweep**. [§13.8–13.13]
+
+> Read **playbook §12 (Oak Ridge lessons)** for scratch builds, and **§13 (Parian Lawyers
+> lessons)** before any clone-then-clean port of an existing WordPress/Elementor site — they
+> capture the gotchas that cost the most time.
 
 ## Process
 

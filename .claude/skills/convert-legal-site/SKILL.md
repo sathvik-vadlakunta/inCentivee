@@ -14,8 +14,12 @@ get the *client* sanctioned). Use when the user says "convert this law firm / at
   (§2)**, the **per-state research process (§3)**, the disclaimer library (§4), review-engine
   constraints (§5), and the phase plan with compliance gates (§6).
 - `docs/site-conversion-playbook.md` + `.claude/skills/convert-site/SKILL.md` — the underlying
-  build process, gotcha library, and QA checklist (all reused unchanged).
-- First reference build: `specs/customers/parian-lawyers-conversion.html` (Parian Lawyers, PI, GA+AL).
+  build process, gotcha library, and QA checklist (all reused unchanged). **Read §13 "Lessons
+  from the Parian Lawyers build"** — the clone-then-clean port playbook this skill assumes
+  (Elementor rebuild, build-time enrichment to avoid FOUC, GTM/phone-swap strip, staging-domain
+  rewrite, dead-asset strip, WP REST blog pull, cached-301/302, mobile QA sweep).
+- First reference build: `specs/customers/parian-lawyers-conversion.html` (Parian Lawyers, PI, GA+AL),
+  live at parian-lawyers.pages.dev — the canonical example of every §13 technique.
 
 ## User-invocable
 `/convert-legal-site <firm-url> [slug]` — convert the law firm at `<firm-url>` into

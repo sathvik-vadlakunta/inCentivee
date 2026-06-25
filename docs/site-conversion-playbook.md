@@ -407,6 +407,108 @@ the guard → widget disappears after the first client-side nav).
 - **NAP reconciliation:** when site/GBP/CRM disagree on phone/address, **surface it and let the
   human choose** — don't silently pick one.
 
+## 13. Lessons from the Parian Lawyers build (2026-06-25) — porting a large WordPress/Elementor site
+
+First big **clone-then-clean** port (900+ pages, a law firm). These are general WP/Elementor
+lessons unless marked legal-specific.
+
+### 13.1 — Clone-then-clean hybrid is the winning strategy
+Pixel-match first — clients reject "redesign from scratch / walls of text." Clone the WHOLE
+site for breadth (`scripts/clone_site.py` + `scripts/mirror_wordpress.py` → `mirror.json`),
+serve it through our header/footer via a catch-all `src/pages/[...path].astro` that ingests
+`clone-pages/`, THEN rebuild the high-value page types **clean** (own responsive Astro pages,
+excluded from the catch-all via an `OVERRIDDEN` set): home/landing, bios, category hubs,
+city/areas-served, scholarship. The long-tail service/area pages stay as clones.
+
+### 13.2 — Elementor pages do NOT survive static cloning — rebuild them
+Elementor widgets need Elementor's frontend JS; in a static clone they render **empty** (blank
+bands on desktop *and* mobile). Detect density per page:
+`grep -cE 'elementor-element |elementor-section|e-con ' <file>`. The home had 147; every other
+page ~0. Rebuild the Elementor-heavy ones clean; the bootstrap theme-template pages are fine.
+
+### 13.3 — Uncleared floats → footer bg bleeds over the page (navy-on-navy)
+WP theme bodies use `float:left`. Inject your footer after the ingested body and it rises
+*behind* the content. Wrap the ingested body in `display:flow-root`. Build-time-appended
+elements (e.g. a review band) must also `clear:both` or they sit beside a float off-screen
+(caused a 581px mobile overflow). See memory `clone-float-containment`.
+
+### 13.4 — Light-only designs: pin `color-scheme: light`
+A dark-mode visitor's browser paints the canvas + form controls dark → content goes
+navy-on-navy / unreadable. Add `<meta name="color-scheme" content="light">` + `:root{color-scheme:light}`.
+
+### 13.5 — Strip the firm's inherited 3rd-party tracking (it can hijack the phone number)
+The clone carries the client's old **Google Tag Manager**, which ran a call-tracking DNI
+script that **swapped the real phone number for a stale tracking number we don't own** — calls
+would route to a dead line. Strip GTM + wp.com stats at build. **WARNING:** bound the strip
+regex with `(?:(?!</script>)[\s\S])*?` — a naive `[\s\S]*?` runs from the first `<script>`
+through the page to GTM and deletes real content (we hit this — it ate the hero).
+
+### 13.6 — Cutover prep: rewrite staging domain + pull every asset local
+- The clone leaks the WP staging host (`*.wpcomstaging.com`) in og:url/og:image/canonical/links/
+  assets. Rewrite all of it to the real domain at build so everything resolves same-origin
+  after DNS cutover.
+- Pull EVERY referenced asset local before cutover (`scripts/pull_missing_assets.py`: scan clone
+  HTML + theme CSS `url(...)`, download what's missing). **Missing theme bg images render
+  white-on-white invisible sections.**
+
+### 13.7 — Do enhancements at BUILD time, not runtime (no FOUC)
+Injecting CTAs/badges/images/text-fixes in JS = "flashes the legacy site, then the new one"
+(**not** a Cloudflare cache issue — cache makes it faster; it's render-timing of runtime JS).
+Bake them into the HTML at build with `node-html-parser` (faithful round-trip — verify script/
+img/link counts survive). **Verify with JS disabled** (`Emulation.setScriptExecutionDisabled`):
+the page must render complete on first paint. Keep only the modal (hidden until click) +
+scroll-reveal at runtime.
+
+### 13.8 — Fix WP content artifacts (stray apostrophes) at build, text-between-tags only
+WP migrations leave orphaned opening apostrophes: `". 'Many"`, `"cars,'trucks"`, and crucially
+`"injuries</a>'are"` — the last has **no space**, so the browser can't break between the link
+and the next word and inline links drop onto their own line on mobile. Fix at build over
+`>([^<]+)<` text **after stashing `<script>/<style>`** (null-byte sentinel). Never regex raw
+HTML (corrupts inline JS like `(window,'script')`); preserve matched quote pairs `'…'` and
+possessive `'s`; don't mangle numbers (4,667 / 2012).
+
+### 13.9 — Strip the dead WordPress asset stack (~570 KB/page)
+Clone pages load ~1.5 MB CSS+JS, mostly dead: jquery-migrate, CF7, CleanTalk, SmartMenus,
+wp-emoji, Isotope, Swiper, Owl, Elementor. Strip at build in **both head AND footer** (WP
+enqueues most scripts in the footer). Only drop carousel/Elementor libs when the page body
+doesn't actually contain those widgets (per-page `class="…swiper"` check). **Keep Font Awesome
++ jQuery** so icons/behaviour don't break. Everything stripped is either unused or already
+reimplemented in our raw-JS header/modal.
+
+### 13.10 — Blog: pull via the WordPress REST API, not HTML scraping
+`/wp-json/wp/v2/posts?per_page=100&page=N&_fields=id,slug,date,link,title,excerpt,content,categories`
+gives authoritative publish dates/titles/excerpts/content/categories; `html2text` content →
+markdown; `/categories` for names. Gotchas: (a) permalinks can change over time — old posts at
+`/blog/<slug>`, new at root `/<slug>`; (b) the WP `slug` field can carry a spurious `blog-`
+prefix — **derive the slug from `link`, not `slug`**; (c) sort **newest-first**; (d) 301 the
+original permalinks of any normalized posts. `scripts/repull_blog.py`.
+
+### 13.11 — Build clean category/area hubs + point the mega-menu there
+Mega-menu column headers (e.g. *Family Law*, *Criminal Law*, *Areas Served*, each city) often
+point at a generic page or 404. Build real hub pages (hero + reviews + a card grid linking each
+sub-page + CTA) via a reusable `CategoryHub` component and point the headers there — strong
+internal linking for local SEO.
+
+### 13.12 — The cached-301 gotcha (use 302 for convertible stubs)
+A URL that briefly 301'd (dead stub → home) gets the redirect cached **hard** by browsers —
+even after you ship the real page they keep redirecting, and you can't bust it server-side.
+Fixes: use **302** for stub redirects that might become real pages; to dodge a poisoned URL,
+move the page to a fresh keyword-rich slug the browser never cached and 302 the old one to it.
+
+### 13.13 — Verify visually (headless Chrome + CDP), not just grep
+The navy-on-navy bug *looked* like a missing CSS variable (computed styles read white) but was
+the uncleared-float footer bleeding behind content — only a screenshot + a CDP
+`elementFromPoint`/painted-ancestor walk found it. Run a **mobile QA sweep** at 390px across one
+of each page type, flagging horizontal overflow, 0×0 images, and 404 images — and account for
+false positives (below-the-fold lazy images, intentionally-hidden elements).
+
+### 13.14 — Legal-specific: real case results + reviews, compliant by default
+Surface the firm's real verdicts/settlements from the source (Elementor counter `data-to-value`)
+**with the "prior results do not guarantee a similar outcome" disclaimer** every time. Reviews:
+real data only, conservative display ("1,000+"), Google deep link
+(`search.google.com/local/writereview?placeid=…`). All inherited legal guardrails still apply
+(see the legal playbook §2–§5: compliance engine, banned terms, review constraints, counsel gate).
+
 ---
 
 *Living doc — update after each conversion with new gotchas. Companion: the per-client
