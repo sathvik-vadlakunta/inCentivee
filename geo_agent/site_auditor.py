@@ -27,7 +27,9 @@ def _run_pagespeed(domain: str, strategy: str = "mobile") -> dict | None:
     api_key = os.environ.get("PAGESPEED_API_KEY", "")
     data = None
     try:
-        with httpx.Client(timeout=60.0) as client:  # PSI can take 30-60s for slower sites
+        # PSI analysis time is slow + highly variable for heavy sites (observed 24-90s),
+        # so use a generous timeout and one retry on read-timeout before giving up.
+        with httpx.Client(timeout=httpx.Timeout(120.0, connect=15.0)) as client:
             for url in urls:
                 # PSI returns only the performance category unless others are
                 # requested explicitly — ask for all four so SEO/a11y scores populate.
@@ -38,11 +40,18 @@ def _run_pagespeed(domain: str, strategy: str = "mobile") -> dict | None:
                 }
                 if api_key:  # keyless quota is near-zero; a free key gives ~25k/day
                     params["key"] = api_key
-                resp = client.get(_PSI_URL, params=params)
-                if resp.status_code == 200:
+                resp = None
+                for attempt in range(2):
+                    try:
+                        resp = client.get(_PSI_URL, params=params)
+                        break
+                    except httpx.ReadTimeout:
+                        logger.warning(f"PSI read timeout for {url} (attempt {attempt + 1}/2)")
+                if resp is not None and resp.status_code == 200:
                     data = resp.json()
                     break
-                logger.debug(f"PageSpeed API returned {resp.status_code} for {url}")
+                if resp is not None:
+                    logger.debug(f"PageSpeed API returned {resp.status_code} for {url}")
             if data is None:
                 logger.warning(f"PageSpeed API failed for all URLs: {urls}")
                 return None
