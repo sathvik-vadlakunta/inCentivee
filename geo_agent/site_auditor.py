@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from datetime import datetime, timezone
 
 import httpx
@@ -60,36 +61,55 @@ def _run_pagespeed(domain: str, strategy: str = "mobile") -> dict | None:
 
 
 def _check_schema_markup(domain: str) -> list[dict]:
-    """Check for JSON-LD schema markup on the homepage."""
+    """Check for JSON-LD schema markup. The homepage check covers site-wide schema
+    (LocalBusiness/Organization), but FAQPage schema correctly lives on service/FAQ
+    pages — so we also sample a few content pages before flagging FAQPage as missing
+    (otherwise we false-flag every site that does FAQ schema the right way)."""
     issues = []
+    base = f"https://{domain}"
     try:
         with httpx.Client(timeout=15.0, follow_redirects=True) as client:
-            resp = client.get(f"https://{domain}")
-            html = resp.text.lower()
+            home = client.get(base).text
+            home_l = home.lower()
+
+            if "application/ld+json" not in home_l:
+                issues.append({
+                    "category": "schema", "severity": "critical",
+                    "title": "No JSON-LD schema markup found",
+                    "description": "No structured data (JSON-LD) detected on the homepage.",
+                    "fix_instruction": "Go to the SEO & GEO tab and run the agent to generate schema markup, then publish it.",
+                })
+                return issues
+
+            # FAQPage is a page-level schema — check the homepage AND a small sample of
+            # content pages (the /faq page + internal service/sell/buy links) before flagging.
+            if "faqpage" not in home_l:
+                links = re.findall(r'href=["\'](/[^"\'#?]+)["\']', home)
+                ranked = [l for l in dict.fromkeys(links)  # dedupe, preserve order
+                          if any(k in l.lower() for k in ("faq", "service", "sell", "buy", "product"))]
+                candidates = list(dict.fromkeys(["/faq", "/faqs"] + ranked))[:6]
+                found_faq = False
+                for path in candidates:
+                    try:
+                        if "faqpage" in client.get(base + path).text.lower():
+                            found_faq = True
+                            break
+                    except Exception:
+                        continue
+                if not found_faq:
+                    issues.append({
+                        "category": "schema", "severity": "warning",
+                        "title": "No FAQ schema markup",
+                        "description": "LocalBusiness schema found, but no FAQPage schema detected on the homepage or sampled service/FAQ pages.",
+                        "fix_instruction": "Run the agent to generate FAQ schema from the customer's services, then publish.",
+                    })
     except Exception as e:
         issues.append({
             "category": "schema", "severity": "warning",
             "title": "Could not fetch homepage",
-            "description": f"Failed to load https://{domain}: {e}",
+            "description": f"Failed to load {base}: {e}",
             "fix_instruction": "Check that the website is online and accessible.",
         })
-        return issues
-
-    if "application/ld+json" not in html:
-        issues.append({
-            "category": "schema", "severity": "critical",
-            "title": "No JSON-LD schema markup found",
-            "description": "No structured data (JSON-LD) detected on the homepage.",
-            "fix_instruction": "Go to the SEO & GEO tab and run the agent to generate schema markup, then publish it.",
-        })
-    else:
-        if "faqpage" not in html:
-            issues.append({
-                "category": "schema", "severity": "warning",
-                "title": "No FAQ schema markup",
-                "description": "LocalBusiness schema found but no FAQPage schema detected.",
-                "fix_instruction": "Run the agent to generate FAQ schema from the customer's services, then publish.",
-            })
 
     return issues
 

@@ -3640,6 +3640,7 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
     if not domain:
         return detected
 
+    body = ""
     try:
         resp = httpx.get(f"https://{domain}", timeout=10.0, follow_redirects=True)
         if resp.status_code == 200:
@@ -3680,6 +3681,22 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
                 detected["seo_structured_headings"] = True
     except Exception:
         pass
+
+    # FAQPage schema correctly lives on service/FAQ pages, not the homepage — so if the
+    # homepage didn't show it, sample a couple of content pages before leaving it unchecked
+    # (otherwise we false-flag every site that does FAQ schema the right way).
+    if not detected.get("seo_schema_faq"):
+        import re as _re_faq
+        cand = _re_faq.findall(r'href=["\'](/[^"\'#?]+)["\']', body)
+        cand = [c for c in dict.fromkeys(cand) if any(k in c.lower() for k in ("faq", "service", "sell", "buy", "product"))]
+        for path in list(dict.fromkeys(["/faq", "/faqs"] + cand))[:5]:
+            try:
+                r = httpx.get(f"https://{domain}{path}", timeout=8.0, follow_redirects=True)
+                if r.status_code == 200 and '"FAQPage"' in r.text:
+                    detected["seo_schema_faq"] = True
+                    break
+            except Exception:
+                continue
 
     # Check llms.txt — domain URL must actually work for "deployed on domain" status
     for key, filename in [("seo_llms_txt", "llms.txt"), ("seo_llms_full", "llms-full.txt")]:
