@@ -220,6 +220,32 @@ _EXPECTED_CTR = {
 }
 
 
+def _directory_listing_found(html: str, name: str, dir_domain: str) -> tuple[bool, str]:
+    """Per-result match for a DuckDuckGo HTML directory search. Returns (found, profile_url).
+
+    A listing is only 'found' when a SINGLE result both (a) links to the directory's own
+    domain AND (b) contains the practice name (or nearly all its name tokens) in that same
+    result's url/title. This prevents the page-wide-substring false positives that were
+    writing bogus checklist checkmarks (a competitor result + the directory word anywhere).
+    """
+    import re
+    import urllib.parse as _up
+    name_l = name.lower().strip()
+    tokens = [t for t in re.findall(r"[a-z0-9]+", name_l) if len(t) > 2]
+    need = max(1, len(tokens) - 1)  # allow one token to be missing (abbreviations, &, etc.)
+    for m in re.finditer(r'result__a[^>]*href="([^"]+)"[^>]*>(.*?)</a>', html, re.S | re.I):
+        href, title = m.group(1), re.sub(r"<[^>]+>", " ", m.group(2))
+        dec = re.search(r"uddg=([^&]+)", href)  # DDG wraps the real URL in a redirect param
+        url = _up.unquote(dec.group(1)) if dec else href
+        url_l, title_l = url.lower(), title.lower()
+        if dir_domain not in url_l:
+            continue
+        hay = url_l + " " + title_l
+        if name_l in hay or (tokens and sum(t in hay for t in tokens) >= need):
+            return True, url
+    return False, ""
+
+
 def _compute_seo_health(latest_audit, keyword_summary, gsc_daily) -> int:
     """Compute SEO health score (0-100) from audit, keywords, and traffic."""
     # PageSpeed scores (25%)
@@ -4599,16 +4625,20 @@ def api_check_local_listings(customer_id):
         else:
             results["gbp"] = {"found": False, "note": "No Google Places data. Run the GEO Agent to look up this business."}
 
-        # 2. Search for directory listings
+        # 2. Search for directory listings.
+        # IMPORTANT: match per-result — require the practice name AND the directory's own
+        # domain in the SAME DuckDuckGo result. A page-wide "name in text and 'yelp' in text"
+        # check false-positives on any competitor result and writes a bogus green checklist
+        # checkmark (P1 audit finding #2).
         search_name = f"{name} {city} {state}"
         directories = [
-            ("yelp", "Yelp", f"site:yelp.com/biz \"{name}\" {city}", "seo_yelp"),
-            ("facebook", "Facebook", f"site:facebook.com \"{name}\"", "seo_facebook"),
-            ("healthgrades", "Healthgrades", f"site:healthgrades.com \"{name}\"", "seo_healthgrades"),
-            ("zocdoc", "Zocdoc", f"site:zocdoc.com \"{name}\" {city}", "seo_zocdoc"),
+            ("yelp", "Yelp", "yelp.com", f"site:yelp.com/biz \"{name}\" {city}", "seo_yelp"),
+            ("facebook", "Facebook", "facebook.com", f"site:facebook.com \"{name}\"", "seo_facebook"),
+            ("healthgrades", "Healthgrades", "healthgrades.com", f"site:healthgrades.com \"{name}\"", "seo_healthgrades"),
+            ("zocdoc", "Zocdoc", "zocdoc.com", f"site:zocdoc.com \"{name}\" {city}", "seo_zocdoc"),
         ]
 
-        for dir_key, dir_name, query, checklist_key in directories:
+        for dir_key, dir_name, dir_domain, query, checklist_key in directories:
             try:
                 resp = httpx.get(
                     "https://html.duckduckgo.com/html/",
@@ -4618,21 +4648,8 @@ def api_check_local_listings(customer_id):
                     follow_redirects=True,
                 )
                 if resp.status_code == 200:
-                    text = resp.text.lower()
-                    name_lower = name.lower()
-                    # Check if name appears in search results
-                    found = name_lower in text and dir_key in text
-                    # Extract a likely URL
-                    import re
-                    url_pattern = f"https?://(?:www\\.)?{dir_key}[^\"' >]*"
-                    urls = re.findall(url_pattern, resp.text)
-                    profile_url = urls[0] if urls else ""
-
-                    results[dir_key] = {
-                        "found": found,
-                        "url": profile_url,
-                        "name": dir_name,
-                    }
+                    found, profile_url = _directory_listing_found(resp.text, name, dir_domain)
+                    results[dir_key] = {"found": found, "url": profile_url, "name": dir_name}
                     if found:
                         db.set_checklist_item(customer_id, checklist_key, True)
                 else:
@@ -4642,13 +4659,13 @@ def api_check_local_listings(customer_id):
 
         # 3. Tier 2 citation directories
         tier2_dirs = [
-            ("yellowpages", "YellowPages", f"site:yellowpages.com \"{name}\""),
-            ("mapquest", "MapQuest", f"site:mapquest.com \"{name}\" {city}"),
-            ("bbb", "BBB", f"site:bbb.org \"{name}\""),
-            ("bing_places", "Bing Places", f"site:bing.com/maps \"{name}\" {city}"),
+            ("yellowpages", "YellowPages", "yellowpages.com", f"site:yellowpages.com \"{name}\""),
+            ("mapquest", "MapQuest", "mapquest.com", f"site:mapquest.com \"{name}\" {city}"),
+            ("bbb", "BBB", "bbb.org", f"site:bbb.org \"{name}\""),
+            ("bing_places", "Bing Places", "bing.com", f"site:bing.com/maps \"{name}\" {city}"),
         ]
         tier2_found = 0
-        for dir_key, dir_name, query in tier2_dirs:
+        for dir_key, dir_name, dir_domain, query in tier2_dirs:
             try:
                 resp = httpx.get(
                     "https://html.duckduckgo.com/html/",
@@ -4657,7 +4674,7 @@ def api_check_local_listings(customer_id):
                     timeout=8.0, follow_redirects=True,
                 )
                 if resp.status_code == 200:
-                    found = name.lower() in resp.text.lower()
+                    found, _t2url = _directory_listing_found(resp.text, name, dir_domain)
                     results[f"tier2_{dir_key}"] = {"found": found, "name": dir_name}
                     if found:
                         tier2_found += 1

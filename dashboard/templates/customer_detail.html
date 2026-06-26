@@ -1025,7 +1025,9 @@
         {% set total_clicks = gsc_daily | sum(attribute='clicks') %}
         {% set total_impressions = gsc_daily | sum(attribute='impressions') %}
         {% set avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0 %}
-        {% set avg_pos = (gsc_daily | sum(attribute='position')) / (gsc_daily | length) if gsc_daily else 0 %}
+        {% set _ap = namespace(wp=0, imp=0) %}
+        {% for _d in gsc_daily %}{% set _ap.wp = _ap.wp + (_d.position or 0) * (_d.impressions or 0) %}{% set _ap.imp = _ap.imp + (_d.impressions or 0) %}{% endfor %}
+        {% set avg_pos = (_ap.wp / _ap.imp) if _ap.imp else ((gsc_daily | sum(attribute='position')) / (gsc_daily | length) if gsc_daily else 0) %}
 
         <div class="grid grid-4" style="margin-bottom:1rem;">
             <div class="metric-card">
@@ -1346,7 +1348,9 @@
                 {% set total_clicks = gsc_daily | sum(attribute='clicks') %}
                 {% set total_impressions = gsc_daily | sum(attribute='impressions') %}
                 {% set avg_ctr = (total_clicks / total_impressions * 100) if total_impressions > 0 else 0 %}
-                {% set avg_pos = (gsc_daily | sum(attribute='position')) / (gsc_daily | length) if gsc_daily else 0 %}
+                {% set _ap = namespace(wp=0, imp=0) %}
+        {% for _d in gsc_daily %}{% set _ap.wp = _ap.wp + (_d.position or 0) * (_d.impressions or 0) %}{% set _ap.imp = _ap.imp + (_d.impressions or 0) %}{% endfor %}
+        {% set avg_pos = (_ap.wp / _ap.imp) if _ap.imp else ((gsc_daily | sum(attribute='position')) / (gsc_daily | length) if gsc_daily else 0) %}
                 <div style="text-align:center;padding:0.75rem;background:#f0fdf4;border-radius:8px;">
                     <div style="font-size:1.5rem;font-weight:700;color:#16a34a;" data-stat="clicks">{{ total_clicks }}</div>
                     <div style="font-size:0.75rem;color:var(--muted);">Total Clicks</div>
