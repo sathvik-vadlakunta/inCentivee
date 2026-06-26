@@ -127,9 +127,6 @@ RESEARCH_STATS = {
     ],
 }
 
-# Backward compat alias
-DENTAL_RESEARCH_STATS = RESEARCH_STATS["practice"]
-
 
 @dataclass
 class ContentRecommendation:
@@ -537,9 +534,6 @@ for _bt in SYSTEM_PROMPTS:
     SYSTEM_PROMPTS[_bt] = SYSTEM_PROMPTS[_bt] + "\n" + _SHARED_GEO_RULES
 for _bt in ("practice", "medical", "legal"):
     SYSTEM_PROMPTS[_bt] = SYSTEM_PROMPTS[_bt] + "\n" + _YMYL_BYLINE_RULE
-
-# Backward compat alias
-CONTENT_SYSTEM_PROMPT = SYSTEM_PROMPTS["practice"]
 
 
 def generate_content_recommendations(
