@@ -477,9 +477,12 @@ reimplemented in our raw-JS header/modal.
 > ⚠️ **Masonry grids (isotope) → replace with CSS Grid, don't revive the JS.** A masonry grid
 > (e.g. `/client-testimonials` review cards: `row grid tab-pane` > `col-* grid-item`) is positioned
 > by isotope JS. We strip isotope/masonry (they're WP-Meteor-deferred — `type="javascript/blocked"`
-> — so they never run before first paint anyway), then lay the cards out with **CSS Grid in
-> enhance.css**: `display:grid;grid-template-columns:repeat(3,1fr)` on the container, items reset to
-> `width:auto;float:none`. JS-free, correct on first paint. Two gotchas that cost real time here:
+> — so they never run before first paint anyway), then lay the cards out with **CSS multi-column in
+> enhance.css** (true masonry): `column-count:3;column-gap:30px` on the container, items reset to
+> `width:auto;float:none;break-inside:avoid`. JS-free, correct on first paint. (A plain `grid` works
+> too but leaves empty space under shorter cards — multi-column packs to natural height. Also force
+> any `pr-reveal` scroll-animation cards visible here, or the first card can stay at `opacity:0`.)
+> Two gotchas that cost real time here:
 > (1) the theme sets `.tab-pane.active{display:block!important}`, so the override needs **high
 > specificity** (`html body .testimonails-tabs .grid.row.tab-pane`) to win the `display` battle;
 > (2) **never put `*/` inside a CSS comment** — a comment like `the col-*/grid-item cards` closes the
