@@ -83,9 +83,10 @@ def build_monthly_fatjoe(db, now: datetime | None = None) -> tuple[str, str, int
     for cust in db.list_customers():
         sub = db.get_subscription_for_customer(cust["id"])
         plan_name = sub["plan_name"] if sub else None
-        if not fatjoe_plan.normalize_tier(plan_name):
+        override = cust.get("tier_override") or ""
+        if not fatjoe_plan.resolve_tier(plan_name, override):
             continue
-        due = fatjoe_plan.due_orders(db, cust["id"], plan_name, now=now)
+        due = fatjoe_plan.due_orders(db, cust["id"], plan_name, now=now, tier_override=override)
         if not due["total_due"]:
             continue
         total_due += due["total_due"]

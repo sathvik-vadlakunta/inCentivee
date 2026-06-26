@@ -113,7 +113,19 @@
   <tr>
     <td><a href="{{ url_for('customer_detail', customer_id=u.customer.id) }}" style="font-weight:600;">{{ u.customer.name }}</a></td>
     <td class="muted">{{ u.customer.status }}</td>
-    <td class="muted">{% if u.sub %}Stripe plan “{{ u.sub.plan_name }}” doesn’t map to a tier — rename the product to include Optimize/Grow/Dominate.{% else %}No Stripe subscription linked — <a href="{{ url_for('billing') }}">link one on Billing</a>.{% endif %}</td>
+    <td class="muted">
+      {% if u.sub %}Stripe plan “{{ u.sub.plan_name }}” doesn’t map to a tier (e.g. a custom payment link).{% else %}No Stripe subscription linked — <a href="{{ url_for('billing') }}">link one on Billing</a>.{% endif %}
+      <form method="post" action="{{ url_for('fatjoe_set_tier', customer_id=u.customer.id) }}" style="display:inline-flex;gap:.4rem;align-items:center;margin-left:.5rem;">
+        <span>Set tier manually:</span>
+        <select name="tier" required>
+          <option value="" disabled selected>choose…</option>
+          <option value="optimize">Optimize</option>
+          <option value="grow">Grow</option>
+          <option value="dominate">Dominate</option>
+        </select>
+        <button type="submit">Set</button>
+      </form>
+    </td>
   </tr>
   {% endfor %}
   </tbody></table>

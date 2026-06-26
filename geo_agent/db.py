@@ -399,6 +399,11 @@ class CustomerDB:
             # the report can show "+N since baseline". NULL = not yet set.
             self.conn.execute("ALTER TABLE customers ADD COLUMN baseline_score INTEGER")
             self.conn.execute("ALTER TABLE customers ADD COLUMN baseline_date TEXT")
+        if "tier_override" not in cols:
+            # Manual tier (optimize/grow/dominate) for customers whose Stripe product
+            # name doesn't contain a tier keyword — custom payment links, discounted
+            # deals, etc. Wins over the normalize_tier() product-name heuristic.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN tier_override TEXT NOT NULL DEFAULT ''")
 
         # Per-customer activity timeline: notes, status changes, and ingested
         # emails. Mirrors prospect_activities so the customer detail page gets the

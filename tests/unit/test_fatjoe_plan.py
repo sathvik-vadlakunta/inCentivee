@@ -37,6 +37,26 @@ def test_normalize_tier_matches_anywhere():
     assert fp.normalize_tier(None) is None
 
 
+def test_resolve_tier_override_wins_for_custom_links():
+    # custom payment link / discounted deal — product name has no tier keyword
+    assert fp.normalize_tier("Samuel Doherty") is None
+    assert fp.resolve_tier("Samuel Doherty", "dominate") == "dominate"
+    assert fp.resolve_tier("Samuel Doherty", "DOMINATE") == "dominate"  # case-insensitive
+    # empty / invalid override falls back to the product-name heuristic
+    assert fp.resolve_tier("Samuel Doherty", "") is None
+    assert fp.resolve_tier("Samuel Doherty", "bogus") is None
+    assert fp.resolve_tier("PracticeRank Grow", None) == "grow"
+    # an explicit override beats the heuristic
+    assert fp.resolve_tier("PracticeRank Grow", "dominate") == "dominate"
+
+
+def test_due_orders_honors_tier_override(db):
+    # Paradigm-style: no tier in the plan name, override drives the plan
+    due = fp.due_orders(db, "c1", "Samuel Doherty", tier_override="dominate")
+    assert due["tier"] == "dominate"
+    assert due["total_due"] > 0  # dominate has real monthly + onboarding orders
+
+
 def test_dominate_due_then_satisfied(db):
     due = fp.due_orders(db, "c1", "Dominate", now=NOW)
     assert due["tier"] == "dominate"

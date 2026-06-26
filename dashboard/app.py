@@ -692,13 +692,14 @@ def fatjoe_queue():
             sub = db.get_subscription_for_customer(cust["id"])
             plan_name = sub["plan_name"] if sub else None
             paid = bool(sub and sub["status"] in _BILLING_OK)
-            tier = fp.normalize_tier(plan_name)
+            override = cust.get("tier_override") or ""
+            tier = fp.resolve_tier(plan_name, override)
             if not tier:
                 # Active customers with no linked paid plan — surface so they're not forgotten.
                 if cust["status"] in ("active", "onboarding"):
                     unplanned.append({"customer": cust, "sub": sub})
                 continue
-            due = fp.due_orders(db, cust["id"], plan_name)
+            due = fp.due_orders(db, cust["id"], plan_name, tier_override=override)
             rows.append({
                 "customer": cust,
                 "paid": paid,
@@ -717,6 +718,26 @@ def fatjoe_queue():
         )
     finally:
         db.close()
+
+
+@app.route("/fatjoe/<customer_id>/set-tier", methods=["POST"])
+@login_required
+def fatjoe_set_tier(customer_id):
+    """Manually set a customer's tier (for custom payment links / discounted deals whose
+    Stripe product name doesn't contain a tier keyword). '' clears the override."""
+    from geo_agent import fatjoe_plan as fp
+    tier = (request.form.get("tier") or "").strip().lower()
+    if tier and tier not in fp.TIER_PLANS:
+        flash(f"Unknown tier '{tier}'.", "error")
+        return redirect(url_for("fatjoe_queue"))
+    db = get_db()
+    try:
+        db.update_customer(customer_id, tier_override=tier)
+        audit_log("tier_override_set", customer_id=customer_id, details=f"tier={tier or '(cleared)'}")
+        flash(f"Tier set to {tier.title()}." if tier else "Tier override cleared.", "success")
+    finally:
+        db.close()
+    return redirect(url_for("fatjoe_queue"))
 
 
 @app.route("/billing/<sub_id>/link", methods=["POST"])

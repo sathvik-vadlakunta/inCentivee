@@ -89,6 +89,17 @@ def normalize_tier(plan_name: str | None) -> str | None:
     return None
 
 
+def resolve_tier(plan_name: str | None, override: str | None = None) -> str | None:
+    """Resolve a customer's tier. A per-customer `override` wins — for custom payment
+    links / discounted deals whose Stripe product name ("Samuel Doherty") doesn't contain
+    a tier keyword. Otherwise fall back to the product-name heuristic."""
+    if override:
+        ov = override.strip().lower()
+        if ov in TIER_PLANS:
+            return ov
+    return normalize_tier(plan_name)
+
+
 def _period_starts(now: datetime) -> tuple[str, str]:
     """ISO start-of-month and start-of-quarter for 'ordered this period' checks."""
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -130,14 +141,15 @@ def order_cost(spec: dict) -> int:
     return 0
 
 
-def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None = None) -> dict:
+def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None = None,
+               tier_override: str | None = None) -> dict:
     """What Dan still needs to order. Returns:
         {tier, label, items: [{cadence, type, type_label, qty_target, qty_done,
                                qty_due, dr_tier, note, cost_each_period}], total_due}
     qty_done counts matching orders already placed in the relevant period
     (onboarding = ever; monthly = this calendar month; quarterly = this quarter)."""
     now = now or datetime.now(timezone.utc)
-    tier = normalize_tier(plan_name)
+    tier = resolve_tier(plan_name, tier_override)
     if not tier:
         return {"tier": None, "label": plan_name or "—", "items": [], "total_due": 0}
 
