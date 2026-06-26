@@ -474,14 +474,18 @@ enqueues most scripts in the footer). Only drop carousel/Elementor libs when the
 doesn't actually contain those widgets (per-page `class="…swiper"` check). **Keep Font Awesome
 + jQuery** so icons/behaviour don't break. Everything stripped is either unused or already
 reimplemented in our raw-JS header/modal.
-> ⚠️ **Isotope/Masonry is conditional, NOT always-drop.** A masonry grid (e.g. the
-> `/client-testimonials` review cards: `col-* grid-item`) is **positioned by isotope JS** — strip
-> it and the cards collapse into uneven columns with big gaps. Only drop `isotope`+`masonry` when
-> the body has **no** `grid-item|isotope|masonry` container (same conditional pattern as swiper/owl).
-> The init lives in the theme's `main-min.js` (which we keep); the lib file is already mirrored
-> into `public/` (200) — we were only removing the `<script>` tag. Note these tags are often
-> WP-Meteor-deferred (`type="javascript/blocked"` + `data-wpmeteor-src`), so they load on first
-> interaction, not at paint.
+> ⚠️ **Masonry grids (isotope) → replace with CSS Grid, don't revive the JS.** A masonry grid
+> (e.g. `/client-testimonials` review cards: `row grid tab-pane` > `col-* grid-item`) is positioned
+> by isotope JS. We strip isotope/masonry (they're WP-Meteor-deferred — `type="javascript/blocked"`
+> — so they never run before first paint anyway), then lay the cards out with **CSS Grid in
+> enhance.css**: `display:grid;grid-template-columns:repeat(3,1fr)` on the container, items reset to
+> `width:auto;float:none`. JS-free, correct on first paint. Two gotchas that cost real time here:
+> (1) the theme sets `.tab-pane.active{display:block!important}`, so the override needs **high
+> specificity** (`html body .testimonails-tabs .grid.row.tab-pane`) to win the `display` battle;
+> (2) **never put `*/` inside a CSS comment** — a comment like `the col-*/grid-item cards` closes the
+> comment early at `*/` and the parser silently drops the *next* rule (here the `display:grid` one),
+> so the grid never applies and every "fix" looks like it did nothing. Verify with CDP
+> `getComputedStyle(...).display`, not just by eye.
 
 ### 13.10 — Blog: pull via the WordPress REST API, not HTML scraping
 `/wp-json/wp/v2/posts?per_page=100&page=N&_fields=id,slug,date,link,title,excerpt,content,categories`

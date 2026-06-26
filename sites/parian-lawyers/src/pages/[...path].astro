@@ -80,13 +80,12 @@ export async function getStaticPaths() {
         // Elementor libs are only dropped when the page body doesn't actually use them.
         // Font Awesome + jQuery are left alone so icons/behaviour don't break.
         const stripAssets = (h: string, b: string) => {
-          const drop = ['smartmenus', 'cleantalk', 'apbct', 'wp-emoji', 'contact-form-7', 'jquery-migrate']
+          // Isotope/Masonry are always dropped: WP-Meteor defers them past first paint, so the
+          // testimonial grid (col-*/grid-item cards) would gap out on load. We lay that grid out
+          // with a JS-free CSS-columns masonry in enhance.css instead (.testimonails-tabs .grid).
+          const drop = ['smartmenus', 'cleantalk', 'apbct', 'wp-emoji', 'contact-form-7', 'isotope', 'masonry', 'jquery-migrate']
           if (!/class="[^"]*swiper/i.test(b)) drop.push('swiper')
           if (!/class="[^"]*owl-carousel/i.test(b)) drop.push('owl.carousel', 'owl.theme')
-          // Isotope/Masonry position the testimonial grid (col-*/grid-item cards) with JS —
-          // drop it ONLY when the page has no masonry grid, else the cards collapse into
-          // uneven columns with gaps (the reviews-spacing regression on /client-testimonials).
-          if (!/class="[^"]*(?:grid-item|isotope|masonry)/i.test(b)) drop.push('isotope', 'masonry')
           if (!/class="[^"]*elementor-(?:widget|element)|data-elementor-type/i.test(b)) {
             drop.push('elementor/assets/js/frontend', 'elements-handlers', 'frontend-modules',
                       'elementor/assets/css/frontend', 'elementor/assets/css/widget-', 'pro-elements/assets')
