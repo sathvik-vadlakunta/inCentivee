@@ -21,6 +21,7 @@ import {
   validateCompetitors,
   detectVertical,
   assertsGbpAbsence,
+  assertsDirectoryAbsence,
   scrubGbpAbsenceText,
   finalSafetyChecks,
   analyzeRobotsAiBlocking,
@@ -1002,6 +1003,33 @@ describe("assertsGbpAbsence", () => {
   });
 });
 
+describe("assertsDirectoryAbsence", () => {
+  it("flags unverifiable directory-absence claims (the Ethan / Find-a-CFP false negative)", () => {
+    expect(assertsDirectoryAbsence(
+      "There is no evidence of meaningful presence on the financial advisor directory platforms — SmartAsset, NAPFA, CFP Board's 'Find a CFP' tool, Wealthtender, or XY Planning Network"
+    )).toBe(true);
+    expect(assertsDirectoryAbsence("The firm is not listed on Avvo, Justia, or FindLaw")).toBe(true);
+    expect(assertsDirectoryAbsence("No presence on Healthgrades or Zocdoc was found")).toBe(true);
+    expect(assertsDirectoryAbsence("Absence from these directories means the firm is invisible in discovery channels")).toBe(true);
+    expect(assertsDirectoryAbsence("The business does not appear to have a profile on Yelp")).toBe(true);
+    expect(assertsDirectoryAbsence("Lacks a meaningful presence on key citation sites")).toBe(true);
+  });
+
+  it("does NOT flag recommendations or legit optimization findings", () => {
+    expect(assertsDirectoryAbsence("Get listed on Avvo and Justia to build local authority")).toBe(false);
+    expect(assertsDirectoryAbsence("Ensure consistent NAP across all directories and data aggregators")).toBe(false);
+    expect(assertsDirectoryAbsence("Your Avvo profile is incomplete and missing recent reviews")).toBe(false);
+    expect(assertsDirectoryAbsence("Strengthen your presence on healthcare directories")).toBe(false);
+    expect(assertsDirectoryAbsence("")).toBe(false);
+    expect(assertsDirectoryAbsence(null)).toBe(false);
+  });
+
+  it("does not fire on absence phrasing that names no directory", () => {
+    expect(assertsDirectoryAbsence("No structured FAQ data was detected on the homepage")).toBe(false);
+    expect(assertsDirectoryAbsence("The site is not present in AI search results")).toBe(false);
+  });
+});
+
 describe("finalSafetyChecks — GBP guard", () => {
   const placeData = {
     name: "Hilltop Family Dental",
@@ -1076,6 +1104,50 @@ describe("finalSafetyChecks — GBP guard", () => {
     const f = report.categories.gbp.findings[0];
     expect(assertsGbpAbsence(f)).toBe(false);
     expect(f).toMatch(/could not (fully )?verify|under-optimized/i);
+  });
+});
+
+describe("finalSafetyChecks — directory-absence guard (CHECK 15)", () => {
+  function reportWith(localSeoFindings, extra = {}) {
+    return {
+      practice_name: "Acme Advisors",
+      state: "NY",
+      executive_summary: "Summary.",
+      categories: {
+        gbp: { score: 50, status: "needs_work", findings: [] },
+        local_seo: { score: 30, status: "critical", findings: localSeoFindings },
+        reviews: { score: 70, status: "good", findings: [], count: 40, rating: 4.7 },
+      },
+      ...extra,
+    };
+  }
+
+  it("reframes an unverifiable 'not on the directories' finding (Find-a-CFP false negative)", () => {
+    const bad = "There is no evidence of meaningful presence on financial advisor directory platforms — SmartAsset, NAPFA, or CFP Board's 'Find a CFP' tool.";
+    const report = finalSafetyChecks(reportWith([bad]), "https://acmeadvisors.com", {}, null, []);
+    const f = report.categories.local_seo.findings[0];
+    expect(assertsDirectoryAbsence(f)).toBe(false);
+    expect(f).toMatch(/didn'?t check|unconfirmed|make sure/i);
+    expect(report.safety_warnings.join(" ")).toMatch(/directory-absence/i);
+  });
+
+  it("scrubs the same claim from the executive summary and priority actions", () => {
+    const bad = "The firm is not listed on Avvo, Justia, or any major legal directory.";
+    const report = finalSafetyChecks(
+      reportWith([], {
+        executive_summary: bad,
+        priority_actions: [{ title: "Local authority", description: bad, impact: "high" }],
+      }),
+      "https://firm.com", {}, null, []
+    );
+    expect(assertsDirectoryAbsence(report.executive_summary)).toBe(false);
+    expect(assertsDirectoryAbsence(report.priority_actions[0].description)).toBe(false);
+  });
+
+  it("leaves legitimate directory recommendations untouched", () => {
+    const ok = "Ensure consistent NAP across all directories and data aggregators to lift local ranking.";
+    const report = finalSafetyChecks(reportWith([ok]), "https://firm.com", {}, null, []);
+    expect(report.categories.local_seo.findings[0]).toBe(ok);
   });
 });
 

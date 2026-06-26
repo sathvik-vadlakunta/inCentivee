@@ -1270,6 +1270,31 @@ function assertsAiCrawlerBlock(text) {
     && /(crawler|bot|gptbot|anthropic|claude|perplexity|ai (assistant|search|system|crawler)|robots\.txt|spider)/.test(t);
 }
 
+// Detects a claim that the business is ABSENT / not listed on a third-party directory or
+// citation platform (Avvo, Healthgrades, SmartAsset, NAPFA, CFP Board's "Find a CFP", Yelp,
+// BBB, chamber of commerce, etc.). Our scan only reads the homepage + Google Places — we never
+// query those directories, so an absence claim is an unverifiable guess and a frequent false
+// negative (the business is often already listed). Only fires when a sentence BOTH names a
+// directory/citation concept AND uses explicit absence phrasing — never on recommendations
+// ("get listed on Avvo") or on Google Business Profile (handled by the GBP guard).
+const DIRECTORY_TOKENS = /(avvo|justia|findlaw|martindale|super ?lawyers|lawyers\.com|nolo|lawinfo|healthgrades|vitals|zocdoc|webmd|ratemds|sharecare|smartasset|napfa|cfp board|find ?a ?cfp|wealthtender|xy planning|fee-?only network|paladin|broker ?check|brokercheck|yelp|\bbbb\b|better business bureau|angi\b|angie'?s list|nextdoor|thumbtack|houzz|tripadvisor|apple maps|bing places|chamber of commerce|yellow ?pages|manta|foursquare|citysearch|data aggregators?|director(?:y|ies)|citation (?:sites?|platforms?|sources?|listings?)|listing (?:sites?|platforms?|directories|services?))/i;
+function assertsDirectoryAbsence(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase().replace(/\s+/g, " ");
+  if (!DIRECTORY_TOKENS.test(t)) return false;
+  // Don't double-handle pure GBP/Maps sentences — the GBP guard owns those. But if a real
+  // third-party directory is named alongside, we still want to soften the absence claim.
+  const absencePatterns = [
+    /\bno (?:evidence of |meaningful |significant |real |established |notable )*(?:presence|listing|profile|footprint|coverage)\b/,
+    /\b(?:not|isn'?t|aren'?t|no longer) (?:listed|present|found|visible|featured|registered|indexed)\b/,
+    /\b(?:does not|doesn'?t|do not|don'?t|did not|didn'?t) (?:appear to |seem to )?(?:have|appear|maintain) (?:a |an |any )?(?:verified |claimed )?(?:presence|listing|profile|footprint)\b/,
+    /\b(?:absent|missing) (?:from|on)\b/,
+    /\b(?:lacks?|lacking|without|absence of|no) (?:a |an |any )?(?:meaningful |verifiable |established )?(?:presence|listing|profile|footprint)\b/,
+    /\b(?:invisible|nowhere to be found|fails? to appear)\b/,
+  ];
+  return absencePatterns.some((re) => re.test(t));
+}
+
 // Replace only the sentences in a field that match `predicate`, with `replacement`.
 function scrubSentences(text, predicate, replacement) {
   if (!text) return { text, changed: false };
@@ -1567,6 +1592,17 @@ function finalSafetyChecks(report, practiceUrl, siteData, placeData, competitors
       "Corrected false 'no address on site' claim"
     );
   }
+
+  // CHECK 15 — HARD BLOCK: never assert the business is ABSENT from a third-party directory
+  // or citation site (Avvo, Healthgrades, SmartAsset, CFP Board's "Find a CFP", Yelp, BBB…).
+  // We only read the homepage + Google Places — we don't query those directories, so an
+  // "absence" claim is unverifiable and produces false negatives (the firm IS often listed,
+  // which is exactly how a prospect catches the report being wrong). Reframe as an opportunity.
+  scrubEverywhere(
+    assertsDirectoryAbsence,
+    () => " We didn't check third-party directory and citation sites in this automated scan, so your presence there is unconfirmed — make sure the business is listed and consistent (matching name, address, phone) across the directories and data aggregators most relevant to your field to strengthen local visibility and AI recommendations.",
+    "Reframed unverifiable directory-absence claim"
+  );
 
   // CHECK 14 — HARD BLOCK: every fabricated projection/revenue figure must carry an
   // estimate disclaimer so it is never read as a measured fact.
@@ -2424,6 +2460,7 @@ CRITICAL DATA INTEGRITY RULES:
 - NEVER confuse the practice being audited with a competitor. The practice is "${practiceUrl}" — any other business name is a competitor, not the client.
 - NEVER attribute a competitor's review count, rating, or address to the practice being audited.
 - If data seems contradictory or unclear, say so rather than guessing.
+- DIRECTORY PRESENCE IS NOT VERIFIED. This scan reads only the homepage and Google Business data — it does NOT query any third-party directory or citation site (e.g. ${vp.directoryNote}). You therefore MUST NOT claim the business "has no presence on", "is not listed on", "is absent/missing from", or "has no profile on" any named directory — that is an unverifiable guess and is frequently FALSE (the business is often already listed; asserting absence creates an embarrassing false negative). Frame every directory/citation finding as a forward-looking opportunity ("ensure the business is listed and consistent across X and the data aggregators that feed it") — never as proof of absence.
 ${vp.extraGuidance}
 
 You MUST analyze the ${vc.businessTerm} across these 7 categories and generate specific, actionable findings. Be realistic — most ${vc.businessTerm}s score poorly on AI readiness and Maps optimization. Do NOT inflate scores.
@@ -2759,6 +2796,7 @@ export {
   validateCompetitors,
   detectVertical,
   assertsGbpAbsence,
+  assertsDirectoryAbsence,
   scrubGbpAbsenceText,
   finalSafetyChecks,
   analyzeRobotsAiBlocking,
