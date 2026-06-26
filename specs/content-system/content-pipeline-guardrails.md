@@ -60,5 +60,22 @@ LLM fact-check (catch semantic) at publish AND docx.
 - stat-library internal consistency (source ⇄ stat text).
 - docx renders a Needs-Review block when findings are passed; renders meta_description not description.
 
+## Results (2026-06-26, deployed)
+
+- All 6 fixes shipped; 792 tests green (760 existing + 32 new). Deployed to droplet; DB
+  migrated to v3 (`meta_description` column live on `practicerank.db`).
+- **Validator on the EXISTING Downtown batch (before regen):** 20 of 26 recs flagged —
+  9 credential ("Board Certified" not in `DDS, FACP`), 8 future-date, 13 superlative,
+  1 YMYL-absolute. Proves the fix catches the real production defects.
+- **Regenerated** a fresh batch via the hardened pipeline: 10 recs, **10/10 with a real
+  meta_description, 0 flagged**. Sample blog meta = 153 chars, credits "Dr. Paul Zhivago,
+  DDS, FACP" (the real credential) with zero "board certified" mentions.
+- **Superseded** the bad content: rejected the 14 old recs with BLOCK findings; kept 12 clean
+  old + 10 new. Publishable set is now 22 recs with **0 blocking findings**. Nothing was ever
+  published live, so no on-site cleanup was needed.
+
 ## Follow-up
-- Regenerate Downtown Dental's full content batch through the hardened pipeline; re-review.
+- Other clients (Sojo, Oak Ridge, Hilltop, Parian) ran through the same buggy generator —
+  re-validate/regenerate as needed (same `validate_html_claims` audit).
+- Audit report has the SAME unverified-claim disease (Ethan: false "absent from CFP Board
+  directory" negative) — apply the ground-or-soften principle to the audit/report generator.
