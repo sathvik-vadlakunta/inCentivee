@@ -6905,6 +6905,46 @@ def api_content_publish():
         db.close()
 
 
+def _content_validations(db, customer_id, recs):
+    """Build {rec_id: [findings]} for a docx batch so issues surface in the deliverable.
+
+    Deterministic checks (credentials/superlatives/absolutes/future-dates) always run; the LLM
+    fact-check runs best-effort (fails open on any error — the docx is a review artifact, not a
+    live publish, and must still download). Closes the bypass where the docx skipped validation.
+    """
+    from geo_agent.content_validation import validate_html_claims
+
+    validations = {}
+    customer_obj = None
+    try:
+        customer_obj = db.to_config_customer(customer_id)
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"docx validation: no config customer for {customer_id}: {e}")
+    if customer_obj is None:
+        return validations
+
+    try:
+        from geo_agent.fact_check import fact_check_html
+    except Exception:  # noqa: BLE001
+        fact_check_html = None
+
+    for r in recs:
+        html = r.get("html_snippet", "") or ""
+        findings = list(validate_html_claims(html, customer_obj))
+        if fact_check_html is not None:
+            try:
+                for fc in fact_check_html(customer_obj, html):
+                    findings.append({
+                        "severity": "block", "category": "fact-check",
+                        "message": f"{fc.get('claim', '')} — {fc.get('reason', '')}".strip(" —"),
+                    })
+            except Exception as e:  # noqa: BLE001
+                logger.warning(f"docx fact-check failed for rec {r.get('id')} (allowing): {e}")
+        if findings:
+            validations[r.get("id")] = findings
+    return validations
+
+
 @app.route("/api/content/download-docx", methods=["POST"])
 @login_required
 def api_content_download_docx():
@@ -6930,12 +6970,13 @@ def api_content_download_docx():
         if not customer:
             return jsonify({"error": "Customer not found"}), 404
 
+        validations = _content_validations(db, recs[0]["customer_id"], recs)
         gen = ContentDocxGenerator(customer)
         if len(recs) == 1:
-            buf = gen.generate_single(recs[0])
+            buf = gen.generate_single(recs[0], validations)
             filename = f"{recs[0]['title'][:50].replace(' ', '-')}.docx"
         else:
-            buf = gen.generate_batch(recs)
+            buf = gen.generate_batch(recs, validations)
             filename = f"{customer['name']}-content-batch.docx"
 
         return send_file(
@@ -6964,8 +7005,9 @@ def api_content_download_all_approved(customer_id):
         if not recs:
             return jsonify({"error": "No approved recommendations"}), 404
 
+        validations = _content_validations(db, customer_id, recs)
         gen = ContentDocxGenerator(customer)
-        buf = gen.generate_batch(recs)
+        buf = gen.generate_batch(recs, validations)
         filename = f"{customer['name']}-approved-content.docx"
 
         return send_file(
@@ -6994,8 +7036,9 @@ def api_content_download_all(customer_id):
         if not recs:
             return jsonify({"error": "No content recommendations"}), 404
 
+        validations = _content_validations(db, customer_id, recs)
         gen = ContentDocxGenerator(customer)
-        buf = gen.generate_batch(recs)
+        buf = gen.generate_batch(recs, validations)
         filename = f"{customer['name']}-all-content.docx"
 
         return send_file(
