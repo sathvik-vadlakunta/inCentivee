@@ -17,10 +17,11 @@ On our existing GCP project (the one already holding the GA4 OAuth app + Places 
 
 > These show **0 quota until access is approved** (step 2). Enabling them is fine before approval.
 
-## 2. Apply for Business Profile API access (the gate)
-- Submit the **Business Profile APIs access request** form for our GCP project number
-  (developers.google.com/my-business → "Request access"; Google reviews and grants quota).
-- This is the slow/external step — start it first. Until approved, API calls return 403/quota-0.
+## 2. Apply for Business Profile API access (the gate) — ✅ SUBMITTED 2026-06-26
+- Submitted via the Business Profile API Support form → "Application For Basic API Access",
+  anchored on Paradigm Experts, project = **Practice Rank**.
+- **Support case ID: `0-1827000040711`** · review ETA **7–10 business days (~July 7–10, 2026)**.
+- Until approved, API calls return 403 / quota-0 — but Steps 1, 3, 4 below can all be done now.
 
 ## 3. OAuth client + consent (reuse what we have if possible)
 - We already have `GA4_OAUTH_CLIENT_ID/_SECRET` in this project. **Reuse that OAuth client** if it's
