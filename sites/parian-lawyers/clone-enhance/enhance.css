@@ -201,10 +201,12 @@ a[href="/"] img, .site-logo img, .elementor-widget-theme-site-logo img{cursor:po
   *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;}
 }
 
-/* Testimonials grid: robust JS-free layout. Isotope (deferred by WP-Meteor) is stripped, so
-   we lay the testimonial cards out with CSS Grid. High specificity (html body + all three
-   container classes) beats the theme rule that sets the active tab-pane to display block. */
-html body .testimonails-tabs .grid.row.tab-pane{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:30px!important;align-items:start!important;float:none!important;height:auto!important;}
-html body .testimonails-tabs .grid.row.tab-pane>.grid-item{width:auto!important;max-width:100%!important;float:none!important;position:static!important;left:auto!important;top:auto!important;margin:0!important;}
-@media(max-width:991px){html body .testimonails-tabs .grid.row.tab-pane{grid-template-columns:repeat(2,1fr)!important;}}
-@media(max-width:600px){html body .testimonails-tabs .grid.row.tab-pane{grid-template-columns:1fr!important;}}
+/* Testimonials: true masonry via CSS multi-column so cards pack to their natural height
+   with no row gaps (a plain grid leaves empty space under shorter cards). The theme already
+   sets the active tab-pane to display block, which is what multi-column needs. pr-reveal is
+   forced visible here so the first card can never stay hidden when its scroll-reveal is late. */
+html body .testimonails-tabs .grid.row.tab-pane{display:block!important;column-count:3!important;column-gap:30px!important;height:auto!important;}
+html body .testimonails-tabs .grid.row.tab-pane>.grid-item{width:auto!important;max-width:100%!important;float:none!important;position:static!important;display:inline-block!important;vertical-align:top;break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;margin:0 0 30px!important;}
+html body .testimonails-tabs .grid .testimonails-box.pr-reveal{opacity:1!important;transform:none!important;}
+@media(max-width:991px){html body .testimonails-tabs .grid.row.tab-pane{column-count:2!important;}}
+@media(max-width:600px){html body .testimonails-tabs .grid.row.tab-pane{column-count:1!important;}}
