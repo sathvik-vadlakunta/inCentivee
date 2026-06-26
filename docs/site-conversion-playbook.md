@@ -474,6 +474,14 @@ enqueues most scripts in the footer). Only drop carousel/Elementor libs when the
 doesn't actually contain those widgets (per-page `class="…swiper"` check). **Keep Font Awesome
 + jQuery** so icons/behaviour don't break. Everything stripped is either unused or already
 reimplemented in our raw-JS header/modal.
+> ⚠️ **Isotope/Masonry is conditional, NOT always-drop.** A masonry grid (e.g. the
+> `/client-testimonials` review cards: `col-* grid-item`) is **positioned by isotope JS** — strip
+> it and the cards collapse into uneven columns with big gaps. Only drop `isotope`+`masonry` when
+> the body has **no** `grid-item|isotope|masonry` container (same conditional pattern as swiper/owl).
+> The init lives in the theme's `main-min.js` (which we keep); the lib file is already mirrored
+> into `public/` (200) — we were only removing the `<script>` tag. Note these tags are often
+> WP-Meteor-deferred (`type="javascript/blocked"` + `data-wpmeteor-src`), so they load on first
+> interaction, not at paint.
 
 ### 13.10 — Blog: pull via the WordPress REST API, not HTML scraping
 `/wp-json/wp/v2/posts?per_page=100&page=N&_fields=id,slug,date,link,title,excerpt,content,categories`
