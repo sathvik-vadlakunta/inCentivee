@@ -174,9 +174,16 @@ Track opens/clicks; escalate to Dan if a customer ignores Q&A for 2+ months.
 
 ## Phasing
 
-- **M1 — Access + read-only (pilot: Paradigm).** Apply for API access; ops Google account; Dan adds
-  us as Manager on Paradigm; `gbp_client` read paths (locations, reviews, performance); verify
-  end-to-end. No writes yet.
+- **M1 — Access + read-only (pilot: Paradigm).**
+  - ✅ **Code built:** `geo_agent/gbp_client.py` (read-only) — OAuth refresh-token auth (agency ops
+    account), `list_accounts/list_locations/find_location/list_reviews/get_performance`, the v1↔v4↔
+    performance resource-name mapping, fail-safe everywhere, write paths stubbed `NotImplementedError`,
+    and a `python -m geo_agent.gbp_client` CLI check. 17 unit tests (all HTTP mocked).
+  - ⬜ **Kody/Dan (external, blocks live verify):** (1) apply for **Business Profile API access** for
+    our GCP project; (2) create the **ops Google account** + mint a refresh token with scope
+    `business.manage`; set `GBP_OAUTH_CLIENT_ID/_SECRET/_REFRESH_TOKEN` on the droplet; (3) Dan adds
+    the ops account as **Manager** on Paradigm's GBP; (4) run the CLI check → confirm Paradigm's
+    location + reviews + performance resolve end-to-end. No writes yet.
 - **M2 — Posts + photos with Dan approval.** `create_post`/`media.create`; monthly generation +
   `validate_html_claims` gate; Dan approval card; push on approve. Pilot on 1–2 customers (`dan_only`).
 - **M3 — Client approval portal (reusable).** `/approve/<token>` built on the `/r/<token>` +
