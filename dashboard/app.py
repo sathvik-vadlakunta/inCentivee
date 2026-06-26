@@ -7895,32 +7895,37 @@ def api_pull_keyword_ranks(customer_id):
 
         from datetime import timedelta
         end_date = (datetime.now(timezone.utc) - timedelta(days=2)).strftime("%Y-%m-%d")
-        start_date = (datetime.now(timezone.utc) - timedelta(days=9)).strftime("%Y-%m-%d")
+        start_date = (datetime.now(timezone.utc) - timedelta(days=92)).strftime("%Y-%m-%d")
 
-        data = fetch_search_metrics(property_url, start_date, end_date, dimensions=["query", "date"])
+        # Aggregate by query over 90 days (NOT per-day) so a query with steady low daily
+        # impressions still surfaces — the old 7-day + "≥10 impressions in a single day"
+        # filter collapsed thousands of real queries down to a handful.
+        data = fetch_search_metrics(property_url, start_date, end_date, dimensions=["query"])
         if data is None:
             return jsonify({"ok": False, "error": "GSC query failed"}), 500
+
+        # Keep queries with any meaningful volume, ranked by impressions; cap so we don't
+        # import the long-tail noise floor. Snapshot the aggregate rank against end_date.
+        rows = sorted(
+            (r for r in data if r.get("impressions", 0) >= 3),
+            key=lambda r: r.get("impressions", 0), reverse=True,
+        )[:200]
 
         tracked = {k["keyword"] for k in db.get_tracked_keywords(customer_id)}
         updated = 0
         discovered = 0
-
-        # Index data by (query, date)
-        for row in data:
+        for row in rows:
             query = row.get("query", "").lower().strip()
-            date = row.get("date", "")
-            if query in tracked:
-                db.save_keyword_rank(customer_id, query, date,
-                                     row.get("position"), row.get("clicks", 0),
-                                     row.get("impressions", 0), row.get("ctr", 0.0))
-                updated += 1
-            elif row.get("impressions", 0) >= 10:
-                # High-impression keyword not tracked — add as discovered
+            if not query:
+                continue
+            if query not in tracked:
                 if db.add_tracked_keyword(customer_id, query, source="gsc_discovered"):
                     discovered += 1
-                db.save_keyword_rank(customer_id, query, date,
-                                     row.get("position"), row.get("clicks", 0),
-                                     row.get("impressions", 0), row.get("ctr", 0.0))
+            db.save_keyword_rank(customer_id, query, end_date,
+                                 row.get("position"), row.get("clicks", 0),
+                                 row.get("impressions", 0), row.get("ctr", 0.0))
+            updated += 1
+        data = rows
 
         audit_log("keyword_ranks_pulled", customer_id=customer_id,
                   details=f"Updated {updated} ranks, discovered {discovered} new keywords")

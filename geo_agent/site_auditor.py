@@ -27,7 +27,7 @@ def _run_pagespeed(domain: str, strategy: str = "mobile") -> dict | None:
     api_key = os.environ.get("PAGESPEED_API_KEY", "")
     data = None
     try:
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=60.0) as client:  # PSI can take 30-60s for slower sites
             for url in urls:
                 # PSI returns only the performance category unless others are
                 # requested explicitly — ask for all four so SEO/a11y scores populate.

@@ -2945,17 +2945,33 @@ class CustomerDB:
                         scores: dict, issues: list[dict],
                         raw_data: dict | None = None) -> int:
         """Save a site audit and its issues. Returns audit ID."""
+        # A failed PageSpeed run returns None/0 scores — don't let a transient timeout
+        # tank the displayed SEO Health Score. Fall back to the most recent prior score.
+        prev = self.get_latest_audit(customer_id) or {}
+        def _score(key, prev_key):
+            v = scores.get(key)
+            return v if v else prev.get(prev_key)
         cur = self.conn.execute(
             """INSERT OR REPLACE INTO site_audits
                (customer_id, audit_date, performance_score, accessibility_score,
                 seo_score, best_practices_score, issues_json, raw_data_json)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (customer_id, audit_date,
-             scores.get("performance"), scores.get("accessibility"),
-             scores.get("seo"), scores.get("best_practices"),
+             _score("performance", "performance_score"), _score("accessibility", "accessibility_score"),
+             _score("seo", "seo_score"), _score("best_practices", "best_practices_score"),
              json.dumps(issues), json.dumps(raw_data or {})),
         )
         audit_id = cur.lastrowid
+        # Auto-close previously-open issues that no longer appear in this run (they were
+        # fixed) — otherwise a resolved finding lingers as 'open' forever. Leaves 'ignored'
+        # issues untouched.
+        new_keys = {(i["category"], i["title"]) for i in issues}
+        for row in self.conn.execute(
+            "SELECT id, category, title FROM audit_issues WHERE customer_id = ? AND status = 'open'",
+            (customer_id,),
+        ).fetchall():
+            if (row["category"], row["title"]) not in new_keys:
+                self.conn.execute("UPDATE audit_issues SET status = 'fixed' WHERE id = ?", (row["id"],))
         # Save individual issues. Each run gets a fresh audit_id, so we dedupe
         # against existing open/ignored issues by (category, title) — otherwise
         # the same finding piles up as duplicates on every audit run.
