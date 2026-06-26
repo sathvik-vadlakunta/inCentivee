@@ -3976,6 +3976,28 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
             "auto": auto,
             "guide": guide,
         })
+    # P2 #6: an unmapped business_type otherwise yields a silent EMPTY checklist. Fall back to
+    # the universal baseline (tasks with no vertical scoping and no practice/non-practice gating)
+    # so every customer always gets a checklist instead of a blank panel with no explanation.
+    if not tasks:
+        for t in SEO_GEO_TASKS:
+            if t.get("verticals") is not None or t.get("practice_only") or t.get("non_practice_only"):
+                continue
+            if t.get("platform_only") and t["platform_only"] != platform:
+                continue
+            if platform in t.get("skip_platforms", []):
+                continue
+            guide = ""
+            if t.get("guide"):
+                guide = t["guide"].get(platform, t["guide"].get("_default", ""))
+                if guide:
+                    guide = guide.replace("{domain}", domain).replace("{customer_id}", customer_id).replace("{city}", city)
+            tasks.append({
+                "key": t["key"], "task": t.get("labels", {}).get(vertical, t["task"]),
+                "category": t["category"],
+                "done": ad.get(t["key"], checklist.get(t["key"], False)),
+                "auto": t["key"] in ad, "guide": guide,
+            })
     return tasks
 
 

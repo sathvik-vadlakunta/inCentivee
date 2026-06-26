@@ -86,3 +86,10 @@ def test_content_auto_tick_from_published_recs():
     assert ticks.get("seo_faq_sections") is True
     assert ticks.get("seo_blog_cadence") is True
     assert "seo_expert_quotes" not in ticks
+
+
+def test_unmapped_business_type_falls_back_to_baseline_not_empty():
+    # P2 #6: an unknown business_type must NOT yield a silent empty checklist.
+    from dashboard.app import _get_seo_tasks
+    tasks = _get_seo_tasks({}, business_type="underwater_basket_weaving")
+    assert tasks, "unmapped business_type should fall back to a baseline checklist, not empty"
