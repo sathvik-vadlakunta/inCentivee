@@ -4629,7 +4629,9 @@ def api_check_local_listings(customer_id):
                     rating = data.get("rating", 0.0)
                     has_hours = bool(data.get("currentOpeningHours"))
                     has_website = bool(data.get("websiteUri"))
-                    has_phone = bool(data.get("nationalPhoneNumber"))
+                    gbp_phone = data.get("nationalPhoneNumber", "")
+                    gbp_address = data.get("formattedAddress", "")
+                    has_phone = bool(gbp_phone)
                     has_description = bool(data.get("editorialSummary"))
 
                     results["gbp"] = {
@@ -4642,6 +4644,10 @@ def api_check_local_listings(customer_id):
                         "has_website": has_website,
                         "has_phone": has_phone,
                         "has_description": has_description,
+                        # Keep the ACTUAL Google phone/address so the NAP check can compare
+                        # independent sources (Google vs. website) instead of DB-phone-vs-itself.
+                        "phone": gbp_phone,
+                        "address": gbp_address,
                         "url": f"https://www.google.com/maps/place/?q=place_id:{place_id}",
                     }
 
@@ -4729,27 +4735,29 @@ def api_check_local_listings(customer_id):
         if tier2_found >= 2:
             db.set_checklist_item(customer_id, "seo_tier2_citations", True)
 
-        # 4. NAP consistency check — compare address/phone across found listings
-        nap_sources = []
-        if results.get("gbp", {}).get("found"):
-            gbp = results["gbp"]
-            nap_sources.append({"source": "Google", "phone": phone, "address": customer.get("address", "")})
-
-        # Check website NAP
+        # 4. NAP consistency — compare INDEPENDENT sources. Use the real Google phone from the
+        # Places API (not the DB phone) as the canonical NAP, then verify the website shows that
+        # same phone. Marking 'consistent' only when both independent sources agree (was previously
+        # tautological: DB phone vs. the page that contains the DB phone — P1 audit finding #4).
+        def _digits(p):
+            return "".join(ch for ch in (p or "") if ch.isdigit())[-10:]
+        gbp_phone = (results.get("gbp") or {}).get("phone", "") or phone  # prefer real Google value
+        canonical = _digits(gbp_phone)
+        results["nap_google_phone"] = gbp_phone
+        website_phone_match = False
         try:
             resp = httpx.get(f"https://{domain}", timeout=8.0, follow_redirects=True)
-            if resp.status_code == 200:
-                body = resp.text
-                has_phone = phone and phone.replace("(", "").replace(")", "").replace("-", "").replace(" ", "") in body.replace("(", "").replace(")", "").replace("-", "").replace(" ", "")
-                results["nap_website_phone"] = has_phone
-                if has_phone:
-                    nap_sources.append({"source": "Website", "phone": phone})
+            if resp.status_code == 200 and canonical:
+                website_phone_match = canonical in _digits(resp.text)
+                results["nap_website_phone"] = website_phone_match
         except Exception:
             pass
-
-        if len(nap_sources) >= 2:
+        # Consistent only when we have a Google phone AND the website shows the same number.
+        if canonical and website_phone_match:
             results["nap_consistent"] = True
             db.set_checklist_item(customer_id, "seo_nap_consistent", True)
+        else:
+            results["nap_consistent"] = False
 
         # 5. Content page analysis — check service pages for expert quotes, FAQs, stats, word count
         content_checks = {}
