@@ -1269,6 +1269,27 @@
                 {% endif %}
             </div>
 
+            <!-- Webflow (CMS publishing) -->
+            {% if customer.platform == 'webflow' %}
+            <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div>
+                        <strong>Webflow (CMS)</strong>
+                        <span style="font-size:0.75rem;color:var(--muted);margin-left:0.5rem;">Publish schema &amp; content to the live site</span>
+                    </div>
+                    <span class="badge" style="background:{% if webflow_connected %}#d1fae5;color:#065f46{% else %}#fef3c7;color:#92400e{% endif %};">
+                        {% if webflow_connected %}Connected (OAuth){% else %}Not connected{% endif %}
+                    </span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin:0.4rem 0;">
+                    <strong>Access:</strong> <strong>Connect Webflow</strong> (OAuth) so the dashboard's <em>Publish / Republish to Webflow</em> buttons + auto-publish work. The monthly agent can also publish using a server-side API key (<code>WEBFLOW_KEY_*</code>). <em>No CMS access?</em> Add yourself as a collaborator on the client's Webflow site (or collect their site API token), then connect.
+                </div>
+                <a href="{{ url_for('connect_webflow', customer_id=customer.id) }}" class="btn btn-sm {% if webflow_connected %}btn-outline{% else %}btn-primary{% endif %}" style="white-space:nowrap;">
+                    {% if webflow_connected %}Reconnect Webflow{% else %}Connect Webflow{% endif %}
+                </a>
+            </div>
+            {% endif %}
+
             <!-- PageSpeed Integration -->
             <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
                 <div style="display:flex;justify-content:space-between;align-items:center;">
