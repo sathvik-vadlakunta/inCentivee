@@ -51,6 +51,16 @@ docker exec practicerank-dashboard python -m geo_agent.gbp_client
 Expected: `OK — N account(s) accessible.` then a list including **Paradigm Experts** and
 **Hilltop Family Dental** with their `locations/…` IDs. That confirms M1 end-to-end.
 
+### ✅ DONE 2026-06-26 — token live, verified to the quota gate
+- `GBP_OAUTH_*` (client_id/secret reused from GA4 + a fresh `business.manage` refresh token minted
+  via `scripts/mint_gbp_token.py` as `kdoherty@practicerank.ai`) are set on the droplet; container
+  recreated; `gbp_client.py` deployed.
+- Verify currently returns **`OK — 0 account(s)`** with a **429 (quota = 0)** on the accounts call —
+  this is the *expected* pre-approval state: the OAuth token refreshes and authenticates fine; only
+  the API quota is gated. The 429 (not a 401/403) confirms auth is correct.
+- **Re-run the verify once case `0-1827000040711` is approved (~Jul 7–10)** → it should then list
+  Paradigm + Hilltop. Nothing else to do until then.
+
 ## After this works
 - M1 done → build **M2** (generate post + photos → `validate_html_claims` gate → Dan approval card →
   `localPosts.create` / `media.create`). See `specs/active/gbp-monthly-management.md`.
