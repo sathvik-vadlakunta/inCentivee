@@ -1504,6 +1504,34 @@
             {% endif %}
         </div>
 
+        <!-- Striking Distance (page 2 → push to page 1) -->
+        {% if striking_distance %}
+        <div class="card" style="margin-top:1rem;">
+            <h2 style="margin-bottom:0.25rem;">🎯 Striking Distance — target these next</h2>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">Keywords on page 2 (positions 11–20) with real impression volume. A small ranking push moves them to page 1 — the highest-ROI keywords to target more of.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Keyword</th>
+                        <th style="text-align:right;">Position</th>
+                        <th style="text-align:right;">Impressions</th>
+                        <th style="text-align:right;">Clicks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in striking_distance %}
+                    <tr>
+                        <td style="font-weight:600;">{{ k.keyword }}</td>
+                        <td style="text-align:right;color:#d97706;font-weight:600;">{{ "%.1f"|format(k.position) }}</td>
+                        <td style="text-align:right;">{{ k.impressions }}</td>
+                        <td style="text-align:right;color:var(--muted);">{{ k.clicks }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
         <!-- CTR Opportunity Report -->
         {% if ctr_opportunities %}
         <div class="card" style="margin-top:1rem;">

@@ -316,6 +316,25 @@ def _compute_ctr_opportunities(keyword_summary) -> list[dict]:
     return opportunities[:10]
 
 
+def _compute_striking_distance(keyword_summary) -> list[dict]:
+    """Keywords on page 2 (positions ~11-20) with real impression volume — the highest-ROI
+    'target more of these' set: a small ranking push moves them onto page 1. Sorted by
+    impressions so the biggest wins are first. This is the 'what to target' tool."""
+    out = []
+    for kw in keyword_summary or []:
+        pos = kw.get("current_position")
+        impr = kw.get("current_impressions", 0) or 0
+        if pos and 10 < pos <= 20 and impr >= 20:
+            out.append({
+                "keyword": kw["keyword"],
+                "position": round(pos, 1),
+                "impressions": impr,
+                "clicks": kw.get("current_clicks", 0) or 0,
+            })
+    out.sort(key=lambda x: x["impressions"], reverse=True)
+    return out[:12]
+
+
 # --- Customer Detail ---
 
 @app.route("/customer/<customer_id>")
@@ -439,6 +458,7 @@ def customer_detail(customer_id):
 
         # CTR Opportunities
         ctr_opportunities = _compute_ctr_opportunities(keyword_summary)
+        striking_distance = _compute_striking_distance(keyword_summary)
 
         # Active alerts for this customer
         customer_alerts = db.get_alerts(customer_id, active_only=True, limit=10)
@@ -595,6 +615,7 @@ def customer_detail(customer_id):
             date_range=date_range,
             seo_health_score=seo_health_score,
             ctr_opportunities=ctr_opportunities,
+            striking_distance=striking_distance,
             competitor_domains=competitor_domains,
             citations=citations,
             review_list=review_list,
