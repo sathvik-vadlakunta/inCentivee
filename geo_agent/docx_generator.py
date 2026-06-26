@@ -21,31 +21,39 @@ class ContentDocxGenerator:
         self.customer = customer
         self.brand_name = brand_name
 
-    def generate_single(self, rec: dict) -> BytesIO:
+    def generate_single(self, rec: dict, validations: dict | None = None) -> BytesIO:
         """Generate a DOCX for a single recommendation."""
         doc = Document()
         self._add_header(doc)
-        self._render_rec(doc, rec)
+        self._render_rec(doc, rec, (validations or {}).get(rec.get("id")))
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
         return buf
 
-    def generate_batch(self, recs: list[dict]) -> BytesIO:
-        """Generate a single DOCX containing all recommendations with page breaks."""
+    def generate_batch(self, recs: list[dict], validations: dict | None = None) -> BytesIO:
+        """Generate a single DOCX containing all recommendations with page breaks.
+
+        `validations` optionally maps a rec id → list of findings (from
+        geo_agent.content_validation / fact_check). When present, each affected rec gets an
+        unmissable "NEEDS REVIEW BEFORE PUBLISHING" block so issues can't ship unnoticed.
+        """
+        validations = validations or {}
         doc = Document()
         self._add_header(doc)
         for i, rec in enumerate(recs):
             if i > 0:
                 doc.add_page_break()
-            self._render_rec(doc, rec)
+            self._render_rec(doc, rec, validations.get(rec.get("id")))
         buf = BytesIO()
         doc.save(buf)
         buf.seek(0)
         return buf
 
-    def _render_rec(self, doc: Document, rec: dict):
+    def _render_rec(self, doc: Document, rec: dict, findings: list | None = None):
         """Dispatch to type-specific renderer."""
+        if findings:
+            self._render_validation_block(doc, findings)
         rec_type = rec.get("rec_type", "blog_post")
         renderer = {
             "blog_post": self._render_blog_post,
@@ -61,12 +69,7 @@ class ContentDocxGenerator:
         """Full article with title, meta description, body."""
         self._add_type_badge(doc, "Blog Post", rec.get("priority", 3))
         doc.add_heading(rec.get("title", "Untitled"), level=1)
-        if rec.get("description"):
-            p = doc.add_paragraph()
-            run = p.add_run(f"Meta Description: {rec['description']}")
-            run.font.size = Pt(10)
-            run.font.italic = True
-            run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+        self._add_meta_description(doc, rec)
         if rec.get("html_snippet"):
             self._html_to_docx(doc, rec["html_snippet"])
 
@@ -116,13 +119,53 @@ class ContentDocxGenerator:
         """Same as blog_post, labeled as standalone page."""
         self._add_type_badge(doc, "New Page", rec.get("priority", 3))
         doc.add_heading(rec.get("title", "New Page"), level=1)
-        if rec.get("description"):
-            p = doc.add_paragraph()
-            run = p.add_run(f"Meta Description: {rec['description']}")
-            run.font.size = Pt(10)
-            run.font.italic = True
+        self._add_meta_description(doc, rec)
         if rec.get("html_snippet"):
             self._html_to_docx(doc, rec["html_snippet"])
+
+    def _add_meta_description(self, doc: Document, rec: dict):
+        """Render the publish-ready SEO meta description.
+
+        Uses the dedicated `meta_description` field — NOT the internal `description` rationale,
+        which is a writer brief and must never ship as a meta tag. Renders nothing when no
+        finished meta description is present (e.g. older recs generated before the field
+        existed) rather than leaking the brief.
+        """
+        meta = (rec.get("meta_description") or "").strip()
+        if not meta:
+            return
+        p = doc.add_paragraph()
+        run = p.add_run(f"Meta Description: {meta}")
+        run.font.size = Pt(10)
+        run.font.italic = True
+        run.font.color.rgb = RGBColor(0x6B, 0x72, 0x80)
+        if len(meta) > 160:
+            warn = doc.add_paragraph()
+            wr = warn.add_run(f"⚠ Meta description is {len(meta)} chars — Google truncates ~155-160.")
+            wr.font.size = Pt(9)
+            wr.font.color.rgb = RGBColor(0xD9, 0x77, 0x06)
+
+    def _render_validation_block(self, doc: Document, findings: list):
+        """Unmissable banner listing pre-publish findings, so nothing ships unreviewed."""
+        blocks = [f for f in findings if f.get("severity") == "block"]
+        warns = [f for f in findings if f.get("severity") != "block"]
+        p = doc.add_paragraph()
+        run = p.add_run(
+            f"⚠ NEEDS REVIEW BEFORE PUBLISHING — {len(blocks)} blocking, {len(warns)} advisory"
+        )
+        run.bold = True
+        run.font.size = Pt(11)
+        run.font.color.rgb = RGBColor(0xDC, 0x26, 0x26)
+        for f in blocks + warns:
+            line = doc.add_paragraph(style="List Bullet")
+            tag = "BLOCK" if f.get("severity") == "block" else "review"
+            r = line.add_run(f"[{tag}] {f.get('category', '')}: {f.get('message', '')}")
+            r.font.size = Pt(9)
+            r.font.color.rgb = (
+                RGBColor(0xDC, 0x26, 0x26) if f.get("severity") == "block"
+                else RGBColor(0xD9, 0x77, 0x06)
+            )
+        doc.add_paragraph()  # spacer
 
     def _add_header(self, doc: Document):
         """Add PracticeRank branding header."""

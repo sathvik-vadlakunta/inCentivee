@@ -427,6 +427,13 @@ class CustomerDB:
         if "platform_item_id" not in rec_cols:
             self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN platform_item_id TEXT DEFAULT ''")
             self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN platform_draft_url TEXT DEFAULT ''")
+        # Migration v2 → v3: publish-ready SEO meta description + YMYL E-E-A-T byline fields.
+        # Previously dropped on save (not in the INSERT), which let writer-brief text leak into
+        # the docx "Meta Description" slot. Persist them as first-class columns.
+        if "meta_description" not in rec_cols:
+            self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN meta_description TEXT DEFAULT ''")
+            self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN author_attribution TEXT DEFAULT ''")
+            self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN reviewed_date TEXT DEFAULT ''")
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS squarespace_credentials (
                 customer_id TEXT PRIMARY KEY REFERENCES customers(id),
@@ -2397,8 +2404,9 @@ class CustomerDB:
         self.conn.execute(
             """INSERT OR REPLACE INTO content_recommendations
             (id, customer_id, rec_type, target_page, title, description, html_snippet,
-             priority, category, status, ai_impact_reason, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             priority, category, status, ai_impact_reason, created_at,
+             meta_description, author_attribution, reviewed_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 rec["id"], rec["customer_id"], rec["rec_type"],
                 rec.get("target_page", ""), rec["title"],
@@ -2406,6 +2414,8 @@ class CustomerDB:
                 rec.get("priority", 3), rec.get("category", "general"),
                 rec.get("status", "pending"), rec.get("ai_impact_reason", ""),
                 rec.get("created_at", datetime.now(timezone.utc).isoformat()),
+                rec.get("meta_description", ""), rec.get("author_attribution", ""),
+                rec.get("reviewed_date", ""),
             ),
         )
         self.conn.commit()

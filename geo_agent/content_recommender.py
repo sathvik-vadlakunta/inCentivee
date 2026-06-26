@@ -18,8 +18,13 @@ import re
 import anthropic
 
 from geo_agent.config import Customer
+from geo_agent.content_validation import auto_soften, summarize, validate_html_claims
 from geo_agent.crawler import PageData
 from geo_agent.llm import MODEL_CONTENT, complete
+
+# Max number of recommendations in a single batch that may reuse the same statistic before
+# it's flagged as over-repeated (the Downtown Dental batch reused one stat 14×).
+STAT_REUSE_CAP = 3
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +46,9 @@ _REC_SCHEMA = {
         "target_page": {"type": "string"},
         "title": {"type": "string"},
         "description": {"type": "string"},
+        # Finished, publish-ready SEO meta description (NOT an internal brief). Distinct
+        # from `description`, which is the internal rationale ("what to change and why").
+        "meta_description": {"type": "string"},
         "html_snippet": {"type": "string"},
         "priority": {"type": "integer", "enum": [1, 2, 3, 4, 5]},
         "category": {"type": "string"},
@@ -51,7 +59,7 @@ _REC_SCHEMA = {
         "reviewed_date": {"type": "string"},
     },
     "required": [
-        "rec_type", "target_page", "title", "description",
+        "rec_type", "target_page", "title", "description", "meta_description",
         "html_snippet", "priority", "category", "ai_impact_reason",
         "author_attribution", "reviewed_date",
     ],
@@ -75,7 +83,7 @@ RESEARCH_STATS = {
         {"stat": "A 2024 peer-reviewed study found adult clear-aligner treatment averaged about 14.5 months (within the typical 12-18 month range for mild-to-moderate cases)", "source": "Alam et al., Cureus, 2024 (peer-reviewed)", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11805330/", "category": "orthodontics"},
         {"stat": "CDC/NHANES data shows that 47.2% of adults aged 30 and older have some form of periodontal disease", "source": "CDC/NIDCR National Health and Nutrition Examination Survey", "url": "https://www.nidcr.nih.gov/research/data-statistics/periodontal-disease/adults", "category": "periodontics"},
         {"stat": "Professional teeth whitening can brighten teeth by 3 to 8 shades in a single visit, compared to 1-2 shades with over-the-counter products", "source": "American Dental Association, Whitening", "url": "https://www.ada.org/resources/ada-library/oral-health-topics/whitening", "category": "cosmetic"},
-        {"stat": "The 2021 Adult Oral Health Survey found that approximately 42% of adults experience moderate dental anxiety, with 12% experiencing extreme fear", "source": "British Dental Journal, 2024", "url": "https://www.nature.com/articles/s41415-024-7846-1", "category": "general"},
+        {"stat": "A systematic review and meta-analysis estimated that about 15.3% of adults experience dental fear, including 12.4% with high dental anxiety and 3.3% with severe dental anxiety", "source": "Silveira et al., Estimated prevalence of dental fear in adults, Journal of Dentistry, 2021 (systematic review and meta-analysis)", "url": "https://www.sciencedirect.com/science/article/abs/pii/S0300571221000531", "category": "general"},
         {"stat": "Root canal treatment has a success rate of approximately 95%, preserving the natural tooth for decades of function with proper care", "source": "American Association of Endodontists, 2024", "url": "https://www.aae.org/patients/root-canal-treatment/", "category": "endodontics"},
         {"stat": "Children should have their first dental visit by age 1 or within 6 months of their first tooth erupting", "source": "American Academy of Pediatric Dentistry, 2024", "url": "https://www.aapd.org/resources/parent/faq/", "category": "pediatric"},
         {"stat": "Dental sealants reduce the risk of cavities in molars by nearly 80% in the first two years", "source": "CDC Vital Signs, MMWR, 2016", "url": "https://www.cdc.gov/mmwr/volumes/65/wr/mm6541e1.htm", "category": "preventive"},
@@ -131,7 +139,7 @@ class ContentRecommendation:
     rec_type: str  # blog_post, faq_update, expert_quote, stat_injection, freshness_update, new_page
     target_page: str  # URL or "new" for new pages
     title: str  # human-readable title of the recommendation
-    description: str  # what to change and why
+    description: str  # INTERNAL rationale — what to change and why (not for publishing)
     html_snippet: str  # ready-to-use HTML content
     priority: int  # 1-5, 1 being highest
     category: str  # which service/topic area
@@ -140,6 +148,7 @@ class ContentRecommendation:
     ai_impact_reason: str = ""  # why this helps with AI search specifically
     author_attribution: str = ""  # visible reviewer/byline name (YMYL E-E-A-T), "" if N/A
     reviewed_date: str = ""  # YYYY-MM-DD last-reviewed date, "" if N/A
+    meta_description: str = ""  # publish-ready SEO meta description (<=155 chars), "" if N/A
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -196,7 +205,7 @@ Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
 - For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
-- Every blog post must have at least 4 statistics from the provided research list
+- Every blog post must cite at least 2-3 DISTINCT statistics from the provided research list — do NOT reuse the same statistic across multiple posts
 - Every FAQ must have a direct answer as the first sentence
 - Always mention the practice name and city
 - Use current year (2026) in references for freshness signals
@@ -374,7 +383,7 @@ Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
 - For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
-- Every blog post must have at least 4 statistics from the provided research list
+- Every blog post must cite at least 2-3 DISTINCT statistics from the provided research list — do NOT reuse the same statistic across multiple posts
 - Every FAQ must have a direct answer as the first sentence
 - Always mention the firm name and location
 - Use current year (2026) in references for freshness signals
@@ -439,7 +448,7 @@ Output rules:
 - Generate REAL HTML (not markdown) -- ready to paste into a CMS
 - Use semantic HTML: <article>, <section>, <h2>, <h3>, <p>, <blockquote>, <cite>, <ul>/<ol>
 - For FAQ content, output BOTH (a) clean semantic HTML where each question is an <h3> immediately followed by a <p> answer whose first sentence answers the question in <=50 words, AND (b) a matching <script type="application/ld+json"> FAQPage block listing every Q&A. The visible answer text and the JSON-LD acceptedAnswer.text must match.
-- Every blog post must have at least 4 statistics from the provided research list
+- Every blog post must cite at least 2-3 DISTINCT statistics from the provided research list — do NOT reuse the same statistic across multiple posts
 - Every FAQ must have a direct answer as the first sentence
 - Always mention the practice name and city
 - Use current year (2026) in references for freshness signals
@@ -582,6 +591,10 @@ def generate_content_recommendations(
         existing_summary=existing_summary,
         current_month=current_month,
     )
+    # Defense-in-depth rules appended to EVERY business type's prompt. The deterministic
+    # validator (geo_agent.content_validation) enforces these after generation; stating them
+    # here keeps the model from producing violations in the first place.
+    user_prompt += _accuracy_meta_rules(customer, current_month)
 
     system_prompt = SYSTEM_PROMPTS.get(business_type, SYSTEM_PROMPTS.get("service", SYSTEM_PROMPTS["practice"]))
     logger.info(f"Generating content recommendations for {customer.name} (type={business_type})")
@@ -632,6 +645,7 @@ def generate_content_recommendations(
                 ai_impact_reason=rec.get("ai_impact_reason", ""),
                 author_attribution=rec.get("author_attribution", ""),
                 reviewed_date=rec.get("reviewed_date", ""),
+                meta_description=rec.get("meta_description", "").strip(),
             )
             recommendations.append(cr)
         except (ValueError, TypeError) as e:
@@ -642,6 +656,36 @@ def generate_content_recommendations(
 
     logger.info(f"Generated {len(recommendations)} content recommendations for {customer.name}")
     return recommendations
+
+
+def _accuracy_meta_rules(customer: Customer, current_month: str) -> str:
+    """Shared meta-description + accuracy rules appended to every business type's prompt."""
+    creds = "; ".join(
+        f"{p.name}: {p.credentials}" + (f"; {', '.join(p.specialties)}" if getattr(p, "specialties", None) else "")
+        for p in (customer.providers or [])
+    ) or "NONE provided"
+    return f"""
+
+## META DESCRIPTION + ACCURACY RULES (mandatory — every recommendation)
+- **meta_description**: a FINISHED, publish-ready SEO meta description, 120-155 characters,
+  written as patient/client-facing copy, including the primary keyword and the city. This is
+  NOT a brief — never write instructions like "Cover…", "Position…", "Highlight…". The
+  separate **description** field is your INTERNAL rationale and is never published.
+- **No unverified credentials.** You may ONLY state a provider credential, specialty, board
+  certification, fellowship, or "specialist" status if it appears VERBATIM in this list:
+  {creds}. Do NOT upgrade "prosthodontist" or "Fellow" into "Board Certified" — that is false
+  advertising. If unsure, omit the credential.
+- **No superlatives / unverifiable marketing claims**: never use best, #1, number one, premier,
+  world-class, top-rated, leading, finest, most trusted. Use specific verifiable facts instead.
+- **No medical/legal absolutes**: never use painless, pain-free, guaranteed, completely safe,
+  no risk, or "lasts a lifetime". Use evidence-based language (e.g. "decades of reliable
+  function with proper care").
+- **No future dates**: the latest date you may reference anywhere (visible text or
+  <time datetime>) is the current date, {current_month}. Never post-date "Last updated" stamps.
+- **Do NOT repeat the same statistic across pieces**: each statistic from the provided list may
+  appear in at most one or two recommendations. Vary which stats you cite; 2-3 distinct stats
+  per blog post is plenty — do not cram the same number into every piece.
+"""
 
 
 def _fix_link_spacing(html: str) -> str:
@@ -1048,20 +1092,25 @@ def _grade_recommendations(
             logger.warning(f"Skipping expert_quote rec '{rec.title}' — no verified quotes available")
             continue
 
-        # Flag misleading longevity claims — "last a lifetime" / "lifetime of function"
-        lifetime_patterns = [
-            r'last\s+a\s+lifetime', r'lifetime\s+of\s+function',
-            r'lasts?\s+forever', r'permanent\s+solution\s+for\s+life',
-        ]
-        for pat in lifetime_patterns:
-            if re.search(pat, html):
-                rec.html_snippet = re.sub(
-                    pat,
-                    'decades of reliable function with proper maintenance',
-                    rec.html_snippet,
-                    flags=re.IGNORECASE,
+        # Auto-soften the YMYL absolutes and future "Last updated" stamps we're confident
+        # about (painless→comfortable, "lasts a lifetime"→decades, future month→current),
+        # BEFORE storage. Belt-and-suspenders with the prompt rules.
+        rec.html_snippet, softened = auto_soften(rec.html_snippet)
+        for change in softened:
+            logger.warning(f"auto_soften rec '{rec.title}': {change}")
+
+        # Deterministic claim validation (credentials not in profile, remaining superlatives /
+        # absolutes, future dates). BLOCK findings downgrade priority so they sort last and a
+        # human sees them; the docx/publish gate re-runs this and surfaces the findings.
+        findings = validate_html_claims(rec.html_snippet, customer)
+        if findings:
+            blocks, warns = summarize(findings)
+            for f in findings:
+                logger.warning(
+                    f"validate rec '{rec.title}' [{f['severity']}/{f['category']}]: {f['message']}"
                 )
-                logger.warning(f"Replaced lifetime claim in rec '{rec.title}'")
+            if blocks:
+                rec.priority = 5  # force to the bottom — needs human review before publishing
 
         # Blog posts should be substantial
         if rec.rec_type == "blog_post" and len(rec.html_snippet) < 500:
@@ -1090,6 +1139,31 @@ def _grade_recommendations(
 
         graded.append(rec)
 
+    # Batch-level stat-reuse check: the same statistic cited across many pieces reads as
+    # machine-generated and keyword-stuffed (one stat appeared 14× in the Downtown batch).
+    # Count by citation URL; downgrade the excess uses past the cap so they don't dominate.
+    _flag_overused_stats(graded, getattr(customer, "business_type", "practice"))
+
     # Sort by priority
     graded.sort(key=lambda r: r.priority)
     return graded
+
+
+def _flag_overused_stats(recs: list[ContentRecommendation], business_type: str) -> None:
+    """Downgrade recommendations that reuse a statistic already cited STAT_REUSE_CAP times."""
+    stat_urls = [
+        s["url"] for s in RESEARCH_STATS.get(business_type, RESEARCH_STATS["practice"])
+        if s.get("url")
+    ]
+    seen: dict[str, int] = {}
+    for rec in sorted(recs, key=lambda r: r.priority):  # let the strongest pieces keep the stat
+        for url in stat_urls:
+            if url in rec.html_snippet:
+                seen[url] = seen.get(url, 0) + 1
+                if seen[url] > STAT_REUSE_CAP:
+                    rec.priority = min(rec.priority + 1, 5)
+                    logger.warning(
+                        f"Stat {url} reused {seen[url]}× (cap {STAT_REUSE_CAP}) — "
+                        f"downgraded rec '{rec.title}'"
+                    )
+                    break
