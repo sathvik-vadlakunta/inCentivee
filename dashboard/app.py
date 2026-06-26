@@ -396,6 +396,18 @@ def customer_detail(customer_id):
             except Exception:
                 pass
 
+        # Cache fallback: if the live GSC fetch was skipped (no active integration row /
+        # blank property_url) or failed/timed out, render from the cached gsc_daily_metrics
+        # table so the Overview's stat cards + trend never blank out when valid stored data
+        # exists. (get_gsc_daily returns most-recent-first; the chart wants chronological.)
+        if not gsc_daily:
+            cached = db.get_gsc_daily(customer_id, limit=range_days)
+            gsc_daily = list(reversed(cached)) if cached else []
+            if gsc_daily and not gsc_prev_clicks:
+                prev = db.get_gsc_daily(customer_id, limit=range_days * 2)[range_days:range_days * 2]
+                gsc_prev_clicks = sum(d.get("clicks", 0) for d in prev)
+                gsc_prev_impressions = sum(d.get("impressions", 0) for d in prev)
+
         # SEO Health Score
         seo_health_score = _compute_seo_health(latest_audit, keyword_summary, gsc_daily)
 
