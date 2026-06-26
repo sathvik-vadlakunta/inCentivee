@@ -66,6 +66,27 @@ Webflow OAuth app (register a PracticeRank-owned one), unused columns/routes, an
 - Paradigm: GSC integration record created (overview live), `gsc_daily_metrics` backfilled 89 days,
   audit re-run clean, estate-jewelry FAQPage added manually.
 
+## Results (2026-06-26)
+
+- **P1 ✅** — workflow audited 13 subpages / 109 panels → 19 confirmed high-severity bugs, ranked.
+- **P2 ✅ (5 of 6 + feature)** — #1 Overview cache fallback (HIGH, root cause); #2 directory per-result
+  matching (HIGH, no false checkmarks); #3 impression-weighted avg position; #4 NAP independent-source
+  compare; #6 unmapped-business_type baseline; **🎯 Striking Distance keyword-opportunities view** (the
+  "what to target more" tool). Remaining: **#5 cache-staleness labeling** (label run-derived checklist
+  items with source/age — low risk, deferred).
+- **P3 ✅ (started)** — integration test renders /customer/<id> from a seeded DB asserting the cache
+  fallback fires ("accurate on load"); + unit tests for directory match, striking distance, NAP, baseline.
+  Full suite 795 passing. Broader per-subpage render tests = continuation.
+- **P4 ✅** — `geo_agent/refresh.py` + daily droplet cron (GSC metrics+queries + audit), fixing
+  "stale until clicked" AND populating the cache the Overview falls back to.
+- **P5 — partial.** GSC two-table reconcile effectively done (refresh.py is the single population path;
+  Overview reads/falls back to the cache). Remaining as a **reviewed** pass (don't blind-delete from a
+  live dashboard): dead detection branches, the old SmileShape Webflow OAuth app (register a
+  PracticeRank-owned one — needs a Webflow account action), unused columns/routes.
+
+Plus same-day foundational fixes: PSI key+120s timeout (scores restored 60/100/96/96), GSC integration
+self-creation, keyword pull 4→202, audit issue auto-close, FAQ service-page detection.
+
 ## Open question for Kody
 Scope/run as: (a) one structured **multi-agent workflow** (parallel readers map every panel →
 verify against seeded data → adversarially confirm → synthesize the fix list + tests), or
