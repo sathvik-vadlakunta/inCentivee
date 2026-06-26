@@ -1150,7 +1150,31 @@
     <div id="seo-sub-integrations" class="seo-sub-content" style="display:none;">
         <div class="card">
             <h2 style="margin-bottom: 0.75rem;">Data Connections</h2>
-            <p style="color:var(--muted);font-size:0.85rem;margin-bottom:1rem;">Configure API connections for this customer. The system uses these to pull keyword rankings, backlinks, and search performance data.</p>
+            <p style="color:var(--muted);font-size:0.85rem;margin-bottom:0.75rem;">The platform pulls rankings, backlinks, search performance, leads, and reviews through these. <strong>Two parts:</strong> (1) the customer <em>grants access</em> — now done via Leadsie — and (2) you <em>paste the IDs below</em> so we know which property to read.</p>
+
+            <!-- Leadsie access banner -->
+            <div style="padding:0.75rem;border:1px solid #c7d2fe;background:#eef2ff;border-radius:8px;margin-bottom:1rem;font-size:0.82rem;">
+                <strong>🔗 Step 1 — Collect access with Leadsie</strong>
+                <div style="color:#3730a3;margin-top:0.3rem;">
+                    Send the customer your Leadsie connect link (<code>app.leadsie.com/connect/practicerank</code>). In a few clicks they grant
+                    <strong>Google Business Profile, Search Console, Google Ads, and GA4</strong> access to <code>kdoherty@practicerank.ai</code> — no
+                    passwords, and they keep ownership. When Leadsie shows <strong>Connected</strong>, come back and fill in the IDs below (Step 2).
+                    <div style="margin-top:0.35rem;color:var(--muted);">Leadsie grants the <em>access</em>; these fields tell us <em>which</em> property/account to read. The shared service account <code>practicerank-gsc@micro-primer-495420-v5.iam.gserviceaccount.com</code> can also be added manually as a fallback.</div>
+                </div>
+                <details style="margin-top:0.5rem;">
+                    <summary style="cursor:pointer;font-weight:600;">⚠️ Customer doesn't have an account for a service?</summary>
+                    <div style="margin-top:0.4rem;color:#3730a3;line-height:1.5;">
+                        Some clients have never set up GBP / GSC / GA4. We create it for them — here's what each needs:
+                        <ul style="margin:0.3rem 0 0 1rem;padding:0;">
+                            <li><strong>No Google Business Profile</strong> → we create + verify the listing (postcard/phone/email). Needs the business name, address, phone, hours, categories. Then they add us via Leadsie.</li>
+                            <li><strong>No Search Console</strong> → we add + verify the domain property. Needs <strong>DNS access</strong> (TXT record) or an existing GA4/GTM tag on the site to verify ownership.</li>
+                            <li><strong>No GA4</strong> → we create a GA4 property and install the tag via <strong>GTM or site edit access</strong> (so lead/call/form tracking starts). Then grant our service account Viewer (or via Leadsie).</li>
+                            <li><strong>No website CMS access (Webflow/WP)</strong> → needed to publish schema + content. Collect the Webflow OAuth / API token or WP plugin key.</li>
+                        </ul>
+                        <div style="margin-top:0.3rem;">Rule of thumb: <strong>the customer owns</strong> GBP / GSC / GA4 / their CMS (we need access or we create them); <strong>we own</strong> BrightLocal, Google Places, and PageSpeed (no customer action).</div>
+                    </div>
+                </details>
+            </div>
 
             <!-- GSC Integration -->
             <div style="padding:0.75rem;border:1px solid var(--border);border-radius:8px;margin-bottom:0.75rem;">
@@ -1165,7 +1189,7 @@
                     </span>
                 </div>
                 <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
-                    Uses domain-wide delegation to access GSC. The property URL must match a verified property in your Google Search Console account.
+                    <strong>Access:</strong> granted via Leadsie (Search Console) — or add <code>practicerank-gsc@…iam.gserviceaccount.com</code> as a <strong>Full</strong> user in GSC → Settings → Users &amp; permissions. <strong>Then</strong> paste the verified property below (usually <code>sc-domain:{{ customer.domain }}</code>). <em>No property yet?</em> We add &amp; verify it (DNS TXT, or the GA4/GTM tag already on the site).
                 </div>
                 <form onsubmit="saveGscIntegration(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
                     <div style="flex:1;">
@@ -1196,7 +1220,7 @@
                     </span>
                 </div>
                 <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
-                    Numeric GA4 <strong>Property ID</strong> (Admin → Property Settings — e.g. <code>123456789</code>, not the <code>G-XXXX</code> ID). The shared service account must have Viewer access to this property. See <code>docs/ga4-setup.md</code>.
+                    <strong>Access:</strong> granted via Leadsie (GA4) — or grant the shared service account <strong>Viewer</strong> on the property. <strong>Then</strong> paste the numeric <strong>Property ID</strong> (Admin → Property Settings — e.g. <code>123456789</code>, not the <code>G-XXXX</code> tag ID). <em>No GA4 yet?</em> We create the property + install the tag via GTM/site edit access so lead tracking starts. See <code>docs/ga4-setup.md</code>.
                 </div>
                 <form onsubmit="saveGa4Integration(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
                     <div style="flex:1;">
@@ -1227,7 +1251,7 @@
                     </span>
                 </div>
                 <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;">
-                    Paste this customer's BrightLocal <strong>location id</strong> (the Citation Tracker / Local Search Audit location/report id). Requires <code>BRIGHTLOCAL_API_KEY</code> set on the server. Activates Module 1 — directory breadth + NAP-consistency scoring + the report's Local Listings section.
+                    <strong>We own this — no customer access needed.</strong> Create a Citation Tracker / Local Search Audit location for this client in <em>our</em> BrightLocal account, then paste its <strong>location id</strong> here. Requires <code>BRIGHTLOCAL_API_KEY</code> on the server. Activates Module 1 — directory breadth + NAP-consistency scoring + the report's Local Listings section.
                 </div>
                 <form onsubmit="saveBrightlocalIntegration(event, '{{ customer.id }}')" style="display:flex;gap:0.5rem;align-items:end;">
                     <div style="flex:1;">
