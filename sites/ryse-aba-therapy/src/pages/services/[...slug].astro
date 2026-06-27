@@ -59,7 +59,7 @@ const steps = [
     <div class="max-w-6xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
       {facts.map((f) => (
         <div class="card p-6 text-center reveal">
-          <div class="text-3xl sm:text-4xl font-extrabold gradient-text">{f.static ? f.v : (<><span data-count={f.v}>0</span>{f.suffix}</>)}</div>
+          <div class="text-3xl sm:text-4xl font-extrabold gradient-text">{f.static ? f.v : (<><span data-count={f.v}>{f.v}</span>{f.suffix}</>)}</div>
           <p class="mt-1 text-xs sm:text-sm text-slate-500 font-semibold">{f.label}</p>
         </div>
       ))}
@@ -116,6 +116,7 @@ const steps = [
 
   {faqs.length > 0 && (
     <section class="pb-16 bg-white">
+      <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) })} />
       <div class="max-w-3xl mx-auto px-5 sm:px-6">
         <h2 class="text-2xl sm:text-3xl font-extrabold text-dark mb-6 text-center">Frequently asked questions</h2>
         <div class="space-y-3">

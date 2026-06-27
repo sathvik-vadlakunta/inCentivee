@@ -1,20 +1,25 @@
 ---
 import practice from '@data/practice.json'
 
+const base = `https://${practice.domain}`
 const schema = {
   '@context': 'https://schema.org',
-  '@type': 'Dentist',
+  '@type': ['MedicalBusiness', 'ProfessionalService'],
+  '@id': `${base}/#org`,
   name: practice.name,
-  description: practice.tagline,
-  url: `https://${practice.domain}`,
+  description:
+    'In-home and community-based ABA (Applied Behavior Analysis) therapy for autism, serving Southern Utah (Washington County). Ages 2-65, no waitlist, BCBA-led, insurance accepted.',
+  url: base,
   telephone: practice.phone,
   email: practice.email || undefined,
+  image: `${base}/images/logo.webp`,
+  logo: `${base}/images/logo.webp`,
+  priceRange: '$$',
+  // In-home provider — no clinic address; describe the service area instead of a street.
   address: {
     '@type': 'PostalAddress',
-    streetAddress: practice.address.street,
     addressLocality: practice.address.city,
     addressRegion: practice.address.state,
-    postalCode: practice.address.zip,
     addressCountry: 'US',
   },
   geo: {
@@ -22,15 +27,28 @@ const schema = {
     latitude: practice.geo.lat,
     longitude: practice.geo.lng,
   },
-  openingHoursSpecification: practice.hours
-    .filter((h: { note?: string }) => !h.note)
-    .map((h: { days: string; open?: string; close?: string }) => ({
+  areaServed: (practice.areaServed || []).map((c: string) => ({ '@type': 'City', name: `${c}, UT` })),
+  serviceArea: {
+    '@type': 'GeoCircle',
+    geoMidpoint: { '@type': 'GeoCoordinates', latitude: practice.geo.lat, longitude: practice.geo.lng },
+    geoRadius: 70000,
+  },
+  openingHoursSpecification: [
+    {
       '@type': 'OpeningHoursSpecification',
-      dayOfWeek: h.days,
-      opens: h.open,
-      closes: h.close,
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      opens: '08:00',
+      closes: '18:00',
+    },
+  ],
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'ABA Therapy Services',
+    itemListElement: (practice.serviceCategories || []).map((s: { title: string; slug: string }) => ({
+      '@type': 'Offer',
+      itemOffered: { '@type': 'Service', name: s.title, url: `${base}/services/${s.slug}` },
     })),
-  medicalSpecialty: practice.serviceCategories,
+  },
   sameAs: Object.values(practice.social).filter(Boolean),
 }
 ---
