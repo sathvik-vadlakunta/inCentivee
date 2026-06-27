@@ -162,6 +162,8 @@ FRESHNESS (machine-readable):
 - Wrap every visible date in <time datetime="YYYY-MM-DD">…</time>
 - Include a <script type="application/ld+json"> BlogPosting/Article block with datePublished and dateModified set to the current date.
 
+SEARCH INTENT (target buyers, not browsers): prioritize keywords/topics where the searcher intends to ACT — transactional ("sell gold near me", "where to sell silver", "dentist near me", "{service} cost") and commercial/comparison ("best {service} in {city}", "{service} reviews", "{competitor} alternative"). These are the money searches that bring sellers/customers to the business. Match the FORMAT to the intent: commercial → comparison/listicle with pros-cons and "why choose us"; transactional → conversion-focused page with a clear CTA, location, "how it works", and the offer; informational → a concise answer/FAQ only (top-of-funnel, used sparingly). Always pair the action with the locality ("in {city} / near me"). Do NOT center content on pure-research queries with no buying intent.
+
 ENTITY DENSITY: maximize specific verifiable facts per paragraph — city/neighborhood, exact service, provider names + credentials (only from the provided lists), numbers, conditions. At least one concrete citable fact per 2-3 sentences. Avoid vague filler.
 
 OUTPUT FIELDS: every recommendation includes "author_attribution" and "reviewed_date" fields. Fill author_attribution with the visible reviewer/byline name used in the content (or "" if no byline applies) and reviewed_date with the YYYY-MM-DD review date (or "" if N/A). Never invent a name to fill these fields.
@@ -750,9 +752,14 @@ def _build_user_prompt(
     verified_quotes = getattr(customer, "verified_quotes", None) or []
     verified_quotes_str = ""
     if verified_quotes:
-        verified_quotes_str = "\n## Verified Quotes (ONLY use these exact quotes — do NOT invent others)\n"
+        verified_quotes_str = ("\n## Verified Quotes (ONLY use these exact quotes — do NOT invent "
+                               "others. When you use one, attribute it and link its source.)\n")
         for q in verified_quotes:
-            verified_quotes_str += f'- "{q["quote"]}" — {q["attribution"]}\n'
+            cite = ""
+            if q.get("source"):
+                cite = f' [source: {q["source"]}'
+                cite += f' — {q["url"]}]' if q.get("url") else ']'
+            verified_quotes_str += f'- "{q["quote"]}" — {q["attribution"]}{cite}\n'
     else:
         verified_quotes_str = "\n## Verified Quotes\nNONE PROVIDED. Do NOT generate any quotes attributed to specific people.\n"
 

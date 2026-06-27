@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Content Queue · PracticeRank{% endblock %}
+
+{% block content %}
+<style>
+  .cq-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;}
+  .muted{color:var(--muted);font-size:.8rem;}
+  /* toolbar */
+  .cq-bar{position:sticky;top:0;z-index:5;background:var(--bg,#f8fafc);padding:10px 0;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);margin-bottom:14px;}
+  .cq-bar select,.cq-bar input{font-size:.85rem;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:#fff;}
+  .cq-bar input.search{min-width:200px;flex:1;max-width:320px;}
+  .chips{display:flex;gap:.35rem;flex-wrap:wrap;}
+  .chip{font-size:.66rem;font-weight:800;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;text-transform:uppercase;letter-spacing:.03em;user-select:none;}
+  .chip.on{background:#1e293b;color:#fff;border-color:#1e293b;}
+  .cq-bar .spacer{flex:1;}
+  .linkbtn{font-size:.78rem;font-weight:700;color:#2563eb;cursor:pointer;background:none;border:none;}
+  /* company card */
+  .cq-cust{background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+  .cq-cust>h3{margin:0;padding:13px 16px;font-size:.95rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;cursor:pointer;flex-wrap:wrap;}
+  .cq-cust>h3:hover{background:#f8fafc;}
+  .cq-cust .who{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+  .chev{transition:transform .15s;color:var(--muted);}
+  .cq-cust.open .chev{transform:rotate(90deg);}
+  .cq-body{display:none;border-top:1px solid var(--border);}
+  .cq-cust.open .cq-body{display:block;}
+  .rt{display:inline-block;font-size:.58rem;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.03em;background:#e0f2fe;color:#075985;}
+  .rt.gbp_qa{background:#fae8ff;color:#86198f;} .rt.blog_post{background:#dcfce7;color:#166534;}
+  .rt.faq_update{background:#fef3c7;color:#92400e;} .rt.new_page{background:#dbeafe;color:#1e40af;}
+  .rt.freshness_update{background:#e2e8f0;color:#334155;} .rt.stat_injection{background:#ffe4e6;color:#9f1239;}
+  .pill{display:inline-block;font-size:.6rem;font-weight:800;padding:3px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;}
+  table.cq{width:100%;border-collapse:collapse;font-size:.86rem;}
+  table.cq th{text-align:left;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:7px 16px;border-bottom:1px solid var(--border);}
+  table.cq td{padding:10px 16px;border-bottom:1px solid var(--border);vertical-align:top;}
+  table.cq tr:last-child td{border-bottom:none;}
+  .cq-title{font-weight:600;}
+  .cq-why{font-size:.78rem;color:var(--muted);max-width:62ch;margin-top:3px;}
+  .cq-actions{display:flex;gap:.4rem;white-space:nowrap;justify-content:flex-end;}
+  .btn-sm{font-size:.76rem;font-weight:700;padding:5px 11px;border-radius:7px;border:1px solid var(--border);cursor:pointer;background:#fff;}
+  .btn-sm.approve{background:#16a34a;color:#fff;border-color:#16a34a;}
+  .btn-sm.reject{background:#fff;color:#991b1b;border-color:#fca5a5;}
+  .btn-sm.approve-all{background:#0f766e;color:#fff;border-color:#0f766e;}
+  .btn-sm:disabled{opacity:.5;cursor:default;}
+  .cq-link{font-size:.76rem;}
+  .nothing{padding:24px 16px;color:#166534;font-size:.9rem;text-align:center;}
+  .cq-empty{display:none;padding:28px;text-align:center;color:var(--muted);}
+</style>
+
+<div class="cq-head">
+  <div>
+    <h1 style="margin:0;">Content Queue <span class="muted" style="font-weight:500;">· this month's content to approve</span></h1>
+    <p class="muted" style="margin:.25rem 0 0;">Pending content across all customers. Pick a company or type, sort, then approve. Companies are collapsed — click one to work it.</p>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:1.9rem;font-weight:800;line-height:1;"><span id="visibleCount">{{ total_pending }}</span></div>
+    <div class="muted"><span id="visibleCompanies">{{ groups|length }}</span> companies · pending</div>
+  </div>
+</div>
+
+{% if groups %}
+<div class="cq-bar">
+  <select id="companySel" title="Jump to company">
+    <option value="">All companies</option>
+    {% for g in groups %}<option value="{{ g.customer.id }}">{{ g.customer.name }} ({{ g.count }})</option>{% endfor %}
+  </select>
+  <select id="sortSel" title="Sort">
+    <option value="count">Most pending</option>
+    <option value="name">Name A–Z</option>
+    <option value="countAsc">Fewest pending</option>
+  </select>
+  <div class="chips" id="typeChips">
+    <span class="chip on" data-type="all">All types</span>
+    <span class="chip on" data-type="blog_post">Blog</span>
+    <span class="chip on" data-type="faq_update">FAQ</span>
+    <span class="chip on" data-type="gbp_qa">GBP Q&amp;A</span>
+    <span class="chip on" data-type="new_page">Page</span>
+    <span class="chip on" data-type="freshness_update">Fresh</span>
+    <span class="chip on" data-type="stat_injection">Stat</span>
+  </div>
+  <input class="search" id="searchBox" type="text" placeholder="Search titles…">
+  <div class="spacer"></div>
+  <button class="linkbtn" onclick="toggleAll(true)">Expand all</button>
+  <button class="linkbtn" onclick="toggleAll(false)">Collapse all</button>
+</div>
+{% else %}
+  <div class="cq-cust"><div class="nothing">🎉 Nothing pending — the queue is clear.</div></div>
+{% endif %}
+
+<div id="cqList">
+{% for g in groups %}
+<div class="cq-cust" id="cust-{{ g.customer.id }}" data-cid="{{ g.customer.id }}" data-name="{{ g.customer.name|lower }}" data-count="{{ g.count }}">
+  <h3 onclick="toggleCard('{{ g.customer.id }}')">
+    <span class="who">
+      <svg class="chev" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+      <a href="{{ url_for('customer_detail', customer_id=g.customer.id) }}" onclick="event.stopPropagation()">{{ g.customer.name }}</a>
+      {% for t, n in g.by_type.items() %}<span class="rt {{ t }}">{{ n }} {{ t.replace('_',' ') }}</span>{% endfor %}
+    </span>
+    <span class="who">
+      <button class="btn-sm approve-all" onclick="event.stopPropagation();approveAll('{{ g.customer.id }}','{{ g.customer.name }}',this)">Approve all</button>
+      <span class="pill"><span class="vcount">{{ g.count }}</span> pending</span>
+    </span>
+  </h3>
+  <div class="cq-body">
+    <table class="cq">
+      <tbody>
+        {% for r in g.recs %}
+        <tr id="rec-{{ r.id }}" data-type="{{ r.rec_type }}" data-title="{{ r.title|lower }}">
+          <td style="width:120px;"><span class="rt {{ r.rec_type }}">{{ r.rec_type.replace('_',' ') }}</span></td>
+          <td>
+            <div class="cq-title">{{ r.title }}</div>
+            {% if r.ai_impact_reason %}<div class="cq-why">{{ r.ai_impact_reason }}</div>{% endif %}
+            <a class="cq-link" href="{{ url_for('content_preview', customer_id=g.customer.id, rec_id=r.id) }}" target="_blank">Preview →</a>
+          </td>
+          <td class="muted" style="width:200px;">{{ r.target_page or '—' }}</td>
+          <td style="width:160px;">
+            <div class="cq-actions">
+              <button class="btn-sm approve" onclick="setStatus('{{ r.id }}','approved',this)">Approve</button>
+              <button class="btn-sm reject" onclick="setStatus('{{ r.id }}','rejected',this)">Reject</button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+</div>
+<div class="cq-empty" id="cqEmpty">No content matches these filters.</div>
+
+<script>
+const activeTypes = new Set(['blog_post','faq_update','gbp_qa','new_page','freshness_update','stat_injection']);
+
+function applyFilters() {
+  const company = document.getElementById('companySel').value;
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  let visibleCompanies = 0, visiblePending = 0;
+  document.querySelectorAll('.cq-cust[data-cid]').forEach(card => {
+    if (company && card.dataset.cid !== company) { card.style.display = 'none'; return; }
+    let shown = 0;
+    card.querySelectorAll('tr[data-type]').forEach(row => {
+      const typeOk = activeTypes.has(row.dataset.type);
+      const searchOk = !q || row.dataset.title.includes(q);
+      const ok = typeOk && searchOk;
+      row.style.display = ok ? '' : 'none';
+      if (ok) shown++;
+    });
+    card.querySelector('.vcount').textContent = shown;
+    if (shown === 0) { card.style.display = 'none'; }
+    else {
+      card.style.display = '';
+      visibleCompanies++; visiblePending += shown;
+      // auto-expand when filtering to a company or searching
+      if (company || q) card.classList.add('open');
+    }
+  });
+  document.getElementById('visibleCount').textContent = visiblePending;
+  document.getElementById('visibleCompanies').textContent = visibleCompanies;
+  document.getElementById('cqEmpty').style.display = visibleCompanies ? 'none' : 'block';
+}
+
+function sortCards() {
+  const mode = document.getElementById('sortSel').value;
+  const list = document.getElementById('cqList');
+  const cards = Array.from(list.children);
+  cards.sort((a, b) => {
+    if (mode === 'name') return a.dataset.name.localeCompare(b.dataset.name);
+    const ca = +a.dataset.count, cb = +b.dataset.count;
+    return mode === 'countAsc' ? ca - cb : cb - ca;
+  });
+  cards.forEach(c => list.appendChild(c));
+}
+
+function toggleCard(cid){ document.getElementById('cust-' + cid).classList.toggle('open'); }
+function toggleAll(open){ document.querySelectorAll('.cq-cust[data-cid]').forEach(c => c.classList.toggle('open', open)); }
+
+document.getElementById('companySel')?.addEventListener('change', applyFilters);
+document.getElementById('sortSel')?.addEventListener('change', sortCards);
+document.getElementById('searchBox')?.addEventListener('input', applyFilters);
+document.getElementById('typeChips')?.addEventListener('click', e => {
+  const chip = e.target.closest('.chip'); if (!chip) return;
+  const t = chip.dataset.type;
+  if (t === 'all') {
+    const turnOn = !chip.classList.contains('on');
+    document.querySelectorAll('#typeChips .chip').forEach(c => {
+      c.classList.toggle('on', turnOn);
+      if (c.dataset.type !== 'all') turnOn ? activeTypes.add(c.dataset.type) : activeTypes.delete(c.dataset.type);
+    });
+  } else {
+    chip.classList.toggle('on');
+    chip.classList.contains('on') ? activeTypes.add(t) : activeTypes.delete(t);
+    const allOn = [...document.querySelectorAll('#typeChips .chip')].filter(c => c.dataset.type !== 'all').every(c => c.classList.contains('on'));
+    document.querySelector('#typeChips .chip[data-type="all"]').classList.toggle('on', allOn);
+  }
+  applyFilters();
+});
+
+async function setStatus(recId, status, btn) {
+  const row = document.getElementById('rec-' + recId);
+  row.querySelectorAll('button').forEach(b => b.disabled = true);
+  try {
+    const resp = await fetch('/api/content/status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({rec_id: recId, status})});
+    const data = await resp.json();
+    if (data.ok) { row.style.transition='opacity .2s'; row.style.opacity='0'; setTimeout(() => { row.remove(); applyFilters(); }, 200); }
+    else { row.querySelectorAll('button').forEach(b => b.disabled = false); alert('Failed: ' + (data.error || 'unknown')); }
+  } catch (e) { row.querySelectorAll('button').forEach(b => b.disabled = false); alert('Error: ' + e); }
+}
+
+async function approveAll(cid, name, btn) {
+  btn.disabled = true;
+  try {
+    let resp = await fetch('/api/content/approve-all', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({customer_id: cid})});
+    if (resp.status === 409) {
+      const info = await resp.json();
+      if (!confirm(`Approve all ${info.pending_count} pending for ${name}? They're still fact-checked before publishing.`)) { btn.disabled = false; return; }
+      resp = await fetch('/api/content/approve-all', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({customer_id: cid, confirm: true})});
+    }
+    const data = await resp.json();
+    if (data.ok || data.approved !== undefined) {
+      const card = document.getElementById('cust-' + cid);
+      card.style.transition='opacity .2s'; card.style.opacity='0';
+      setTimeout(() => { card.remove(); applyFilters(); }, 200);
+    } else { btn.disabled = false; alert('Failed: ' + (data.error || 'unknown')); }
+  } catch (e) { btn.disabled = false; alert('Error: ' + e); }
+}
+
+sortCards();
+</script>
+{% endblock %}

@@ -53,6 +53,11 @@ logger = logging.getLogger("practicerank.dashboard")
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+# Search-intent helpers available in templates (badge keywords by buyer intent).
+from geo_agent import keyword_intent as _kw_intent  # noqa: E402
+app.jinja_env.globals["kw_intent"] = _kw_intent.classify_intent
+app.jinja_env.globals["kw_intent_meta"] = _kw_intent.intent_meta
 app.config["PREFERRED_URL_SCHEME"] = "https"
 
 # Trust proxy headers from Caddy so url_for generates https:// URLs
@@ -316,6 +321,31 @@ def _compute_ctr_opportunities(keyword_summary) -> list[dict]:
     return opportunities[:10]
 
 
+def _compute_intent_keywords(keyword_summary) -> list[dict]:
+    """The highest purchase-intent keywords to target — action/commercial searches
+    ('sell gold near me', 'best dentist in austin') ranked by intent priority then
+    impressions. This is the 'what brings buyers/sellers to us' list."""
+    rows = []
+    for kw in keyword_summary or []:
+        text = kw.get("keyword", "")
+        if not _kw_intent.is_action(text):
+            continue
+        meta = _kw_intent.intent_meta(text)
+        rows.append({
+            "keyword": text,
+            "intent": meta["tier"],
+            "label": meta["label"],
+            "color": meta["color"],
+            "bg": meta["bg"],
+            "local": _kw_intent.has_local_intent(text),
+            "position": round(kw["current_position"], 1) if kw.get("current_position") else None,
+            "impressions": kw.get("current_impressions", 0) or 0,
+            "priority": _kw_intent.target_priority(text),
+        })
+    rows.sort(key=lambda x: (x["priority"], x["impressions"]), reverse=True)
+    return rows[:12]
+
+
 def _compute_striking_distance(keyword_summary) -> list[dict]:
     """Keywords on page 2 (positions ~11-20) with real impression volume — the highest-ROI
     'target more of these' set: a small ranking push moves them onto page 1. Sorted by
@@ -459,6 +489,7 @@ def customer_detail(customer_id):
         # CTR Opportunities
         ctr_opportunities = _compute_ctr_opportunities(keyword_summary)
         striking_distance = _compute_striking_distance(keyword_summary)
+        intent_keywords = _compute_intent_keywords(keyword_summary)
 
         # Active alerts for this customer
         customer_alerts = db.get_alerts(customer_id, active_only=True, limit=10)
@@ -616,6 +647,7 @@ def customer_detail(customer_id):
             seo_health_score=seo_health_score,
             ctr_opportunities=ctr_opportunities,
             striking_distance=striking_distance,
+            intent_keywords=intent_keywords,
             competitor_domains=competitor_domains,
             citations=citations,
             review_list=review_list,
@@ -3327,7 +3359,7 @@ SEO_GEO_TASKS = [
     {"key": "seo_attorney_bios", "task": "Attorney bios with bar admissions & practice areas", "category": "Content Optimization", "verticals": ["legal"]},
     {"key": "seo_practice_area_pages", "task": "Dedicated practice-area pages", "category": "Content Optimization", "verticals": ["legal"]},
     {"key": "seo_service_area_pages", "task": "Service-area / location pages", "category": "Content Optimization", "verticals": ["local_retail", "professional_services"]},
-    {"key": "seo_pricing_page", "task": "Pricing / quote / 'how it works' page", "category": "Content Optimization", "verticals": ["local_retail", "professional_services"]},
+    {"key": "seo_pricing_page", "task": "Pricing / quote / 'how it works' page", "category": "Content Optimization", "verticals": ["local_retail", "professional_services"], "exclude_business_types": ["precious_metals_buyer"]},
     # Technical SEO
     {"key": "seo_xml_sitemap", "task": "XML sitemap present and submitted", "category": "Technical SEO",
      "guide": {
@@ -3517,39 +3549,47 @@ SEO_GEO_TASKS = [
              "<b>Important:</b> Post AND answer from the practice's Google account — this marks the answer as \"Owner\" verified."
          ),
      }},
-    {"key": "seo_apple_business", "task": "Apple Business listing claimed & optimized", "category": "Local SEO", "practice_only": True,
+    {"key": "seo_citations_ordered", "task": "FATJOE 100-citation bundle ordered (Yelp, Bing, Facebook, NAP + Tier 2)", "category": "Local SEO", "practice_only": True,
      "guide": {
          "_default": (
-             "<b>Claim and optimize Apple Business Connect listing:</b>"
+             "<b>Order the FATJOE local-citations bundle</b> — this builds consistent listings "
+             "across the major directories and data aggregators in one go (Yelp, Bing Places, "
+             "Facebook, Apple data feeds, YellowPages, BBB, and 90+ more), all with matching NAP. "
+             "It replaces claiming each directory by hand."
              "<ol>"
-             "<li>Go to <a href='https://businessconnect.apple.com' target='_blank'>businessconnect.apple.com</a></li>"
-             "<li>Sign in with the practice's Apple ID (or create one)</li>"
-             "<li>Search for the business and click <b>Claim</b></li>"
-             "<li>Verify ownership (phone call or document upload)</li>"
-             "<li>Once verified, fill in everything:"
-             "<ul>"
-             "<li>Primary category (e.g., Dentist)</li>"
-             "<li>Up to 9 secondary categories</li>"
-             "<li>Upload same photos as GBP</li>"
-             "<li>Add action buttons (Book Appointment, Call)</li>"
-             "<li>Create a Showcase (promotional banner)</li>"
-             "</ul></li>"
-             "<li>Make sure hours, address, phone match Google <b>exactly</b></li>"
+             "<li>Confirm the customer's NAP (name, address, phone) is final and correct.</li>"
+             "<li>Place the onboarding 100-citation order in FATJOE (auto-queued by paid tier — see the <b>FATJOE</b> page).</li>"
+             "<li>Log the order in the Backlinks &amp; Authority ledger so it auto-ticks here.</li>"
              "</ol>"
+             "Auto-ticks when a citation order is recorded for this customer."
          ),
      }},
-    {"key": "seo_yelp", "task": "Yelp listing claimed & optimized", "category": "Local SEO", "practice_only": True,
+    {"key": "seo_listings_verified", "task": "Key listings verified live & NAP-consistent", "category": "Local SEO", "practice_only": True,
      "guide": {
          "_default": (
-             "<b>Claim and optimize Yelp listing:</b>"
+             "<b>Spot-check that the citation build landed</b> and the core listings are live with "
+             "matching NAP. Use the <b>Scan Listings</b> button above — it checks the business on "
+             "Google, Yelp, Bing, Facebook and verifies the website phone matches Google."
              "<ol>"
-             "<li>Go to <a href='https://biz.yelp.com' target='_blank'>biz.yelp.com</a></li>"
-             "<li>Search for the practice → click <b>Claim this business</b></li>"
-             "<li>Verify via phone or email</li>"
-             "<li>Fill in all business details — NAP must match Google exactly</li>"
-             "<li>Upload photos (same set as GBP)</li>"
-             "<li>Add specialties and services</li>"
+             "<li>Click <b>Scan Listings</b>; confirm the key directories show <b>found</b>.</li>"
+             "<li>Verify name/address/phone match Google exactly (no \"St.\" vs \"Street\" drift).</li>"
              "</ol>"
+             "Auto-ticks when the scan confirms the business across the major directories with a consistent phone."
+         ),
+     }},
+    {"key": "seo_apple_business", "task": "Apple Business listing matches Google (Dan-verified)", "category": "Local SEO", "practice_only": True,
+     "guide": {
+         "_default": (
+             "<b>Manually verify the Apple Business Connect listing matches Google.</b> Apple Maps / "
+             "Siri / Spotlight is high-value and the citation bundle doesn't fully claim it — Dan "
+             "confirms it by hand."
+             "<ol>"
+             "<li>Go to <a href='https://businessconnect.apple.com' target='_blank'>businessconnect.apple.com</a> (sign in / claim + verify ownership once).</li>"
+             "<li>Confirm primary + secondary categories, hours, address, and phone match Google <b>exactly</b>.</li>"
+             "<li>Upload the same photos as GBP; add action buttons (Book, Call) and a Showcase.</li>"
+             "</ol>"
+             "<b>Note:</b> Apple Business Connect has a management API for multi-location sync — a future "
+             "GBP→Apple auto-sync is on the roadmap; for now Dan verifies manually."
          ),
      }},
     {"key": "seo_healthgrades", "task": "Healthgrades profile claimed", "category": "Local SEO", "practice_only": True,
@@ -3573,64 +3613,6 @@ SEO_GEO_TASKS = [
              "<li>Link appointment booking</li>"
              "</ol>"
              "<b>Note:</b> Zocdoc charges a fee per booking — confirm with Jon before signing up."
-         ),
-     }},
-    {"key": "seo_facebook", "task": "Facebook Business page set up", "category": "Local SEO", "practice_only": True,
-     "guide": {
-         "_default": (
-             "<ol>"
-             "<li>Go to <a href='https://www.facebook.com/pages/create' target='_blank'>facebook.com/pages/create</a></li>"
-             "<li>Choose <b>Local Business</b></li>"
-             "<li>Fill in practice name, address, phone, hours — must match Google exactly</li>"
-             "<li>Upload profile photo (logo) and cover photo</li>"
-             "<li>Add services and description</li>"
-             "<li>Link to website: <code>https://{domain}</code></li>"
-             "</ol>"
-         ),
-     }},
-    {"key": "seo_bing_places", "task": "Bing Places imported from GBP", "category": "Local SEO", "practice_only": True,
-     "guide": {
-         "_default": (
-             "<b>Import GBP listing to Bing Places (easiest method):</b>"
-             "<ol>"
-             "<li>Go to <a href='https://www.bingplaces.com' target='_blank'>bingplaces.com</a></li>"
-             "<li>Sign in with a Microsoft account</li>"
-             "<li>Click <b>Import from Google Business Profile</b></li>"
-             "<li>Sign in to Google and authorize</li>"
-             "<li>Select the practice listing → click <b>Import</b></li>"
-             "</ol>"
-             "This copies all your GBP data (name, address, phone, hours, photos) into Bing automatically."
-         ),
-     }},
-    {"key": "seo_nap_consistent", "task": "NAP consistent across all directories", "category": "Local SEO", "practice_only": True,
-     "guide": {
-         "_default": (
-             "<b>NAP = Name, Address, Phone.</b> Must be identical character-for-character on every listing."
-             "<br><br>"
-             "<b>Common mistakes:</b>"
-             "<ul>"
-             "<li>\"St.\" vs \"Street\" vs \"St\"</li>"
-             "<li>\"Suite 100\" vs \"Ste 100\" vs \"#100\"</li>"
-             "<li>(555) 123-4567 vs 555-123-4567</li>"
-             "<li>\"Dr. Smith's Dental\" vs \"Dr Smith Dental\"</li>"
-             "</ul>"
-             "<b>How to audit:</b> Use <a href='https://www.brightlocal.com' target='_blank'>BrightLocal</a> citation audit — it scans all major directories and flags inconsistencies."
-             "<br><b>Pick one format and use it everywhere.</b>"
-         ),
-     }},
-    {"key": "seo_tier2_citations", "task": "Tier 2 citation directories submitted", "category": "Local SEO", "practice_only": True,
-     "guide": {
-         "_default": (
-             "<b>Submit to these directories (manually — takes ~2 hours):</b>"
-             "<ul>"
-             "<li><a href='https://www.yellowpages.com/claimlisting' target='_blank'>YellowPages.com</a></li>"
-             "<li><a href='https://www.bbb.org' target='_blank'>BBB.org</a></li>"
-             "<li><a href='https://www.vitals.com' target='_blank'>Vitals.com</a></li>"
-             "<li><a href='https://www.ratemds.com' target='_blank'>RateMDs.com</a></li>"
-             "<li><a href='https://www.nextdoor.com/pages/create' target='_blank'>Nextdoor.com</a> (Business Page)</li>"
-             "<li><a href='https://www.angi.com' target='_blank'>Angi.com</a></li>"
-             "</ul>"
-             "<b>For each:</b> Use the exact same NAP as Google Business Profile."
          ),
      }},
     # Reviews (practice only)
@@ -3861,6 +3843,17 @@ def _auto_detect_seo_status(domain: str, customer_id: str) -> dict[str, bool]:
             if places.get("review_count", 0) > 0:
                 detected["seo_gbp_optimized"] = True
 
+        # FATJOE citation bundle ordered → the consolidated "citations ordered" item.
+        try:
+            cite_order = _db.conn.execute(
+                "SELECT 1 FROM offsite_orders WHERE customer_id = ? AND order_type = 'citation' LIMIT 1",
+                (customer_id,),
+            ).fetchone()
+            if cite_order:
+                detected["seo_citations_ordered"] = True
+        except Exception:
+            pass
+
         _db.close()
     except Exception:
         pass
@@ -3878,17 +3871,12 @@ def _detect_directory_listings(domain: str, detected: dict):
     if not domain:
         return
 
-    checks = [
-        ("seo_yelp", f"https://www.yelp.com/search?find_desc={domain}", "biz/"),
-        ("seo_facebook", f"https://www.facebook.com/search/pages/?q={domain}", None),
-    ]
-
-    # Simple approach: check if the domain appears on these directories
-    # by looking for backlinks or direct profile URLs
+    # Yelp/Facebook presence feeds the consolidated "key listings verified" item;
+    # Healthgrades stays its own (practice-only) directory item.
     directory_searches = {
-        "seo_yelp": f"site:yelp.com {domain}",
-        "seo_facebook": f"site:facebook.com {domain}",
-        "seo_healthgrades": f"site:healthgrades.com {domain}",
+        "yelp": f"site:yelp.com {domain}",
+        "facebook": f"site:facebook.com {domain}",
+        "healthgrades": f"site:healthgrades.com {domain}",
     }
 
     for key, query in directory_searches.items():
@@ -3904,12 +3892,12 @@ def _detect_directory_listings(domain: str, detected: dict):
             if resp.status_code == 200:
                 # Check if any actual results came back (not just the search page)
                 text = resp.text.lower()
-                if key == "seo_yelp" and "yelp.com/biz/" in text:
-                    detected[key] = True
-                elif key == "seo_facebook" and ("facebook.com/" in text and domain.replace(".", "") in text):
-                    detected[key] = True
-                elif key == "seo_healthgrades" and "healthgrades.com/" in text:
-                    detected[key] = True
+                if key == "yelp" and "yelp.com/biz/" in text:
+                    detected["seo_listings_verified"] = True
+                elif key == "facebook" and ("facebook.com/" in text and domain.replace(".", "") in text):
+                    detected["seo_listings_verified"] = True
+                elif key == "healthgrades" and "healthgrades.com/" in text:
+                    detected["seo_healthgrades"] = True
         except Exception:
             pass
 
@@ -3951,6 +3939,10 @@ def _get_seo_tasks(checklist: dict[str, bool], business_type: str = "practice",
                     continue
             if t.get("non_practice_only") and vertical == "practice":
                 continue
+        # Skip tasks that don't fit this business type (e.g. a fixed pricing page
+        # makes no sense for a spot-priced precious-metals buyer).
+        if (business_type or "").lower() in t.get("exclude_business_types", []):
+            continue
         # Skip platform-specific tasks for other platforms
         if t.get("platform_only") and t["platform_only"] != platform:
             continue
@@ -4680,9 +4672,11 @@ def api_check_local_listings(customer_id):
         # check false-positives on any competitor result and writes a bogus green checklist
         # checkmark (P1 audit finding #2).
         search_name = f"{name} {city} {state}"
+        # Yelp/Facebook presence now feeds the consolidated "key listings verified" item
+        # (the individual Yelp/Facebook checklist items were collapsed into the FATJOE bundle).
         directories = [
-            ("yelp", "Yelp", "yelp.com", f"site:yelp.com/biz \"{name}\" {city}", "seo_yelp"),
-            ("facebook", "Facebook", "facebook.com", f"site:facebook.com \"{name}\"", "seo_facebook"),
+            ("yelp", "Yelp", "yelp.com", f"site:yelp.com/biz \"{name}\" {city}", "seo_listings_verified"),
+            ("facebook", "Facebook", "facebook.com", f"site:facebook.com \"{name}\"", "seo_listings_verified"),
             ("healthgrades", "Healthgrades", "healthgrades.com", f"site:healthgrades.com \"{name}\"", "seo_healthgrades"),
             ("zocdoc", "Zocdoc", "zocdoc.com", f"site:zocdoc.com \"{name}\" {city}", "seo_zocdoc"),
         ]
@@ -4727,13 +4721,12 @@ def api_check_local_listings(customer_id):
                     results[f"tier2_{dir_key}"] = {"found": found, "name": dir_name}
                     if found:
                         tier2_found += 1
-                        if dir_key == "bing_places":
-                            db.set_checklist_item(customer_id, "seo_bing_places", True)
             except Exception:
                 pass
 
+        # Citations live across multiple directories → key listings are verified.
         if tier2_found >= 2:
-            db.set_checklist_item(customer_id, "seo_tier2_citations", True)
+            db.set_checklist_item(customer_id, "seo_listings_verified", True)
 
         # 4. NAP consistency — compare INDEPENDENT sources. Use the real Google phone from the
         # Places API (not the DB phone) as the canonical NAP, then verify the website shows that
@@ -4755,82 +4748,17 @@ def api_check_local_listings(customer_id):
         # Consistent only when we have a Google phone AND the website shows the same number.
         if canonical and website_phone_match:
             results["nap_consistent"] = True
-            db.set_checklist_item(customer_id, "seo_nap_consistent", True)
+            db.set_checklist_item(customer_id, "seo_listings_verified", True)
         else:
             results["nap_consistent"] = False
 
-        # 5. Content page analysis — check service pages for expert quotes, FAQs, stats, word count
-        content_checks = {}
-        try:
-            # Get crawled pages from DB
-            import re as _re
-            pages = db.conn.execute(
-                "SELECT url, title, content, html, category FROM crawled_pages WHERE customer_id = ? AND category = 'service'",
-                (customer_id,)
-            ).fetchall()
-
-            pages_with_quotes = 0
-            pages_with_faqs = 0
-            pages_with_stats = 0
-            pages_over_2k = 0
-
-            for page in pages:
-                html_content = page[3] or ""
-                text_content = page[2] or ""
-                word_count = len(text_content.split())
-
-                if word_count >= 2000:
-                    pages_over_2k += 1
-                if "<blockquote" in html_content or "— Dr." in text_content or "- Dr." in text_content:
-                    pages_with_quotes += 1
-                if _re.search(r'<h[2-4][^>]*>.*?\?</h[2-4]>', html_content):
-                    pages_with_faqs += 1
-                if _re.search(r'\d+%|\d+\s+(?:percent|million|billion)', text_content):
-                    pages_with_stats += 1
-
-            total_service = len(pages)
-            content_checks = {
-                "total_service_pages": total_service,
-                "pages_with_quotes": pages_with_quotes,
-                "pages_with_faqs": pages_with_faqs,
-                "pages_with_stats": pages_with_stats,
-                "pages_over_2k_words": pages_over_2k,
-            }
-
-            if total_service > 0:
-                if pages_with_quotes == total_service:
-                    db.set_checklist_item(customer_id, "seo_expert_quotes", True)
-                if pages_with_faqs == total_service:
-                    db.set_checklist_item(customer_id, "seo_faq_entries", True)
-                if pages_with_stats >= total_service * 0.8:
-                    db.set_checklist_item(customer_id, "seo_stats_embedded", True)
-                if pages_over_2k >= total_service * 0.5:
-                    db.set_checklist_item(customer_id, "seo_long_service_pages", True)
-        except Exception:
-            pass
-
-        results["content_analysis"] = content_checks
-
-        # Check for specific pages
-        special_pages = {
-            "seo_emergency_page": ["emergency", "urgent"],
-            "seo_cost_page": ["cost", "pricing", "price", "implant cost", "financing"],
-            "seo_insurance_page": ["insurance", "financing", "payment"],
-        }
-        try:
-            all_pages = db.conn.execute(
-                "SELECT url, title, category FROM crawled_pages WHERE customer_id = ?",
-                (customer_id,)
-            ).fetchall()
-            for task_key, keywords in special_pages.items():
-                for page in all_pages:
-                    url_lower = (page[0] or "").lower()
-                    title_lower = (page[1] or "").lower()
-                    if any(kw in url_lower or kw in title_lower for kw in keywords):
-                        db.set_checklist_item(customer_id, task_key, True)
-                        break
-        except Exception:
-            pass
+        # NOTE: Content-page analysis (expert quotes / FAQs / stats / word count) and
+        # special-page detection used to live here, querying a `crawled_pages` table that
+        # never existed in the schema — so the block always threw, no-op'd, and (worse) ticked
+        # two wrong keys (`seo_faq_entries`, `seo_long_service_pages`). Content checklist items
+        # are now driven by published content recs via
+        # `geo_agent/status_checker._content_task_status` (the single source of truth, run by
+        # the nightly reconciler). Removed 2026-06-26.
 
         # Clear SEO cache so checklist updates show
         cache_key = f"{domain}:{customer_id}"
@@ -6726,6 +6654,31 @@ def api_content_status():
             cid = rec["customer_id"] if rec else ""
             audit_log("content_status_changed", customer_id=cid, details=f"rec={rec_id} -> {new_status}")
         return jsonify({"ok": ok, "status": new_status})
+    finally:
+        db.close()
+
+
+@app.route("/content-queue")
+@login_required
+def content_queue():
+    """Dan's monthly content-approval queue — every pending content recommendation across
+    all customers, grouped, with one-click approve/reject. This is the single 'this month's
+    content to approve' surface (mirrors the FATJOE queue)."""
+    db = get_db()
+    try:
+        groups = []
+        total_pending = 0
+        for cust in db.list_customers():
+            recs = db.get_content_recommendations(cust["id"], status="pending", limit=200)
+            if not recs:
+                continue
+            total_pending += len(recs)
+            by_type: dict[str, int] = {}
+            for r in recs:
+                by_type[r.get("rec_type", "other")] = by_type.get(r.get("rec_type", "other"), 0) + 1
+            groups.append({"customer": cust, "recs": recs, "count": len(recs), "by_type": by_type})
+        groups.sort(key=lambda g: (-g["count"], g["customer"]["name"]))
+        return render_template("content_queue.html", groups=groups, total_pending=total_pending)
     finally:
         db.close()
 

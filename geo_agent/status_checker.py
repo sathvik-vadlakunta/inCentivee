@@ -16,6 +16,7 @@ the daily script can print exactly what it would change before any writes.
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from datetime import datetime, timedelta, timezone
@@ -183,11 +184,95 @@ def _content_is_live(domain: str, rec: dict, cache: dict | None = None) -> bool:
     return False
 
 
-def _content_task_status(recs: list[dict]) -> dict[str, bool]:
+def _service_area_cities(customer: dict | None) -> list[str]:
+    """Normalized city names from the customer's service_areas (state suffix stripped)."""
+    if not customer:
+        return []
+    raw = customer.get("service_areas")
+    if not raw:
+        return []
+    vals = raw
+    if isinstance(raw, str):
+        try:
+            vals = json.loads(raw)
+        except Exception:
+            vals = [p for p in re.split(r"[,\n]", raw) if p.strip()]
+    if not isinstance(vals, (list, tuple)):
+        return []
+    out = []
+    for c in vals:
+        # "Falls Church VA" -> "falls church"; drop a trailing 2-letter state code.
+        name = re.sub(r"\b[A-Za-z]{2}\b\s*$", "", str(c).strip()).strip().strip(",").strip()
+        if name:
+            out.append(name.lower())
+    return out
+
+
+def _rec_mentions_city(rec: dict, cities: list[str]) -> bool:
+    blob = ((rec.get("title") or "") + " " + (rec.get("target_page") or "")).lower()
+    blob_slug = blob.replace(" ", "-")
+    return any(c in blob or c.replace(" ", "-") in blob_slug for c in cities)
+
+
+# Embedded expert-quote markup: a <blockquote>, a "quoted line" — Name, or "says/
+# according to Name". Curly quotes via \u escapes so source encoding can't bite us.
+_QUOTE_RE = re.compile(
+    r"<blockquote"
+    r"|[“\"][^“”\"]{20,200}[”\"]\s*[—–-]\s*[A-Z][a-z]+"
+    r"|\b(?:said|says|according to|explains?)\s+[A-Z][a-z]+",
+    re.I,
+)
+
+
+def _sitemap_content_urls(domain: str, limit: int = 20) -> list[str]:
+    try:
+        r = httpx.get(f"https://{domain}/sitemap.xml", timeout=8.0, follow_redirects=True)
+        if r.status_code != 200:
+            return []
+        locs = re.findall(r"<loc>([^<]+)</loc>", r.text)
+        content = [u for u in locs if re.search(r"/blog/|/northern-|/location|sell-|/areas?-", u, re.I)]
+        return (content or locs)[:limit]
+    except Exception:
+        return []
+
+
+def _live_pages_have_quotes(domain: str, pub_recs: list[dict], sample: int = 6) -> bool:
+    """Scan a sample of live published content pages for embedded expert-quote markup.
+
+    Expert quotes are frequently embedded inside published blog/location pages rather
+    than shipped as a discrete `expert_quote` rec — so we check the live site.
+    """
+    urls: list[str] = []
+    for r in pub_recs:
+        if r.get("rec_type") not in ("blog_post", "new_page"):
+            continue
+        tp = (r.get("target_page") or "").strip()
+        if tp.startswith("http"):
+            urls.append(tp)
+        elif tp.startswith("/"):
+            urls.append(f"https://{domain}{tp}")
+    urls = list(dict.fromkeys(urls))
+    if len(urls) < sample:
+        urls = list(dict.fromkeys(urls + _sitemap_content_urls(domain)))
+    for u in urls[:sample]:
+        try:
+            resp = httpx.get(u, timeout=8.0, follow_redirects=True)
+            if resp.status_code == 200 and _QUOTE_RE.search(resp.text):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _content_task_status(recs: list[dict], customer: dict | None = None,
+                         domain: str = "") -> dict[str, bool]:
     """Tick content checklist tasks from content we actually published.
 
     Maps published rec_types → SEO_GEO_TASKS content keys so the checklist
-    reflects shipped work instead of sitting at 0/N.
+    reflects shipped work instead of sitting at 0/N. Service-area pages and
+    expert quotes have no dedicated rec_type (location pages publish as
+    `new_page`; quotes are embedded in content), so we additionally check the
+    live site for those two.
     """
     pub = [r for r in recs if r.get("status") == "published"]
     types = {r.get("rec_type") for r in pub}
@@ -202,10 +287,25 @@ def _content_task_status(recs: list[dict]) -> dict[str, bool]:
         out["seo_blog_cadence"] = True
     if "new_page" in types:
         out["seo_content_depth"] = True
+    if "gbp_qa" in types:
+        out["seo_gbp_qa"] = True
     cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
     if any(r.get("rec_type") == "freshness_update" and (r.get("published_at") or "")[:10] >= cutoff
            for r in pub):
         out["seo_fresh_content"] = True
+
+    # Service-area / location pages: tick when service areas are configured AND we've
+    # published ≥2 location pages targeting those cities (no dedicated rec_type).
+    cities = _service_area_cities(customer)
+    if cities:
+        loc_pages = [r for r in pub if r.get("rec_type") == "new_page" and _rec_mentions_city(r, cities)]
+        if len(loc_pages) >= 2:
+            out["seo_service_area_pages"] = True
+
+    # Expert quotes embedded in live content (only scan when not already ticked).
+    if domain and not out.get("seo_expert_quotes"):
+        if _live_pages_have_quotes(domain, pub):
+            out["seo_expert_quotes"] = True
     return out
 
 
@@ -272,7 +372,7 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
     # --- 3. Todos: persist auto-detected completions (schema live + content shipped) ---
     detected = detect_live_status(domain)
     recs_all = db.get_content_recommendations(customer_id, limit=200)
-    detected.update(_content_task_status(recs_all))
+    detected.update(_content_task_status(recs_all, customer, domain))
     checklist = db.get_checklist(customer_id)
     for key, done in detected.items():
         if done and not checklist.get(key):

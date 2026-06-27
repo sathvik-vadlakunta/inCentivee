@@ -171,7 +171,7 @@ _DEFAULT_SERVICE_TERMS: dict[str, list[str]] = {
     "dental": ["Dental Implants", "Invisalign", "Teeth Whitening", "Emergency Dentist"],
     "medical": ["Primary Care", "Urgent Care", "Telehealth Visits"],
     "legal": ["Free Consultation", "Personal Injury", "Family Law"],
-    "precious_metals": ["Sell Gold", "Sell Silver", "Sell Coins", "Jewelry Buyer"],
+    "precious_metals": ["Sell Gold", "Sell Silver", "Sell Coins", "Sell Gold & Silver Jewelry", "Sell Diamonds", "Estate Jewelry Buyer"],
     "local_retail": ["Shop Local", "Our Services"],
     "professional_services": ["Consulting Services"],
     "finance": ["Financial Planning", "Tax Preparation"],

@@ -24,6 +24,8 @@ import logging
 import re
 from datetime import datetime, timedelta, timezone
 
+from geo_agent import keyword_intent as intent
+
 logger = logging.getLogger(__name__)
 
 _QUESTION_RE = re.compile(
@@ -128,10 +130,15 @@ def recommend_from_search_data(db, customer_id: str, *, lookback_days: int = 28,
         seen.add(key)
         rec_type, category, base_pri = _TYPE_META[opp]
         built = _build(opp, q)
-        # Score by impressions, lightly boosted for striking distance.
+        # Score by impressions, boosted for striking distance AND for search intent —
+        # action/purchase-decision queries ("sell gold near me", "best dentist in austin")
+        # rank above research queries ("are tea sets valuable"). Local action ranks highest.
         boost = 1.4 if opp == "striking_distance" else 1.0
+        intent_boost = intent.target_priority(q.get("query", ""))
         scored.append({"opp": opp, "q": q, "rec_type": rec_type, "category": category,
-                       "priority": base_pri, "score": (q.get("impressions") or 0) * boost,
+                       "intent": intent.classify_intent(q.get("query", "")),
+                       "priority": base_pri,
+                       "score": (q.get("impressions") or 0) * boost * intent_boost,
                        **built})
 
     scored.sort(key=lambda r: r["score"], reverse=True)
