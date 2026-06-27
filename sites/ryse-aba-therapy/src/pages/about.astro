@@ -1,0 +1,83 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+const team = (await getCollection('team')).sort((a, b) => (a.data.order || 0) - (b.data.order || 0))
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const initials = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+const avatarBg = ['var(--color-primary)', 'var(--color-mint)', 'var(--color-sun)', 'var(--color-accent)']
+const values = [
+  { icon: '❤️', t: 'Family first', d: 'Every plan is built around your child and your family — never one-size-fits-all.' },
+  { icon: '🔬', t: 'Data-driven', d: 'Every step is guided by data, so families can see real growth in action.' },
+  { icon: '🎈', t: 'Play-based', d: 'Learning happens through play and the everyday moments your child already loves.' },
+  { icon: '🤝', t: 'Respect & dignity', d: 'We honor each person\'s worth, preferences, and voice in everything we do.' },
+]
+---
+<Base title="About Ryse ABA Therapy" description="Family-first, in-home ABA therapy serving Southern Utah. Meet the BCBA-led team behind Ryse.">
+  <!-- HERO -->
+  <section class="section-sky py-16 sm:py-20 relative overflow-hidden">
+    <div class="parallax blob" data-speed="0.3" style="width:380px;height:380px;background:var(--color-primary);top:-120px;left:-80px;opacity:.4;"></div>
+    <div class="parallax blob" data-speed="0.5" style="width:280px;height:280px;background:var(--color-sun);bottom:-100px;right:-40px;opacity:.35;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-accent font-bold uppercase tracking-wide text-sm">About us</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">Compassionate ABA, built by people who <span class="gradient-text">care</span></h1>
+      <p class="mt-5 text-lg text-slate-600">{practice.mission}</p>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href="/contact" class="btn btn-accent">Get started — no waitlist</a>
+        <a href={phoneHref} class="btn btn-ghost">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-accent font-bold uppercase tracking-wide text-sm">What we stand for</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">Our values</h2>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {values.map((v, i) => (
+          <div class={`card p-7 text-center reveal reveal-delay-${i+1}`}>
+            <div class="w-16 h-16 rounded-2xl bg-sky mx-auto flex items-center justify-center text-3xl mb-4 float" style={`animation-delay:-${i}s`}>{v.icon}</div>
+            <h3 class="text-lg font-extrabold text-dark">{v.t}</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">{v.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="py-20 section-cream">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-accent font-bold uppercase tracking-wide text-sm">Meet the team</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">BCBA-led, family-trusted</h2>
+        <p class="mt-4 text-slate-600">The people who'll be in your corner — and in your home.</p>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {team.map((m, i) => (
+          <div class={`card p-7 reveal reveal-delay-${(i%3)+1} text-center`}>
+            <div class="w-28 h-28 rounded-full mx-auto overflow-hidden shadow-lg relative flex items-center justify-center text-2xl font-extrabold text-white" style={`background:${avatarBg[i % 4]}`}>
+              <span>{initials(m.data.name)}</span>
+              {m.data.photo && <img src={m.data.photo} alt={m.data.name} class="absolute inset-0 w-full h-full object-cover" loading="lazy" onerror="this.remove()" />}
+            </div>
+            <h3 class="mt-4 text-lg font-extrabold text-dark">{m.data.name}{m.data.credentials && <span class="text-primary">, {m.data.credentials}</span>}</h3>
+            <p class="text-sm font-semibold text-accent">{m.data.title}</p>
+            <p class="mt-3 text-sm text-slate-600 leading-relaxed text-left">{m.body.trim()}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl font-extrabold">Let's help your child rise.</h2>
+      <p class="mt-3 text-white/85">Free insurance check · no waitlist · in your home, across Southern Utah.</p>
+      <a href="/contact" class="btn btn-accent mt-6 text-lg">Get started today</a>
+    </div>
+  </section>
+</Base>

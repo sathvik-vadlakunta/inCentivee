@@ -1,0 +1,32 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+const locations = (await getCollection('locations')).sort((a, b) => a.data.city.localeCompare(b.data.city))
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+---
+<Base title="Areas We Serve — In-Home ABA Therapy in Southern Utah" description="Ryse ABA Therapy provides in-home and community-based ABA across Washington County and Southern Utah — St. George, Washington, Hurricane, Santa Clara, Ivins, La Verkin, and Cedar City.">
+  <section class="section-sky py-16 relative overflow-hidden">
+    <div class="blob" style="width:360px;height:360px;background:var(--color-primary);top:-100px;right:-80px;"></div>
+    <div class="relative max-w-5xl mx-auto px-4 text-center reveal">
+      <span class="text-accent font-bold uppercase tracking-wide text-sm">Areas we serve</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">In-home ABA across <span class="gradient-text">Southern Utah</span></h1>
+      <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">We come to you — therapy in your home and community, no waitlist. Choose your city to learn more.</p>
+    </div>
+  </section>
+  <section class="py-16 section-cream">
+    <div class="max-w-6xl mx-auto px-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {locations.map((l, i) => (
+        <a href={`/locations/${l.slug}`} class={`card p-7 reveal reveal-delay-${(i%3)+1} group`}>
+          <div class="text-3xl mb-3">📍</div>
+          <h2 class="text-xl font-bold text-dark group-hover:text-primary transition-colors">{l.data.title}</h2>
+          <p class="mt-2 text-sm text-slate-600 line-clamp-3">{l.data.description}</p>
+          <span class="mt-4 inline-block text-primary font-semibold text-sm">View {l.data.city} →</span>
+        </a>
+      ))}
+    </div>
+    <div class="text-center mt-12 reveal">
+      <a href={phoneHref} class="btn btn-accent text-lg">📞 {practice.phone} — start today</a>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,27 @@
+# Ryse ABA Therapy
+
+> In-home and community-based ABA (Applied Behavior Analysis) therapy for autism, serving families across Southern Utah (Washington County). Ages 2-65. BCBA-led, family-first, no waitlist. "When we Ryse together, we achieve more."
+
+## Key facts
+- Service model: in-home & community-based ABA (therapy delivered in the home and community, not a clinic)
+- Areas served: St. George, Washington, Hurricane, Santa Clara, Ivins, La Verkin, Cedar City (Southern Utah / Washington & Iron County)
+- Ages: 2 to 65
+- No waitlist — families start right away
+- BCBA-led (Clinical Director: Noah Rasmussen, BCBA)
+- Insurance accepted (autism diagnosis + active coverage required); we verify benefits for free
+- Phone: (385) 549-5656 · Email: jbailey@ryseabatherapy.com
+
+## Services
+- In-Home ABA Therapy: /services/in-home-aba-therapy
+- Community-Based ABA: /services/community-based-aba
+- Early Intervention: /services/early-intervention
+- Social Skills Development: /services/social-skills
+- Parent Training & Collaboration: /services/parent-training
+- Adolescent & Adult Autism Services: /services/adolescent-adult-autism
+
+## Resources
+- Blog (50+ parent guides on autism & ABA): /blog
+- Areas we serve: /locations
+- Careers / join our team: /careers
+- Reviews: /reviews
+- Contact / get started: /contact

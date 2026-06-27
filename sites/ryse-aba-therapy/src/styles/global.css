@@ -1,0 +1,150 @@
+@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@plugin '@tailwindcss/typography';
+
+/* =========================================================================
+   Ryse ABA Therapy — bespoke design system (built from scratch)
+   "Energetic but warm": calming sky-blue base + warm cream, with the Ryse
+   red as a bold, energetic accent for CTAs. Motion is gentle and
+   sensory-safe (no flashing, slow easing) and fully respects reduced-motion.
+   ========================================================================= */
+:root {
+  --color-primary: #2E8FCE;     /* sky blue — calm, trustworthy base */
+  --color-primary-deep: #1B5E8C;
+  --color-secondary: #1B5E8C;
+  --color-accent: #E63A2E;       /* Ryse red — energy, CTAs */
+  --color-accent-soft: #ff6b5e;
+  --color-sun: #F6A623;          /* warm secondary pop */
+  --color-mint: #38C7A4;
+  --color-dark: #26303B;
+  --color-ink: #1b232c;
+  --color-light: #FFF9F2;        /* warm cream */
+  --color-sky: #EAF4FB;          /* pale blue wash */
+  --color-cloud: #ffffff;
+  --font-heading: 'Poppins', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --radius: 1.25rem;
+  --radius-lg: 2rem;
+  --shadow-soft: 0 10px 40px -12px rgba(27, 94, 140, 0.25);
+  --shadow-lift: 0 24px 60px -18px rgba(27, 94, 140, 0.35);
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-deep: var(--color-primary-deep);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-sun: var(--color-sun);
+  --color-mint: var(--color-mint);
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
+  --color-sky: var(--color-sky);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --radius-brand: var(--radius);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  color: var(--color-dark);
+  background: var(--color-light);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); letter-spacing: -0.02em; line-height: 1.1; }
+
+/* ---- Brand utilities ------------------------------------------------- */
+.gradient-text {
+  background: linear-gradient(100deg, var(--color-primary), var(--color-mint) 60%, var(--color-sun));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-heading);
+  font-weight: 700; padding: .9rem 1.6rem; border-radius: 999px; transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  white-space: nowrap;
+}
+.btn-accent { background: var(--color-accent); color: #fff; box-shadow: 0 12px 28px -10px rgba(230,58,46,.6); }
+.btn-accent:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 18px 36px -10px rgba(230,58,46,.7); }
+.btn-primary { background: var(--color-primary); color: #fff; box-shadow: 0 12px 28px -10px rgba(46,143,206,.55); }
+.btn-primary:hover { transform: translateY(-2px) scale(1.02); }
+.btn-ghost { background: #fff; color: var(--color-primary-deep); border: 2px solid var(--color-sky); }
+.btn-ghost:hover { border-color: var(--color-primary); transform: translateY(-2px); }
+
+.card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-soft); border: 1px solid rgba(46,143,206,.08); transition: transform .25s ease, box-shadow .25s ease; }
+.card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lift); }
+
+/* organic background blobs */
+.blob { position: absolute; border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; filter: blur(8px); opacity: .5; z-index: 0; pointer-events: none; animation: blobFloat 14s ease-in-out infinite; }
+
+/* photo blob-mask (kids/family imagery in soft organic shapes) */
+.blob-mask { border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; overflow: hidden; }
+
+/* ---- Animations (gentle, sensory-safe) ------------------------------- */
+@keyframes blobFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(6deg); } }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.float { animation: floaty 6s ease-in-out infinite; }
+
+/* scroll reveal — elements start hidden, .is-visible added by IntersectionObserver */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+.reveal.is-visible { opacity: 1; transform: none; }
+.reveal-delay-1 { transition-delay: .08s; } .reveal-delay-2 { transition-delay: .16s; }
+.reveal-delay-3 { transition-delay: .24s; } .reveal-delay-4 { transition-delay: .32s; }
+
+/* animated wave divider + soft section tints */
+.section-sky { background: linear-gradient(180deg, var(--color-sky), #fff); }
+.section-cream { background: var(--color-light); }
+
+/* trust bar */
+.trust-pill { display:inline-flex; align-items:center; gap:.4rem; font-weight:600; font-size:.85rem; color: var(--color-primary-deep); }
+
+/* ---- WOW layer (all sensory-safe, reduced-motion-wrapped) ------------ */
+/* Aurora mesh backdrop — slow, calm drift behind heroes */
+.aurora {
+  position:absolute; inset:-20%; z-index:0; pointer-events:none; filter:blur(60px); opacity:.5;
+  background:
+    radial-gradient(40% 50% at 20% 30%, var(--color-primary) 0%, transparent 60%),
+    radial-gradient(35% 45% at 80% 20%, var(--color-mint) 0%, transparent 60%),
+    radial-gradient(45% 55% at 60% 80%, var(--color-sun) 0%, transparent 60%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aurora { animation: auroraDrift 26s ease-in-out infinite alternate; }
+}
+@keyframes auroraDrift { from { transform: translate3d(-3%,-2%,0) scale(1); } to { transform: translate3d(3%,2%,0) scale(1.08); } }
+
+/* Glassmorphism + image polish */
+.glass { background:rgba(255,255,255,.32); backdrop-filter:blur(16px) saturate(140%); border:1px solid rgba(255,255,255,.5); border-radius:var(--radius-lg); box-shadow:var(--shadow-soft); }
+.zoom-frame { overflow:hidden; border-radius:var(--radius); }
+.zoom-frame img { transition:transform .6s cubic-bezier(.2,.7,.2,1); }
+.zoom-frame:hover img { transform:scale(1.06); }
+
+/* Scroll progress bar + scroll-driven reveals (progressive enhancement) */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .scroll-progress { position:fixed; inset-block-start:0; inset-inline:0; height:4px; z-index:60; transform-origin:left center; background:linear-gradient(90deg,var(--color-primary),var(--color-mint),var(--color-sun)); animation:growProgress linear; animation-timeline:scroll(root); }
+  }
+  @supports (animation-timeline: view()) {
+    .reveal-css { animation:fadeUp linear both; animation-timeline:view(); animation-range:entry 4% entry 38%; }
+    .parallax-soft { animation:parY linear both; animation-timeline:view(); animation-range:cover; }
+    .stagger > :nth-child(2){ animation-range:entry 10% entry 44%; }
+    .stagger > :nth-child(3){ animation-range:entry 16% entry 50%; }
+    .stagger > :nth-child(4){ animation-range:entry 22% entry 56%; }
+  }
+}
+@keyframes growProgress { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@keyframes parY { from { translate:0 -14px; } to { translate:0 14px; } }
+
+/* Infinite marquee trust strip (pauses on hover + reduced-motion) */
+.marquee { overflow:hidden; -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
+.marquee__track { display:flex; gap:2.5rem; width:max-content; align-items:center; }
+@media (prefers-reduced-motion: no-preference) { .marquee__track { animation:scrollX 32s linear infinite; } .marquee:hover .marquee__track { animation-play-state:paused; } }
+@media (prefers-reduced-motion: reduce) { .marquee__track { flex-wrap:wrap; justify-content:center; } }
+@keyframes scrollX { to { transform:translateX(-50%); } }
+
+/* sensory-safe: honor reduced motion fully */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}

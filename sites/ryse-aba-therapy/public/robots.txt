@@ -1,0 +1,14 @@
+# Ryse ABA Therapy — AI crawlers welcome (AEO)
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://ryseabatherapy.com/sitemap-index.xml

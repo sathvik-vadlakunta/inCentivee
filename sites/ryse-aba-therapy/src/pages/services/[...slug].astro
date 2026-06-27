@@ -1,0 +1,164 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+export async function getStaticPaths() {
+  const services = await getCollection('services')
+  return services.map((s) => ({ params: { slug: s.slug }, props: { entry: s } }))
+}
+const { entry } = Astro.props
+const { Content } = await entry.render()
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const faqs = entry.data.faqs ?? []
+const others = (await getCollection('services')).filter((s) => s.slug !== entry.slug).slice(0, 3)
+const img = entry.data.image || '/images/services/in-home-aba-therapy.jpg'
+const sideImg = '/images/categories/parent-guides.jpg'
+const facts = [
+  { v: '0', suffix: '', label: 'Waitlist — start this week' },
+  { v: '2–65', suffix: '', label: 'Ages we serve', static: true },
+  { v: 'BCBA', suffix: '', label: 'Led, data-driven care', static: true },
+  { v: '100', suffix: '%', label: 'Insurance checked free' },
+]
+const steps = [
+  { n: '1', icon: '🛡️', t: 'Free insurance check', d: "Send us your card — we verify your benefits at no cost. An autism diagnosis + active coverage is all that's needed." },
+  { n: '2', icon: '🧑‍⚕️', t: 'Meet your BCBA', d: 'A Board Certified Behavior Analyst assesses your child and builds an individualized plan with you.' },
+  { n: '3', icon: '🏡', t: 'Therapy starts at home', d: 'No waitlist. Care begins in your home and community — often within the same week.' },
+  { n: '4', icon: '📈', t: 'Track & adapt', d: 'Every step is guided by data, so you can see real progress and we adjust as your child grows.' },
+]
+---
+<Base title={entry.data.title} description={entry.data.description}>
+  <!-- HERO -->
+  <section class="section-sky relative overflow-hidden">
+    <div class="aurora"></div>
+    <div class="blob" style="width:320px;height:320px;background:var(--color-primary);top:-120px;left:-70px;opacity:.3;"></div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 grid lg:grid-cols-2 gap-10 items-center">
+      <div class="reveal is-visible">
+        <a href="/services" class="text-sm font-semibold text-primary">← All services</a>
+        <span class="block mt-3 text-accent font-bold uppercase tracking-wide text-xs">{entry.data.category} · No waitlist</span>
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2 leading-tight">{entry.data.title}</h1>
+        <p class="mt-4 text-lg text-slate-600">{entry.data.description}</p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="/contact" class="btn btn-accent text-lg">Check my insurance — free</a>
+          <a href={phoneHref} class="btn btn-ghost text-lg">📞 {practice.phone}</a>
+        </div>
+        <div class="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+          {['BCBA-led','Ages 2–65','In your home','Insurance accepted'].map((t) => (<span class="trust-pill">✓ {t}</span>))}
+        </div>
+      </div>
+      <div class="reveal is-visible">
+        <div class="zoom-frame blob-mask aspect-[5/4] shadow-2xl" style="background:linear-gradient(150deg,var(--color-primary),var(--color-mint));">
+          <img src={img} alt={entry.data.title} class="w-full h-full object-cover" loading="eager" onerror="this.style.opacity=0" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUICK FACTS -->
+  <section class="bg-white py-10 border-b border-sky">
+    <div class="max-w-6xl mx-auto px-4 grid grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+      {facts.map((f) => (
+        <div class="card p-6 text-center reveal">
+          <div class="text-3xl sm:text-4xl font-extrabold gradient-text">{f.static ? f.v : (<><span data-count={f.v}>0</span>{f.suffix}</>)}</div>
+          <p class="mt-1 text-xs sm:text-sm text-slate-500 font-semibold">{f.label}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- WHAT IT IS (prose + image) -->
+  <section class="py-16 lg:py-20 bg-white overflow-x-hidden">
+    <div class="max-w-6xl mx-auto px-5 sm:px-6 grid lg:grid-cols-[1fr_minmax(0,340px)] gap-12 items-start">
+      <div class="reveal prose prose-lg prose-slate max-w-none prose-headings:font-heading prose-headings:text-dark prose-a:text-primary">
+        <Content />
+      </div>
+      <aside class="reveal reveal-delay-1 lg:sticky lg:top-28 space-y-5">
+        <div class="zoom-frame rounded-[var(--radius)] aspect-[4/5] shadow-xl bg-sky">
+          <img src={sideImg} alt="A parent and child during an ABA session" class="w-full h-full object-cover" loading="lazy" onerror="this.style.opacity=0" />
+        </div>
+        <div class="glass p-6 text-center">
+          <p class="font-bold text-dark">Wondering if it's covered?</p>
+          <p class="text-sm text-slate-600 mt-1">We'll verify your insurance for free.</p>
+          <a href="/contact" class="btn btn-accent w-full justify-center mt-4 text-sm">Check my insurance</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS (timeline) -->
+  <section class="py-16 lg:py-20 section-sky relative overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-accent font-bold uppercase tracking-wide text-sm">How it works</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">Getting started is simple — and there's no waitlist</h2>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger">
+        {steps.map((s) => (
+          <div class="card p-6 reveal text-center">
+            <div class="w-14 h-14 rounded-full bg-accent text-white text-2xl font-extrabold grid place-items-center mx-auto shadow-lg">{s.n}</div>
+            <div class="text-3xl mt-4">{s.icon}</div>
+            <h3 class="mt-2 font-bold text-dark">{s.t}</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">{s.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- PULL QUOTE -->
+  <section class="py-16 bg-white">
+    <figure class="glass max-w-3xl mx-auto px-6 sm:px-10 py-10 text-center relative reveal">
+      <span class="absolute -top-3 left-6 text-7xl text-primary/15 font-heading leading-none">“</span>
+      <blockquote class="text-xl sm:text-2xl font-heading text-dark leading-snug">ABA isn't about changing who your child is — it's about helping them build confidence, independence, and a brighter future, one step at a time.</blockquote>
+      <figcaption class="mt-5 text-sm font-bold text-primary-deep">— Noah Rasmussen, BCBA · Clinical Director, Ryse ABA</figcaption>
+    </figure>
+  </section>
+
+  {faqs.length > 0 && (
+    <section class="pb-16 bg-white">
+      <div class="max-w-3xl mx-auto px-5 sm:px-6">
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-dark mb-6 text-center">Frequently asked questions</h2>
+        <div class="space-y-3">
+          {faqs.map((f) => (
+            <details class="card p-5 group">
+              <summary class="font-bold text-dark cursor-pointer flex justify-between items-center gap-4">{f.question}<span class="text-primary group-open:rotate-45 transition-transform text-2xl shrink-0">+</span></summary>
+              <p class="mt-3 text-slate-600 leading-relaxed">{f.answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- RELATED -->
+  <section class="py-16 section-cream">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-2xl font-extrabold text-dark mb-8 reveal text-center">Explore more of how we help</h2>
+      <div class="grid sm:grid-cols-3 gap-6 stagger">
+        {others.map((s) => (
+          <a href={`/services/${s.slug}`} class="card overflow-hidden reveal group">
+            <div class="zoom-frame aspect-[16/10] bg-sky"><img src={s.data.image} alt={s.data.title} class="w-full h-full object-cover" loading="lazy" onerror="this.style.opacity=0" /></div>
+            <div class="p-6">
+              <h3 class="font-bold text-dark group-hover:text-primary transition-colors">{s.data.title}</h3>
+              <p class="mt-2 text-sm text-slate-500 line-clamp-2">{s.data.description}</p>
+              <span class="mt-3 inline-block text-primary font-semibold text-sm">Learn more →</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="py-16 relative overflow-hidden" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="aurora opacity-30"></div>
+    <div class="relative max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl font-extrabold">Together, let's get started — no waitlist.</h2>
+      <p class="mt-3 text-white/85">We verify your insurance for free and begin in your home.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href="/contact" class="btn btn-accent text-lg">Get started today</a>
+        <a href={phoneHref} class="btn bg-white text-primary-deep text-lg">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>
