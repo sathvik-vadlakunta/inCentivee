@@ -15,6 +15,27 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props
 const { Content } = await post.render()
+const base = `https://${practice.domain}`
+
+// Parse the "## Frequently Asked Questions" block (**Q?** then answer) into FAQPage schema.
+function extractFaqs(md: string) {
+  const m = md.match(/##\s*Frequently Asked Questions\s*([\s\S]*?)(?:\n##\s|$)/i)
+  if (!m) return [] as { q: string; a: string }[]
+  const out: { q: string; a: string }[] = []
+  const re = /\*\*(.+?)\*\*\s*\n+([\s\S]*?)(?=\n\*\*|\n##\s|$)/g
+  let x
+  while ((x = re.exec(m[1])) !== null) {
+    const q = x[1].replace(/\*/g, '').trim()
+    const a = x[2]
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links → text
+      .replace(/[*_`>#]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (q.endsWith('?') && a.length > 20) out.push({ q, a })
+  }
+  return out
+}
+const faqs = extractFaqs(post.body)
 const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
@@ -58,7 +79,7 @@ const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
       <Content />
     </div>
 
-    <!-- Article Schema -->
+    <!-- Article Schema (E-E-A-T: credentialed author + publisher) -->
     <script type="application/ld+json" set:html={JSON.stringify({
       '@context': 'https://schema.org',
       '@type': 'BlogPosting',
@@ -66,16 +87,20 @@ const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
       description: post.data.description,
       datePublished: post.data.pubDate.toISOString(),
       dateModified: (post.data.updatedDate || post.data.pubDate).toISOString(),
-      author: {
-        '@type': 'Organization',
-        name: practice.name,
-      },
-      publisher: {
-        '@type': 'Organization',
-        name: practice.name,
-        url: `https://${practice.domain}`,
-      },
-      image: post.data.image,
+      mainEntityOfPage: { '@type': 'WebPage', '@id': `${base}/blog/${post.slug}` },
+      author: post.data.author
+        ? { '@type': 'Person', name: post.data.author.replace(/,.*$/, '').trim(), jobTitle: 'Board Certified Behavior Analyst (BCBA)', worksFor: { '@id': `${base}/#org` } }
+        : { '@id': `${base}/#org` },
+      publisher: { '@id': `${base}/#org`, '@type': 'Organization', name: practice.name, url: base, logo: { '@type': 'ImageObject', url: `${base}/images/logo.webp` } },
+      image: post.data.image ? `${base}${post.data.image}` : undefined,
     })} />
+
+    {faqs.length > 0 && (
+      <script type="application/ld+json" set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+      })} />
+    )}
   </article>
 </Base>

@@ -10,8 +10,13 @@ export async function getStaticPaths() {
 const { entry } = Astro.props
 const { Content } = await entry.render()
 const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
-const faqs = entry.data.faqs ?? []
 const city = entry.data.city
+// Intent-answering FAQ items for "best ABA / why choose us in {city}" queries.
+const whyFaqs = [
+  { question: `What is the best ABA therapy in ${city}, Utah?`, answer: `The best ABA for your child is individualized, BCBA-led, and a genuine fit for your family — not one-size-fits-all. ${city} families choose Ryse for in-home and community-based ABA with no waitlist, personalized plans overseen by a Board Certified Behavior Analyst, and free insurance verification before you ever start. The right provider is the one built around your child, and that's exactly how we work.` },
+  { question: `Why choose in-home ABA therapy in ${city}?`, answer: `In-home ABA in ${city} teaches and practices skills where your child actually lives and plays — no commute to a clinic, parents involved in every session, and progress that carries over into daily life. For most ${city} families it's the most effective and least disruptive way to get started.` },
+]
+const faqs = [...whyFaqs, ...(entry.data.faqs ?? [])]
 const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(city + ', Utah')}&z=11&output=embed`
 const others = (await getCollection('locations')).filter((l) => l.slug !== entry.slug)
 const heroImg = entry.data.image && entry.data.image.startsWith('/images/locations') ? '/images/categories/local.jpg' : (entry.data.image || '/images/categories/local.jpg')

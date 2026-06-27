@@ -4,6 +4,14 @@ import practice from '@data/practice.json'
 import { getCollection } from 'astro:content'
 
 const services = practice.serviceCategories
+const svcIcons = {
+  'in-home-aba-therapy': '🏡',
+  'community-based-aba': '🌳',
+  'early-intervention': '🌱',
+  'social-skills': '🤝',
+  'parent-training': '👪',
+  'adolescent-adult-autism': '🌟',
+}
 const diffs = practice.differentiators
 const areas = practice.areaServed
 const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
@@ -18,6 +26,14 @@ const outcomes = [
   { icon: '🌱', t: 'Independence', d: 'Everyday skills — dressing, routines, self-care — that build real autonomy.' },
   { icon: '🤝', t: 'Connection', d: 'Friendship, play, and social confidence with peers and family.' },
   { icon: '⭐', t: 'Confidence', d: 'A calmer, happier child who believes in what they can do.' },
+]
+const homeFaqs = [
+  { q: "What's the best ABA therapy for my child in Southern Utah?", a: "The best ABA is individualized, BCBA-led, and a genuine fit for your family — not one-size-fits-all. Look for a provider with no long waitlist, transparent insurance verification, and care delivered where your child actually lives and learns. Ryse provides in-home and community-based ABA across St. George and Washington County, designed and overseen by a Board Certified Behavior Analyst, with no waitlist." },
+  { q: 'Why choose in-home ABA instead of a clinic?', a: "In-home ABA teaches and practices skills in the real settings where your child lives — the kitchen table, the backyard, the store — so progress transfers to daily life. It also removes the commute and lets parents be part of every session. For many Southern Utah families, that makes care easier to stick with and more effective." },
+  { q: 'How soon can my child start? Is there a waitlist?', a: "There's no waitlist at Ryse — families typically start right away, often within the same week. Once your child has an autism diagnosis and active insurance coverage, we verify your benefits for free and begin building a personalized plan." },
+  { q: 'Does insurance cover ABA therapy in Utah?', a: "In most cases, yes. ABA is widely recognized as an evidence-based autism service and is covered by Utah Medicaid and many commercial plans when there's an autism diagnosis. We run a free benefits check and verify your specific plan before any services begin — no surprise bills." },
+  { q: 'What ages do you serve?', a: 'Ryse serves clients ages 2 to 65. Early support can be especially impactful for young children, but ABA helps teens and adults too — every plan is built around the individual.' },
+  { q: 'How do I get started?', a: 'Three steps: (1) confirm an autism diagnosis, (2) we verify your insurance for free, and (3) we begin in-home or community-based sessions — no waitlist. Call (385) 549-5656 and our team will walk you through each step in plain language.' },
 ]
 const steps = [
   { n: '1', t: 'Reach out', d: "Call or message us. We'll listen, answer your questions, and explain how in-home ABA works — no pressure." },
@@ -94,6 +110,32 @@ const imgFallback = "this.style.opacity=0"
     </div>
   </section>
 
+  <!-- ================= WHAT IS ABA ================= -->
+  <section class="py-20 bg-white overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal">
+        <span class="text-accent font-bold uppercase tracking-wide text-sm">The basics, in plain language</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">What is ABA therapy?</h2>
+        <p class="mt-5 text-slate-600 leading-relaxed text-lg"><strong>ABA (Applied Behavior Analysis) is the most-studied, evidence-based approach for helping children with autism learn and grow.</strong> In plain terms, it's a structured, individualized way of teaching real-life skills — communication, daily routines, play, and social connection — by understanding what motivates your child and building on it with positive reinforcement.</p>
+        <p class="mt-4 text-slate-600 leading-relaxed">ABA isn't about changing who your child is. It's about giving them the tools to build confidence, independence, and a brighter future — one step at a time. At Ryse, every plan is designed and overseen by a <strong>BCBA (Board Certified Behavior Analyst)</strong> and delivered right in your home and community.</p>
+        <a href="/blog/what-is-aba-therapy" class="btn btn-ghost mt-6">Read the full guide →</a>
+      </div>
+      <div class="reveal reveal-delay-1 grid gap-4">
+        {[
+          ['🗣️','Builds communication','From first words to full conversations.'],
+          ['🧠','Evidence-based','Decades of research; recommended for autism.'],
+          ['🎯','Individualized','Built around your child — never one-size-fits-all.'],
+          ['📊','Data-driven','Every step measured, so you can see real progress.'],
+        ].map(([i,t,d]) => (
+          <div class="card p-5 flex items-start gap-4">
+            <span class="text-3xl">{i}</span>
+            <div><h3 class="font-bold text-dark">{t}</h3><p class="text-sm text-slate-600 mt-0.5">{d}</p></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
   <!-- ================= STAT BAND ================= -->
   <section class="relative overflow-hidden py-16" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
     <div class="aurora opacity-30"></div>
@@ -116,7 +158,7 @@ const imgFallback = "this.style.opacity=0"
       <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.map((s, i) => (
           <a href={`/services/${s.slug}`} class={`card p-7 reveal reveal-delay-${(i%3)+1} block group`}>
-            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-mint flex items-center justify-center text-2xl mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform">✨</div>
+            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-mint flex items-center justify-center text-2xl mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform">{svcIcons[s.slug] || '✨'}</div>
             <h3 class="text-xl font-bold text-dark">{s.title}</h3>
             <p class="mt-2 text-slate-600 text-sm leading-relaxed">{s.summary}</p>
             <span class="mt-4 inline-flex items-center gap-1 text-primary font-semibold text-sm group-hover:gap-2 transition-all">Learn more →</span>
@@ -252,6 +294,28 @@ const imgFallback = "this.style.opacity=0"
       <div class="mt-8 flex flex-wrap justify-center gap-3">
         <a href="/reviews" class="btn btn-primary">Read & leave reviews</a>
         <a href={practice.reviews.googleReviewUrl || '/reviews'} class="btn btn-ghost">⭐ Leave a Google review</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FAQ (intent-answering + AEO) ================= -->
+  <section class="py-20 section-cream">
+    <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: homeFaqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) })} />
+    <div class="max-w-3xl mx-auto px-4">
+      <div class="text-center reveal">
+        <span class="text-accent font-bold uppercase tracking-wide text-sm">Questions parents ask</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">Answers for Southern Utah families</h2>
+      </div>
+      <div class="mt-10 space-y-3">
+        {homeFaqs.map((f) => (
+          <details class="card p-5 group reveal">
+            <summary class="font-bold text-dark cursor-pointer flex justify-between items-center gap-4">{f.q}<span class="text-primary group-open:rotate-45 transition-transform text-2xl shrink-0">+</span></summary>
+            <p class="mt-3 text-slate-600 leading-relaxed">{f.a}</p>
+          </details>
+        ))}
+      </div>
+      <div class="mt-8 text-center reveal">
+        <a href="/blog" class="btn btn-ghost">Browse 50+ parent guides →</a>
       </div>
     </div>
   </section>
