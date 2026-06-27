@@ -28,6 +28,11 @@ const steps = [
 ]
 ---
 <Base title={entry.data.title} description={entry.data.description}>
+  <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `https://${practice.domain}/` },
+    { '@type': 'ListItem', position: 2, name: 'Services', item: `https://${practice.domain}/services` },
+    { '@type': 'ListItem', position: 3, name: entry.data.title, item: `https://${practice.domain}/services/${entry.slug}` },
+  ] })} />
   <!-- HERO -->
   <section class="section-sky relative overflow-hidden">
     <div class="aurora"></div>

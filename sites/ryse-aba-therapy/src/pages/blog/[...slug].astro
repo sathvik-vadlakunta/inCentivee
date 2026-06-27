@@ -102,5 +102,11 @@ const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
         mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
       })} />
     )}
+
+    <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${base}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.data.title, item: `${base}/blog/${post.slug}` },
+    ] })} />
   </article>
 </Base>

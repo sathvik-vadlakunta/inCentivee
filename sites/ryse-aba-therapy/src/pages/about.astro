@@ -4,6 +4,19 @@ import practice from '@data/practice.json'
 import { getCollection } from 'astro:content'
 const team = (await getCollection('team')).sort((a, b) => (a.data.order || 0) - (b.data.order || 0))
 const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const base = `https://${practice.domain}`
+const teamSchema = team.map((m) => ({
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: m.data.name,
+  jobTitle: m.data.title,
+  ...(m.data.credentials
+    ? { hasCredential: { '@type': 'EducationalOccupationalCredential', credentialCategory: m.data.credentials } }
+    : {}),
+  worksFor: { '@id': `${base}/#org`, '@type': 'MedicalBusiness', name: practice.name },
+  image: m.data.photo ? `${base}${m.data.photo}` : undefined,
+  url: `${base}/about`,
+}))
 const initials = (n) => n.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 const avatarBg = ['var(--color-primary)', 'var(--color-mint)', 'var(--color-sun)', 'var(--color-accent)']
 const values = [
@@ -14,6 +27,7 @@ const values = [
 ]
 ---
 <Base title="About Ryse ABA Therapy" description="Family-first, in-home ABA therapy serving Southern Utah. Meet the BCBA-led team behind Ryse.">
+  <script type="application/ld+json" set:html={JSON.stringify(teamSchema)} />
   <!-- HERO -->
   <section class="section-sky py-16 sm:py-20 relative overflow-hidden">
     <div class="parallax blob" data-speed="0.3" style="width:380px;height:380px;background:var(--color-primary);top:-120px;left:-80px;opacity:.4;"></div>
