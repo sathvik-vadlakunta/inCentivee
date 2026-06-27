@@ -1,0 +1,56 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+---
+<Base title="Our Services" description="In-home & community-based ABA therapy services for autism across Southern Utah — early intervention, social skills, parent training, and adolescent/adult support. No waitlist.">
+  <!-- HERO -->
+  <section class="section-sky relative overflow-hidden py-16 sm:py-20">
+    <div class="aurora"></div>
+    <div class="parallax blob" data-speed="0.3" style="width:360px;height:360px;background:var(--color-primary);top:-110px;left:-70px;opacity:.4;"></div>
+    <div class="parallax blob" data-speed="0.5" style="width:280px;height:280px;background:var(--color-sun);bottom:-100px;right:-40px;opacity:.35;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-accent font-bold uppercase tracking-wide text-sm">Our services</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">Personalized ABA, built around <span class="gradient-text">your child</span></h1>
+      <p class="mt-5 text-lg text-slate-600">Individualized, play-based, BCBA-led care — delivered right in your home and community across Southern Utah. No waitlist.</p>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href="/contact" class="btn btn-accent text-lg">Check my insurance — free</a>
+        <a href={phoneHref} class="btn btn-ghost text-lg">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES GRID -->
+  <section class="py-16 sm:py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
+      {services.map((s, i) => (
+        <a href={`/services/${s.slug}`} class={`card overflow-hidden reveal reveal-delay-${(i%3)+1} group`}>
+          <div class="zoom-frame aspect-[16/10]" style="background:linear-gradient(140deg,var(--color-primary),var(--color-mint));">
+            <img src={s.data.image} alt={`${s.data.title} for children with autism in Southern Utah`} class="w-full h-full object-cover" loading="lazy" onerror="this.style.opacity=0" />
+          </div>
+          <div class="p-7">
+            <h2 class="text-xl font-bold text-dark group-hover:text-primary transition-colors">{s.data.title}</h2>
+            <p class="mt-2 text-slate-600 text-sm leading-relaxed line-clamp-3">{s.data.description}</p>
+            <span class="mt-4 inline-flex items-center gap-1 text-primary font-semibold text-sm group-hover:gap-2 transition-all">Learn more →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- CTA BAND -->
+  <section class="py-16 relative overflow-hidden" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="aurora opacity-30"></div>
+    <div class="relative max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl font-extrabold">Not sure which service fits? Let's talk.</h2>
+      <p class="mt-3 text-white/85">We'll verify your insurance for free and help you find the right starting point — no waitlist.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href="/contact" class="btn btn-accent text-lg">Get started today</a>
+        <a href={phoneHref} class="btn bg-white text-primary-deep text-lg">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>

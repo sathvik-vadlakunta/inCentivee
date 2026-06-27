@@ -1,0 +1,19 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+---
+<Base title="Page not found" description="That page can't be found." noindex={true}>
+  <section class="section-sky py-28 text-center relative overflow-hidden">
+    <div class="blob" style="width:340px;height:340px;background:var(--color-primary);top:-90px;left:10%;"></div>
+    <div class="relative max-w-xl mx-auto px-4">
+      <div class="text-7xl font-extrabold gradient-text">404</div>
+      <h1 class="text-3xl font-extrabold text-dark mt-4">We couldn't find that page</h1>
+      <p class="mt-3 text-slate-600">Let's get you back on track — or reach out and we'll help.</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <a href="/" class="btn btn-accent">Back home</a>
+        <a href={phoneHref} class="btn btn-ghost">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>

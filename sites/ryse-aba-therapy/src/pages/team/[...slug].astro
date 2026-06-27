@@ -1,0 +1,69 @@
+---
+import Base from '@layouts/Base.astro'
+import CTABanner from '@components/CTABanner.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+export async function getStaticPaths() {
+  const team = await getCollection('team')
+  return team.map((member) => ({
+    params: { slug: member.slug },
+    props: { member },
+  }))
+}
+
+const { member } = Astro.props
+const { Content } = await member.render()
+---
+
+<Base
+  title={`${member.data.name}, ${member.data.credentials}`}
+  description={`${member.data.name}, ${member.data.credentials} — ${member.data.title} at ${practice.name}.`}
+>
+  <nav class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-gray-500">
+    <a href="/" class="hover:text-primary">Home</a>
+    <span class="mx-2">/</span>
+    <a href="/about" class="hover:text-primary">About</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-900">{member.data.name}</span>
+  </nav>
+
+  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <div class="flex flex-col sm:flex-row gap-8 mb-8">
+      {member.data.photo && (
+        <img
+          src={member.data.photo}
+          alt={`${member.data.name}, ${member.data.credentials}`}
+          class="w-48 h-60 rounded-xl object-cover shrink-0"
+        />
+      )}
+      <div>
+        <h1 class="text-3xl font-bold font-heading">
+          {member.data.name}, {member.data.credentials}
+        </h1>
+        <p class="text-primary font-medium text-lg mt-1">{member.data.title}</p>
+        {member.data.specialties.length > 0 && (
+          <div class="mt-4 flex flex-wrap gap-2">
+            {member.data.specialties.map((s: string) => (
+              <span class="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">{s}</span>
+            ))}
+          </div>
+        )}
+        {member.data.education.length > 0 && (
+          <div class="mt-4">
+            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Education</h3>
+            <ul class="text-sm text-gray-600 space-y-1">
+              {member.data.education.map((e: string) => <li>{e}</li>)}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <div class="prose prose-lg max-w-none">
+      <Content />
+    </div>
+  </article>
+
+  <CTABanner />
+</Base>

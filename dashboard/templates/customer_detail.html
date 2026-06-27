@@ -1443,41 +1443,52 @@
             <div id="keyword-action-result" style="display:none;font-size:0.85rem;padding:0.5rem;border-radius:4px;margin-bottom:0.75rem;"></div>
 
             {% if keyword_summary %}
-            <table>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem;">
+                <input type="text" id="kwFilter" placeholder="Filter keywords…" onkeyup="filterKwTable()"
+                       style="flex:1;max-width:320px;padding:.4rem .6rem;font-size:.85rem;border:1px solid var(--border);border-radius:6px;">
+                <span style="font-size:.72rem;color:var(--muted);">Click a column header to sort · <span id="kwShown">{{ keyword_summary|length }}</span> shown</span>
+            </div>
+            <table id="kwTable" class="sortable">
                 <thead>
                     <tr>
-                        <th>Keyword</th>
-                        <th style="text-align:right;">Position</th>
-                        <th style="text-align:center;">Trend</th>
-                        <th style="text-align:right;">Clicks</th>
-                        <th style="text-align:right;">Impressions</th>
-                        <th style="text-align:center;">Source</th>
+                        <th onclick="sortKwTable(0,'text')" style="cursor:pointer;">Keyword <span class="sort-ind"></span></th>
+                        <th onclick="sortKwTable(1,'num')" style="cursor:pointer;text-align:center;">Intent <span class="sort-ind"></span></th>
+                        <th onclick="sortKwTable(2,'num')" style="cursor:pointer;text-align:right;">Position <span class="sort-ind"></span></th>
+                        <th onclick="sortKwTable(3,'num')" style="cursor:pointer;text-align:center;">Trend <span class="sort-ind"></span></th>
+                        <th onclick="sortKwTable(4,'num')" style="cursor:pointer;text-align:right;">Clicks <span class="sort-ind"></span></th>
+                        <th onclick="sortKwTable(5,'num')" style="cursor:pointer;text-align:right;">Impressions <span class="sort-ind"></span></th>
+                        <th onclick="sortKwTable(6,'text')" style="cursor:pointer;text-align:center;">Source <span class="sort-ind"></span></th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                 {% for kw in keyword_summary %}
-                <tr>
-                    <td style="font-size:0.85rem;">
+                {% set ir = {'transactional':3,'commercial':2,'informational':1}[kw_intent(kw.keyword)] %}
+                {% set trend = (kw.prev_position - kw.current_position) if (kw.current_position and kw.prev_position) else 0 %}
+                <tr data-kw="{{ kw.keyword|lower }}">
+                    <td style="font-size:0.85rem;" data-sort="{{ kw.keyword|lower }}">
                         {{ kw.keyword }}
                         {% if kw.source == 'gsc_discovered' %}
                         <span style="font-size:0.65rem;background:#dbeafe;color:#1e40af;padding:1px 4px;border-radius:3px;margin-left:4px;">discovered</span>
                         {% endif %}
                     </td>
-                    <td style="text-align:right;">
+                    <td style="text-align:center;" data-sort="{{ ir }}">
+                        {% set im = kw_intent_meta(kw.keyword) %}
+                        <span title="{{ im.format }}" style="font-size:0.62rem;font-weight:700;background:{{ im.bg }};color:{{ im.color }};padding:2px 7px;border-radius:999px;white-space:nowrap;">{{ im.label }}</span>
+                    </td>
+                    <td style="text-align:right;" data-sort="{{ kw.current_position if kw.current_position else 999 }}">
                         {% if kw.current_position %}
                         <span style="color:{% if kw.current_position <= 10 %}var(--success){% elif kw.current_position <= 20 %}var(--warning){% else %}var(--danger){% endif %};font-weight:600;">
                             {{ "%.1f"|format(kw.current_position) }}
                         </span>
                         {% else %}—{% endif %}
                     </td>
-                    <td style="text-align:center;">
+                    <td style="text-align:center;" data-sort="{{ trend }}">
                         {% if kw.current_position and kw.prev_position %}
-                            {% set diff = kw.prev_position - kw.current_position %}
-                            {% if diff > 0.5 %}
-                            <span style="color:var(--success);" title="Improved by {{ '%.1f'|format(diff) }} positions">&#9650; {{ "%.0f"|format(diff) }}</span>
-                            {% elif diff < -0.5 %}
-                            <span style="color:var(--danger);" title="Dropped by {{ '%.1f'|format(diff|abs) }} positions">&#9660; {{ "%.0f"|format(diff|abs) }}</span>
+                            {% if trend > 0.5 %}
+                            <span style="color:var(--success);" title="Improved by {{ '%.1f'|format(trend) }} positions">&#9650; {{ "%.0f"|format(trend) }}</span>
+                            {% elif trend < -0.5 %}
+                            <span style="color:var(--danger);" title="Dropped by {{ '%.1f'|format(trend|abs) }} positions">&#9660; {{ "%.0f"|format(trend|abs) }}</span>
                             {% else %}
                             <span style="color:var(--muted);">—</span>
                             {% endif %}
@@ -1485,9 +1496,9 @@
                         <span style="font-size:0.7rem;color:var(--muted);">new</span>
                         {% else %}—{% endif %}
                     </td>
-                    <td style="text-align:right;">{{ kw.current_clicks or '—' }}</td>
-                    <td style="text-align:right;">{{ kw.current_impressions or '—' }}</td>
-                    <td style="text-align:center;font-size:0.7rem;color:var(--muted);">{{ kw.source }}</td>
+                    <td style="text-align:right;" data-sort="{{ kw.current_clicks or 0 }}">{{ kw.current_clicks or '—' }}</td>
+                    <td style="text-align:right;" data-sort="{{ kw.current_impressions or 0 }}">{{ kw.current_impressions or '—' }}</td>
+                    <td style="text-align:center;font-size:0.7rem;color:var(--muted);" data-sort="{{ kw.source }}">{{ kw.source }}</td>
                     <td style="text-align:right;">
                         <button class="btn btn-sm btn-outline" style="font-size:0.65rem;color:var(--danger);padding:2px 6px;"
                                 onclick="deleteKeyword('{{ customer.id }}', '{{ kw.keyword }}')">x</button>
@@ -1496,6 +1507,32 @@
                 {% endfor %}
                 </tbody>
             </table>
+            <script>
+            let kwSortCol = -1, kwSortDir = 1;
+            function sortKwTable(col, type) {
+                const tb = document.querySelector('#kwTable tbody');
+                const rows = Array.from(tb.querySelectorAll('tr'));
+                kwSortDir = (kwSortCol === col) ? -kwSortDir : 1;
+                kwSortCol = col;
+                rows.sort((a, b) => {
+                    let av = a.children[col].dataset.sort, bv = b.children[col].dataset.sort;
+                    if (type === 'num') { av = parseFloat(av) || 0; bv = parseFloat(bv) || 0; return (av - bv) * kwSortDir; }
+                    return av.localeCompare(bv) * kwSortDir;
+                });
+                rows.forEach(r => tb.appendChild(r));
+                document.querySelectorAll('#kwTable .sort-ind').forEach((s, i) => s.textContent = (i === col ? (kwSortDir > 0 ? ' ▲' : ' ▼') : ''));
+            }
+            function filterKwTable() {
+                const q = document.getElementById('kwFilter').value.toLowerCase();
+                let shown = 0;
+                document.querySelectorAll('#kwTable tbody tr').forEach(r => {
+                    const ok = r.dataset.kw.includes(q);
+                    r.style.display = ok ? '' : 'none';
+                    if (ok) shown++;
+                });
+                document.getElementById('kwShown').textContent = shown;
+            }
+            </script>
             {% else %}
             <div class="empty-state" style="padding:2rem;text-align:center;">
                 <p style="color:var(--muted);">No keywords tracked yet.</p>
@@ -1503,6 +1540,28 @@
             </div>
             {% endif %}
         </div>
+
+        <!-- Top purchase-intent keywords (target buyers/sellers, not browsers) -->
+        {% if intent_keywords %}
+        <div class="card" style="margin-top:1rem;">
+            <h2 style="margin-bottom:0.25rem;">💰 Buyer-intent keywords — target these to win customers</h2>
+            <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">The action &amp; purchase-decision searches that bring real customers — "where to sell gold", "best {{ customer.business_type|replace('_',' ') }} near me", "{{ customer.city }}" searches. Ranked by buyer intent. Build pages &amp; content around these first.</p>
+            <table>
+                <thead><tr><th>Keyword</th><th style="text-align:center;">Intent</th><th style="text-align:center;">Local</th><th style="text-align:right;">Position</th><th style="text-align:right;">Impressions</th></tr></thead>
+                <tbody>
+                {% for k in intent_keywords %}
+                <tr>
+                    <td style="font-size:0.85rem;font-weight:500;">{{ k.keyword }}</td>
+                    <td style="text-align:center;"><span style="font-size:0.62rem;font-weight:700;background:{{ k.bg }};color:{{ k.color }};padding:2px 7px;border-radius:999px;white-space:nowrap;">{{ k.label }}</span></td>
+                    <td style="text-align:center;">{% if k.local %}<span title="Geographically scoped — highest value" style="font-size:0.7rem;">📍 local</span>{% else %}<span style="color:var(--muted);">—</span>{% endif %}</td>
+                    <td style="text-align:right;">{% if k.position %}<span style="color:{% if k.position <= 10 %}var(--success){% elif k.position <= 20 %}var(--warning){% else %}var(--danger){% endif %};font-weight:600;">{{ k.position }}</span>{% else %}—{% endif %}</td>
+                    <td style="text-align:right;">{{ k.impressions or '—' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
 
         <!-- Striking Distance (page 2 → push to page 1) -->
         {% if striking_distance %}

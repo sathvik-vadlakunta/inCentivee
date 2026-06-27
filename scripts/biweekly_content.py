@@ -67,7 +67,16 @@ def main():
                 continue
             created = recommend_from_search_data(db, cid, max_recs=args.max)
             total += len(created)
-            print(f"  [{i+1}/{len(targets)}] {cid}: +{len(created)} content rec(s)")
+            # Monthly GBP Q&A (idempotent per month — skips if this month's rec exists).
+            gbp = None
+            try:
+                from geo_agent.gbp_qa import generate_gbp_qa
+                gbp = generate_gbp_qa(db, cid)
+            except Exception as qe:  # noqa: BLE001
+                print(f"  [{i+1}/{len(targets)}] {cid}: GBP Q&A error {qe}")
+            total += 1 if gbp else 0
+            print(f"  [{i+1}/{len(targets)}] {cid}: +{len(created)} content rec(s)"
+                  f"{' +GBP Q&A' if gbp else ''}")
         except Exception as e:  # noqa: BLE001
             print(f"  [{i+1}/{len(targets)}] {cid}: ERROR {e}")
 

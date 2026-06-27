@@ -1,0 +1,40 @@
+---
+import practice from '@data/practice.json'
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const year = 2026
+---
+<footer class="bg-dark text-slate-300 pt-16 pb-8 mt-0">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 md:grid-cols-4">
+    <div class="md:col-span-1">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="w-9 h-9 rounded-xl bg-accent text-white font-extrabold flex items-center justify-center font-heading text-lg">R</span>
+        <span class="text-xl font-extrabold font-heading text-white">Ryse ABA</span>
+      </div>
+      <p class="text-sm text-slate-400 leading-relaxed">{practice.tagline} In-home & community-based ABA therapy for Southern Utah families.</p>
+      {practice.social.instagram && <a href={practice.social.instagram} class="inline-block mt-4 text-slate-400 hover:text-white text-sm">Instagram @ryse_aba</a>}
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-3">Services</h3>
+      <ul class="space-y-2 text-sm">
+        {practice.serviceCategories.map((s) => (<li><a href={`/services/${s.slug}`} class="hover:text-white">{s.title}</a></li>))}
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-3">Areas We Serve</h3>
+      <ul class="space-y-2 text-sm">
+        {practice.areaServed.map((a) => (<li><a href={`/locations/${a.toLowerCase().replace(/[^a-z]+/g,'-').replace(/^-|-$/g,'')}`} class="hover:text-white">ABA in {a}, UT</a></li>))}
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-3">Get Started</h3>
+      <p class="text-sm text-slate-400 mb-3">No waitlist. We verify your insurance for free.</p>
+      <a href={phoneHref} class="block text-lg font-bold text-white mb-2">{practice.phone}</a>
+      <a href={`mailto:${practice.email}`} class="block text-sm hover:text-white mb-4">{practice.email}</a>
+      <a href="/contact" class="btn btn-accent text-sm">Contact us</a>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-4 mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-3 text-xs text-slate-500">
+    <p>© {year} Ryse ABA Therapy. Serving St. George & Washington County, Utah.</p>
+    <p>Ages 2–65 · BCBA-led · Insurance accepted</p>
+  </div>
+</footer>

@@ -1,0 +1,128 @@
+---
+import Nav from '@components/Nav.astro'
+import Footer from '@components/Footer.astro'
+import SchemaMarkup from '@components/SchemaMarkup.astro'
+import { ClientRouter, fade } from 'astro:transitions'
+import practice from '@data/practice.json'
+import '@/styles/global.css'
+
+interface Props {
+  title: string
+  description?: string
+  image?: string
+  noindex?: boolean
+}
+
+const { title, description = practice.tagline, image, noindex = false } = Astro.props
+const pageTitle = title === practice.name ? title : `${title} | ${practice.name}`
+const canonicalURL = new URL(Astro.url.pathname, Astro.site)
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalURL} />
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={new URL(image, Astro.site)} />}
+
+    <!-- Preconnect fonts if custom -->
+    {practice.fonts.heading !== 'system-ui' && (
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link
+        rel="stylesheet"
+        href={`https://fonts.googleapis.com/css2?family=${practice.fonts.heading.replace(/ /g, '+')}:wght@400;600;700&family=${practice.fonts.body.replace(/ /g, '+')}:wght@300;400;500;600&display=swap`}
+      />
+    )}
+
+    <SchemaMarkup />
+    <ClientRouter />
+
+    {practice.analytics?.ga4 && (
+      <>
+        <script async src={`https://www.googletagmanager.com/gtag/js?id=${practice.analytics.ga4}`}></script>
+        <script is:inline define:vars={{ ga4: practice.analytics.ga4 }}>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', ga4);
+          // Track SPA navigations triggered by the View Transitions router
+          document.addEventListener('astro:after-swap', () => gtag('config', ga4, { page_path: location.pathname }));
+        </script>
+      </>
+    )}
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <div class="scroll-progress"></div>
+    <Nav />
+    <main class="flex-1" transition:animate={fade({ duration: '0.35s' })}>
+      <slot />
+    </main>
+    <Footer />
+
+    <!-- Sticky conversion CTA (mobile bottom bar + desktop pill) — appears after hero scrolls off -->
+    <div id="stickyCta" class="fixed inset-x-0 bottom-0 z-40 translate-y-full transition-transform duration-300" style="padding-bottom:env(safe-area-inset-bottom);">
+      <div class="mx-auto max-w-3xl m-3 rounded-2xl shadow-2xl bg-white/95 backdrop-blur border border-sky px-3 py-2.5 flex items-center gap-2">
+        <span class="hidden sm:flex items-center gap-2 text-sm font-bold text-dark pl-2"><span class="text-accent">●</span> No waitlist — start this week</span>
+        <a href={`tel:${practice.phone.replace(/[^+\d]/g, '')}`} class="btn btn-ghost flex-1 sm:flex-none justify-center text-sm py-2.5">📞 Call</a>
+        <a href="/contact" class="btn btn-accent flex-1 sm:flex-none justify-center text-sm py-2.5">Check My Insurance — Free</a>
+      </div>
+    </div>
+    <script>
+      const sc = document.getElementById('stickyCta');
+      const tog = () => sc && sc.classList.toggle('translate-y-full', window.scrollY < 600);
+      window.addEventListener('scroll', tog, { passive: true }); tog();
+    </script>
+    <script>
+      // Gentle scroll-reveal (sensory-safe; reduced-motion users see content immediately via CSS)
+      const io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) { e.target.classList.add('is-visible'); io.unobserve(e.target); }
+        }
+      }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+      const run = () => document.querySelectorAll('.reveal:not(.is-visible)').forEach((el) => io.observe(el));
+
+      // Count-up stat numbers (true values only) — easeOutCubic, reduced-motion-safe
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function countUp() {
+        document.querySelectorAll('[data-count]:not(.counted)').forEach((el) => {
+          const cio = new IntersectionObserver((es) => es.forEach((e) => {
+            if (!e.isIntersecting) return; cio.disconnect(); el.classList.add('counted');
+            const end = parseFloat(el.dataset.count); if (reduce) { el.textContent = end.toLocaleString(); return; }
+            const dur = 1300, t0 = performance.now();
+            const tick = (t) => { const p = Math.min((t - t0) / dur, 1); const e2 = 1 - Math.pow(1 - p, 3);
+              el.textContent = Math.round(end * e2).toLocaleString(); if (p < 1) requestAnimationFrame(tick); };
+            requestAnimationFrame(tick);
+          }), { threshold: 0.6 });
+          cio.observe(el);
+        });
+      }
+      // Sticky TOC active-section highlight
+      function tocSpy() {
+        const links = [...document.querySelectorAll('[data-toc]')]; if (!links.length) return;
+        const sio = new IntersectionObserver((es) => es.forEach((e) => {
+          if (!e.isIntersecting) return;
+          links.forEach((l) => l.classList.remove('text-primary','border-primary','font-bold'));
+          const a = links.find((l) => l.hash === '#' + e.target.id);
+          a && a.classList.add('text-primary','border-primary','font-bold');
+        }), { rootMargin: '-30% 0px -60% 0px' });
+        document.querySelectorAll('article [id]').forEach((s) => sio.observe(s));
+      }
+      const init = () => { run(); countUp(); tocSpy(); };
+      init();
+      document.addEventListener('astro:page-load', init);
+    </script>
+  </body>
+</html>
