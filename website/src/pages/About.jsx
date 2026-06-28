@@ -101,7 +101,7 @@ export default function AboutPage() {
               </div>
               <div className="about-person-card">
                 <div className="about-person-photo">
-                  <img src="/images/sathvik-vadlakunta.jpg" alt="Sathvik Vadlakunta" />
+                  <img src="/images/sathvik-vadlakunta.jpeg" alt="Sathvik Vadlakunta" />
                 </div>
                 <h4>Sathvik Vadlakunta</h4>
                 <p className="about-person-role">Co-Founder</p>
