@@ -384,6 +384,15 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE customers ADD COLUMN business_type TEXT NOT NULL DEFAULT 'practice'")
         if "verified_quotes" not in cols:
             self.conn.execute("ALTER TABLE customers ADD COLUMN verified_quotes TEXT NOT NULL DEFAULT '[]'")
+        # Review-response tracking (owner replies) — populated by GBP review sync or a manual mark.
+        try:
+            rcols = [r[1] for r in self.conn.execute("PRAGMA table_info(reviews)").fetchall()]
+            if rcols and "owner_response" not in rcols:
+                self.conn.execute("ALTER TABLE reviews ADD COLUMN owner_response TEXT")
+            if rcols and "responded_at" not in rcols:
+                self.conn.execute("ALTER TABLE reviews ADD COLUMN responded_at TEXT")
+        except Exception:
+            pass
         # Account management: a pinned current-status line so you can see at a
         # glance where each customer is, separate from the dated activity log.
         if "status_note" not in cols:
@@ -3179,10 +3188,31 @@ class CustomerDB:
 
     def get_reviews(self, customer_id, limit=50):
         rows = self.conn.execute(
-            "SELECT * FROM reviews WHERE customer_id = ? ORDER BY review_date DESC LIMIT ?",
+            "SELECT rowid AS id, * FROM reviews WHERE customer_id = ? ORDER BY review_date DESC LIMIT ?",
             (customer_id, limit),
         ).fetchall()
         return [dict(r) for r in rows]
+
+    def set_review_response(self, review_id: int, response_text: str, responded_at: str | None = None) -> bool:
+        """Record an owner reply to a review (from GBP review sync or a manual mark)."""
+        self.conn.execute(
+            "UPDATE reviews SET owner_response = ?, responded_at = ? WHERE rowid = ?",
+            (response_text, responded_at or datetime.now(timezone.utc).isoformat(), review_id),
+        )
+        self.conn.commit()
+        return self.conn.total_changes > 0
+
+    def count_unanswered_reviews(self, customer_id: str, since: str | None = None) -> int:
+        """Reviews with no owner reply (optionally only those on/after `since` YYYY-MM-DD)."""
+        q = "SELECT COUNT(*) FROM reviews WHERE customer_id = ? AND (owner_response IS NULL OR owner_response = '')"
+        args: list = [customer_id]
+        if since:
+            q += " AND review_date >= ?"
+            args.append(since)
+        try:
+            return int(self.conn.execute(q, args).fetchone()[0])
+        except Exception:
+            return 0
 
     def get_review_stats(self, customer_id):
         row = self.conn.execute(

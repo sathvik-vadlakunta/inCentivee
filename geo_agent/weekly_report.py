@@ -83,24 +83,38 @@ def _arrow(direction: str) -> str:
 # Data assembly
 # ---------------------------------------------------------------------------
 
-def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None = None) -> dict:
-    """Gather every available field for the weekly report. Missing data → None/empty."""
+def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None = None,
+                      period_days: int = 7) -> dict:
+    """Gather every available field for the report. Missing data → None/empty.
+
+    period_days sets the comparison window: 7 = weekly, 30 = monthly, 90 = quarterly,
+    180 = half-year. The current window is compared against the immediately-prior window
+    of the same length, so the report shows progress over the chosen period vs the last.
+    """
     customer = db.get_customer(customer_id)
     if not customer:
         raise ValueError(f"Unknown customer: {customer_id}")
 
+    pd = max(1, int(period_days))
     end = datetime.strptime(period_end, "%Y-%m-%d") if period_end \
         else datetime.now(timezone.utc).replace(tzinfo=None)
-    cur_start = end - timedelta(days=6)
+    cur_start = end - timedelta(days=pd - 1)
     prev_end = cur_start - timedelta(days=1)
-    prev_start = prev_end - timedelta(days=6)
+    prev_start = prev_end - timedelta(days=pd - 1)
     ds = lambda d: d.strftime("%Y-%m-%d")  # noqa: E731
+    period_human = {7: "last 7 days", 30: "last 30 days", 90: "last 90 days",
+                    180: "last 6 months", 365: "last year"}.get(pd, f"last {pd} days")
+    cadence = {7: "Weekly", 30: "Monthly", 90: "Quarterly", 180: "Half-Year",
+               365: "Annual"}.get(pd, f"{pd}-Day")
 
     data: dict = {
         "customer": customer,
         "practice_name": customer.get("name", "Your Practice"),
         "contact_name": (db.get_contacts(customer_id) or [{}])[0].get("name", "there")
         if hasattr(db, "get_contacts") else "there",
+        "period_days": pd,
+        "period_human": period_human,
+        "cadence": cadence,
         "period_start": ds(cur_start),
         "period_end": ds(end),
         "period_label": f"{cur_start.strftime('%b %-d')}–{end.strftime('%-d, %Y')}",
@@ -114,13 +128,21 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     data["score"] = score
     data["score_prev"] = prev_overall
 
-    # --- Search performance (REAL) ---
-    weekly = db.get_gsc_weekly_summary(customer_id, weeks=3)
-    if weekly:
-        data["sections"]["search"] = {
-            "cur": weekly[0],
-            "prev": weekly[1] if len(weekly) > 1 else None,
-        }
+    # --- Search performance (REAL) — totals over the chosen window vs the prior window ---
+    daily = db.get_gsc_daily(customer_id, limit=pd * 2 + 10)
+    def _sum_window(start_d: str, end_d: str):
+        rows = [r for r in (daily or []) if start_d <= (r.get("date") or "")[:10] <= end_d]
+        if not rows:
+            return None
+        clicks = sum(int(r.get("clicks", 0) or 0) for r in rows)
+        impr = sum(int(r.get("impressions", 0) or 0) for r in rows)
+        pos = [r.get("position") for r in rows if r.get("position")]
+        return {"clicks": clicks, "impressions": impr,
+                "ctr": (clicks / impr) if impr else 0.0,
+                "position": (sum(pos) / len(pos)) if pos else 0.0}
+    cur_search = _sum_window(ds(cur_start), ds(end))
+    if cur_search:
+        data["sections"]["search"] = {"cur": cur_search, "prev": _sum_window(ds(prev_start), ds(prev_end))}
 
     # --- Keywords (R1; renders only once gsc_query_daily has data) ---
     top = db.get_top_queries(customer_id, ds(cur_start), ds(end), limit=8)
@@ -320,13 +342,19 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
         if not cl.get("seo_gbp_qa"):
             needs.append({"icon": "❓", "title": "Approve this month's Google Business Q&A",
                           "why": "Pre-answered questions help you surface for more 'near me' searches."})
-        rv = data["sections"].get("reviews")
-        if rv and rv.get("new_count"):
-            needs.append({"icon": "💬", "title": f"Respond to your {rv['new_count']} new Google review(s)",
+        # Precise: reviews in this period that don't yet have an owner reply.
+        unanswered = db.count_unanswered_reviews(customer_id, since=ds(cur_start)) if places else 0
+        if unanswered:
+            needs.append({"icon": "💬", "title": f"Reply to {unanswered} Google review(s) without a response yet",
                           "why": "Replying to reviews builds trust and is a Google local-ranking signal."})
         elif places:
             needs.append({"icon": "💬", "title": "Reply to your recent Google reviews",
                           "why": "Responding to every review builds trust and helps your local ranking."})
+        # Content waiting on approval (ties to the content queue).
+        pending_recs = db.get_content_recommendations(customer_id, status="pending", limit=50)
+        if pending_recs:
+            needs.append({"icon": "📝", "title": f"Approve {len(pending_recs)} piece(s) of content we've prepared for you",
+                          "why": "Approving the content we've drafted lets us publish it and grow your visibility."})
         for p in (db.get_pending_access(customer_id) or []):
             label = p.get("platform") or p.get("access_type") or "platform access"
             needs.append({"icon": "🔑", "title": f"Grant access: {label}",
@@ -455,7 +483,7 @@ def render_html(data: dict) -> str:
 
     # Header
     parts.append(f"""<div class="r-head">
-      <div class="brand">PracticeRank · Weekly Report</div>
+      <div class="brand">PracticeRank · {e(data.get('cadence', 'Weekly'))} Report</div>
       <h2>{e(data['practice_name'])}</h2>
       <div class="sub">Week of {e(data['period_label'])} · prepared for {e(data['contact_name'])}</div>
     </div>
@@ -531,7 +559,7 @@ def render_html(data: dict) -> str:
                 + _kpi("Impressions", f"{int(cur['impressions'])}", impr_d)
                 + _kpi("Avg position", f"{cur['position']:.1f}", pos_d)
                 + _kpi("CTR", f"{cur['ctr']*100:.1f}%" if cur['ctr'] < 1 else f"{cur['ctr']:.1f}%", ctr_d))
-        parts.append(f'<div class="r-sec"><h3>Search performance · last 7 days</h3><div class="kpis">{kpis}</div></div>')
+        parts.append(f'<div class="r-sec"><h3>Search performance · {e(data.get("period_human", "last 7 days"))}</h3><div class="kpis">{kpis}</div></div>')
 
     # 4. Keywords (R1)
     if "keywords" in s:
@@ -810,9 +838,11 @@ def render_html(data: dict) -> str:
 # Orchestration
 # ---------------------------------------------------------------------------
 
-def generate_and_store(db: CustomerDB, customer_id: str, period_end: str | None = None) -> dict:
-    """Build + render + persist one weekly report. Returns {customer_id, score, html, ...}."""
-    data = build_report_data(db, customer_id, period_end)
+def generate_and_store(db: CustomerDB, customer_id: str, period_end: str | None = None,
+                       period_days: int = 7) -> dict:
+    """Build + render + persist one report. Returns {customer_id, score, html, ...}.
+    period_days: 7 weekly · 30 monthly · 90 quarterly · 180 half-year."""
+    data = build_report_data(db, customer_id, period_end, period_days=period_days)
     html_doc = render_html(data)
     score_val = data["score"].get("score") or 0
 
