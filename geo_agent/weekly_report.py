@@ -84,7 +84,7 @@ def _arrow(direction: str) -> str:
 # ---------------------------------------------------------------------------
 
 def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None = None,
-                      period_days: int = 7) -> dict:
+                      period_days: int = 7, live_state: bool = True) -> dict:
     """Gather every available field for the report. Missing data → None/empty.
 
     period_days sets the comparison window: 7 = weekly, 30 = monthly, 90 = quarterly,
@@ -327,7 +327,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
                 "_p": _ki.target_priority(text),
             })
         focus.sort(key=lambda x: (x["_p"], x["impressions"]), reverse=True)
-        if focus:
+        if live_state and focus:  # current-state section — omit when re-creating point-in-time history
             data["sections"]["focus_keywords"] = focus[:8]
     except Exception:
         pass
@@ -359,7 +359,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
             label = p.get("platform") or p.get("access_type") or "platform access"
             needs.append({"icon": "🔑", "title": f"Grant access: {label}",
                           "why": "We need this connected to keep optimizing your campaign."})
-        if needs:
+        if live_state and needs:  # "what we need from you" is current-state — omit on historical rebuilds
             data["sections"]["needs"] = needs[:6]
     except Exception:
         pass
@@ -869,6 +869,35 @@ def generate_and_store(db: CustomerDB, customer_id: str, period_end: str | None 
     logger.info("Weekly report generated for %s (score=%s)", customer_id, score_val)
     return {"customer_id": customer_id, "score": score_val,
             "period_end": data["period_end"], "html": html_doc, "share_token": token}
+
+
+def rerender_snapshots(db: CustomerDB, customer_id: str | None = None,
+                       report_type: str = "weekly", limit: int = 200) -> dict:
+    """Apply the CURRENT report template to already-stored snapshots, re-using each
+    snapshot's captured point-in-time payload (no recompute — the historical data stays
+    exactly as it was). Preserves period_start/end, score, and share_token (so existing
+    links don't break). Skips empty placeholder snapshots. Returns {rerendered, skipped, errors}."""
+    cust = [customer_id] if customer_id else [c["id"] for c in db.list_customers()]
+    done = skipped = errors = 0
+    for cid in cust:
+        for snap in db.get_report_snapshots(cid, report_type, limit=limit):
+            raw = snap.get("payload_json") or "{}"
+            try:
+                payload = json.loads(raw)
+            except Exception:
+                payload = {}
+            if not payload.get("sections"):
+                skipped += 1
+                continue
+            try:
+                html = render_html(payload)
+                db.save_report_snapshot(cid, report_type, snap["period_start"],
+                                        snap["period_end"], int(snap.get("score") or 0), raw, html)
+                done += 1
+            except Exception:
+                logger.exception("re-render failed for %s %s", cid, snap.get("period_end"))
+                errors += 1
+    return {"rerendered": done, "skipped_empty": skipped, "errors": errors}
 
 
 def generate_all(db: CustomerDB, period_end: str | None = None) -> list[dict]:
