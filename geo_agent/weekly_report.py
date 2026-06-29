@@ -288,6 +288,54 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     except Exception:
         pass
 
+    # --- High-value buyer-intent keywords to focus on (intent engine) ---
+    try:
+        from geo_agent import keyword_intent as _ki
+        focus = []
+        for kw in (db.get_keyword_summary(customer_id) or []):
+            text = (kw.get("keyword") or "").strip()
+            if not text or not _ki.is_action(text):
+                continue  # only action/purchase-decision keywords, not research
+            meta = _ki.intent_meta(text)
+            focus.append({
+                "keyword": text, "label": meta["label"], "color": meta["color"], "bg": meta["bg"],
+                "local": _ki.has_local_intent(text),
+                "position": round(kw["current_position"], 1) if kw.get("current_position") else None,
+                "impressions": int(kw.get("current_impressions", 0) or 0),
+                "_p": _ki.target_priority(text),
+            })
+        focus.sort(key=lambda x: (x["_p"], x["impressions"]), reverse=True)
+        if focus:
+            data["sections"]["focus_keywords"] = focus[:8]
+    except Exception:
+        pass
+
+    # --- What we need from you (customer action items / best-practice to-dos) ---
+    try:
+        needs = []
+        cl = db.get_checklist(customer_id)
+        if not cl.get("seo_gbp_photos"):
+            needs.append({"icon": "📸", "title": "Send us 10+ photos for your Google Business Profile",
+                          "why": "Profiles with fresh, real photos get far more views, calls, and direction requests."})
+        if not cl.get("seo_gbp_qa"):
+            needs.append({"icon": "❓", "title": "Approve this month's Google Business Q&A",
+                          "why": "Pre-answered questions help you surface for more 'near me' searches."})
+        rv = data["sections"].get("reviews")
+        if rv and rv.get("new_count"):
+            needs.append({"icon": "💬", "title": f"Respond to your {rv['new_count']} new Google review(s)",
+                          "why": "Replying to reviews builds trust and is a Google local-ranking signal."})
+        elif places:
+            needs.append({"icon": "💬", "title": "Reply to your recent Google reviews",
+                          "why": "Responding to every review builds trust and helps your local ranking."})
+        for p in (db.get_pending_access(customer_id) or []):
+            label = p.get("platform") or p.get("access_type") or "platform access"
+            needs.append({"icon": "🔑", "title": f"Grant access: {label}",
+                          "why": "We need this connected to keep optimizing your campaign."})
+        if needs:
+            data["sections"]["needs"] = needs[:6]
+    except Exception:
+        pass
+
     # --- Alerts (REAL) → inform "what's next" ---
     data["alerts"] = db.get_alerts(customer_id, active_only=True, limit=10)
 
@@ -416,6 +464,31 @@ def render_html(data: dict) -> str:
     # 1. Exec summary
     parts.append(f"""<div class="r-sec"><h3>The headline</h3>
       <div class="summary"><p>📈 {e(data['exec_summary'])}</p></div></div>""")
+
+    # 1a. What we need from you (customer action items)
+    if s.get("needs"):
+        items = "".join(
+            f'<li style="display:flex;gap:10px;align-items:flex-start;margin-bottom:11px">'
+            f'<span style="font-size:18px;line-height:1.3">{n["icon"]}</span>'
+            f'<div><b>{e(n["title"])}</b><div class="mini" style="color:#64748b">{e(n["why"])}</div></div></li>'
+            for n in s["needs"])
+        parts.append(f"""<div class="r-sec" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;">
+          <h3>✅ What we need from you</h3>
+          <p class="mini" style="margin:0 0 10px;color:#9a3412">A few quick things on your end will boost your results this month:</p>
+          <ul style="list-style:none;padding:0;margin:0">{items}</ul></div>""")
+
+    # 1b. High-value buyer-intent keywords to focus on
+    if s.get("focus_keywords"):
+        rows = ""
+        for f in s["focus_keywords"]:
+            pos = f'#{f["position"]}' if f["position"] else "—"
+            loc = ' <span title="local search">📍</span>' if f["local"] else ''
+            rows += (f'<tr style="border-bottom:1px solid #f1f5f9"><td style="padding:7px 6px;font-weight:500">{e(f["keyword"])}{loc}</td>'
+                     f'<td style="padding:7px 6px"><span style="font-size:10.5px;font-weight:700;background:{f["bg"]};color:{f["color"]};padding:2px 8px;border-radius:99px;white-space:nowrap">{e(f["label"])}</span></td>'
+                     f'<td style="padding:7px 6px;text-align:right;color:#64748b;white-space:nowrap">{pos}</td></tr>')
+        parts.append(f"""<div class="r-sec"><h3>🎯 Your high-value keywords to win</h3>
+          <p class="mini" style="margin:0 0 8px;color:#64748b">The buyer-intent searches that bring real customers your way — ranked by intent. These are what we're focused on winning for you.</p>
+          <table style="width:100%;border-collapse:collapse;font-size:14px"><tbody>{rows}</tbody></table></div>""")
 
     # 2. Score
     score = data["score"]
