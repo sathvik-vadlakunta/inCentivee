@@ -46,25 +46,36 @@ def _safe(label, fn, *args):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description="Generate customer reports (weekly/monthly/quarterly).")
+    ap.add_argument("--period", type=int, default=7,
+                    help="report window in days: 7 weekly (default), 30 monthly, 90 quarterly")
+    args = ap.parse_args()
+    period = args.period
+    # Only the weekly run refreshes data sources; monthly/quarterly just re-generate
+    # the report over a longer window from the data the weekly run already pulled.
+    refresh = period == 7
+    label = wr._REPORT_TYPE_BY_DAYS.get(period, f"{period}d")
+
     db = CustomerDB(DB_PATH)
     customers = [c for c in db.list_customers()
                  if c.get("onboarding_step") in wr.ACTIVE_STEPS]
-    print(f"[{datetime.now().isoformat()}] Weekly reports: {len(customers)} active customers")
+    print(f"[{datetime.now().isoformat()}] {label} reports: {len(customers)} active customers")
 
     for c in customers:
         cid = c["id"]
         print(f"  {cid} ({c.get('name')})")
-        _safe("R1 gsc_queries", track_gsc_queries, db, cid)
-        _safe("R2 competitors", refresh_competitor_snapshots, db, cid)
-        _safe("R3 ga4_conversions", track_conversions, db, cid)
-        _safe("R4 citations", track_citations, db, cid)
-        # Weekly DA refresh so the report's week-over-week DA deltas populate
-        # (was monthly-only via the local-relevancy run).
-        _safe("R5 domain_authority", track_domain_authority, db, cid)
-        _safe("R5 competitor_da", track_competitor_da, db, cid)
+        if refresh:
+            _safe("R1 gsc_queries", track_gsc_queries, db, cid)
+            _safe("R2 competitors", refresh_competitor_snapshots, db, cid)
+            _safe("R3 ga4_conversions", track_conversions, db, cid)
+            _safe("R4 citations", track_citations, db, cid)
+            # Weekly DA refresh so the report's week-over-week DA deltas populate.
+            _safe("R5 domain_authority", track_domain_authority, db, cid)
+            _safe("R5 competitor_da", track_competitor_da, db, cid)
         try:
-            res = wr.generate_and_store(db, cid)
-            print(f"    R0 report: score {res['score']} (week ending {res['period_end']})")
+            res = wr.generate_and_store(db, cid, period_days=period)
+            print(f"    R0 {res['report_type']} report: score {res['score']} (ending {res['period_end']})")
             if EMAIL_CUSTOMERS:
                 # Intentionally disabled — see module docstring.
                 pass

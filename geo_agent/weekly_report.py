@@ -838,10 +838,15 @@ def render_html(data: dict) -> str:
 # Orchestration
 # ---------------------------------------------------------------------------
 
+_REPORT_TYPE_BY_DAYS = {7: "weekly", 30: "monthly", 90: "quarterly", 180: "half-year", 365: "annual"}
+
+
 def generate_and_store(db: CustomerDB, customer_id: str, period_end: str | None = None,
-                       period_days: int = 7) -> dict:
+                       period_days: int = 7, report_type: str | None = None) -> dict:
     """Build + render + persist one report. Returns {customer_id, score, html, ...}.
-    period_days: 7 weekly · 30 monthly · 90 quarterly · 180 half-year."""
+    period_days: 7 weekly · 30 monthly · 90 quarterly · 180 half-year. The snapshot is
+    stored under its report_type so weekly/monthly/quarterly reports coexist."""
+    rt = report_type or _REPORT_TYPE_BY_DAYS.get(period_days, "custom")
     data = build_report_data(db, customer_id, period_end, period_days=period_days)
     html_doc = render_html(data)
     score_val = data["score"].get("score") or 0
@@ -863,11 +868,11 @@ def generate_and_store(db: CustomerDB, customer_id: str, period_end: str | None 
 
     payload = {k: v for k, v in data.items() if k not in ("customer",)}
     token = db.save_report_snapshot(
-        customer_id, "weekly", data["period_start"], data["period_end"],
+        customer_id, rt, data["period_start"], data["period_end"],
         int(score_val), json.dumps(payload, default=str), html_doc,
     )
-    logger.info("Weekly report generated for %s (score=%s)", customer_id, score_val)
-    return {"customer_id": customer_id, "score": score_val,
+    logger.info("%s report generated for %s (score=%s)", rt, customer_id, score_val)
+    return {"customer_id": customer_id, "score": score_val, "report_type": rt,
             "period_end": data["period_end"], "html": html_doc, "share_token": token}
 
 
@@ -900,16 +905,16 @@ def rerender_snapshots(db: CustomerDB, customer_id: str | None = None,
     return {"rerendered": done, "skipped_empty": skipped, "errors": errors}
 
 
-def generate_all(db: CustomerDB, period_end: str | None = None) -> list[dict]:
-    """Generate weekly reports for every active customer."""
+def generate_all(db: CustomerDB, period_end: str | None = None, period_days: int = 7) -> list[dict]:
+    """Generate reports for every active customer (period_days: 7 weekly / 30 monthly / 90 quarterly)."""
     results = []
     for c in db.list_customers():
         if c.get("onboarding_step") not in ACTIVE_STEPS:
             continue
         try:
-            results.append(generate_and_store(db, c["id"], period_end))
+            results.append(generate_and_store(db, c["id"], period_end, period_days=period_days))
         except Exception:
-            logger.exception("Weekly report failed for %s", c.get("id"))
+            logger.exception("Report (%dd) failed for %s", period_days, c.get("id"))
     return results
 
 
