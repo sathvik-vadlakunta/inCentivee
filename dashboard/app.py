@@ -251,41 +251,13 @@ def _directory_listing_found(html: str, name: str, dir_domain: str) -> tuple[boo
     return False, ""
 
 
-def _compute_seo_health(latest_audit, keyword_summary, gsc_daily) -> int:
-    """Compute SEO health score (0-100) from audit, keywords, and traffic."""
-    # PageSpeed scores (25%)
-    psi = 0
-    if latest_audit:
-        scores = [
-            latest_audit.get("performance_score", 0) or 0,
-            latest_audit.get("seo_score", 0) or 0,
-            latest_audit.get("accessibility_score", 0) or 0,
-            latest_audit.get("best_practices_score", 0) or 0,
-        ]
-        psi = sum(scores) / 4 if scores else 0
+def _earlier_date(days_ago: int) -> str:
+    """ISO date `days_ago` days before today (UTC). For 'vs ~N days ago' deltas."""
+    from datetime import timedelta
+    return (datetime.now(timezone.utc) - timedelta(days=days_ago)).strftime("%Y-%m-%d")
 
-    # Keyword coverage (25%) — % of tracked keywords in top 20
-    kw_pct = 0
-    if keyword_summary:
-        in_top_20 = sum(1 for k in keyword_summary if k.get("current_position") and k["current_position"] <= 20)
-        kw_pct = (in_top_20 / len(keyword_summary) * 100) if keyword_summary else 0
 
-    # Traffic trend (25%) — compare last 7 days vs prior 7 days
-    traffic_score = 50  # default neutral
-    if gsc_daily and len(gsc_daily) >= 14:
-        recent = sum(d.get("clicks", 0) for d in gsc_daily[-7:])
-        prior = sum(d.get("clicks", 0) for d in gsc_daily[-14:-7])
-        if prior > 0:
-            growth = (recent - prior) / prior
-            traffic_score = min(100, max(0, 50 + growth * 200))
-
-    # Technical health (25%) — penalty for audit issues
-    tech_score = 100
-    if latest_audit:
-        # Use raw_data to count issues if available
-        tech_score = max(0, min(100, psi))  # fallback to PSI average
-
-    return round(psi * 0.25 + kw_pct * 0.25 + traffic_score * 0.25 + tech_score * 0.25)
+from geo_agent.seo_health import compute_seo_health as _compute_seo_health  # noqa: E402
 
 
 def _compute_ctr_opportunities(keyword_summary) -> list[dict]:
@@ -483,8 +455,28 @@ def customer_detail(customer_id):
                 gsc_prev_clicks = sum(d.get("clicks", 0) for d in prev)
                 gsc_prev_impressions = sum(d.get("impressions", 0) for d in prev)
 
-        # SEO Health Score
-        seo_health_score = _compute_seo_health(latest_audit, keyword_summary, gsc_daily)
+        # SEO Health Score — compute + persist via the shared scorer (stable 60-day
+        # window inside, so the score never shifts when the date-range pills change).
+        _today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        try:
+            from geo_agent.seo_health import persist_seo_health
+            _health = persist_seo_health(db, customer_id, _today)
+        except Exception:
+            logger.warning("Failed to persist SEO health for %s", customer_id, exc_info=True)
+            _health = None
+        if not _health:
+            _gsc_health = list(reversed(db.get_gsc_daily(customer_id, limit=60)))
+            _health = _compute_seo_health(latest_audit, keyword_summary, _gsc_health)
+        seo_health_score = _health["score"]
+        seo_health_buckets = _health["buckets"]
+        seo_health_history = list(reversed(db.get_seo_health_history(customer_id, limit=180)))
+        # Delta vs ~30 days ago (first record from >=25 days back, else oldest).
+        seo_health_delta = None
+        if len(seo_health_history) >= 2:
+            prior_pt = next((h for h in seo_health_history if h["date"] <= _earlier_date(25)),
+                            seo_health_history[0])
+            if prior_pt and prior_pt["date"] != _today:
+                seo_health_delta = seo_health_score - prior_pt["score"]
 
         # CTR Opportunities
         ctr_opportunities = _compute_ctr_opportunities(keyword_summary)
@@ -645,6 +637,9 @@ def customer_detail(customer_id):
             gsc_prev_impressions=gsc_prev_impressions,
             date_range=date_range,
             seo_health_score=seo_health_score,
+            seo_health_buckets=seo_health_buckets,
+            seo_health_history=seo_health_history,
+            seo_health_delta=seo_health_delta,
             ctr_opportunities=ctr_opportunities,
             striking_distance=striking_distance,
             intent_keywords=intent_keywords,
@@ -655,6 +650,19 @@ def customer_detail(customer_id):
             landing_reports=landing_reports,
             weekly_snapshot=db.get_latest_report_snapshot(customer_id, "weekly"),
             report_history=db.get_report_snapshots(customer_id, "weekly", limit=26),
+            report_periods=[
+                {"type": "weekly", "label": "Weekly", "period": 7},
+                {"type": "monthly", "label": "Monthly", "period": 30},
+                {"type": "quarterly", "label": "Quarterly", "period": 90},
+            ],
+            report_latest_by_type={
+                rt: db.get_latest_report_snapshot(customer_id, rt)
+                for rt in ("weekly", "monthly", "quarterly")
+            },
+            report_history_by_type={
+                rt: db.get_report_snapshots(customer_id, rt, limit=26)
+                for rt in ("weekly", "monthly", "quarterly")
+            },
             customer_activities=db.get_customer_activities(customer_id, limit=100),
             va_plan=va_plan,
             customer_services=db.get_services(customer_id),
@@ -850,13 +858,17 @@ def billing_link(sub_id):
 @app.route("/report/<customer_id>/weekly")
 @login_required
 def weekly_report_view(customer_id):
-    """Always build the latest weekly report fresh (and snapshot it), so the
-    internal view never serves a stale cached report. Shared links (/r/<token>)
-    still serve their point-in-time snapshot."""
+    """Build + view the latest report fresh (and snapshot it), so the internal view never
+    serves a stale cached report. ?period=30 → monthly, 90 → quarterly, 180 → half-year
+    (default 7 = weekly). Shared links (/r/<token>) still serve their point-in-time snapshot."""
     from geo_agent import weekly_report as wr
+    try:
+        period = int(request.args.get("period", 7))
+    except (TypeError, ValueError):
+        period = 7
     db = get_db()
     try:
-        result = wr.generate_and_store(db, customer_id)
+        result = wr.generate_and_store(db, customer_id, period_days=period)
         return Response(result["html"], mimetype="text/html")
     finally:
         db.close()

@@ -715,6 +715,22 @@ class CustomerDB:
                 UNIQUE(customer_id, date)
             );
             CREATE INDEX IF NOT EXISTS idx_pr_scores_customer ON practicerank_scores(customer_id, date);
+
+            -- SEO Health Score daily history (the dashboard donut). Stored so we can
+            -- show improvement-over-time + an explained 4-bucket breakdown.
+            CREATE TABLE IF NOT EXISTS seo_health_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                score INTEGER NOT NULL,
+                pagespeed INTEGER,
+                keyword_coverage INTEGER,
+                traffic_trend INTEGER,
+                technical INTEGER,
+                breakdown_json TEXT NOT NULL DEFAULT '{}',
+                UNIQUE(customer_id, date)
+            );
+            CREATE INDEX IF NOT EXISTS idx_seo_health_customer ON seo_health_history(customer_id, date);
         """)
 
         # Migration v8 → v9: Landing page report tracking
@@ -3519,6 +3535,44 @@ class CustomerDB:
             ) latest ON ps.customer_id = latest.customer_id AND ps.date = latest.max_date
             ORDER BY ps.overall_score DESC
         """)
+        return [dict(r) for r in cur.fetchall()]
+
+    # --- SEO Health Score history (dashboard donut) ---
+    def save_seo_health(
+        self,
+        customer_id: str,
+        date: str,
+        score: int,
+        pagespeed: int | None = None,
+        keyword_coverage: int | None = None,
+        traffic_trend: int | None = None,
+        technical: int | None = None,
+        breakdown_json: str = "{}",
+    ) -> None:
+        """Save or update the day's SEO health score + its 4-bucket breakdown."""
+        self.conn.execute(
+            """INSERT INTO seo_health_history
+               (customer_id, date, score, pagespeed, keyword_coverage,
+                traffic_trend, technical, breakdown_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(customer_id, date) DO UPDATE SET
+                 score=excluded.score,
+                 pagespeed=excluded.pagespeed,
+                 keyword_coverage=excluded.keyword_coverage,
+                 traffic_trend=excluded.traffic_trend,
+                 technical=excluded.technical,
+                 breakdown_json=excluded.breakdown_json""",
+            (customer_id, date, score, pagespeed, keyword_coverage,
+             traffic_trend, technical, breakdown_json),
+        )
+        self.conn.commit()
+
+    def get_seo_health_history(self, customer_id: str, limit: int = 90) -> list[dict]:
+        """SEO health history, most recent first."""
+        cur = self.conn.execute(
+            "SELECT * FROM seo_health_history WHERE customer_id = ? ORDER BY date DESC LIMIT ?",
+            (customer_id, limit),
+        )
         return [dict(r) for r in cur.fetchall()]
 
     # --- Weekly report snapshots (R0) ---

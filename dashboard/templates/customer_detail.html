@@ -264,7 +264,7 @@
     </button>
     <button class="detail-nav-item" onclick="switchTab('reports', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-        Weekly Report
+        Reports
     </button>
     <button class="detail-nav-item" onclick="switchTab('notes', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
@@ -997,11 +997,35 @@
                     </div>
                 </div>
                 <div>
-                    <div style="font-weight:600;font-size:0.9rem;">SEO Health Score</div>
+                    <div style="font-weight:600;font-size:0.9rem;display:flex;align-items:center;gap:0.4rem;">
+                        SEO Health Score
+                        {% if seo_health_delta is not none and seo_health_delta != 0 %}
+                        <span style="font-size:0.72rem;font-weight:700;color:{{ '#16a34a' if seo_health_delta > 0 else '#dc2626' }};">
+                            {{ '▲' if seo_health_delta > 0 else '▼' }} {{ '+' if seo_health_delta > 0 }}{{ seo_health_delta }} <span style="font-weight:500;color:var(--muted);">vs ~30d ago</span>
+                        </span>
+                        {% endif %}
+                        <button type="button" onclick="toggleSeoBreakdown()" title="How is this calculated?"
+                                style="border:none;background:#f1f5f9;border-radius:50%;width:16px;height:16px;font-size:0.7rem;line-height:1;cursor:pointer;color:var(--muted);padding:0;">?</button>
+                    </div>
                     <div style="font-size:0.75rem;color:var(--muted);">
                         {% if latest_audit %}Last audit: {{ latest_audit.audit_date }}{% endif %}
                     </div>
                 </div>
+
+                <!-- Trend sparkline (last ~30 stored scores) -->
+                {% if seo_health_history and seo_health_history|length >= 2 %}
+                <svg viewBox="0 0 120 36" preserveAspectRatio="none" style="width:120px;height:36px;flex-shrink:0;" aria-label="SEO health trend">
+                    {% set pts = seo_health_history[-30:] %}
+                    {% set n = pts|length %}
+                    {% set coords = [] %}
+                    {% for p in pts %}
+                        {% set x = (loop.index0 / (n - 1) * 118) + 1 %}
+                        {% set y = 34 - (p.score / 100 * 32) %}
+                        {% set _ = coords.append(x ~ ',' ~ y) %}
+                    {% endfor %}
+                    <polyline points="{{ coords|join(' ') }}" fill="none" stroke="#3b82f6" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+                </svg>
+                {% endif %}
             </div>
 
             <!-- Date range pills -->
@@ -1017,6 +1041,27 @@
                     <button class="date-range-btn{% if date_range == '90d' %} active{% endif %}" onclick="switchDateRange('90d', this)">90d</button>
                     <button class="date-range-btn{% if date_range == '180d' %} active{% endif %}" onclick="switchDateRange('180d', this)">6m</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- SEO Health Score breakdown (collapsible) -->
+        <div id="seo-health-breakdown" style="display:none;background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:1rem 1.1rem;margin-bottom:1rem;">
+            <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem;">
+                The score is the average of four equally-weighted signals (25% each). The lowest bars are where to focus.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem 1.5rem;">
+                {% for b in seo_health_buckets %}
+                <div>
+                    <div style="display:flex;justify-content:space-between;font-size:0.82rem;font-weight:600;margin-bottom:0.2rem;">
+                        <span>{{ b.label }} <span style="color:var(--muted);font-weight:500;">· 25%</span></span>
+                        <span style="color:{% if b.value >= 70 %}#16a34a{% elif b.value >= 40 %}#d97706{% else %}#dc2626{% endif %};">{{ b.value }}</span>
+                    </div>
+                    <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
+                        <div style="height:100%;width:{{ b.value }}%;background:{% if b.value >= 70 %}#16a34a{% elif b.value >= 40 %}#d97706{% else %}#dc2626{% endif %};"></div>
+                    </div>
+                    <div style="font-size:0.72rem;color:var(--muted);margin-top:0.25rem;">{{ b.detail }}</div>
+                </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -2734,62 +2779,78 @@
     {% endif %}
 </div>
 
-<!-- ==================== WEEKLY REPORT TAB ==================== -->
+<!-- ==================== CUSTOMER REPORTS TAB ==================== -->
 <div id="tab-reports" class="tab-content">
     <div class="card">
         <div class="section-header">
-            <h2 style="font-size:1.1rem;">Weekly Report</h2>
-            <div class="flex">
-                <a class="btn btn-primary btn-sm" href="{{ url_for('weekly_report_view', customer_id=customer.id) }}" target="_blank">View Latest Report</a>
-                <a class="btn btn-outline btn-sm" href="{{ url_for('weekly_report_view', customer_id=customer.id, refresh=1) }}" target="_blank">Generate Fresh</a>
+            <h2 style="font-size:1.1rem;">Customer Reports</h2>
+            <!-- Cadence toggle -->
+            <div style="display:flex;gap:0.2rem;background:#f1f5f9;border-radius:6px;padding:2px;">
+                {% for rp in report_periods %}
+                <button class="report-cadence-btn{% if rp.type == 'weekly' %} active{% endif %}"
+                        data-cadence="{{ rp.type }}" onclick="switchReportCadence('{{ rp.type }}', this)"
+                        style="border:none;background:{% if rp.type == 'weekly' %}#fff{% else %}transparent{% endif %};border-radius:5px;padding:0.3rem 0.7rem;font-size:0.8rem;font-weight:600;cursor:pointer;{% if rp.type == 'weekly' %}box-shadow:0 1px 2px rgba(0,0,0,.08);{% endif %}">{{ rp.label }}</button>
+                {% endfor %}
             </div>
         </div>
-        <p style="color:var(--muted);font-size:0.85rem;margin-top:-0.25rem;">The customer's weekly progress report — search, AI visibility, reviews, and wins. Generated from live data.</p>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:-0.25rem;">
+            <b>Weekly</b> is for internal ops (noisy week-over-week). <b>Monthly</b> (30d vs prior 30d) is the customer-facing progress view; <b>Quarterly</b> shows the long arc. Generated from live data.
+        </p>
 
-        <!-- Secure customer share link -->
-        <div style="margin-top:1rem;padding:0.9rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
-            <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.3rem;">🔗 Customer share link</div>
-            {% if weekly_snapshot and weekly_snapshot.share_token %}
-            <p style="font-size:0.8rem;color:var(--muted);margin:0 0 0.5rem;">Send this to the customer — <b>no login required</b>, unguessable, and not indexed by search engines. Always shows their latest report.</p>
-            <div style="display:flex;gap:0.5rem;align-items:center;">
-                <input type="text" id="share-link-input" readonly value="" data-token="{{ weekly_snapshot.share_token }}"
-                       style="flex:1;padding:0.45rem 0.6rem;font-size:0.82rem;border:1px solid var(--border);border-radius:6px;background:#fff;font-family:ui-monospace,monospace;">
-                <button class="btn btn-success btn-sm" onclick="copyShareLink(this)">Copy Link</button>
-                <a class="btn btn-outline btn-sm" id="share-link-open" href="#" target="_blank">Open</a>
+        {% for rp in report_periods %}
+        <div class="report-cadence-pane" data-cadence="{{ rp.type }}" style="display:{% if rp.type == 'weekly' %}block{% else %}none{% endif %};">
+            {% set latest = report_latest_by_type[rp.type] %}
+            {% set history = report_history_by_type[rp.type] %}
+
+            <div class="flex" style="margin-top:0.6rem;">
+                <a class="btn btn-primary btn-sm" href="{{ url_for('weekly_report_view', customer_id=customer.id, period=rp.period) }}" target="_blank">View Latest {{ rp.label }} Report</a>
+                <a class="btn btn-outline btn-sm" href="{{ url_for('weekly_report_view', customer_id=customer.id, period=rp.period, refresh=1) }}" target="_blank">Generate Fresh</a>
             </div>
+
+            <!-- Secure customer share link -->
+            <div style="margin-top:1rem;padding:0.9rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+                <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.3rem;">🔗 Customer share link</div>
+                {% if latest and latest.share_token %}
+                <p style="font-size:0.8rem;color:var(--muted);margin:0 0 0.5rem;">Send this to the customer — <b>no login required</b>, unguessable, and not indexed by search engines. Always shows their latest {{ rp.label|lower }} report.</p>
+                <div style="display:flex;gap:0.5rem;align-items:center;">
+                    <input type="text" readonly value="{{ request.url_root }}r/{{ latest.share_token }}"
+                           style="flex:1;padding:0.45rem 0.6rem;font-size:0.82rem;border:1px solid var(--border);border-radius:6px;background:#fff;font-family:ui-monospace,monospace;"
+                           onclick="this.select();">
+                    <button class="btn btn-success btn-sm" onclick="navigator.clipboard.writeText('{{ request.url_root }}r/{{ latest.share_token }}'); this.textContent='Copied!';">Copy Link</button>
+                    <a class="btn btn-outline btn-sm" href="{{ url_for('public_report', token=latest.share_token) }}" target="_blank">Open</a>
+                </div>
+                {% else %}
+                <p style="font-size:0.8rem;color:var(--muted);margin:0;">No {{ rp.label|lower }} report yet — click <b>View Latest {{ rp.label }} Report</b> above to create the first one, then the share link appears here.</p>
+                {% endif %}
+            </div>
+
+            <!-- History -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:1.4rem 0 0.5rem;">
+                <h3 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0;">{{ rp.label }} report history</h3>
+            </div>
+            {% if history %}
+            <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
+                <tr style="text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase;">
+                    <th style="padding:0.4rem 0.5rem;">Period ending</th><th>Score</th><th>Generated</th><th>Emailed</th><th></th>
+                </tr>
+                {% for snap in history %}
+                <tr style="border-top:1px solid var(--border);" id="report-row-{{ snap.id }}">
+                    <td style="padding:0.45rem 0.5rem;">{{ snap.period_end }}</td>
+                    <td><b>{{ snap.score }}</b></td>
+                    <td style="color:var(--muted);">{{ snap.created_at[:10] }}</td>
+                    <td style="color:var(--muted);">{{ 'Yes' if snap.emailed_at else '—' }}</td>
+                    <td style="text-align:right;white-space:nowrap;">
+                        <a class="btn btn-outline btn-sm" href="{{ url_for('public_report', token=snap.share_token) }}" target="_blank">View</a>
+                        <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteReport('{{ customer.id }}', {{ snap.id }})">Delete</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
             {% else %}
-            <p style="font-size:0.8rem;color:var(--muted);margin:0;">No report generated yet — click <b>View Latest Report</b> above to create the first one, then the share link appears here.</p>
+            <p style="color:var(--muted);font-size:0.85rem;">No {{ rp.label|lower }} reports yet. Click <b>View Latest {{ rp.label }} Report</b> to generate the first one.</p>
             {% endif %}
         </div>
-
-        <!-- History -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin:1.4rem 0 0.5rem;">
-            <h3 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0;">Report history</h3>
-            {% if report_history %}
-            <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteAllReports('{{ customer.id }}')">Clear all history</button>
-            {% endif %}
-        </div>
-        {% if report_history %}
-        <table style="width:100%;font-size:0.85rem;border-collapse:collapse;" id="report-history-table">
-            <tr style="text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase;">
-                <th style="padding:0.4rem 0.5rem;">Week ending</th><th>Score</th><th>Generated</th><th>Emailed</th><th></th>
-            </tr>
-            {% for snap in report_history %}
-            <tr style="border-top:1px solid var(--border);" id="report-row-{{ snap.id }}">
-                <td style="padding:0.45rem 0.5rem;">{{ snap.period_end }}</td>
-                <td><b>{{ snap.score }}</b></td>
-                <td style="color:var(--muted);">{{ snap.created_at[:10] }}</td>
-                <td style="color:var(--muted);">{{ 'Yes' if snap.emailed_at else '—' }}</td>
-                <td style="text-align:right;white-space:nowrap;">
-                    <a class="btn btn-outline btn-sm" href="{{ url_for('public_report', token=snap.share_token) }}" target="_blank">View</a>
-                    <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="deleteReport('{{ customer.id }}', {{ snap.id }})">Delete</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-        {% else %}
-        <p style="color:var(--muted);font-size:0.85rem;">No reports yet. Click <b>View Latest Report</b> to generate the first one.</p>
-        {% endif %}
+        {% endfor %}
     </div>
 </div>
 
@@ -4957,6 +5018,21 @@ function deleteAllReports(customerId) {
         method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}
     }).then(r => r.json()).then(d => {
         if (d.ok) location.reload(); else alert('Delete failed');
+    });
+}
+function toggleSeoBreakdown() {
+    const el = document.getElementById('seo-health-breakdown');
+    if (el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
+function switchReportCadence(cadence, btn) {
+    document.querySelectorAll('.report-cadence-btn').forEach(b => {
+        const on = b === btn;
+        b.classList.toggle('active', on);
+        b.style.background = on ? '#fff' : 'transparent';
+        b.style.boxShadow = on ? '0 1px 2px rgba(0,0,0,.08)' : 'none';
+    });
+    document.querySelectorAll('.report-cadence-pane').forEach(p => {
+        p.style.display = p.dataset.cadence === cadence ? 'block' : 'none';
     });
 }
 

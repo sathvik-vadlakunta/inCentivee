@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from datetime import datetime  # noqa: E402
 
+from geo_agent import fatjoe_plan  # noqa: E402
 from geo_agent.db import CustomerDB  # noqa: E402
 from geo_agent.keyword_content import recommend_from_search_data  # noqa: E402
 
@@ -35,7 +36,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--customer", help="single customer id")
     ap.add_argument("--all", action="store_true", help="all active/onboarding customers")
-    ap.add_argument("--max", type=int, default=8, help="max recs per customer")
+    ap.add_argument("--max", type=int, default=None,
+                    help="override max recs per customer (default: tier-driven content quota)")
     ap.add_argument("--dry-run", action="store_true", help="don't persist (counts only)")
     args = ap.parse_args()
 
@@ -65,7 +67,15 @@ def main():
                 q = db.get_query_aggregates(cid, start, end, min_impressions=10, limit=300)
                 print(f"  [{i+1}/{len(targets)}] {cid}: {len(q)} candidate queries (dry-run)")
                 continue
-            created = recommend_from_search_data(db, cid, max_recs=args.max)
+            # Tier dictates how many content pieces we queue this month, unless
+            # --max explicitly overrides. Optimize=2, Grow=4, Dominate=8.
+            if args.max is not None:
+                quota = args.max
+            else:
+                sub = db.get_subscription_for_customer(cid)
+                plan_name = sub["plan_name"] if sub else None
+                quota = fatjoe_plan.monthly_content_quota(plan_name, c.get("tier_override"))
+            created = recommend_from_search_data(db, cid, max_recs=quota)
             total += len(created)
             # Monthly GBP Q&A (idempotent per month — skips if this month's rec exists).
             gbp = None

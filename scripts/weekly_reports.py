@@ -73,6 +73,10 @@ def main():
             # Weekly DA refresh so the report's week-over-week DA deltas populate.
             _safe("R5 domain_authority", track_domain_authority, db, cid)
             _safe("R5 competitor_da", track_competitor_da, db, cid)
+            # R6 — snapshot the SEO Health Score so its trend builds even when
+            # nobody opens the dashboard that week.
+            from geo_agent.seo_health import persist_seo_health
+            _safe("R6 seo_health", persist_seo_health, db, cid)
         try:
             res = wr.generate_and_store(db, cid, period_days=period)
             print(f"    R0 {res['report_type']} report: score {res['score']} (ending {res['period_end']})")

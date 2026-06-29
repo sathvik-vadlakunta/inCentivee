@@ -25,6 +25,7 @@ DUE_SOON_DAYS = 3  # amber when this many days or fewer remain
 TIER_PLANS: dict[str, dict] = {
     "optimize": {
         "label": "Optimize",
+        "content_quota": 2,  # intent-driven content pieces/mo (good-better-best-pricing.html)
         "onboarding": [
             {"type": "citation", "qty": 100, "dr_tier": None,
              "note": "Initial NAP citation build — match canonical NAP exactly."},
@@ -37,6 +38,7 @@ TIER_PLANS: dict[str, dict] = {
     },
     "grow": {
         "label": "Grow",
+        "content_quota": 4,  # intent-driven content pieces/mo
         "onboarding": [
             {"type": "citation", "qty": 100, "dr_tier": None,
              "note": "Initial NAP citation build — match canonical NAP exactly."},
@@ -52,6 +54,7 @@ TIER_PLANS: dict[str, dict] = {
     },
     "dominate": {
         "label": "Dominate",
+        "content_quota": 8,  # 6–8 intent-driven content pieces/mo (generate up to 8; Dan approves)
         "onboarding": [
             {"type": "citation", "qty": 100, "dr_tier": None,
              "note": "Initial NAP citation build — match canonical NAP exactly."},
@@ -66,6 +69,10 @@ TIER_PLANS: dict[str, dict] = {
         ],
     },
 }
+
+# Monthly content target when a customer has no resolvable tier (custom deal /
+# pre-Stripe). Conservative floor so we never over-spend on an unpriced account.
+DEFAULT_CONTENT_QUOTA = 2
 
 TYPE_LABEL = {"citation": "Local citations", "link": "Editorial link", "mention": "Brand mention"}
 
@@ -98,6 +105,15 @@ def resolve_tier(plan_name: str | None, override: str | None = None) -> str | No
         if ov in TIER_PLANS:
             return ov
     return normalize_tier(plan_name)
+
+
+def monthly_content_quota(plan_name: str | None, override: str | None = None) -> int:
+    """How many intent-driven content pieces to queue per month for this tier.
+    Falls back to DEFAULT_CONTENT_QUOTA for custom/unresolved tiers."""
+    tier = resolve_tier(plan_name, override)
+    if not tier:
+        return DEFAULT_CONTENT_QUOTA
+    return TIER_PLANS[tier].get("content_quota", DEFAULT_CONTENT_QUOTA)
 
 
 def _period_starts(now: datetime) -> tuple[str, str]:
