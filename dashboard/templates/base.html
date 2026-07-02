@@ -491,18 +491,12 @@
         .metric-card .metric-change.negative { color: var(--danger); }
         .metric-card .metric-change.neutral { color: var(--muted); }
 
-        /* ===== Smooth page + tab transitions ===== */
-        /* Cross-document view transitions (Chromium/Safari TP): full-page
-           navigations crossfade instead of hard-flashing. Pure CSS, no JS. */
-        @view-transition { navigation: auto; }
-
-        /* Gentle fade/rise on every load — masks the font swap + any per-page
-           component styles, and is the fallback where view transitions aren't
-           supported. (Animates .container, not .main-content, so the sticky
-           top-bar is unaffected.) */
-        @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-        .container { animation: pageIn 0.22s ease-out both; }
-
+        /* ===== Transitions =====
+           NOTE: no cross-document @view-transition and no per-page container
+           reveal animation. Both caused a visible "blank → content appears" flash
+           on every navigation (the container started at opacity:0 and faded in,
+           and the view-transition crossfade added a white frame). Pages now render
+           instantly and stable. In-page tab switches keep a subtle fade only. */
         .tab-content { animation: fadeIn 0.18s ease-out; }
         .seo-sub-content { animation: fadeIn 0.18s ease-out; }
 
@@ -512,8 +506,7 @@
         .btn:active { transform: translateY(1px); }
 
         @media (prefers-reduced-motion: reduce) {
-            @view-transition { navigation: none; }
-            .container, .tab-content, .seo-sub-content { animation: none; }
+            .tab-content, .seo-sub-content { animation: none; }
         }
 
         /* Better scrollbar */
