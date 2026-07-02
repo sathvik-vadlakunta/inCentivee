@@ -69,6 +69,18 @@ def customer_action_items(db, customer: dict) -> list[dict]:
             items.append(_ai("fatjoe", "info", f"{n} FATJOE order{'s' if n != 1 else ''} to place",
                              "This period's authority orders.", "/fatjoe"))
 
+    # --- Review velocity: stalled reviews are the top local-pack leak ---
+    if status == "active" and paid:
+        stats = db.get_review_stats(cid)
+        if (stats.get("total") or 0) > 0:  # only when we actually track reviews
+            vel = db.review_velocity(cid)
+            if not vel["on_track"]:
+                deficit = vel["target"] - vel["current"]
+                items.append(_ai("reviews", "warning",
+                                 f"Reviews behind pace · {vel['current']}/mo vs {vel['target']} target",
+                                 f"{deficit} short this month — nudge the review campaign.",
+                                 f"/customer/{cid}#reviews"))
+
     # --- Free-form flagged next step (e.g. "Paid — send access email") ---
     na = (customer.get("next_action") or "").strip()
     if na:

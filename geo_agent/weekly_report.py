@@ -185,6 +185,13 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
         prev_conv = db.get_conversions(customer_id, ds(prev_start), ds(prev_end), channel="organic")
         data["sections"]["leads"] = {"cur": conv, "prev": prev_conv}
 
+    # --- Patient outcomes (the headline clients renew for) ---
+    from geo_agent import outcomes as _oc
+    _out = _oc.patient_outcomes(db, customer_id, ds(cur_start), ds(end),
+                                ds(prev_start), ds(prev_end))
+    if _out:
+        data["sections"]["outcomes"] = _out
+
     # --- Reviews & reputation (REAL) ---
     places = db.get_google_places(customer_id)
     if places:
@@ -202,6 +209,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
             "new_count": len(new_reviews),
             "new_five_star": sum(1 for r in new_reviews if r.get("rating") == 5),
             "gap": gap,
+            "velocity": db.review_velocity(customer_id),
         }
 
     # --- Local listings / NAP (R4; renders only when citations audited) ---
@@ -292,7 +300,15 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     except Exception:
         pass
 
-    data["sections"]["wins"] = {"published": published}
+    # Intent mix of what we shipped — proof we target money queries, not just traffic.
+    intent_mix = None
+    tiers = [(r.get("intent_tier") or "") for r in published]
+    tiers = [t for t in tiers if t]
+    if tiers:
+        buyer = sum(1 for t in tiers if t in ("transactional", "commercial"))
+        intent_mix = {"buyer": buyer, "research": len(tiers) - buyer, "total": len(tiers),
+                      "buyer_pct": round(buyer / len(tiers) * 100)}
+    data["sections"]["wins"] = {"published": published, "intent_mix": intent_mix}
 
     # --- Sources now citing you (from grounded AI answers) ---
     try:
@@ -393,6 +409,14 @@ def _exec_summary(data: dict) -> str:
     name = data["practice_name"]
     bits = []
     s = data["sections"]
+    # Lead with the outcome that matters most — new patients + production.
+    if "outcomes" in s and s["outcomes"].get("inquiries"):
+        o = s["outcomes"]
+        if o.get("estimated_value"):
+            bits.append(f"you drew {o['inquiries']} new patient inquiries "
+                        f"(~${o['estimated_value']:,} in potential production)")
+        else:
+            bits.append(f"you drew {o['inquiries']} new patient inquiries")
     # Lead with AI rank when strong — it's our differentiator.
     if "ai" in s and s["ai"].get("sov"):
         sov = s["ai"]["sov"]
@@ -492,6 +516,37 @@ def render_html(data: dict) -> str:
     # 1. Exec summary
     parts.append(f"""<div class="r-sec"><h3>The headline</h3>
       <div class="summary"><p>📈 {e(data['exec_summary'])}</p></div></div>""")
+
+    # 1·outcome — the number clients renew for: new-patient inquiries + production
+    if s.get("outcomes"):
+        o = s["outcomes"]
+        delta_html = ""
+        if o.get("prev_inquiries") is not None:
+            label, direction = _pct_delta(o["inquiries"], o["prev_inquiries"])
+            delta_html = _delta_span(f"{label} vs prior period", direction)
+        bd = o["breakdown"]
+        chips = " &nbsp;·&nbsp; ".join(
+            f"{ic} {n} {lbl}" for ic, n, lbl in (
+                ("📞", bd["calls"], "calls"), ("✍️", bd["forms"], "forms"),
+                ("📅", bd["bookings"], "bookings")) if n)
+        if o.get("estimated_value"):
+            money = (f'<div style="font-size:20px;font-weight:800;color:#0f766e;margin-top:2px;">'
+                     f'~${o["estimated_value"]:,} <span style="font-size:13px;font-weight:600;color:#475569;">'
+                     f'in potential new-patient production</span></div>'
+                     f'<div style="font-size:11px;color:#94a3b8;margin-top:4px;">'
+                     f'{o["inquiries"]} inquiries × {round(o["close_rate"]*100)}% est. close × '
+                     f'${o["avg_case_value"]:,} avg case value</div>')
+        else:
+            money = ('<div style="font-size:11px;color:#94a3b8;margin-top:6px;">'
+                     'Set this practice’s average case value to show estimated production.</div>')
+        parts.append(f"""<div class="r-sec"><h3>New patients this period</h3>
+          <div style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:12px;padding:18px 20px;">
+            <div style="font-size:34px;font-weight:800;color:#0f766e;line-height:1;">{o['inquiries']}
+              <span style="font-size:15px;font-weight:600;color:#334155;">new patient inquiries</span></div>
+            {money}
+            <div style="margin-top:10px;font-size:12px;color:#475569;">{chips}</div>
+            {delta_html}
+          </div></div>""")
 
     # 1a. What we need from you (customer action items)
     if s.get("needs"):
@@ -646,6 +701,12 @@ def render_html(data: dict) -> str:
                 + _kpi("Total reviews", str(int(pl.get("review_count", 0))))
                 + _kpi("New this week", str(rv["new_count"]),
                        f'<div class="delta up">{rv["new_five_star"]} × 5★</div>' if rv["new_five_star"] else ""))
+        vel = rv.get("velocity")
+        if vel:
+            vcls = "up" if vel["on_track"] else "down"
+            vlbl = "on pace" if vel["on_track"] else f"target {vel['target']}/mo"
+            vdelta = f'<div class="delta {vcls}">{vlbl}</div>'
+            kpis += _kpi("Reviews / month", str(vel["current"]), vdelta)
         gap_note = ""
         if rv.get("gap"):
             g = rv["gap"]
@@ -655,6 +716,10 @@ def render_html(data: dict) -> str:
             kpis += _kpi(f"vs {e(g['competitor'])[:18]}", f"{g['gap']:+d}",
                          '<div class="delta flat">review volume</div>')
             gap_note = f'<p class="mini" style="margin-top:12px">Nearest competitor has {g["competitor_reviews"]} reviews{trend}.</p>'
+        if vel and not vel["on_track"]:
+            gap_note += (f'<p class="mini" style="margin-top:8px;color:#b45309">'
+                         f'Review pace is below target ({vel["current"]} vs {vel["target"]}/mo) — '
+                         f'the review-request campaign needs a nudge.</p>')
         parts.append(f'<div class="r-sec"><h3>Reviews &amp; reputation</h3>'
                      f'<div class="kpis">{kpis}</div>{gap_note}</div>')
 
@@ -777,7 +842,18 @@ def render_html(data: dict) -> str:
     wins = s.get("wins", {}).get("published", [])
     if wins:
         items = "".join(f'<li>✅ Published <b>{e(w["title"])}</b></li>' for w in wins[:8])
-        parts.append(f'<div class="r-sec"><h3>What we did this week</h3><ul class="wins">{items}</ul></div>')
+        mix = s.get("wins", {}).get("intent_mix")
+        mix_html = ""
+        if mix and mix["total"]:
+            bp = mix["buyer_pct"]
+            mix_html = (
+                f'<div style="margin-top:12px">'
+                f'<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:#e2e8f0">'
+                f'<div style="width:{bp}%;background:#0f766e"></div><div style="width:{100-bp}%;background:#cbd5e1"></div></div>'
+                f'<p class="mini" style="margin:6px 0 0">Content focus: <b>{bp}% buyer-intent</b> '
+                f'({mix["buyer"]} buyer · {mix["research"]} research) — we prioritize the searches that book patients.</p>'
+                f'</div>')
+        parts.append(f'<div class="r-sec"><h3>What we did this week</h3><ul class="wins">{items}</ul>{mix_html}</div>')
 
     # 10. What's next (from alerts)
     next_items = ""

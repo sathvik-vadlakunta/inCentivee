@@ -20,6 +20,7 @@ import anthropic
 from geo_agent.config import Customer
 from geo_agent.content_validation import auto_soften, summarize, validate_html_claims
 from geo_agent.crawler import PageData
+from geo_agent.keyword_intent import classify_intent
 from geo_agent.llm import MODEL_CONTENT, complete
 
 # Max number of recommendations in a single batch that may reuse the same statistic before
@@ -146,6 +147,7 @@ class ContentRecommendation:
     author_attribution: str = ""  # visible reviewer/byline name (YMYL E-E-A-T), "" if N/A
     reviewed_date: str = ""  # YYYY-MM-DD last-reviewed date, "" if N/A
     meta_description: str = ""  # publish-ready SEO meta description (<=155 chars), "" if N/A
+    intent_tier: str = ""  # transactional/commercial/informational (money-query weighting)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -1137,6 +1139,13 @@ def _grade_recommendations(
         # Should contain actual HTML tags
         if "<" not in rec.html_snippet:
             continue  # Skip non-HTML content
+
+        # Money-query weighting: tag the topic's search intent and nudge pure-research
+        # content down so buyer-intent pieces (transactional/commercial) sort first.
+        # FAQ updates are exempt — they're often the answer format for a commercial query.
+        rec.intent_tier = classify_intent(f"{rec.title} {rec.category}")
+        if rec.intent_tier == "informational" and rec.rec_type != "faq_update":
+            rec.priority = min(rec.priority + 1, 5)
 
         graded.append(rec)
 

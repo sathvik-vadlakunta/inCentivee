@@ -14,7 +14,7 @@ import re
 import secrets
 import sqlite3
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from geo_agent.config import Customer, Provider
@@ -413,6 +413,16 @@ class CustomerDB:
             # name doesn't contain a tier keyword — custom payment links, discounted
             # deals, etc. Wins over the normalize_tier() product-name heuristic.
             self.conn.execute("ALTER TABLE customers ADD COLUMN tier_override TEXT NOT NULL DEFAULT ''")
+        if "avg_case_value" not in cols:
+            # Outcome-led reporting: avg $ a new patient/case is worth to this practice
+            # (whole dollars). Set once by Dan; multiplies inquiries → estimated production.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN avg_case_value INTEGER")
+            # Inquiry → booked-patient close rate (0..1); default to a conservative industry ~0.35.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN close_rate REAL NOT NULL DEFAULT 0.35")
+        if "review_target_pm" not in cols:
+            # Target new Google reviews per month. Review velocity below this raises a
+            # stall signal (action item) — reviews/month is the top local-pack lever.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN review_target_pm INTEGER NOT NULL DEFAULT 4")
 
         # Per-customer activity timeline: notes, status changes, and ingested
         # emails. Mirrors prospect_activities so the customer detail page gets the
@@ -448,6 +458,11 @@ class CustomerDB:
             self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN meta_description TEXT DEFAULT ''")
             self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN author_attribution TEXT DEFAULT ''")
             self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN reviewed_date TEXT DEFAULT ''")
+        if "intent_tier" not in rec_cols:
+            # Money-query weighting: search intent of the target topic
+            # (transactional/commercial/informational) — drives ordering + the report's
+            # intent mix so we prove we're publishing buyer content, not just traffic.
+            self.conn.execute("ALTER TABLE content_recommendations ADD COLUMN intent_tier TEXT NOT NULL DEFAULT ''")
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS squarespace_credentials (
                 customer_id TEXT PRIMARY KEY REFERENCES customers(id),
@@ -2478,8 +2493,8 @@ class CustomerDB:
             """INSERT OR REPLACE INTO content_recommendations
             (id, customer_id, rec_type, target_page, title, description, html_snippet,
              priority, category, status, ai_impact_reason, created_at,
-             meta_description, author_attribution, reviewed_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             meta_description, author_attribution, reviewed_date, intent_tier)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 rec["id"], rec["customer_id"], rec["rec_type"],
                 rec.get("target_page", ""), rec["title"],
@@ -2488,7 +2503,7 @@ class CustomerDB:
                 rec.get("status", "pending"), rec.get("ai_impact_reason", ""),
                 rec.get("created_at", datetime.now(timezone.utc).isoformat()),
                 rec.get("meta_description", ""), rec.get("author_attribution", ""),
-                rec.get("reviewed_date", ""),
+                rec.get("reviewed_date", ""), rec.get("intent_tier", ""),
             ),
         )
         self.conn.commit()
@@ -3312,6 +3327,38 @@ class CustomerDB:
             (customer_id,),
         ).fetchone()
         return dict(row) if row else {}
+
+    def review_velocity(self, customer_id: str, window_days: int = 30) -> dict:
+        """New reviews in the trailing window vs the prior one, and the practice's
+        monthly target. Powers the stall alert + report line. `review_date` may be
+        ISO or YYYY-MM-DD — a lexicographic compare on the date prefix works for both."""
+        now = datetime.now(timezone.utc)
+        cur_start = (now - timedelta(days=window_days)).strftime("%Y-%m-%d")
+        prev_start = (now - timedelta(days=window_days * 2)).strftime("%Y-%m-%d")
+
+        def _count(lo: str, hi: str | None) -> int:
+            q = "SELECT COUNT(*) FROM reviews WHERE customer_id = ? AND substr(review_date,1,10) >= ?"
+            args: list = [customer_id, lo]
+            if hi:
+                q += " AND substr(review_date,1,10) < ?"
+                args.append(hi)
+            try:
+                return int(self.conn.execute(q, args).fetchone()[0])
+            except Exception:
+                return 0
+
+        cust = self.get_customer(customer_id) or {}
+        target = cust.get("review_target_pm")
+        target = 4 if target is None else int(target)
+        cur = _count(cur_start, None)
+        prev = _count(prev_start, cur_start)
+        return {
+            "current": cur,          # reviews in trailing window (≈ per month at 30d)
+            "previous": prev,        # prior window, for the trend arrow
+            "target": target,        # target new reviews / month
+            "window_days": window_days,
+            "on_track": cur >= target,
+        }
 
     # --- Citations ---
 

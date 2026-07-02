@@ -1,0 +1,595 @@
+<style>
+  :root{
+    --paper:#ECEEF1; --card:#FFFFFF; --ink:#10151B; --ink-2:#434B55; --ink-3:#6A727C;
+    --line:#D6DBE1; --line-2:#E7EAEE;
+    --accent:#1B4B8A; --accent-soft:#E7EEF6; --signal:#B26A00; --signal-soft:#F6EEDD;
+    --good:#1F7A45; --good-bg:#E3F1E8; --warn:#B4780A; --warn-bg:#F7EEDA; --crit:#B4231C; --crit-bg:#F7E2E0;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+    --maxw:themeless;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body.spec{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55;
+    font-size:16px;margin:0;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  .col{max-width:820px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code,.mono{font-family:var(--mono)}
+  h1,h2,h3,h4{text-wrap:balance;line-height:1.15;margin:0}
+  p{margin:0 0 .85em}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+
+  /* Masthead */
+  .mast{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#F3F4F6,var(--paper));}
+  .mast-in{padding:44px 0 30px}
+  .mast .kick{color:var(--accent);font-weight:700}
+  .mast h1{font-size:clamp(30px,4.4vw,46px);letter-spacing:-.02em;margin:14px 0 10px;font-weight:800}
+  .mast .lede{font-size:18px;color:var(--ink-2);max-width:60ch}
+  .metarow{display:flex;flex-wrap:wrap;gap:8px 10px;margin-top:22px;font-family:var(--mono);font-size:12px}
+  .meta{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--ink-2)}
+  .meta b{color:var(--ink);font-weight:600}
+
+  /* Sticky nav */
+  nav.jump{position:sticky;top:0;z-index:20;background:rgba(236,238,241,.86);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line)}
+  nav.jump .wrap{display:flex;gap:4px;overflow-x:auto;padding:9px 24px;font-family:var(--mono);font-size:12.5px}
+  nav.jump a{color:var(--ink-2);padding:5px 10px;border-radius:7px;white-space:nowrap}
+  nav.jump a:hover{background:var(--accent-soft);color:var(--accent);text-decoration:none}
+
+  section{padding:40px 0}
+  section+section{border-top:1px solid var(--line-2)}
+  .lead-graf{font-size:17px;color:var(--ink-2)}
+
+  /* Thesis / summary */
+  .thesis{background:var(--ink);color:#EAECEF;border-radius:14px;padding:28px 30px;margin:6px 0 30px}
+  .thesis .eyebrow{color:#8FA6C4}
+  .thesis h2{color:#fff;font-size:22px;margin:10px 0 12px;letter-spacing:-.01em}
+  .thesis p{color:#C4CBD4;margin:0}
+  .thesis strong{color:#fff}
+
+  /* Matrix table */
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:640px}
+  th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line-2);vertical-align:top}
+  thead th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+    font-weight:600;background:#F7F8FA;position:sticky;top:0}
+  tbody tr:last-child td{border-bottom:0}
+  td .num{font-family:var(--mono);color:var(--ink-3)}
+  .idx{font-family:var(--mono);color:var(--accent);font-weight:600}
+  .num-cell{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+
+  /* chips */
+  .chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:600;
+    padding:3px 9px;border-radius:999px;border:1px solid var(--line);letter-spacing:.03em;white-space:nowrap}
+  .chip.hi{background:var(--crit-bg);color:var(--crit);border-color:transparent}
+  .chip.med{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+  .chip.lo{background:var(--good-bg);color:var(--good);border-color:transparent}
+  .chip.integrate{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+  .chip.build{background:#EEECF6;color:#5B4B9A;border-color:transparent}
+  .chip.moat{background:var(--signal-soft);color:var(--signal);border-color:transparent}
+  .chip.plain{background:#F2F4F6;color:var(--ink-2)}
+
+  /* Initiative cards */
+  .init{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:22px}
+  .init-head{display:flex;gap:18px;align-items:flex-start;padding:22px 26px 18px;border-bottom:1px solid var(--line-2);
+    border-left:4px solid var(--accent)}
+  .init-head.moat{border-left-color:var(--signal)}
+  .init-num{font-family:var(--mono);font-size:30px;font-weight:700;color:var(--accent);line-height:1;min-width:44px}
+  .init-head.moat .init-num{color:var(--signal)}
+  .init-title h3{font-size:22px;letter-spacing:-.01em}
+  .init-title .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .init-body{padding:20px 26px 26px}
+  .block{margin-top:20px}
+  .block:first-child{margin-top:0}
+  .block>.eyebrow{display:block;margin-bottom:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line-2);border-radius:11px;padding:15px 16px;background:#FBFCFD}
+  .panel .eyebrow{display:block;margin-bottom:9px;color:var(--accent)}
+  .panel.moat .eyebrow{color:var(--signal)}
+  ul.tick{list-style:none;margin:0;padding:0}
+  ul.tick li{position:relative;padding:4px 0 4px 22px;font-size:14.5px;color:var(--ink-2)}
+  ul.tick li::before{content:"→";position:absolute;left:0;color:var(--accent);font-family:var(--mono)}
+  ul.tick.have li::before{content:"✓";color:var(--good)}
+  ul.tick li b,ul.tick li strong{color:var(--ink)}
+  .kbd{font-family:var(--mono);font-size:12.5px;background:#EEF1F4;border:1px solid var(--line);border-radius:5px;
+    padding:1px 6px;color:var(--ink);white-space:nowrap}
+  .accept{display:flex;gap:12px;align-items:flex-start;margin-top:20px;padding:14px 16px;background:var(--accent-soft);
+    border-radius:11px;font-size:14.5px}
+  .accept.moat{background:var(--signal-soft)}
+  .accept .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    color:var(--accent);white-space:nowrap;padding-top:2px}
+  .accept.moat .lbl{color:var(--signal)}
+
+  .callout{border-left:3px solid var(--warn);background:var(--warn-bg);padding:13px 16px;border-radius:0 10px 10px 0;
+    margin-top:18px;font-size:14px;color:#6b4a08}
+  .callout b{color:#4a3305}
+
+  /* Vendor recommendation */
+  .reco{display:flex;gap:14px;align-items:center;background:var(--ink);color:#fff;border-radius:12px;padding:16px 20px;margin-top:6px}
+  .reco .r-badge{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:var(--signal);
+    color:#fff;padding:5px 10px;border-radius:6px;font-weight:700;white-space:nowrap}
+  .reco p{margin:0;color:#D6DBE1;font-size:14.5px}
+  .reco b{color:#fff}
+
+  /* order list */
+  .order{display:grid;gap:10px;counter-reset:o}
+  .order .step{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+    border-radius:11px;padding:14px 16px}
+  .order .step .p{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:6px;white-space:nowrap;height:fit-content}
+  .p.p1{background:var(--crit-bg);color:var(--crit)} .p.p2{background:var(--warn-bg);color:var(--warn)} .p.p3{background:var(--good-bg);color:var(--good)}
+  .order .step h4{font-size:15px;margin-bottom:3px}
+  .order .step p{margin:0;font-size:13.5px;color:var(--ink-2)}
+
+  footer{border-top:1px solid var(--line);padding:28px 0 60px;color:var(--ink-3);font-size:13px;font-family:var(--mono)}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion:no-preference){.init{transition:box-shadow .2s} .init:hover{box-shadow:0 10px 30px -20px rgba(16,21,27,.4)}}
+</style>
+
+<body class="spec">
+<header class="mast">
+  <div class="wrap mast-in col">
+    <div class="eyebrow">PracticeRank · Product &amp; Engineering Spec</div>
+    <h1>From <span class="kick">activity</span> to <span class="kick">outcomes</span></h1>
+    <p class="lede">Six builds that move the story clients renew for — new patients, a defensible AI-search moat, and results they feel in the first month. Most of this is wiring on systems we already have, not greenfield.</p>
+    <div class="metarow">
+      <span class="meta"><b>Status</b> Draft v1</span>
+      <span class="meta"><b>Date</b> 2026-07-02</span>
+      <span class="meta"><b>Owner</b> Kody</span>
+      <span class="meta"><b>Ops</b> Dan</span>
+      <span class="meta"><b>Scope</b> geo_agent + dashboard</span>
+    </div>
+  </div>
+</header>
+
+<nav class="jump" aria-label="Sections">
+  <div class="wrap">
+    <a href="#summary">Summary</a>
+    <a href="#i1">01 · Outcomes</a>
+    <a href="#i2">02 · AEO moat</a>
+    <a href="#i3">03 · Money queries</a>
+    <a href="#i4">04 · Review engine</a>
+    <a href="#i5">05 · Quick win</a>
+    <a href="#i6">06 · Churn radar</a>
+    <a href="#order">Build order</a>
+  </div>
+</nav>
+
+<section id="summary">
+  <div class="wrap col">
+    <div class="thesis">
+      <div class="eyebrow">The through-line</div>
+      <h2>Retention is the whole business.</h2>
+      <p>At ~$3,000/mo, one saved cancellation is worth more than a new logo. Every item here serves retention through one of three moves: <strong>prove the outcome</strong> (01), <strong>own a category nobody else can claim</strong> (02–03), and <strong>make results happen fast and visibly</strong> (04–06). We already collect most of the data — the work is turning it into a number a dentist repeats to their spouse.</p>
+    </div>
+
+    <div class="eyebrow" style="margin-bottom:12px">The six at a glance</div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Initiative</th><th>Impact</th><th>Effort</th><th>Build vs. integrate</th><th>Leans on</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="idx">01</td><td><b>Outcome-led reporting</b><br><span class="num">new patients + $ production</span></td>
+            <td><span class="chip hi">Churn-critical</span></td><td><span class="chip lo">Low</span></td>
+            <td><span class="chip build">Wire existing</span></td>
+            <td class="mono num">lead_tracking · ga4_client · weekly_report</td>
+          </tr>
+          <tr>
+            <td class="idx">02</td><td><b>AI Share-of-Voice score</b><br><span class="num">the flagship moat metric</span></td>
+            <td><span class="chip hi">Differentiator</span></td><td><span class="chip med">Medium</span></td>
+            <td><span class="chip build">Extend existing</span></td>
+            <td class="mono num">ai_mention_runs · check_ai_mentions</td>
+          </tr>
+          <tr>
+            <td class="idx">03</td><td><b>Money-query content weighting</b></td>
+            <td><span class="chip med">High</span></td><td><span class="chip lo">Low</span></td>
+            <td><span class="chip build">Enforce existing</span></td>
+            <td class="mono num">keyword_intent · content_recommender</td>
+          </tr>
+          <tr>
+            <td class="idx">04</td><td><b>Automated review engine</b><br><span class="num">white-label, not build</span></td>
+            <td><span class="chip hi">Highest local ROI</span></td><td><span class="chip lo">Low–Med</span></td>
+            <td><span class="chip integrate">Integrate vendor</span></td>
+            <td class="mono num">Grade.us · reviews · Resend</td>
+          </tr>
+          <tr>
+            <td class="idx">05</td><td><b>Day-1 quick-win pass</b></td>
+            <td><span class="chip med">Early-churn</span></td><td><span class="chip lo">Low</span></td>
+            <td><span class="chip build">Standardize existing</span></td>
+            <td class="mono num">quick_wins · onboarding checklist</td>
+          </tr>
+          <tr>
+            <td class="idx">06</td><td><b>Churn-risk radar</b></td>
+            <td><span class="chip med">Retention</span></td><td><span class="chip med">Medium</span></td>
+            <td><span class="chip build">New score</span></td>
+            <td class="mono num">action_items · seo_score_and_delta</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="num" style="margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--ink-3)">Impact = effect on renewals. “Wire/extend/enforce existing” means the data or engine is already in the codebase — see each initiative’s <em>Already in place</em> panel.</p>
+  </div>
+</section>
+
+<!-- 01 -->
+<section id="i1">
+  <div class="wrap col">
+    <div class="init">
+      <div class="init-head">
+        <div class="init-num">01</div>
+        <div class="init-title">
+          <h3>Make patient outcomes the headline, not activity</h3>
+          <div class="tags"><span class="chip hi">Churn-critical</span><span class="chip lo">Low effort</span><span class="chip build">Wire existing</span></div>
+        </div>
+      </div>
+      <div class="init-body">
+        <p class="lead-graf">A dentist doesn’t renew for “12 blog posts and 4 backlinks.” They renew for <b>“you got me 14 new patients.”</b> Today the report leads with effort; it should lead with inquiries and estimated production.</p>
+
+        <div class="block">
+          <span class="eyebrow">Already in place</span>
+          <ul class="tick have">
+            <li><span class="kbd">lead_tracking.py</span> ships a paste-once snippet that fires <span class="kbd">phone_click</span> / <span class="kbd">form_submit</span> / <span class="kbd">appointment_request</span> to GA4 or GTM.</li>
+            <li><span class="kbd">ga4_client.track_conversions()</span> pulls those into the <span class="kbd">conversions_daily</span> table; <span class="kbd">weekly_report.build_report_data()</span> already renders a <span class="kbd">leads</span> section with period-over-period deltas.</li>
+          </ul>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">The fix</span>
+          <div class="grid2">
+            <div class="panel">
+              <span class="eyebrow">Data</span>
+              <ul class="tick">
+                <li>Add <span class="kbd">avg_case_value</span> (cents) to <span class="kbd">customers</span> — Dan sets it once per client.</li>
+                <li>Optional <span class="kbd">close_rate</span> (default an industry ~0.35) to translate inquiries → booked patients.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Backend</span>
+              <ul class="tick">
+                <li><span class="kbd">outcomes.py</span>: <b>inquiries</b> = calls + forms + booking clicks over the period; <b>est. production</b> = inquiries × close_rate × avg_case_value.</li>
+                <li>Roll a rolling series into the report payload for a trend.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Report</span>
+              <ul class="tick">
+                <li>New hero band above the fold: <b>“14 new patient inquiries · ~$38k in potential production.”</b></li>
+                <li>Feed the headline number into <span class="kbd">_exec_summary()</span> so the summary line leads with it.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Operator (Dan)</span>
+              <ul class="tick">
+                <li>One field on the customer page: “Average case value.” Tooltip explains it drives the ROI headline.</li>
+                <li>Dashboard: a <b>patients-attributed</b> sparkline beside the SEO-score column already added to <span class="kbd">index.html</span>.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout"><b>Honesty guardrail:</b> label it “potential/attributed production,” never “revenue we generated.” Attribution is directional (organic-channel conversions), and overclaiming is the fastest way to lose a smart client. The number persuades because it’s grounded, not inflated.</div>
+
+        <div class="accept"><span class="lbl">Done when</span><div>The monthly report’s first line is a patient/production number, Dan can set avg case value in the UI, and the dashboard shows a per-client attributed-patients trend.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 -->
+<section id="i2">
+  <div class="wrap col">
+    <div class="init">
+      <div class="init-head moat">
+        <div class="init-num">02</div>
+        <div class="init-title">
+          <h3>The AI Share-of-Voice score — our moat metric</h3>
+          <div class="tags"><span class="chip moat">Category of one</span><span class="chip hi">Differentiator</span><span class="chip med">Medium effort</span></div>
+        </div>
+      </div>
+      <div class="init-body">
+        <p class="lead-graf">Every agency does backlinks and blogs. Almost none can say <b>“we get you recommended by ChatGPT, Perplexity, and Google AI Overviews.”</b> We already check AI mentions — productizing it into a tracked, competitive <b>Share-of-Voice</b> score is what justifies $3k and what nobody else can credibly sell.</p>
+
+        <div class="block">
+          <span class="eyebrow">Already in place</span>
+          <ul class="tick have">
+            <li><span class="kbd">ai_mention_runs</span> / <span class="kbd">ai_mention_results</span> tables + the weekly AI-mention check already record whether a practice is named by AI engines.</li>
+            <li>The weekly report has an <span class="kbd">ai</span> section with a mention rate and trend.</li>
+          </ul>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">The fix</span>
+          <div class="grid2">
+            <div class="panel moat">
+              <span class="eyebrow">Data</span>
+              <ul class="tick">
+                <li>A curated set of <b>commercial queries</b> per client (“dental implants {city}”, “emergency dentist near me”, “Invisalign cost {city}”).</li>
+                <li><span class="kbd">ai_sov_daily</span>: per query × engine × date → named? position? competitors named alongside?</li>
+              </ul>
+            </div>
+            <div class="panel moat">
+              <span class="eyebrow">Backend</span>
+              <ul class="tick">
+                <li>Run each query across ChatGPT / Claude / Perplexity / Google AIO; parse whether the client and each competitor are cited.</li>
+                <li><b>SoV = client mentions ÷ total brand mentions</b> across the query set, weighted by query value. One 0–100 flagship number + trend.</li>
+              </ul>
+            </div>
+            <div class="panel moat">
+              <span class="eyebrow">Report + sales</span>
+              <ul class="tick">
+                <li>A dedicated report module: “AI Share-of-Voice: <b>34% → 51%</b>, now ahead of {competitor} in 6 of 10 buyer questions.”</li>
+                <li>Same widget powers the sales demo — a live “watch us get you named” proof.</li>
+              </ul>
+            </div>
+            <div class="panel moat">
+              <span class="eyebrow">Operator (Dan)</span>
+              <ul class="tick">
+                <li>Approve the per-client query set once at onboarding (seeded from tracked keywords + services).</li>
+                <li>Dashboard tile: SoV score + arrow, sortable, beside the SEO score.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout"><b>Cost control:</b> query panels are the spend here. Cap at ~10 queries × the engines, run weekly not daily, cache aggressively — this rides the same budget discipline as the rest of geo_agent. Emphasize <em>movement</em> (trend) over absolute counts so a slow month still tells a story.</div>
+
+        <div class="accept moat"><span class="lbl">Done when</span><div>Every client has a weekly 0–100 AI Share-of-Voice score with a competitor comparison, surfaced in the report and on the dashboard, and it’s the lead metric in the sales deck.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section id="i3">
+  <div class="wrap col">
+    <div class="init">
+      <div class="init-head moat">
+        <div class="init-num">03</div>
+        <div class="init-title">
+          <h3>Weight content to money queries, not traffic</h3>
+          <div class="tags"><span class="chip moat">Content</span><span class="chip med">High impact</span><span class="chip lo">Low effort</span></div>
+        </div>
+      </div>
+      <div class="init-body">
+        <p class="lead-graf">Informational traffic (“what is a cavity”) looks great in a report and books nobody. Commercial-intent queries (“implants cost”, “emergency dentist near me”, “financing”) fill chairs. The intent engine already exists — this is about <b>enforcing</b> it and <b>showing</b> it.</p>
+
+        <div class="block">
+          <span class="eyebrow">Already in place</span>
+          <ul class="tick have">
+            <li><span class="kbd">keyword_intent.classify_intent()</span> returns <span class="kbd">transactional</span> / <span class="kbd">commercial</span> / <span class="kbd">informational</span>, with weights <b>2.0 / 1.5 / 0.4</b> and a rank in <span class="kbd">intent_rank()</span>.</li>
+            <li><span class="kbd">INTENT_META</span> already carries UI labels + colors (“Buy/Action”, “Compare/Decide”, “Research”).</li>
+          </ul>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">The fix</span>
+          <div class="grid2">
+            <div class="panel">
+              <span class="eyebrow">Backend</span>
+              <ul class="tick">
+                <li>Make <span class="kbd">intent_rank</span> an explicit sort/gate in <span class="kbd">content_recommender.py</span>: transactional &amp; commercial topics get generated first; informational only fills a small “top-of-funnel” quota.</li>
+                <li>Store the intent tier on each <span class="kbd">content_recommendations</span> row so it’s reportable.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Report + UI</span>
+              <ul class="tick">
+                <li>An <b>intent-mix bar</b> in the report and content queue: “this month — 70% buyer-intent, 30% research.”</li>
+                <li>Color the queue chips by <span class="kbd">INTENT_META</span> so Dan sees at a glance he’s shipping money content.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="accept"><span class="lbl">Done when</span><div>Content generation is intent-ordered (commercial-first with an informational cap), each rec shows its intent tier, and the report displays the buyer-vs-research mix.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 -->
+<section id="i4">
+  <div class="wrap col">
+    <div class="init">
+      <div class="init-head">
+        <div class="init-num">04</div>
+        <div class="init-title">
+          <h3>Automated review engine — white-label, don’t build</h3>
+          <div class="tags"><span class="chip hi">Highest local ROI</span><span class="chip integrate">Integrate a vendor</span><span class="chip lo">Low–Med effort</span></div>
+        </div>
+      </div>
+      <div class="init-body">
+        <p class="lead-graf">Service businesses stall on reviews, and review <b>velocity</b> is the strongest local-pack lever there is. Per your call: <b>integrate/white-label a proven service, don’t build a CRM.</b> Good news — <span class="kbd">Grade.us</span> is already in the target stack for exactly this.</p>
+
+        <div class="reco">
+          <span class="r-badge">Recommendation</span>
+          <p><b>Grade.us (Agency, white-label)</b> as the sending/funnel engine — it’s already in our stack, brandable as PracticeRank, and cheapest per location. We build only a thin layer: <b>get contacts in</b> and <b>pull velocity back out</b>.</p>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">Vendor scan — white-label review platforms</span>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Vendor</th><th>White-label</th><th>~Price / location</th><th>Review funnel</th><th>API / Zapier</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td><b>Grade.us</b> <span class="chip lo" style="margin-left:4px">pick</span></td><td>Yes (Agency)</td><td class="num-cell">~$40</td><td>Yes</td><td>API + Zapier</td><td>Already in stack; strongest agency/white-label fit.</td></tr>
+                <tr><td>NiceJob</td><td>Partial</td><td class="num-cell">~$75</td><td>Yes</td><td>Zapier</td><td>Great automation; weaker white-label.</td></tr>
+                <tr><td>Birdeye</td><td>Limited</td><td class="num-cell">$100+</td><td>Yes</td><td>API</td><td>Powerful, pricey, not truly white-label.</td></tr>
+                <tr><td>Podium</td><td>No</td><td class="num-cell">$250+</td><td>Yes</td><td>API</td><td>SMS-first; own brand, expensive.</td></tr>
+                <tr><td>Signpost</td><td>Limited</td><td class="num-cell">$100+</td><td>Yes</td><td>API</td><td>CRM-ish; heavier than we need.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">Getting contacts in — “connect to theirs,” tiered</span>
+          <div class="grid2">
+            <div class="panel">
+              <span class="eyebrow">Tier 1 — zero build</span>
+              <ul class="tick">
+                <li><b>CSV upload / paste list</b> into Grade.us — works for every client on day one.</li>
+                <li><b>Zapier bridge</b> from their booking/PMS (Jane App, Dentrix, Open Dental, Weave) → Grade.us campaign.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Tier 2 — thin build later</span>
+              <ul class="tick">
+                <li>A <b>“completed visit” webhook</b> endpoint that forwards to the vendor — for practices whose PMS can post out.</li>
+                <li>Reuse our <span class="kbd">Resend</span> sender only as a fallback if a client can’t use the vendor.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">What we build (thin orchestration + tracking)</span>
+          <div class="grid2">
+            <div class="panel">
+              <span class="eyebrow">Backend</span>
+              <ul class="tick">
+                <li>Nightly pull of new-review counts (vendor API, or the Google/BrightLocal data we already gather) into <span class="kbd">reviews</span> — we already have <span class="kbd">add_review</span>, <span class="kbd">get_review_stats</span>, <span class="kbd">get_competitor_review_gap</span>.</li>
+                <li><b>Velocity</b> = reviews/month; per-client <b>target</b>; a stall <b>alert</b> when velocity drops (via the same <span class="kbd">action_items</span> + <span class="kbd">alerts</span> path).</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Report + operator</span>
+              <ul class="tick">
+                <li>Report line: “+6 reviews this month (4.9★) — now within 12 of {competitor}” using the existing review-gap function.</li>
+                <li>Onboarding step: <b>“Connect review requests”</b> (upload list / connect Zapier). Dashboard velocity tile + stall alert for Dan.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout"><b>Compliance — do not gate reviews.</b> Google prohibits “review gating” (soliciting only happy customers for public reviews). Configure the funnel to ask <em>every</em> patient for a public review and additionally offer a private feedback path — not one-or-the-other by sentiment. Grade.us supports a compliant flow; keep it that way.</div>
+
+        <div class="accept"><span class="lbl">Done when</span><div>A client’s patient list feeds a white-labeled Grade.us campaign in &lt;15 min of onboarding, new reviews flow back into our <span class="kbd">reviews</span> data, and Dan sees a velocity target + stall alert per client.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 -->
+<section id="i5">
+  <div class="wrap col">
+    <div class="init">
+      <div class="init-head">
+        <div class="init-num">05</div>
+        <div class="init-title">
+          <h3>Kill early churn with a Day-1 quick win</h3>
+          <div class="tags"><span class="chip med">Early-churn</span><span class="chip lo">Low effort</span><span class="chip build">Standardize existing</span></div>
+        </div>
+      </div>
+      <div class="init-body">
+        <p class="lead-graf">Deals die in weeks 1–4 when a client sees nothing happen. A guaranteed, visible first result buys the trust that carries the relationship.</p>
+
+        <div class="block">
+          <span class="eyebrow">Already in place</span>
+          <ul class="tick have">
+            <li><span class="kbd">quick_wins.detect_quick_wins()</span> + <span class="kbd">prioritize()</span> already find fast, high-value fixes across AI visibility, search health, technical, content, and reputation.</li>
+            <li><span class="kbd">status_checker</span> reconciliation already resolves fixed audit issues and ticks onboarding todos.</li>
+          </ul>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">The fix</span>
+          <div class="grid2">
+            <div class="panel">
+              <span class="eyebrow">Standard Day-1 pass</span>
+              <ul class="tick">
+                <li>A fixed checklist: LocalBusiness/Dentist schema live, GBP category + hours + photos corrected, and the <b>worst 3 audit issues</b> fixed.</li>
+                <li>Gate the onboarding checklist on <b>“quick win shipped”</b> — onboarding isn’t “done” until a visible fix is live.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Prove it</span>
+              <ul class="tick">
+                <li>Capture a baseline at onboarding, then surface a <b>“first result”</b> in the first report — a keyword newly ranked, GBP impressions up, schema now valid.</li>
+                <li>Trigger the first report a bit earlier (2–3 weeks) specifically to show the quick win.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="accept"><span class="lbl">Done when</span><div>Every new client gets a standardized Day-1 pass, onboarding can’t complete without a shipped quick win, and the first report shows a concrete “first result” against baseline.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section id="i6">
+  <div class="wrap col">
+    <div class="init">
+      <div class="init-head">
+        <div class="init-num">06</div>
+        <div class="init-title">
+          <h3>Churn-risk radar on the dashboard</h3>
+          <div class="tags"><span class="chip med">Retention</span><span class="chip med">Medium effort</span><span class="chip build">New score</span></div>
+        </div>
+      </div>
+      <div class="init-body">
+        <p class="lead-graf">The accounts that cancel are usually the quiet ones — no fireworks, results drifting sideways, no recent touchpoint. Dan should be able to sort by <b>who’s about to leave</b>, not just who has an active alert.</p>
+
+        <div class="block">
+          <span class="eyebrow">Already in place</span>
+          <ul class="tick have">
+            <li><span class="kbd">action_items.customer_action_items()</span> + <span class="kbd">worst_severity()</span> already compute per-client attention signals.</li>
+            <li><span class="kbd">db.seo_score_and_delta()</span> (added this cycle) gives a results-trend; the health-tracking pattern from the System Health page is reusable.</li>
+          </ul>
+        </div>
+
+        <div class="block">
+          <span class="eyebrow">The fix — a 0–100 renewal-risk score</span>
+          <div class="grid2">
+            <div class="panel">
+              <span class="eyebrow">Signals (weighted)</span>
+              <ul class="tick">
+                <li><b>Results trend</b> — SEO/PracticeRank score delta &amp; SoV movement (flat/negative = risk).</li>
+                <li><b>Review velocity</b> — stalled reviews (from 04).</li>
+                <li><b>Engagement</b> — content approvals, logins, responses to “what we need from you.”</li>
+                <li><b>Touchpoint recency</b> — days since last report opened / last contact.</li>
+              </ul>
+            </div>
+            <div class="panel">
+              <span class="eyebrow">Surface</span>
+              <ul class="tick">
+                <li><span class="kbd">churn_risk.py</span> computes the score nightly; store history like <span class="kbd">seo_health_history</span>.</li>
+                <li>Dashboard: sort by <b>renewal risk</b>; a red/amber “at-risk” band with the top reason (“results flat 60d + no login 21d”).</li>
+                <li>Feed high-risk accounts into the daily attention digest so Dan intervenes before the cancel email.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="accept"><span class="lbl">Done when</span><div>Every active client has a nightly renewal-risk score with a plain-language top reason, the dashboard sorts by it, and at-risk accounts surface in Dan’s daily digest.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Build order -->
+<section id="order">
+  <div class="wrap col">
+    <div class="eyebrow" style="margin-bottom:6px">Recommended build order</div>
+    <h2 style="font-size:24px;margin-bottom:6px;letter-spacing:-.01em">Sequence by value-per-effort</h2>
+    <p class="lead-graf" style="margin-bottom:20px">Two levers first because they hit retention and price hardest for the least work; the review engine in parallel since it’s mostly vendor config; the rest as fast follows.</p>
+    <div class="order">
+      <div class="step"><span class="p p1">Phase 1 · now</span><div><h4>01 Outcome-led reporting &nbsp;·&nbsp; 04 Review engine (vendor config)</h4><p>Both are low-build, high-retention. 01 is wiring data we already collect; 04 is Grade.us setup + a CSV/Zapier intake and a velocity pull. Fastest felt impact for clients.</p></div></div>
+      <div class="step"><span class="p p1">Phase 1 · now</span><div><h4>03 Money-query weighting</h4><p>A small change to <span class="kbd">content_recommender</span> ordering + an intent-mix chip. Compounds the value of everything we publish.</p></div></div>
+      <div class="step"><span class="p p2">Phase 2 · next</span><div><h4>02 AI Share-of-Voice score</h4><p>The moat and the sales weapon. Medium build (query panels + parsing), so it follows the quick wins — but it’s the one that defends the $3k.</p></div></div>
+      <div class="step"><span class="p p2">Phase 2 · next</span><div><h4>05 Day-1 quick-win pass</h4><p>Standardize <span class="kbd">quick_wins</span> into a gated onboarding step; pairs naturally with 01’s baseline capture.</p></div></div>
+      <div class="step"><span class="p p3">Phase 3 · then</span><div><h4>06 Churn-risk radar</h4><p>Best built last — it consumes signals from 01, 02, and 04, so it’s most accurate once those exist.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap col">PracticeRank · Growth &amp; Outcomes build spec · Draft v1 · 2026-07-02 · specs/platform/growth-outcomes-review-engine-spec.html</div>
+</footer>
+</body>

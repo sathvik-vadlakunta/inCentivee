@@ -307,6 +307,18 @@
             <div class="label">SEO/GEO Complete</div>
         </div>
         {% endif %}
+        <div class="card stat">
+            <form method="post" action="{{ url_for('set_case_value', customer_id=customer.id) }}" style="margin:0;">
+                <div class="number" style="color:#0f766e;">$<input type="number" name="avg_case_value" value="{{ customer.avg_case_value or '' }}" placeholder="—" min="0" step="50" title="Average $ a new patient/case is worth. Drives the ROI headline on the report." style="width:5ch;border:none;border-bottom:1px dashed var(--border);font:inherit;color:inherit;background:none;text-align:center;" onchange="this.form.submit()"></div>
+                <div class="label">Avg case value <span style="color:var(--muted);">· ROI headline</span></div>
+            </form>
+        </div>
+        <div class="card stat">
+            <form method="post" action="{{ url_for('set_case_value', customer_id=customer.id) }}" style="margin:0;">
+                <div class="number" style="color:#0f766e;"><input type="number" name="review_target_pm" value="{{ customer.review_target_pm if customer.review_target_pm is not none else 4 }}" min="0" step="1" title="Target new Google reviews per month. Below this raises a stall alert." style="width:3ch;border:none;border-bottom:1px dashed var(--border);font:inherit;color:inherit;background:none;text-align:center;" onchange="this.form.submit()">/mo</div>
+                <div class="label">Review target <span style="color:var(--muted);">· velocity goal</span></div>
+            </form>
+        </div>
     </div>
     {% endif %}
 
@@ -2363,6 +2375,11 @@
                 <div class="crec-tags">
                     <span class="crec-type crec-type--{{ rec.rec_type }}">{{ rec.rec_type | replace('_', ' ') }}</span>
                     <span class="crec-pri">Priority {{ rec.priority }}</span>
+                    {% if rec.intent_tier %}
+                    {% set _it = {'transactional': ('#dcfce7','#166534','Buyer'), 'commercial': ('#dbeafe','#1e40af','Compare'), 'informational': ('#f1f5f9','#64748b','Research')} %}
+                    {% set _c = _it.get(rec.intent_tier, ('#f1f5f9','#64748b','—')) %}
+                    <span title="Search intent: {{ rec.intent_tier }}" style="font-size:.7rem;font-weight:600;padding:2px 8px;border-radius:999px;background:{{ _c[0] }};color:{{ _c[1] }};">{{ _c[2] }}</span>
+                    {% endif %}
                     {% if rec.status == 'approved' %}<span class="badge badge-approved">Approved</span>
                     {% elif rec.status == 'published' %}<span class="badge badge-active">Published</span>
                     {% elif rec.status == 'rejected' %}<span class="badge badge-archived">Rejected</span>

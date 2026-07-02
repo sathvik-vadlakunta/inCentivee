@@ -222,6 +222,9 @@ def index():
                 c["action_items"] = ai.customer_action_items(db, c)
                 c["worst_severity"] = ai.worst_severity(c["action_items"])
                 c["seo_score"], c["seo_delta"] = db.seo_score_and_delta(c["id"], _earlier_date(25))
+                from geo_agent import outcomes as _oc
+                c["inquiries_30d"] = _oc.inquiries_in_window(
+                    db, c["id"], _earlier_date(30), _earlier_date(0))
 
         # Filter out archived for main view
         customers = [c for c in all_customers if c["status"] != "archived"]
@@ -261,6 +264,40 @@ def system_health():
         db.close()
     integrations = jh.integration_health()
     return render_template("system_health.html", jobs=jobs, integrations=integrations)
+
+
+@app.route("/customer/<customer_id>/case-value", methods=["POST"])
+@login_required
+def set_case_value(customer_id):
+    """Set a practice's average case value (whole $) — powers the outcome/ROI
+    headline (new-patient inquiries → estimated production) on the report."""
+    db = get_db()
+    try:
+        raw = (request.form.get("avg_case_value") or "").strip()
+        try:
+            acv = int(float(raw)) if raw else None
+        except ValueError:
+            acv = None
+        updates = {"avg_case_value": acv}
+        cr = (request.form.get("close_rate") or "").strip()
+        if cr:
+            try:
+                updates["close_rate"] = max(0.0, min(1.0, float(cr)))
+            except ValueError:
+                pass
+        rt = (request.form.get("review_target_pm") or "").strip()
+        if rt:
+            try:
+                updates["review_target_pm"] = max(0, int(float(rt)))
+            except ValueError:
+                pass
+        db.update_customer(customer_id, **updates)
+        audit_log("case_value_set", customer_id=customer_id, details=f"avg_case_value={acv}")
+        flash("Average case value updated — the report now shows estimated production."
+              if acv else "Average case value cleared.", "success")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id) + "#overview")
 
 
 # --- SEO Health Score & CTR Opportunities ---

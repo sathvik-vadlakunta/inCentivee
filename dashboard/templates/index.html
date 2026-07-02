@@ -48,6 +48,7 @@
             <tr>
                 <th>Practice</th>
                 <th>Action needed</th>
+                <th>New patients<br><span style="font-weight:400;color:var(--muted);font-size:.7rem;">inquiries · 30d</span></th>
                 <th>SEO score</th>
                 <th>Status</th>
                 <th>Reviews</th>
@@ -69,6 +70,13 @@
                         {% endfor %}
                     {% else %}
                         <span class="all-clear">✓ All clear</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c.inquiries_30d %}
+                        <span style="font-weight:700;color:#0f766e;font-size:1.05rem;">{{ c.inquiries_30d }}</span>
+                    {% else %}
+                        <span style="color:var(--muted);">--</span>
                     {% endif %}
                 </td>
                 <td>
