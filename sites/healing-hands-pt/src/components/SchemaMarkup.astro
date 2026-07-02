@@ -5,7 +5,7 @@ import testimonials from '@data/testimonials.json'
 const base = `https://${practice.domain}`
 const a = practice.address
 const rv = practice.reviews || {}
-const mapPlaceId = rv.placeId || practice.placeId
+const mapPlaceId = rv.placeId  // live Place ID lives in reviews.placeId (top-level placeId was stale/removed)
 
 // Map our human-readable hours to schema OpeningHoursSpecification
 const dayMap: Record<string, string> = {

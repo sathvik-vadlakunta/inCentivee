@@ -23,4 +23,4 @@ Full source URL list is preserved in `.scrape-raw/*.html`.
 Real media URLs captured during the scrape (subset — see `.scrape-raw`):
 - `https://assets.cdn.filesafe.space/gfGO2wdXDkblKs2Uisrk/media/66cd12160f03c7c10f2ebef0.jpeg`
 - Many `images.leadconnectorhq.com/image/f_webp/.../assets.cdn.filesafe.space/gfGO2wdXDkblKs2Uisrk/media/*.{jpeg,png}` (hero, clinic, service shots)
-- Google Place ID: `ChIJE1UTaBMVmYARCgBGyaL81cc` (for live reviews via Places API + `hasMap`)
+- Google Place ID: `ChIJYYuO27gTmYARpNK7BPytuQg` (live; in `practice.json → reviews.placeId`, for reviews via Places API + `hasMap`). The earlier-captured `ChIJE1UTaBMVmYARCgBGyaL81cc` was stale (Places API returns `{}`).

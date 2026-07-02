@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Healing Hands Physical Therapy — Site Conversion Spec (Cash-Pay PT, Reno NV)</title>
+<style>
+  :root{
+    --ink:#13241c; --muted:#5b6b62; --line:#e3eae6; --bg:#f3f7f5; --card:#fff;
+    --accent:#8a4a92; --blue:#a26fa8; --bad:#dc2626; --warn:#d97706; --pt:#0f9d8f;
+    --shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:28px;margin:14px 0 0}
+  h2{font-size:20px;margin:34px 0 12px;border-bottom:2px solid #d6e1db;padding-bottom:8px}
+  h3{font-size:15.5px;margin:18px 0 6px}
+  .pill{display:inline-block;background:#06140e;color:#3ddc84;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;letter-spacing:.03em}
+  .lead{color:var(--muted);font-size:16px;max-width:84ch}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 22px;box-shadow:var(--shadow);margin-bottom:16px}
+  .doc.pt{border-left:4px solid var(--pt)}
+  .doc.warnbox{border-left:4px solid var(--warn);background:#fffbeb}
+  .doc.good{border-left:4px solid var(--accent)}
+  .p1{color:var(--bad);font-weight:700} .p2{color:var(--warn);font-weight:700}
+  .p3{color:var(--muted);font-weight:700} .ok{color:var(--accent);font-weight:700}
+  .diff{color:var(--pt);font-weight:700}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  code{background:#eaf1ed;padding:1px 6px;border-radius:5px;font:12.5px ui-monospace,monospace}
+  ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;letter-spacing:.03em}
+  .tag.same{background:#dcfce7;color:#166534} .tag.diff{background:#cdeee9;color:#0c6157} .tag.todo{background:#fee2e2;color:#991b1b}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .kv{font-size:13.5px} .kv b{display:inline-block;min-width:130px;color:var(--muted);font-weight:600}
+  blockquote{margin:8px 0;padding:8px 14px;border-left:3px solid var(--pt);background:#f0faf8;color:#2c4b45;font-size:13.5px}
+  .src{font-size:12px;color:var(--muted)} .src a{color:var(--pt)}
+  .stack{counter-reset:vs}
+  .stack li{margin:5px 0}
+  .check{list-style:none;padding-left:0}
+  .check li{padding-left:24px;position:relative}
+  .check li::before{content:"☐";position:absolute;left:0;color:var(--muted)}
+  .check li.done::before{content:"☑";color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="pill">SPEC · CUSTOMER CONVERSION · 🤲 CASH-PAY PHYSICAL THERAPY</span>
+  <h1>Healing Hands Physical Therapy &amp; Bodywork — Reno, NV</h1>
+  <p class="lead">Convert <code>healinghandspt.net</code> (currently a HighLevel / LeadConnector funnel) to our managed Cloudflare/Astro platform, then layer on the one thing the owner most needs help with: <b>articulating why her higher-touch, cash-pay, hands-on care beats a standard insurance PT clinic</b>. This spec covers current-state problems, the core positioning fix (grounded in real cash-pay-PT marketing + Hormozi's offer frameworks), a modern redesign direction (the client explicitly wants it to look "way more modern"), content/SEO/AEO gaps, and a prioritized build checklist. <b>Phase 1 (the faithful clone) is already built and passing</b> at <code>sites/healing-hands-pt/</code>; the redesign below is the Phase 2 plan for after client review.</p>
+
+  <!-- ─────────────────────────── SNAPSHOT ─────────────────────────── -->
+  <h2>1 · Practice snapshot (ground truth — scraped, never fabricated)</h2>
+  <div class="doc">
+    <div class="grid2">
+      <div>
+        <p class="kv"><b>Practice</b> Healing Hands Physical Therapy and Bodywork</p>
+        <p class="kv"><b>Owner / PT</b> Dr. Jamie Pribyl, <b>PT, DPT, MTC</b> (Manual Therapy Certified) — native Nevadan, 15+ yrs</p>
+        <p class="kv"><b>Model</b> Concierge, <b>out-of-network / cash-pay</b>, one-on-one; in-clinic + mobile (Reno-Sparks)</p>
+        <p class="kv"><b>Taglines</b> "Helping you live life" · "SOLUTION-based care"</p>
+        <p class="kv"><b>Phone</b> (775) 452-4471 (call/text) · <b>Fax</b> (888) 669-0176</p>
+        <p class="kv"><b>Email</b> Admin@healinghandspt.net · Jamie@healinghandspt.net</p>
+      </div>
+      <div>
+        <p class="kv"><b>Address</b> 9460 Double R Blvd, #104, Reno, NV 89521 (South Reno)</p>
+        <p class="kv"><b>Service area</b> Reno · Sparks · Carson City · Incline Village</p>
+        <p class="kv"><b>Hours</b> M/T/F 9–4 · Thu 9–3 · closed Wed/Sat/Sun (after-hours on request)</p>
+        <p class="kv"><b>Recognition</b> Voted <b>Bronze — Best of Sierra Nevada</b> (Physical Therapy)</p>
+        <p class="kv"><b>Google</b> Place ID <code>ChIJYYuO27gTmYARpNK7BPytuQg</code> (in <code>reviews.placeId</code>; pull rating/reviews live — verified 4.9/86)</p>
+        <p class="kv"><b>Current platform</b> HighLevel / LeadConnector (filesafe / msgsndr CDN)</p>
+      </div>
+    </div>
+    <p class="kv" style="margin-top:8px"><b>Services (real, 9)</b> Concierge PT · Manual Therapy &amp; Bodywork · Dry Needling · CranioSacral Therapy (CST) · StemWave · Myofascial Release · Muscle Energy Technique · Cupping · Visceral Mobilization. <span class="src">(Also referenced: PNF, strain/counterstrain, exercise education.)</span></p>
+    <p class="kv"><b>Conditions</b> back/neck pain, headaches, TMJ, shoulder/elbow/wrist, tendonitis, SIJ, hip/knee/ankle, post-op, vertigo, fibromyalgia, chronic autoimmune.</p>
+    <p class="kv"><b>Real testimonials</b> Judy (avoided knee replacement, StemWave+bodywork), Peggie, Margaret, Tiffany (marathon knee/hip), Jeff (spinal stenosis, off Ibuprofen after 1 visit). Stored in <code>src/data/testimonials.json</code>.</p>
+    <p class="kv"><b>Socials</b> Facebook (HealingHandsPTandBodyWork) · IG (@healinghandsptandbodywork) · TikTok (@healinghandspt) · YouTube (@HealingHandsPhysicalTherapy) + a podcast.</p>
+  </div>
+
+  <!-- ─────────────────────────── HUMAN GATES ─────────────────────────── -->
+  <h2>2 · 🚦 Human gates — flag, don't auto-resolve</h2>
+  <div class="doc warnbox">
+    <h3>(a) NAP reconciliation — phone &amp; email disagree on the live site</h3>
+    <p>The <b>visible</b> site (header/footer/contact, ~32 occurrences) uses <code>(775) 452-4471</code> and <code>Admin@healinghandspt.net</code>. The page's <b>stale JSON-LD</b> <code>LocalBusiness</code> block instead lists <code>775-453-0172</code> and <code>admin@…</code> (only 2 occurrences). We adopted the dominant visible values and documented this in <code>practice.json._nap_note</code>. <b>Confirm the correct phone with Dr. Jamie before deploy + GBP sync.</b></p>
+    <h3>(b) Asset-rehosting authorization</h3>
+    <p>The logo, Dr. Jamie's headshot, clinic photos, and service shots live on the HighLevel CDN (<code>assets.cdn.filesafe.space</code> / <code>storage.googleapis.com/msgsndr</code>). The clone renders gracefully without them (every <code>&lt;img&gt;</code> has an <code>onerror</code> brand-gradient/initials fallback). <b>Do not bulk-rehost until the client authorizes it.</b> Pull-list is in <code>sites/healing-hands-pt/ASSETS.md</code>; raw scrape in <code>.scrape-raw/</code>.</p>
+  </div>
+
+  <!-- ─────────────────────────── CURRENT-STATE PROBLEMS ─────────────────────────── -->
+  <h2>3 · Current-state problems on the existing site</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Problem</th><th>Why it hurts</th></tr>
+      <tr><td><span class="p1">Buries the #1 differentiator</span></td><td>The strongest selling point — <b>a full hour, one-on-one with a doctor, hands-on, not dictated by insurance</b> — is a paragraph two-thirds down the homepage. It should be the hero. This is the exact thing the owner says she struggles to explain.</td></tr>
+      <tr><td><span class="p1">"Cash-pay" framed as a limitation, not a benefit</span></td><td>"…because of this we do private pay" reads apologetically. The research below shows the winners frame out-of-network as <b>liberation + often-lower total cost</b>, not a caveat.</td></tr>
+      <tr><td><span class="p1">No price/offer clarity, no guarantee, no clear next step</span></td><td>A premium cash-pay buyer needs to understand what they get, roughly what it costs, and why it's safe to try. The site has none of this — just "call to schedule."</td></tr>
+      <tr><td><span class="p2">Dated HighLevel-funnel look</span></td><td>Generic template chrome, "© 2019 Physio," inconsistent type. The client's own words: she wants it "way more modern." Doesn't signal the premium, high-touch experience she actually delivers.</td></tr>
+      <tr><td><span class="p2">No before→after / outcome storytelling</span></td><td>The testimonials are <em>gold</em> (avoided knee replacement; off Ibuprofen after one visit) but are buried on a list page, not woven into a pain→relief narrative.</td></tr>
+      <tr><td><span class="p2">Thin SEO/AEO</span></td><td>Stale JSON-LD (wrong phone), no FAQ/Review/Procedure schema, no <code>llms.txt</code>, no structured service pages, no dry-needling-vs-acupuncture answer content despite it being the most-asked question.</td></tr>
+      <tr><td><span class="p3">NAP drift &amp; "© 2019"</span></td><td>Two phone numbers, "Physio" placeholder title on /contact, copyright 4+ years stale — small trust leaks that add up.</td></tr>
+    </table>
+  </div>
+
+  <!-- ─────────────────────────── CORE POSITIONING FIX ─────────────────────────── -->
+  <h2>3.5 · The CORE positioning fix <span class="tag diff">the whole point</span></h2>
+  <div class="doc pt">
+    <p>The owner's real problem isn't her care — it's <b>articulating</b> why a patient should pay out of pocket for it. Here's the message, grounded in how the best cash-pay manual-therapy clinics position it and sharpened with Hormozi's value equation.</p>
+
+    <h3>The one-sentence positioning</h3>
+    <blockquote><b>"At a typical insurance clinic, your therapist sees 3 patients an hour and you spend most of the visit on machines and a handout. Here, you get a full hour, one-on-one, hands-on with a doctor — so we fix the root cause in fewer visits, not chase the symptom forever."</b></blockquote>
+
+    <h3>The contrast table (use this verbatim as a homepage section)</h3>
+    <table>
+      <tr><th></th><th>Typical insurance PT</th><th>Healing Hands (concierge, cash-pay)</th></tr>
+      <tr><td>Time with the doctor</td><td>~15–20 min, shared 2–4 patients/hour</td><td><b>A full 60 min, 1:1, every visit</b></td></tr>
+      <tr><td>Who treats you</td><td>Often an aide / tech for much of the visit</td><td><b>Dr. Jamie (PT, DPT, MTC) — the whole time</b></td></tr>
+      <tr><td>What you do</td><td>Repetitive gym exercises &amp; machines</td><td><b>Hands-on manual therapy first</b>, then targeted home exercises</td></tr>
+      <tr><td>Who decides your care</td><td>Insurance "medical necessity" rules</td><td><b>You and your doctor</b></td></tr>
+      <tr><td>Visit cadence</td><td>2–3 visits/week for weeks</td><td>Fewer, longer visits — often <b>6–10 total</b></td></tr>
+      <tr><td>Cost reality</td><td>Copays + deductible + possible denied claims</td><td>Known up front; <b>superbill for out-of-network reimbursement</b></td></tr>
+    </table>
+    <p class="src">Grounded in real cash-pay-PT positioning (Austin Manual Therapy, SPRY, Healix, Nashville PT): "2–3, sometimes 4 patients in a single hour" → "15–20 min per patient"; "6–10 sessions annually vs 2–3 weekly"; "most patients receive 50–80% out-of-network reimbursement"; treatment "based on your condition, not what an insurance plan deems 'medically necessary'." (See §10 sources.)</p>
+
+    <h3>Hormozi value equation applied to the cash-pay PT offer</h3>
+    <p style="font-family:ui-monospace,monospace;font-size:13px">Value = (Dream&nbsp;Outcome × Perceived&nbsp;Likelihood) ÷ (Time&nbsp;Delay × Effort&nbsp;&amp;&nbsp;Sacrifice)</p>
+    <table>
+      <tr><th>Lever</th><th>How we push it on the new site</th></tr>
+      <tr><td><b>↑ Dream outcome</b></td><td>Concrete, visualizable: "back to golf / pickleball / running / playing with the kids — <b>without surgery or injections.</b>" Use Dr. Jamie's real wins (avoided knee replacement; off pain meds).</td></tr>
+      <tr><td><b>↑ Perceived likelihood</b></td><td>Credentials (DPT + MTC, 15 yrs), Best-of-Sierra-Nevada award, real named testimonials with conditions, root-cause explanation, Google rating (live).</td></tr>
+      <tr><td><b>↓ Time delay</b></td><td>"Relief often in the first visit" (Jeff's testimonial), "fewer total visits," easy call/text booking, mobile visits that remove the commute.</td></tr>
+      <tr><td><b>↓ Effort &amp; sacrifice</b></td><td>"No driving across town to a clinic 3× a week," superbill done for you, direct phone/text line to your doctor, transparent pricing, risk-reversal guarantee (below).</td></tr>
+    </table>
+
+    <h3>The Grand-Slam offer + guarantee (Phase-2 conversion content)</h3>
+    <p>Hormozi catalogs four guarantee types: <b>unconditional</b>, <b>conditional</b>, <b>anti-</b>, and <b>implied</b>. For a licensed healthcare provider, an outcome guarantee is legally/ethically fraught — so use a <b>conditional, experience-based</b> guarantee (risk-reversal on the <em>experience</em>, never a clinical outcome):</p>
+    <blockquote><b>"The First-Visit Promise:"</b> On your first visit you get a full hour with Dr. Jamie, a hands-on root-cause evaluation, and a clear plan. If you don't feel <em>heard</em> and confident in your plan by the end of that hour, tell us — we'll make it right. <span class="src">(Frames the experience, not a medical result. Run final wording past the client / NV PT board guidance.)</span></p></blockquote>
+    <p><b>Value stack to display</b> (each line is something insurance PT doesn't give): full 60-min 1:1 doctor visit · hands-on manual therapy + dry needling / CST / StemWave as needed · gait/posture/mobility root-cause eval · personalized home program · direct phone/text line to your doctor · superbill prepared for you · mobile visit option · no insurance gatekeeping. <span class="src">⚠️ Confirm real session pricing with the client before publishing any numbers — never fabricate a price.</span></p>
+  </div>
+
+  <!-- ─────────────────────────── PHASE 1 CLONE (DONE) ─────────────────────────── -->
+  <h2>4 · Phase 1 — the faithful clone <span class="tag same">built &amp; passing</span></h2>
+  <div class="doc good">
+    <p>Per playbook §13 (clone-then-clean) — pixel-faithful first, redesign after review. HighLevel funnel pages don't survive static cloning (same as Elementor §13.2), and this is a small 14-URL site, so we rebuilt it as clean responsive Astro pages that <b>mirror the original's content &amp; section order</b> on our platform (forked from <code>sites/ryse-aba-therapy</code>, the most recent non-dental build that already carries every platform non-negotiable). <code>npm run build</code> passes; 16 pages render.</p>
+    <table>
+      <tr><th>Done</th><th>Detail</th></tr>
+      <tr><td class="ok">Brand</td><td>Healing Hands logo <b>purple</b> <code>#a26fa8</code> in <code>global.css :root</code>; Nunito + Open Sans (their real fonts). <span class="src">primary deepened to <code>#8a4a92</code> for AA contrast (white text on buttons); hover <code>#6e3a77</code>. (Earlier drafts said green/blue — the shipped brand is purple.)</span></td></tr>
+      <tr><td class="ok">Data model</td><td><code>practice.json</code> (NAP, hours, Dr. Jamie as <code>providers[0]</code>, 9 services, conditions, awards, model note) + <code>testimonials.json</code> (5 real reviews).</td></tr>
+      <tr><td class="ok">Pages</td><td>Home, About (concierge difference + Dr. Jamie bio + techniques + hours), Services index + 9 service detail pages (real content + FAQs), Testimonials, Contact (form + map + hours), Blog (+ 1 seed cited post), 404.</td></tr>
+      <tr><td class="ok">Nav/Footer</td><td>Rebuilt to the original menu (Home · About Us · Services▾ · Testimonials · Blog · Contact · Book Now). View-Transition-safe (binds on <code>astro:page-load</code>).</td></tr>
+      <tr><td class="ok">Schema (full set)</td><td><code>MedicalBusiness/PhysicalTherapy/LocalBusiness</code> + <code>Person/Physician</code> (Dr. Jamie) + <code>MedicalProcedure</code> + <code>BreadcrumbList</code> + <code>FAQPage</code> + <code>Review</code> + <code>hasMap</code> (real Place ID) + real <code>OpeningHoursSpecification</code>.</td></tr>
+      <tr><td class="ok">AEO</td><td><code>llms.txt</code> + <code>llms-full.txt</code> (full service/condition/testimonial dump + "instructions for AI assistants"), <code>robots.txt</code> allows GPTBot/ClaudeBot/Google-Extended/Perplexity/etc., sitemap with per-page priority, <code>_redirects</code> for retired HighLevel URLs.</td></tr>
+      <tr><td class="ok">Guardrails honored</td><td><code>@tailwindcss/typography</code> + <code>@plugin</code>; <code>404.astro</code>; brand in <code>global.css</code>; reduced-motion-safe reveal/parallax; <code>object-top</code> headshot.</td></tr>
+    </table>
+    <p class="src"><b>Note:</b> Phase 1 is intentionally a faithful clone, NOT the redesign — it keeps the original's content/layout so the client recognizes their site. The modern redesign is §5, to build after review. Do <b>not</b> deploy to Cloudflare Pages or add as a paying customer yet.</p>
+  </div>
+
+  <!-- ─────────────────────────── PHASE 2 MODERN REDESIGN ─────────────────────────── -->
+  <h2>5 · Phase 2 — modern redesign direction <span class="tag todo">after review</span></h2>
+  <div class="doc pt">
+    <p>The client wants it "way more modern." Target: a <b>premium, calm, clinical-but-human</b> aesthetic — the visual equivalent of an unhurried 60-minute hands-on session. Not a funnel; a boutique health brand.</p>
+    <div class="grid2">
+      <div>
+        <h3>Visual direction</h3>
+        <ul>
+          <li><b>Hero:</b> full-bleed real photo of Dr. Jamie's hands at work (or the calm treatment room), with the positioning headline overlaid — lead with "A full hour, one-on-one. Hands-on. Not dictated by insurance."</li>
+          <li><b>Palette:</b> Healing Hands logo purple (<code>#a26fa8</code>, deepened to <code>#8a4a92</code> for contrast) + warm mauve-grey on lots of soft white + a warm off-white "bone/sand" canvas; generous whitespace; rounded 2xl cards; soft shadows (already in the system).</li>
+          <li><b>Type:</b> keep Nunito (friendly, rounded) for display; Open Sans for body. Larger, confident H1; airy line-height.</li>
+          <li><b>Motion:</b> gentle scroll-reveal + subtle parallax (already built, reduced-motion-safe). Nothing flashy — calm signals premium.</li>
+          <li><b>Photography:</b> real, warm, human (hands, faces, the room) — replace all gradient placeholders once the asset gate clears.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Homepage section order (conversion-first)</h3>
+        <ol>
+          <li>Hero — positioning headline + "Book your appointment" / call-text</li>
+          <li><b>Insurance-PT vs Healing Hands contrast table</b> (§3.5) — the hook</li>
+          <li>Before→after story band (Jeff / Judy — pain → relief, with the real quote)</li>
+          <li>Services grid (9, real)</li>
+          <li>"Our care is not dictated by insurance" — the cash-pay value, reframed as benefit</li>
+          <li><b>Value stack + First-Visit Promise</b> guarantee card</li>
+          <li>Conditions treated</li>
+          <li>Testimonial wall + live Google rating</li>
+          <li>Meet Dr. Jamie (credibility) → FAQ (AEO) → final CTA</li>
+        </ol>
+      </div>
+    </div>
+    <h3>Trust / credibility layer to add</h3>
+    <ul>
+      <li>Live Google rating badge + <code>AggregateRating</code> (pull via Places API with the captured Place ID; <code>scripts/fetch-reviews.mjs</code> pattern).</li>
+      <li>Credential strip: DPT · MTC · 15+ years · Best of Sierra Nevada (Bronze).</li>
+      <li>"Dry needling is NOT acupuncture" explainer (their most-asked question → strong AEO + objection handler).</li>
+      <li>Sticky mobile call/book bar (already in the layout) + click-to-call / form events once analytics is wired.</li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────────────── CONTENT / SEO / AEO GAPS ─────────────────────────── -->
+  <h2>6 · Content / SEO / AEO gaps to close</h2>
+  <div class="doc">
+    <table>
+      <tr><th>Gap</th><th>Action</th></tr>
+      <tr><td>Blog is empty (1 seed post)</td><td>Build 6–8 cited, 1,500-word posts mapped to services + buyer questions: <em>cash-pay vs insurance PT</em> (seeded), <em>dry needling vs acupuncture</em>, <em>what is StemWave / shockwave</em>, <em>can PT help me avoid knee/back surgery</em>, <em>CranioSacral therapy explained</em>, <em>what to expect in a concierge PT visit</em>, <em>how out-of-network reimbursement &amp; superbills work</em>, <em>fibromyalgia / chronic pain + manual therapy</em>. Real sources (APTA/choosePT, FDA on shockwave, Cleveland Clinic, peer-reviewed).</td></tr>
+      <tr><td>No local content depth</td><td>Reno is the core market, but Sparks / Carson City / Incline Village deserve light local mentions (the practice serves them + offers mobile). Consider area mentions on Contact + service pages (single-clinic, so don't over-build per-city pages like a multi-location client).</td></tr>
+      <tr><td>Live reviews not wired</td><td>Use the captured Place ID to pull rating + 5-star reviews via Places API; feed <code>AggregateRating</code> + the testimonial wall.</td></tr>
+      <tr><td>Analytics absent</td><td>HighLevel had no standalone GA4/GTM. Ask the client for a GA4 ID (or set one up) + wire <code>form_submit</code> / <code>click_to_call</code>.</td></tr>
+      <tr><td>Old URL preservation</td><td><code>_redirects</code> drafted (testimonials, retired funnel/legal stubs). Revisit legal pages (disclaimer / terms) before cutover — rebuild rather than 302-to-home.</td></tr>
+      <tr><td>Booking integration</td><td>Original "Book Now" pointed into HighLevel scheduling. Decide: keep their HighLevel calendar (embed) or move booking to our contact form / a new scheduler. <b>Confirm with client.</b></td></tr>
+    </table>
+  </div>
+
+  <!-- ─────────────────────────── BUILD CHECKLIST ─────────────────────────── -->
+  <h2>7 · Prioritized build checklist (revamp phase)</h2>
+  <div class="doc">
+    <h3>P0 — unblock &amp; verify</h3>
+    <ul class="check">
+      <li class="done">Faithful clone built, <code>npm run build</code> passing (16 pages)</li>
+      <li class="done">Full schema set + llms.txt/llms-full.txt + robots + sitemap + redirects</li>
+      <li>🚦 Reconcile NAP (phone/email) with the client → lock <code>practice.json</code></li>
+      <li>🚦 Get asset-rehosting authorization → pull logo, Dr. Jamie headshot, clinic + service photos (<code>ASSETS.md</code>)</li>
+      <li>Confirm real session pricing + the exact guarantee wording (NV PT-board-safe)</li>
+    </ul>
+    <h3>P1 — positioning &amp; conversion (the actual value)</h3>
+    <ul class="check">
+      <li>Ship the <b>insurance-vs-Healing-Hands contrast table</b> on the homepage</li>
+      <li>Rewrite the hero to lead with the full-hour / hands-on / not-insurance-dictated message</li>
+      <li>Add the <b>value stack + First-Visit Promise</b> guarantee card</li>
+      <li>Add a before→after story band from the real testimonials (Jeff, Judy)</li>
+      <li>Add the "dry needling is not acupuncture" objection-handler block</li>
+    </ul>
+    <h3>P2 — modern redesign &amp; trust</h3>
+    <ul class="check">
+      <li>Apply the Phase-2 visual direction (real photography hero, section reorder)</li>
+      <li>Wire live Google rating + <code>AggregateRating</code> via Places API</li>
+      <li>Credential strip + award badge</li>
+      <li>Sticky call/book bar polish; click-to-call + form events</li>
+    </ul>
+    <h3>P3 — content &amp; SEO/AEO depth</h3>
+    <ul class="check">
+      <li>6–8 cited 1,500-word blog posts mapped to services/questions</li>
+      <li>GA4 wired; booking flow decided (HighLevel embed vs new)</li>
+      <li>Legal pages rebuilt (disclaimer / terms)</li>
+    </ul>
+    <h3>P4 — deploy &amp; cutover (only after sign-off)</h3>
+    <ul class="check">
+      <li>Deploy to Cloudflare Pages (staging on <code>*.practicerank.ai</code> first)</li>
+      <li>curl-verify live: status codes, brand in CSS, schema, redirects 301/302, 404, sitemap</li>
+      <li>390px mobile QA sweep (per playbook §13.13)</li>
+      <li>Add as paying customer; DNS cutover from registrar → Pages</li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────────────── SOURCES ─────────────────────────── -->
+  <h2>8 · Sources &amp; references</h2>
+  <div class="doc">
+    <p class="src"><b>Cash-pay / out-of-network PT positioning:</b></p>
+    <ul class="src">
+      <li><a href="https://www.austinmanualtherapy.com/The-Cash-Pay-Difference">Austin Manual Therapy — "The Cash Pay Difference"</a> (60-min DPT; "2–3, sometimes 4 patients/hour" → "15–20 min"; "50–80% reimbursement"; money-back satisfaction guarantee)</li>
+      <li><a href="https://www.sprypt.com/blog/cash-based-physical-therapy-practice">SPRY — How to Start a Cash-Based PT Practice</a> · <a href="https://www.sprypt.com/blog/the-manual-to-cash-based-physical-therapy-pt">SPRY — Why cash-based PT is thriving</a></li>
+      <li><a href="https://healixtherapy.com/insurance-vs-cash-physical-therapy-guide/">Healix — Insurance vs Cash PT cost/quality comparison</a></li>
+      <li><a href="https://www.nashvillephysicaltherapy.com/post/why-choose-an-out-of-network-or-cash-based-pt-practice">Nashville PT — Why choose out-of-network / cash-based PT</a></li>
+      <li><a href="https://petersenpt.com/out-of-network-physical-therapy-pros-and-cons">Petersen PT — Out-of-network PT pros &amp; cons</a> · <a href="https://www.megbusiness.com/evaluating-in-network-cash-based-v-hybrid-business-models-for-new-pt-clinic-owners/">MEG Business — in-network vs cash-based models</a></li>
+    </ul>
+    <p class="src"><b>Alex Hormozi — offer / value frameworks ($100M Offers):</b></p>
+    <ul class="src">
+      <li><a href="https://www.gregfaxon.com/blog/100m-offers-summary">$100M Offers summary — Greg Faxon</a> · <a href="https://www.supersummary.com/100m-offers/summary/">SuperSummary</a> (value equation; grand-slam offer)</li>
+      <li><a href="https://www.shortform.com/blog/alex-hormozi-guarantees/">Shortform — Hormozi on guarantees</a> · <a href="https://thepowermoves.com/100-million-offers-summary-review/">ThePowerMoves — 7 steps to grand-slam offers</a> (four guarantee types: unconditional / conditional / anti / implied)</li>
+    </ul>
+    <p class="src"><b>Clinical fact sources to cite in content (verify each before use):</b> APTA / ChoosePT.com, FDA (extracorporeal shockwave devices), Cleveland Clinic, peer-reviewed manual-therapy &amp; dry-needling literature.</p>
+    <p class="src">Internal: <code>docs/site-conversion-playbook.md</code> (§13 clone-then-clean), <code>.claude/skills/convert-site/SKILL.md</code>, reference build <code>sites/ryse-aba-therapy/</code>, <code>specs/customers/parian-lawyers-conversion.html</code>. Build output: <code>sites/healing-hands-pt/</code> · scrape: <code>sites/healing-hands-pt/.scrape-raw/</code> · assets: <code>sites/healing-hands-pt/ASSETS.md</code>.</p>
+  </div>
+</div>
+</body>
+</html>
