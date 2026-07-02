@@ -71,6 +71,7 @@ def main():
             advanced = sum(1 for r in results if r["transition"])
             print(f"[{datetime.now().isoformat()}] Done — {len(results)} customers, "
                   f"{advanced} status change(s)")
+        db.record_job_run("daily_status_check")
     finally:
         db.close()
 

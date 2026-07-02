@@ -86,6 +86,7 @@ def main():
         except Exception as exc:  # noqa: BLE001
             print(f"    R0 report: ERROR {exc}")
 
+    db.record_job_run("weekly_reports")
     db.close()
     print(f"[{datetime.now().isoformat()}] Weekly reports complete (emails disabled)")
 

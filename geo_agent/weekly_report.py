@@ -885,7 +885,7 @@ def rerender_snapshots(db: CustomerDB, customer_id: str | None = None,
     cust = [customer_id] if customer_id else [c["id"] for c in db.list_customers()]
     done = skipped = errors = 0
     for cid in cust:
-        for snap in db.get_report_snapshots(cid, report_type, limit=limit):
+        for snap in db.get_report_snapshots(cid, report_type, limit=limit, include_payload=True):
             raw = snap.get("payload_json") or "{}"
             try:
                 payload = json.loads(raw)

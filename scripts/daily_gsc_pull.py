@@ -85,6 +85,7 @@ def main():
             except Exception as e:
                 print(f"  Audit error for {cid}: {e}")
 
+    db.record_job_run("daily_gsc_pull")
     db.close()
     print(f"[{datetime.now().isoformat()}] Daily GSC pull complete")
 

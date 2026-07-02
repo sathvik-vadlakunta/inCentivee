@@ -50,7 +50,8 @@ def test_monthly_fatjoe_lists_due_orders(db):
 def test_monthly_fatjoe_all_clear_when_logged(db):
     _add_paid(db, "c1", "Paradigm", "paradigm.com", "Dominate")
     db.add_offsite_order("c1", "citation", quantity=100)
-    db.add_offsite_order("c1", "link", quantity=4, dr_tier=40)
+    db.add_offsite_order("c1", "link", quantity=2, dr_tier=40)
+    db.add_offsite_order("c1", "link", quantity=2, dr_tier=30)
     db.add_offsite_order("c1", "mention", quantity=1, dr_tier=40)
     subject, html, count = digests.build_monthly_fatjoe(db, NOW)
     assert count == 0

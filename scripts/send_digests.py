@@ -30,12 +30,15 @@ def main():
         if args.monthly_fatjoe:
             sent = digests.monthly_fatjoe_digest(db)
             logger.info("Monthly FATJOE digest %s", "sent" if sent else "not sent")
+            db.record_job_run("monthly_fatjoe_digest", detail="sent" if sent else "not sent")
         if args.daily_attention:
             sent = digests.daily_attention_digest(db)
             logger.info("Daily attention digest %s", "sent" if sent else "skipped (nothing urgent)")
+            db.record_job_run("daily_attention_digest", detail="sent" if sent else "skipped")
         if args.weekly_ai:
             sent = digests.weekly_ai_digest(db)
             logger.info("Weekly AI digest %s", "sent" if sent else "skipped (no data)")
+            db.record_job_run("weekly_ai_digest", detail="sent" if sent else "skipped")
         if not (args.monthly_fatjoe or args.daily_attention or args.weekly_ai):
             ap.error("choose --monthly-fatjoe, --daily-attention and/or --weekly-ai")
     finally:

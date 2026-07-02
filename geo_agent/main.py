@@ -855,6 +855,8 @@ def main():
     if args.publish:
         publish_approved(data_dir=data_dir, db=customer_db)
         if customer_db:
+            if not args.customer:  # bulk (cron) publish, not a single manual customer
+                customer_db.record_job_run("monthly_publish")
             customer_db.close()
         return
 
@@ -909,6 +911,13 @@ def main():
             })
 
     if customer_db:
+        if not args.customer:  # bulk (cron) stage run over all active customers
+            _ok = sum(1 for r in results if not r.get("errors"))
+            customer_db.record_job_run(
+                "monthly_stage",
+                status="ok" if _ok == len(results) else "partial",
+                detail=f"{_ok}/{len(results)} ok",
+            )
         customer_db.checkpoint()
         customer_db.close()
 

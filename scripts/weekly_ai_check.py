@@ -309,6 +309,7 @@ def main():
 
         # Send email report
         send_weekly_email(db, all_results, today)
+        db.record_job_run("weekly_ai_check", detail=f"{len(all_results)} customer(s)")
 
     finally:
         db.close()

@@ -12,7 +12,10 @@
 </style>
 
 <div class="section-header">
-    <h1>Dashboard</h1>
+    <div>
+        <h1 style="margin-bottom:.15rem;">Dashboard</h1>
+        <p style="margin:0;color:var(--muted);font-size:.85rem;">Action items &amp; account health — what needs attention today. For performance metrics &amp; the leaderboard, see <a href="{{ url_for('analytics') }}">Analytics</a>.</p>
+    </div>
     <div class="flex">
         <a href="{{ url_for('board') }}" class="btn btn-outline">Kanban Board</a>
         <a href="{{ url_for('add_customer') }}" class="btn btn-primary">+ Add Customer</a>
@@ -45,6 +48,7 @@
             <tr>
                 <th>Practice</th>
                 <th>Action needed</th>
+                <th>SEO score</th>
                 <th>Status</th>
                 <th>Reviews</th>
                 <th>Platform</th>
@@ -65,6 +69,20 @@
                         {% endfor %}
                     {% else %}
                         <span class="all-clear">✓ All clear</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c.seo_score is not none %}
+                        <span style="font-weight:700;color:{% if c.seo_score >= 70 %}#16a34a{% elif c.seo_score >= 50 %}#d97706{% else %}#dc2626{% endif %};">{{ c.seo_score }}</span>
+                        {% if c.seo_delta is not none and c.seo_delta != 0 %}
+                        <span title="vs ~30 days ago" style="font-size:.75rem;font-weight:600;color:{{ '#16a34a' if c.seo_delta > 0 else '#dc2626' }};">
+                            {{ '▲' if c.seo_delta > 0 else '▼' }}{{ c.seo_delta | abs }}
+                        </span>
+                        {% elif c.seo_delta == 0 %}
+                        <span title="no change vs ~30 days ago" style="font-size:.75rem;color:var(--muted);">▬</span>
+                        {% endif %}
+                    {% else %}
+                        <span style="color:var(--muted);">--</span>
                     {% endif %}
                 </td>
                 <td><span class="badge badge-{{ c.status }}">{{ c.status | title }}</span></td>

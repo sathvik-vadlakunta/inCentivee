@@ -166,7 +166,7 @@
                 <div class="actions-divider"></div>
                 <div class="actions-label">Status</div>
                 <form method="POST" action="{{ url_for('update_status', customer_id=customer.id) }}" style="margin:0;padding:0.35rem 0.75rem;">
-                    <select name="status" onchange="this.form.submit()" class="actions-select">
+                    <select name="status" onchange="if (confirm('Change {{ customer.name }} status to \'' + this.value + '\'?')) { this.form.submit(); } else { this.selectedIndex = 0; }" class="actions-select">
                         <option value="" disabled selected>Change Status...</option>
                         <option value="onboarding" {% if customer.status == 'onboarding' %}disabled{% endif %}>Onboarding</option>
                         <option value="active" {% if customer.status == 'active' %}disabled{% endif %}>Active</option>
@@ -203,15 +203,12 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         Overview
     </button>
-    <button class="detail-nav-item" onclick="switchTab('account', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        Account
-    </button>
 
-    <div class="detail-nav-group">
+    <!-- 1) Search & AI — all SEO/GEO performance data + AI visibility -->
+    <div class="detail-nav-group" data-tabs="seo ai-mentions">
         <button class="detail-nav-item has-children" onclick="switchTab('seo', this);">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            SEO & GEO
+            Search &amp; AI
             {% if seo_tasks %}
                 {% set seo_done = seo_tasks | selectattr('done') | list | length %}
                 <span class="nav-badge">{{ seo_done }}/{{ seo_tasks | length }}</span>
@@ -220,7 +217,7 @@
         </button>
         <div class="detail-nav-children">
             <button class="detail-nav-sub active" onclick="switchSeoSubtab('checklist', this)">Checklist</button>
-            <button class="detail-nav-sub" onclick="switchSeoSubtab('overview', this)">Overview</button>
+            <button class="detail-nav-sub" onclick="switchSeoSubtab('overview', this)">Summary</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('rankings', this)">Rankings
                 {% if keyword_summary %}<span class="nav-badge-sm">{{ keyword_summary | length }}</span>{% endif %}
             </button>
@@ -230,18 +227,27 @@
             </button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('backlinks', this)">Backlinks &amp; Authority</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('competitors', this)">Competitors</button>
+            <button class="detail-nav-sub" onclick="switchTab('ai-mentions', this)">AI Mentions</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('reviews', this)">Reviews</button>
             <button class="detail-nav-sub" onclick="switchSeoSubtab('integrations', this)">Integrations</button>
         </div>
     </div>
 
-    <button class="detail-nav-item" onclick="switchTab('content', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        Content
-        {% if content_pending %}
-            <span class="nav-badge" style="background:#fef3c7;color:#92400e;">{{ content_pending }}</span>
-        {% endif %}
-    </button>
+    <!-- 2) Content — what we publish + send -->
+    <div class="detail-nav-group" data-tabs="content emails">
+        <button class="detail-nav-item has-children" onclick="switchTab('content', this);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Content
+            {% if content_pending %}
+                <span class="nav-badge" style="background:#fef3c7;color:#92400e;">{{ content_pending }}</span>
+            {% endif %}
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="detail-nav-children">
+            <button class="detail-nav-sub" onclick="switchTab('content', this)">Recommendations</button>
+            <button class="detail-nav-sub" onclick="switchTab('emails', this)">Emails</button>
+        </div>
+    </div>
 
     {% if va_plan %}
     <button class="detail-nav-item" onclick="switchTab('local-seo', this); showSaMap()">
@@ -253,25 +259,23 @@
     </button>
     {% endif %}
 
-    <button class="detail-nav-item" onclick="switchTab('ai-mentions', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        AI Mentions
-    </button>
-
-    <button class="detail-nav-item" onclick="switchTab('emails', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        Emails
-    </button>
     <button class="detail-nav-item" onclick="switchTab('reports', this)">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
         Reports
     </button>
-    <button class="detail-nav-item" onclick="switchTab('notes', this)">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-        Notes
-    </button>
 
-
+    <!-- 3) Account — setup, access, internal notes -->
+    <div class="detail-nav-group" data-tabs="account notes">
+        <button class="detail-nav-item has-children" onclick="switchTab('account', this);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Account
+            <svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="detail-nav-children">
+            <button class="detail-nav-sub" onclick="switchTab('account', this)">Details &amp; Access</button>
+            <button class="detail-nav-sub" onclick="switchTab('notes', this)">Notes</button>
+        </div>
+    </div>
 </nav>
 
 <div class="detail-content">
@@ -605,9 +609,14 @@
             </div>
             {% endif %}
 
-            <!-- KPIs -->
-            {% if kpis.review_count or kpis.ai_mentions or kpis.llms_txt_hits %}
-            <div class="card">
+            <!-- History & reference (collapsed by default to keep Overview a quick health snapshot) -->
+            {% if (kpis.review_count or kpis.ai_mentions or kpis.llms_txt_hits) or runs %}
+            <details class="ov-history" style="margin-bottom:1rem;">
+              <summary style="cursor:pointer;font-size:0.85rem;font-weight:600;color:var(--muted);padding:0.5rem 0;">📈 History &amp; recent runs</summary>
+
+              <!-- KPIs -->
+              {% if kpis.review_count or kpis.ai_mentions or kpis.llms_txt_hits %}
+              <div class="card">
                 <h2>KPI History</h2>
                 {% for metric_name, display_name in [('review_count', 'Reviews'), ('rating', 'Rating'), ('ai_mentions', 'AI Mentions'), ('llms_txt_hits', 'llms.txt Hits')] %}
                     {% if kpis[metric_name] %}
@@ -619,12 +628,12 @@
                     </div>
                     {% endif %}
                 {% endfor %}
-            </div>
-            {% endif %}
+              </div>
+              {% endif %}
 
-            <!-- Recent Runs -->
-            {% if runs %}
-            <div class="card">
+              <!-- Recent Runs -->
+              {% if runs %}
+              <div class="card">
                 <h2>Recent Runs</h2>
                 <table>
                     <thead><tr><th>Date</th><th>Status</th><th>Pages</th></tr></thead>
@@ -638,13 +647,15 @@
                     {% endfor %}
                     </tbody>
                 </table>
-            </div>
+              </div>
+              {% endif %}
+            </details>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- ==================== SEO & GEO TAB ==================== -->
+<!-- ==================== SEARCH & AI TAB (was SEO & GEO) ==================== -->
 
 <!-- ==================== ACCOUNT TAB ==================== -->
 <div id="tab-account" class="tab-content">
@@ -3337,22 +3348,25 @@ function switchTab(tabName, btn) {
     // instead of dropping back to Overview.
     try { history.replaceState(null, '', '#' + tabName); } catch (e) {}
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    // Deactivate all nav items (but not sub-items)
+    // Deactivate all nav items AND sub-items, then re-apply.
     document.querySelectorAll('.detail-nav-item').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + tabName).classList.add('active');
+    document.querySelectorAll('.detail-nav-sub').forEach(el => el.classList.remove('active'));
+    const pane = document.getElementById('tab-' + tabName);
+    if (pane) pane.classList.add('active');
     if (btn) btn.classList.add('active');
-    const group = document.querySelector('.detail-nav-group');
-    const seoBtn = document.querySelector('.detail-nav-item.has-children');
-    if (tabName === 'seo') {
-        // Expand SEO submenu
-        if (group) group.classList.add('open');
-        if (seoBtn) seoBtn.classList.add('expanded');
-        setTimeout(function() { initTrafficChart(); initOverviewChart(); }, 100);
-    } else {
-        // Collapse SEO submenu when switching away
-        if (group) group.classList.remove('open');
-        if (seoBtn) seoBtn.classList.remove('expanded');
-    }
+    // Open the collapsible group that OWNS this tab (data-tabs="seo ai-mentions"
+    // etc.); collapse the others. The owning group's header also shows active so
+    // the user always sees which section they're in.
+    document.querySelectorAll('.detail-nav-group').forEach(function(g) {
+        var owns = (g.dataset.tabs || '').split(/\s+/).indexOf(tabName) !== -1;
+        g.classList.toggle('open', owns);
+        var header = g.querySelector('.detail-nav-item.has-children');
+        if (header) {
+            header.classList.toggle('expanded', owns);
+            if (owns) header.classList.add('active');
+        }
+    });
+    if (tabName === 'seo') { setTimeout(function() { initTrafficChart(); initOverviewChart(); }, 100); }
     if (tabName === 'ai-mentions') { loadAiDashboard('{{ customer.id }}'); }
 }
 
@@ -3361,7 +3375,8 @@ function switchTab(tabName, btn) {
 document.addEventListener('DOMContentLoaded', function() {
     const h = (location.hash || '').slice(1);
     if (h && document.getElementById('tab-' + h)) {
-        const navBtn = document.querySelector('.detail-nav-item[onclick*="\'' + h + '\'"]');
+        // The button may be a top-level item OR a grouped sub-item.
+        const navBtn = document.querySelector('.detail-nav-item[onclick*="\'' + h + '\'"], .detail-nav-sub[onclick*="\'' + h + '\'"]');
         switchTab(h, navBtn);
     }
 });
@@ -3392,9 +3407,9 @@ function syncEmails(btn) {
 
 function switchSeoSubtab(subName, btn) {
     _activeSeoSub = subName;
-    // Make sure SEO tab is active
+    // Make sure the Search & AI tab is active (its group owns 'seo').
     if (_activeTab !== 'seo') {
-        const seoBtn = document.querySelector('.detail-nav-item.has-children');
+        const seoBtn = document.querySelector('.detail-nav-group[data-tabs~="seo"] .detail-nav-item.has-children');
         switchTab('seo', seoBtn);
     }
     document.querySelectorAll('.seo-sub-content').forEach(el => el.style.display = 'none');

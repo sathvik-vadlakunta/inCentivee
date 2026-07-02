@@ -60,8 +60,10 @@ TIER_PLANS: dict[str, dict] = {
              "note": "Initial NAP citation build — match canonical NAP exactly."},
         ],
         "monthly": [
-            {"type": "link", "qty": 4, "dr_tier": 40,
-             "note": "4 links/mo, mix DR30–40. Include a “best {service} in {area}” comparison/listicle placement."},
+            {"type": "link", "qty": 2, "dr_tier": 40,
+             "note": "2 DR40+ editorial links/mo (incl. a “best {service} in {area}” comparison/listicle)."},
+            {"type": "link", "qty": 2, "dr_tier": 30,
+             "note": "2 DR30+ editorial links/mo to other money/city pages (vary anchors)."},
         ],
         "quarterly": [
             {"type": "mention", "qty": 1, "dr_tier": 40,
@@ -76,10 +78,18 @@ DEFAULT_CONTENT_QUOTA = 2
 
 TYPE_LABEL = {"citation": "Local citations", "link": "Editorial link", "mention": "Brand mention"}
 
-# FATJOE wholesale cost (our COGS) per the pricing spec — for Dan's reference.
-LINK_COST = {10: 72, 20: 96, 30: 120, 40: 216, 50: 336, 60: 456}
-CITATION_COST = {50: 90, 100: 120, 300: 288}
-MENTION_COST = 336
+# A tier-plan order "type" maps to a catalog product family. Editorial links in
+# the tier plans are fresh Blogger Outreach placements.
+TYPE_TO_FAMILY = {"citation": "citation", "link": "blogger_outreach", "mention": "mention"}
+
+# Fallback COGS (used only if the catalog has no matching row) — keep the catalog
+# (db.fatjoe_catalog) as the real source of truth; these are last-resort defaults.
+# Aligned to FATJOE's real USD prices (DR40 $243, brand mention $378, citations $135
+# confirmed from FATJOE screenshots 2026-06-30; other DR bands inferred from the GBP
+# ladder × the confirmed DR40 conversion — confirm exact USD with Dan).
+FALLBACK_LINK_COST = {20: 108, 30: 135, 40: 243, 50: 378, 60: 513}
+FALLBACK_CITATION_COST = {50: 90, 100: 135, 300: 288}
+FALLBACK_MENTION_COST = 378
 
 
 def normalize_tier(plan_name: str | None) -> str | None:
@@ -147,14 +157,64 @@ def _severity(qty_due: int, days_left: int) -> str:
     return "ok"
 
 
-def order_cost(spec: dict) -> int:
+def resolve_product(db, spec: dict) -> dict:
+    """Resolve a tier-plan spec to its catalog product → unit price, total
+    cost-per-period, and the real FATJOE buy URL. Falls back to FALLBACK_* if the
+    catalog (db.fatjoe_catalog) has no matching row, so the queue never blanks."""
+    family = TYPE_TO_FAMILY.get(spec["type"], spec["type"])
+    dr = spec.get("dr_tier")
+    item = db.find_catalog_item(family, dr) if hasattr(db, "find_catalog_item") else None
+    qty = spec["qty"]
+    if item:
+        unit = float(item["price_usd"])
+        return {
+            "unit_price": unit,
+            "cost_each_period": round(unit * qty) if spec["type"] != "citation" else round(unit),
+            "buy_url": item.get("buy_url", ""),
+            "catalog_key": item["product_key"],
+            "price_verified": bool(item.get("verified")),
+        }
+    # Fallback (no catalog row)
     if spec["type"] == "link":
-        return LINK_COST.get(spec.get("dr_tier") or 20, 96) * spec["qty"]
-    if spec["type"] == "citation":
-        return CITATION_COST.get(spec["qty"], 120)
-    if spec["type"] == "mention":
-        return MENTION_COST * spec["qty"]
-    return 0
+        unit = FALLBACK_LINK_COST.get(dr or 20, 145)
+        cost = unit * qty
+    elif spec["type"] == "citation":
+        unit = FALLBACK_CITATION_COST.get(qty, 120)
+        cost = unit
+    elif spec["type"] == "mention":
+        unit = FALLBACK_MENTION_COST
+        cost = unit * qty
+    else:
+        unit, cost = 0, 0
+    return {"unit_price": unit, "cost_each_period": round(cost), "buy_url": "",
+            "catalog_key": "", "price_verified": False}
+
+
+def order_cost(db, spec: dict) -> int:
+    """Back-compat: just the cost-per-period for a spec (catalog-resolved)."""
+    return resolve_product(db, spec)["cost_each_period"]
+
+
+def _allocate_link_done(pool_drs: list[int], link_specs: list[dict]) -> dict:
+    """Allocate this period's ordered links to the tier's link requirements, where
+    a HIGHER-DR order can satisfy a LOWER-DR requirement (but not vice-versa).
+    Process the highest-DR requirement first, filling each slot with the smallest
+    qualifying order so bigger orders stay available for bigger requirements.
+    Returns {id(spec): qty_done}. Example: a tier wants 2×DR40 + 2×DR30 and Dan
+    orders 4×DR40 → both rows auto-complete (DR40 ≥ DR30)."""
+    pool = sorted(pool_drs)  # ascending → first match is the smallest qualifying
+    done: dict = {}
+    for spec in sorted(link_specs, key=lambda s: -(s.get("dr_tier") or 0)):
+        req = spec.get("dr_tier") or 0
+        d = 0
+        for _ in range(spec["qty"]):
+            idx = next((i for i, v in enumerate(pool) if v >= req), None)
+            if idx is None:
+                break
+            pool.pop(idx)
+            d += 1
+        done[id(spec)] = d
+    return done
 
 
 def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None = None,
@@ -173,13 +233,28 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
     plan = TIER_PLANS[tier]
     items: list[dict] = []
 
+    # Pre-allocate this month's ordered links across the tier's link rows so a
+    # higher-DR order auto-satisfies a lower-DR row (Dan's "order higher DA →
+    # mark lower complete"). Links live in the monthly cadence.
+    month_link_specs = [s for s in plan.get("monthly", []) if s["type"] == "link"]
+    link_done: dict = {}
+    if month_link_specs:
+        pool: list[int] = []
+        for dr, qty in db.link_dr_quantities_in_period(customer_id, month_start).items():
+            pool.extend([dr] * qty)
+        link_done = _allocate_link_done(pool, month_link_specs)
+
     for cadence, since in (("onboarding", None), ("monthly", month_start), ("quarterly", quarter_start)):
         for spec in plan.get(cadence, []):
-            done = db.count_offsite_orders_in_period(customer_id, spec["type"], since)
+            if spec["type"] == "link" and id(spec) in link_done:
+                done = link_done[id(spec)]
+            else:
+                done = db.count_offsite_orders_in_period(customer_id, spec["type"], since)
             target = 1 if spec["type"] == "citation" else spec["qty"]  # citations: one pack, not 100 orders
             due = max(0, target - done)
             deadline = _deadline_for(cadence, now)
             days_left = (deadline.date() - now.date()).days
+            prod = resolve_product(db, spec)
             items.append({
                 "cadence": cadence,
                 "type": spec["type"],
@@ -190,7 +265,11 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
                 "qty_due": due,
                 "dr_tier": spec.get("dr_tier"),
                 "note": spec["note"],
-                "cost_each_period": order_cost(spec),
+                "unit_price": prod["unit_price"],
+                "cost_each_period": prod["cost_each_period"],
+                "buy_url": prod["buy_url"],
+                "catalog_key": prod["catalog_key"],
+                "price_verified": prod["price_verified"],
                 "deadline": deadline.strftime("%Y-%m-%d"),
                 "days_left": days_left,
                 "severity": _severity(due, days_left),

@@ -24,7 +24,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from functools import wraps
 from pathlib import Path
 from urllib.parse import urlparse
@@ -90,6 +90,39 @@ def get_db() -> CustomerDB:
 
 def get_staging() -> StagingManager:
     return StagingManager(data_dir=DATA_DIR)
+
+
+# --- Global nav context: sidebar badge counts + automation-health banner ---
+_nav_cache: tuple[float, dict] | None = None
+_NAV_TTL = 60  # seconds — cheap enough to refresh ~1×/min instead of per page load
+
+
+@app.context_processor
+def inject_nav():
+    """Inject sidebar badge counts and any overdue/failed scheduled jobs into every
+    template. Cached briefly so it's ~one cheap query per minute, not per request."""
+    global _nav_cache
+    if not session.get("logged_in"):
+        return {}
+    now = time.time()
+    if _nav_cache and now - _nav_cache[0] < _NAV_TTL:
+        return _nav_cache[1]
+    ctx: dict = {"nav_badges": {}, "job_problems": []}
+    try:
+        db = get_db()
+        try:
+            from geo_agent import job_health as jh
+            ctx["nav_badges"] = {
+                "content_queue": db.count_all_pending_content(),
+                "alerts": db.get_active_alert_count(),
+            }
+            ctx["job_problems"] = jh.job_problems(db)
+        finally:
+            db.close()
+    except Exception:
+        logger.warning("nav context computation failed", exc_info=True)
+    _nav_cache = (now, ctx)
+    return ctx
 
 
 # --- Audit Logging ---
@@ -188,6 +221,7 @@ def index():
             if c["status"] != "archived":
                 c["action_items"] = ai.customer_action_items(db, c)
                 c["worst_severity"] = ai.worst_severity(c["action_items"])
+                c["seo_score"], c["seo_delta"] = db.seo_score_and_delta(c["id"], _earlier_date(25))
 
         # Filter out archived for main view
         customers = [c for c in all_customers if c["status"] != "archived"]
@@ -212,6 +246,21 @@ def index():
         return render_template("index.html", customers=customers, stats=stats)
     finally:
         db.close()
+
+
+@app.route("/health")
+@login_required
+def system_health():
+    """Operator-facing 'is the automation working?' page: scheduled-job heartbeats
+    and integration/credential status. Lets Dan self-diagnose silent failures."""
+    from geo_agent import job_health as jh
+    db = get_db()
+    try:
+        jobs = jh.job_health(db)
+    finally:
+        db.close()
+    integrations = jh.integration_health()
+    return render_template("system_health.html", jobs=jobs, integrations=integrations)
 
 
 # --- SEO Health Score & CTR Opportunities ---
@@ -470,11 +519,13 @@ def customer_detail(customer_id):
         seo_health_score = _health["score"]
         seo_health_buckets = _health["buckets"]
         seo_health_history = list(reversed(db.get_seo_health_history(customer_id, limit=180)))
-        # Delta vs ~30 days ago (first record from >=25 days back, else oldest).
+        # Delta vs ~30 days ago: the NEWEST record that is still >=25 days old
+        # (history is ascending here, so take the last match; else the oldest we have).
         seo_health_delta = None
         if len(seo_health_history) >= 2:
-            prior_pt = next((h for h in seo_health_history if h["date"] <= _earlier_date(25)),
-                            seo_health_history[0])
+            _cutoff = _earlier_date(25)
+            _older = [h for h in seo_health_history if h["date"] <= _cutoff]
+            prior_pt = _older[-1] if _older else seo_health_history[0]
             if prior_pt and prior_pt["date"] != _today:
                 seo_health_delta = seo_health_score - prior_pt["score"]
 
@@ -799,14 +850,30 @@ def fatjoe_queue():
                     unplanned.append({"customer": cust, "sub": sub})
                 continue
             due = fp.due_orders(db, cust["id"], plan_name, tier_override=override)
+            # Ad-hoc margin only: scope COGS to orders that carry a client sell price
+            # so subscription/tier link COGS (sell_usd=0) doesn't drag margin negative.
+            cogs = db.offsite_spend(cust["id"], adhoc_only=True)
+            revenue = db.offsite_revenue(cust["id"])
             rows.append({
                 "customer": cust,
                 "paid": paid,
                 "status": sub["status"] if sub else "—",
                 "plan": due,
                 "recent_orders": db.get_offsite_orders(cust["id"])[:5],
+                "cogs": cogs,
+                "revenue": revenue,
+                "margin": revenue - cogs,
             })
         rows.sort(key=lambda r: (-r["plan"]["total_due"], r["customer"]["name"]))
+        unverified = sum(
+            1 for r in rows for i in r["plan"]["items"] if not i.get("price_verified")
+        )
+        # Live month-to-date FATJOE COGS (real logged spend) — mirrors Expenses.
+        _month_start = datetime.now(timezone.utc).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        mtd_spend = db.offsite_spend(since=_month_start)
+        catalog = db.get_fatjoe_catalog(active_only=True)
         return render_template(
             "fatjoe.html",
             rows=rows,
@@ -814,6 +881,11 @@ def fatjoe_queue():
             tier_plans=fp.TIER_PLANS,
             total_due=sum(r["plan"]["total_due"] for r in rows),
             order_by_day=fp.MONTHLY_ORDER_BY_DAY,
+            unverified_count=unverified,
+            mtd_spend=mtd_spend,
+            catalog=catalog,
+            adhoc_cogs=sum(r["cogs"] for r in rows),
+            adhoc_revenue=sum(r["revenue"] for r in rows),
         )
     finally:
         db.close()
@@ -834,6 +906,185 @@ def fatjoe_set_tier(customer_id):
         db.update_customer(customer_id, tier_override=tier)
         audit_log("tier_override_set", customer_id=customer_id, details=f"tier={tier or '(cleared)'}")
         flash(f"Tier set to {tier.title()}." if tier else "Tier override cleared.", "success")
+    finally:
+        db.close()
+    return redirect(url_for("fatjoe_queue"))
+
+
+@app.route("/fatjoe/catalog")
+@login_required
+def fatjoe_catalog():
+    """Editable FATJOE product catalog — the single source of truth for COGS +
+    buy links. Dan confirms each price against his FATJOE reseller dashboard."""
+    db = get_db()
+    try:
+        items = db.get_fatjoe_catalog(active_only=False)
+    finally:
+        db.close()
+    # Group by family for a clean editor.
+    fam_label = {
+        "citation": "Local Citations", "blogger_outreach": "Blogger Outreach (fresh links)",
+        "niche_edit": "Niche Edits (links into aged posts)", "mention": "Brand Mentions / Digital PR",
+    }
+    groups = {}
+    for it in items:
+        groups.setdefault(it["family"], []).append(it)
+    grouped = [(fam_label.get(f, f), f, rows) for f, rows in groups.items()]
+    return render_template("fatjoe_catalog.html", grouped=grouped,
+                           unverified=sum(1 for i in items if not i["verified"]))
+
+
+@app.route("/fatjoe/catalog/<product_key>/update", methods=["POST"])
+@login_required
+def fatjoe_catalog_update(product_key):
+    """Save a catalog row's price + buy URL (and mark it verified)."""
+    db = get_db()
+    try:
+        if not db.get_catalog_item(product_key):
+            flash("Unknown product.", "error")
+            return redirect(url_for("fatjoe_catalog"))
+        try:
+            price = float(request.form.get("price_usd") or 0)
+        except ValueError:
+            price = 0.0
+        try:
+            sell = float(request.form.get("sell_usd") or 0)
+        except ValueError:
+            sell = 0.0
+        buy_url = (request.form.get("buy_url") or "").strip()
+        # Saving a catalog row always confirms its price (per the catalog page copy:
+        # "paste it here, and Save — that marks it ✓ verified"). No checkbox in the form.
+        verified = 1
+        db.update_catalog_item(product_key, price_usd=price, buy_url=buy_url,
+                               verified=verified, sell_usd=sell)
+        audit_log("fatjoe_catalog_updated", details=f"{product_key} cogs ${price:.0f} sell ${sell:.0f}")
+        flash(f"Saved {product_key} (COGS ${price:.0f} / client ${sell:.0f}).", "success")
+    finally:
+        db.close()
+    return redirect(url_for("fatjoe_catalog"))
+
+
+@app.route("/fatjoe/<customer_id>/quick-order", methods=["POST"])
+@login_required
+def fatjoe_quick_order(customer_id):
+    """Log a FATJOE order straight from the queue (one click). Records an
+    offsite_order with the catalog COGS + today's date so the line drops off
+    'due' and the spend flows into Expenses. Optional FATJOE order # captured."""
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            flash("Customer not found.", "error")
+            return redirect(url_for("fatjoe_queue"))
+        order_type = (request.form.get("order_type") or "link").strip()
+        try:
+            qty = max(1, int(request.form.get("quantity") or 1))
+        except ValueError:
+            qty = 1
+        try:
+            dr_tier = int(request.form["dr_tier"]) if request.form.get("dr_tier") else None
+        except ValueError:
+            dr_tier = None
+        try:
+            cost = float(request.form.get("cost_usd") or 0)
+        except ValueError:
+            cost = 0.0
+        vendor_order_id = (request.form.get("vendor_order_id") or "").strip()
+        notes = (request.form.get("notes") or "").strip()
+        # Double-pay guard: block an identical order logged in the last 15 min unless the
+        # operator explicitly confirms (an unlogged order keeps showing as "due", so a
+        # reload/double-click here would otherwise log — and re-order — twice).
+        if not request.form.get("confirm"):
+            _cutoff = (datetime.now(timezone.utc) - timedelta(minutes=15)).strftime("%Y-%m-%dT%H:%M:%SZ")
+            dup = db.recent_offsite_order(customer_id, order_type, dr_tier, _cutoff)
+            if dup:
+                flash(
+                    f"You already logged a {order_type}"
+                    f"{f' DR{dr_tier}' if dr_tier else ''} for {customer_id} minutes ago "
+                    f"(#{dup['id']}, {dup['ordered_at'][:16].replace('T', ' ')} UTC). "
+                    f"That order is still showing as due? Use “Log anyway” to confirm a second one.",
+                    "warning",
+                )
+                return redirect(url_for("fatjoe_queue",
+                                        confirm=f"{customer_id}:{order_type}:{dr_tier or 0}"))
+        oid = db.add_offsite_order(
+            customer_id, order_type,
+            quantity=qty, dr_tier=dr_tier, cost_usd=cost,
+            vendor_order_id=vendor_order_id, notes=notes, status="ordered",
+        )
+        audit_log("fatjoe_order_logged", customer_id=customer_id,
+                  details=f"{order_type} x{qty} DR{dr_tier} ${cost:.0f} #{oid}")
+        flash(f"Logged {qty}× {order_type} (${cost:.0f}) for {customer_id}.", "success")
+    finally:
+        db.close()
+    return redirect(url_for("fatjoe_queue"))
+
+
+# Maps a catalog family → offsite_orders.order_type.
+_FAMILY_ORDER_TYPE = {
+    "citation": "citation",
+    "blogger_outreach": "link",
+    "niche_edit": "link",
+    "mention": "mention",
+}
+
+
+@app.route("/fatjoe/<customer_id>/adhoc-order", methods=["POST"])
+@login_required
+def fatjoe_adhoc_order(customer_id):
+    """Ad-hoc 'add / upgrade a backlink': Dan picks a catalog product (any DR
+    band — upgrading is just choosing a higher one), a quantity, and optional
+    target/anchor/FATJOE order #. We resolve the catalog row for COGS + retail
+    sell price and log an offsite_order with both, so it flows into Expenses
+    (COGS) and the ad-hoc revenue/margin view (sell)."""
+    db = get_db()
+    try:
+        if not db.get_customer(customer_id):
+            flash("Customer not found.", "error")
+            return redirect(url_for("fatjoe_queue"))
+        product_key = (request.form.get("product_key") or "").strip()
+        item = db.get_catalog_item(product_key)
+        if not item:
+            flash("Pick a product.", "error")
+            return redirect(url_for("fatjoe_queue"))
+        try:
+            qty = max(1, int(request.form.get("quantity") or 1))
+        except ValueError:
+            qty = 1
+        order_type = _FAMILY_ORDER_TYPE.get(item["family"], "link")
+        target_url = (request.form.get("target_url") or "").strip()
+        anchor_text = (request.form.get("anchor_text") or "").strip()
+        vendor_order_id = (request.form.get("vendor_order_id") or "").strip()
+        cost = float(item["price_usd"]) * qty
+        sell = float(item["sell_usd"]) * qty
+        oid = db.add_offsite_order(
+            customer_id, order_type,
+            quantity=qty, dr_tier=item.get("dr_tier"),
+            cost_usd=cost, sell_usd=sell, status="ordered",
+            target_url=target_url, anchor_text=anchor_text,
+            vendor_order_id=vendor_order_id,
+            notes=f"ad-hoc: {item['label']}",
+        )
+        audit_log("fatjoe_adhoc_order", customer_id=customer_id,
+                  details=f"{product_key} x{qty} cogs ${cost:.0f} sell ${sell:.0f} #{oid}")
+        flash(f"Ordered {qty}× {item['label']} — client ${sell:.0f} / COGS ${cost:.0f}.", "success")
+    finally:
+        db.close()
+    return redirect(url_for("fatjoe_queue"))
+
+
+@app.route("/fatjoe/order/<int:order_id>/delivered", methods=["POST"])
+@login_required
+def fatjoe_mark_delivered(order_id):
+    """Mark a logged FATJOE order delivered (sets delivered_at)."""
+    db = get_db()
+    try:
+        order = db.get_offsite_order(order_id)
+        if not order:
+            flash("Order not found.", "error")
+            return redirect(url_for("fatjoe_queue"))
+        db.update_offsite_order(order_id, status="delivered")
+        audit_log("fatjoe_order_delivered", customer_id=order["customer_id"], details=f"#{order_id}")
+        flash("Marked delivered.", "success")
     finally:
         db.close()
     return redirect(url_for("fatjoe_queue"))
@@ -1078,13 +1329,17 @@ def add_offsite_order_route(customer_id):
             cost = float(f.get("cost_usd") or 0)
         except ValueError:
             cost = 0.0
+        try:
+            sell = float(f.get("sell_usd") or 0)
+        except ValueError:
+            sell = 0.0
         oid = db.add_offsite_order(
             customer_id, order_type,
             quantity=qty, dr_tier=dr_tier,
             target_url=(f.get("target_url") or "").strip(),
             anchor_text=(f.get("anchor_text") or "").strip(),
             anchor_type=(f.get("anchor_type") or "").strip(),
-            cost_usd=cost,
+            cost_usd=cost, sell_usd=sell,
             vendor_order_id=(f.get("vendor_order_id") or "").strip(),
             notes=(f.get("notes") or "").strip(),
             status=(f.get("status") or "ordered").strip(),
@@ -1851,6 +2106,58 @@ def _publish_to_webflow(customer_id: str, db, staging) -> list[str]:
     return warnings
 
 
+def _publish_customer(customer_id: str, db, staging) -> tuple[list, list[str], str]:
+    """Core publish for one customer's approved staged changes: push to Webflow (if
+    connected) + push llms/robots to the Worker, move staged→published, update the run,
+    verify live, clear resolved alerts. Returns (published_files, warnings, verification).
+    Assumes the caller already checked staging.is_approved(customer_id)."""
+    customer = db.get_customer(customer_id)
+    platform = customer.get("platform", "webflow") if customer else "webflow"
+    webflow_warnings = _publish_to_webflow(customer_id, db, staging) if platform == "webflow" else []
+    stage_path = Path(DATA_DIR) / "staging" / customer_id
+    worker_warnings = _publish_llms_to_worker(customer_id, db, stage_path)
+    published = staging.publish_staged(customer_id)
+    latest_run = db.get_latest_run(customer_id)
+    if latest_run and latest_run["status"] == "approved":
+        db.mark_run_published(latest_run["id"])
+    verification = _verify_publish(customer_id, db)
+    db.dismiss_alerts_for_customer(customer_id, ["schema_invalid", "stale_content", "new_schema"])
+    audit_log("published", customer_id=customer_id, details=f"{len(published)} files published")
+    return published, webflow_warnings + worker_warnings, verification
+
+
+@app.route("/publish-all-approved", methods=["POST"])
+@login_required
+def publish_all_approved():
+    """Bulk-publish every customer whose staged changes are approved — the UI equivalent
+    of the `--publish-approved` cron, so Dan never needs the CLI to push approved work live."""
+    staging = get_staging()
+    db = get_db()
+    published_customers, failed = [], []
+    try:
+        for cust in db.list_customers():
+            cid = cust["id"]
+            if not staging.is_approved(cid):
+                continue
+            try:
+                files, warnings, _ = _publish_customer(cid, db, staging)
+                published_customers.append(f"{cust['name']} ({len(files)} files)")
+                if warnings:
+                    failed.append(f"{cust['name']}: {' '.join(warnings)}")
+            except Exception as e:  # noqa: BLE001
+                failed.append(f"{cust['name']}: {e}")
+    finally:
+        db.close()
+    if published_customers:
+        flash(f"Published {len(published_customers)} customer(s): {', '.join(published_customers)}.",
+              "warning" if failed else "success")
+    else:
+        flash("Nothing to publish — no customers have approved staged changes.", "info")
+    if failed:
+        flash("Issues: " + " | ".join(failed), "warning")
+    return redirect(request.referrer or url_for("runs"))
+
+
 @app.route("/customer/<customer_id>/publish", methods=["POST"])
 @login_required
 def publish_staging(customer_id):
@@ -1865,33 +2172,7 @@ def publish_staging(customer_id):
             flash("Changes must be approved before publishing.", "error")
             return redirect(url_for("customer_detail", customer_id=customer_id))
 
-        # Try auto-publish to Webflow (only for Webflow customers)
-        customer = db.get_customer(customer_id)
-        platform = customer.get("platform", "webflow") if customer else "webflow"
-        webflow_warnings = []
-        if platform == "webflow":
-            webflow_warnings = _publish_to_webflow(customer_id, db, staging)
-
-        # Push llms.txt/robots.txt to Worker for serving
-        stage_path = Path(DATA_DIR) / "staging" / customer_id
-        worker_warnings = _publish_llms_to_worker(customer_id, db, stage_path)
-
-        # Move staged → published
-        published = staging.publish_staged(customer_id)
-
-        # Update run status
-        latest_run = db.get_latest_run(customer_id)
-        if latest_run and latest_run["status"] == "approved":
-            db.mark_run_published(latest_run["id"])
-
-        # Post-publish: verify live site and clear resolved alerts
-        verification = _verify_publish(customer_id, db)
-        publish_alerts_to_clear = ["schema_invalid", "stale_content", "new_schema"]
-        db.dismiss_alerts_for_customer(customer_id, publish_alerts_to_clear)
-        cleared_count = len(publish_alerts_to_clear)
-
-        audit_log("published", customer_id=customer_id, details=f"{len(published)} files published")
-        all_warnings = webflow_warnings + worker_warnings
+        published, all_warnings, verification = _publish_customer(customer_id, db, staging)
         if all_warnings:
             msg = f"Published {len(published)} files. {' '.join(all_warnings)}"
             if verification:
@@ -5770,10 +6051,17 @@ def expenses():
         customers = db.list_customers()
         active = sum(1 for c in customers if c.get("status") == "active")
         non_archived = sum(1 for c in customers if c.get("status") != "archived")
+        # Real FATJOE COGS from logged orders — month-to-date + all-time.
+        _month_start = datetime.now(timezone.utc).replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        fatjoe_mtd = db.offsite_spend(since=_month_start)
+        fatjoe_total = db.offsite_spend()
     finally:
         db.close()
     # Bill against active customers, but never 0 (so per-customer rates show).
-    data = compute_expenses(active or non_archived or 1)
+    data = compute_expenses(active or non_archived or 1,
+                            fatjoe_mtd=fatjoe_mtd, fatjoe_total=fatjoe_total)
     return render_template(
         "expenses.html",
         data=data, active_customers=active, non_archived=non_archived,
@@ -6520,6 +6808,7 @@ def runs():
             "this_month": sum(1 for r in all_runs if r.get("run_date", "")[:7] == current_month),
             "failed": sum(1 for r in all_runs if r.get("status") == "failed"),
             "staged": sum(1 for r in all_runs if r.get("status") == "staged"),
+            "approved_ready": sum(1 for s in schedule if s["phase"] == "approved"),
         }
 
         return render_template(

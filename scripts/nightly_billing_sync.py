@@ -25,6 +25,7 @@ def main():
     try:
         n = billing.sync_all(db)
         logger.info("Nightly billing sync upserted %d subscription(s).", n)
+        db.record_job_run("nightly_billing_sync", detail=f"{n} subscription(s)")
     finally:
         db.close()
 

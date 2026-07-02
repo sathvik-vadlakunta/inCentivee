@@ -90,6 +90,7 @@ def main():
         except Exception as e:  # noqa: BLE001
             print(f"  [{i+1}/{len(targets)}] {cid}: ERROR {e}")
 
+    db.record_job_run("biweekly_content", detail=f"{total} recs created")
     db.close()
     print(f"[{datetime.now().isoformat()}] biweekly content complete — {total} recs created")
 

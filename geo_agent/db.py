@@ -731,6 +731,15 @@ class CustomerDB:
                 UNIQUE(customer_id, date)
             );
             CREATE INDEX IF NOT EXISTS idx_seo_health_customer ON seo_health_history(customer_id, date);
+
+            -- Heartbeats for scheduled (cron) jobs so the dashboard can show whether
+            -- the automation is actually running and warn when a job is overdue.
+            CREATE TABLE IF NOT EXISTS job_heartbeats (
+                job_name    TEXT PRIMARY KEY,
+                last_run_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                status      TEXT NOT NULL DEFAULT 'ok',
+                detail      TEXT NOT NULL DEFAULT ''
+            );
         """)
 
         # Migration v8 → v9: Landing page report tracking
@@ -907,7 +916,26 @@ class CustomerDB:
             );
             CREATE INDEX IF NOT EXISTS idx_offsite_assets ON offsite_assets(customer_id, id DESC);
             CREATE INDEX IF NOT EXISTS idx_offsite_assets_order ON offsite_assets(order_id);
+
+            -- FATJOE product catalog — the single source of truth for what each
+            -- order COSTS and WHERE Dan buys it. Editable in the dashboard so COGS
+            -- never goes stale (FATJOE changes prices). Seeded once if empty.
+            CREATE TABLE IF NOT EXISTS fatjoe_catalog (
+                product_key TEXT PRIMARY KEY,            -- e.g. blogger_outreach_dr40
+                family TEXT NOT NULL,                     -- citation|blogger_outreach|niche_edit|mention
+                label TEXT NOT NULL,
+                dr_tier INTEGER,                          -- links/edits only; NULL otherwise
+                unit TEXT NOT NULL DEFAULT 'each',
+                price_usd REAL NOT NULL DEFAULT 0,        -- our COGS (what FATJOE charges us)
+                sell_usd REAL NOT NULL DEFAULT 0,         -- retail / client-facing ad-hoc price
+                buy_url TEXT NOT NULL DEFAULT '',
+                verified INTEGER NOT NULL DEFAULT 0,      -- 1 once Dan confirms the price vs FATJOE
+                active INTEGER NOT NULL DEFAULT 1,
+                sort INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
         """)
+        self._seed_fatjoe_catalog()
 
         # Migration v9 → v10: Stripe billing — one subscription row per Stripe
         # subscription, auto-matched to a customer by email; billing_events logs
@@ -949,6 +977,21 @@ class CustomerDB:
         if "share_token" not in rs_cols:
             self.conn.execute("ALTER TABLE report_snapshots ADD COLUMN share_token TEXT NOT NULL DEFAULT ''")
             self.conn.execute("CREATE INDEX IF NOT EXISTS idx_report_share_token ON report_snapshots(share_token)")
+
+        # Retail (client-facing) pricing layer on top of FATJOE COGS. sell_usd is
+        # the ad-hoc price we charge a client for a backlink/citation; margin =
+        # sell_usd - price_usd. Guarded migration + one-time backfill of seed rows.
+        cat_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(fatjoe_catalog)").fetchall()]
+        if "sell_usd" not in cat_cols:
+            self.conn.execute("ALTER TABLE fatjoe_catalog ADD COLUMN sell_usd REAL NOT NULL DEFAULT 0")
+            for key, sell in self._CATALOG_SELL_DEFAULTS.items():
+                self.conn.execute(
+                    "UPDATE fatjoe_catalog SET sell_usd = ? WHERE product_key = ? AND sell_usd = 0",
+                    (sell, key),
+                )
+        oo_cols = [r[1] for r in self.conn.execute("PRAGMA table_info(offsite_orders)").fetchall()]
+        if "sell_usd" not in oo_cols:
+            self.conn.execute("ALTER TABLE offsite_orders ADD COLUMN sell_usd REAL NOT NULL DEFAULT 0")
 
         self.conn.execute(
             "UPDATE schema_version SET version = ?", (SCHEMA_VERSION,)
@@ -2499,6 +2542,33 @@ class CustomerDB:
         )
         return cur.fetchone()[0]
 
+    def count_all_pending_content(self) -> int:
+        """Total pending content recommendations across every customer (drives the
+        Content Queue sidebar badge — one cheap query, no per-customer loop)."""
+        cur = self.conn.execute(
+            "SELECT COUNT(*) FROM content_recommendations WHERE status = 'pending'"
+        )
+        return int(cur.fetchone()[0] or 0)
+
+    # --- Scheduled-job heartbeats (see geo_agent.job_health) ---
+    def record_job_run(self, job_name: str, status: str = "ok", detail: str = "") -> None:
+        """Upsert a scheduled job's heartbeat with the current UTC time."""
+        self.conn.execute(
+            """INSERT INTO job_heartbeats (job_name, last_run_at, status, detail)
+               VALUES (?, strftime('%Y-%m-%dT%H:%M:%SZ','now'), ?, ?)
+               ON CONFLICT(job_name) DO UPDATE SET
+                 last_run_at=excluded.last_run_at, status=excluded.status, detail=excluded.detail""",
+            (job_name, status, (detail or "")[:500]),
+        )
+        self.conn.commit()
+
+    def get_job_heartbeats(self) -> dict[str, dict]:
+        """{job_name: {last_run_at, status, detail}} for all recorded jobs."""
+        rows = self.conn.execute(
+            "SELECT job_name, last_run_at, status, detail FROM job_heartbeats"
+        ).fetchall()
+        return {r["job_name"]: dict(r) for r in rows}
+
     def get_content_recommendation(self, rec_id: str) -> dict | None:
         """Get a single content recommendation by ID."""
         cur = self.conn.execute(
@@ -3272,7 +3342,7 @@ class CustomerDB:
 
     _OFFSITE_ORDER_COLS = (
         "vendor", "order_type", "status", "quantity", "dr_tier", "target_url",
-        "anchor_text", "anchor_type", "cost_usd", "vendor_order_id", "notes",
+        "anchor_text", "anchor_type", "cost_usd", "sell_usd", "vendor_order_id", "notes",
     )
 
     def add_offsite_order(self, customer_id, order_type, **fields):
@@ -3301,16 +3371,37 @@ class CustomerDB:
         ).fetchall()
         return [dict(r) for r in rows]
 
-    def count_offsite_orders_in_period(self, customer_id, order_type, since: str | None = None) -> int:
+    def recent_offsite_order(self, customer_id, order_type, dr_tier, since_iso: str) -> dict | None:
+        """Most recent non-cancelled order matching customer+type(+DR band) logged at/after
+        `since_iso`. Used to catch accidental double-logs (reload / double-click) before they
+        become a double-pay. dr_tier=None matches rows with NULL dr_tier."""
+        where = "customer_id = ? AND order_type = ? AND status != 'cancelled' AND ordered_at >= ?"
+        args: list = [customer_id, order_type, since_iso]
+        if dr_tier is None:
+            where += " AND dr_tier IS NULL"
+        else:
+            where += " AND dr_tier = ?"
+            args.append(dr_tier)
+        row = self.conn.execute(
+            f"SELECT * FROM offsite_orders WHERE {where} ORDER BY ordered_at DESC LIMIT 1", args
+        ).fetchone()
+        return dict(row) if row else None
+
+    def count_offsite_orders_in_period(self, customer_id, order_type, since: str | None = None,
+                                       dr_tier: int | None = None) -> int:
         """How many non-cancelled orders of a type were placed since `since`
         (ISO). `since=None` counts all-time. Powers the per-tier 'due this period'
         view — citations top-ups count as orders, link drips count per link via
-        quantity."""
+        quantity. `dr_tier` (links) scopes the count to one DR band so a tier with
+        multiple link rows (e.g. 2×DR40 + 2×DR30) tracks each row independently."""
         where = "customer_id = ? AND order_type = ? AND status != 'cancelled'"
         args: list = [customer_id, order_type]
         if since:
             where += " AND ordered_at >= ?"
             args.append(since)
+        if dr_tier is not None:
+            where += " AND dr_tier = ?"
+            args.append(dr_tier)
         # Links/mentions: each order's quantity counts toward the monthly target.
         # Citations: count distinct orders (one pack satisfies the target).
         if order_type == "citation":
@@ -3322,6 +3413,171 @@ class CustomerDB:
                 f"SELECT COALESCE(SUM(quantity), 0) FROM offsite_orders WHERE {where}", args
             ).fetchone()
         return int(row[0] or 0)
+
+    def link_dr_quantities_in_period(self, customer_id, since: str | None = None) -> dict:
+        """{dr_tier: total_quantity} of non-cancelled LINK orders placed since
+        `since`. Powers 'a higher-DR order satisfies a lower-DR requirement'
+        allocation in the tier queue. NULL dr_tier is keyed as 0."""
+        where = "customer_id = ? AND order_type = 'link' AND status != 'cancelled'"
+        args: list = [customer_id]
+        if since:
+            where += " AND ordered_at >= ?"
+            args.append(since)
+        rows = self.conn.execute(
+            f"SELECT dr_tier, COALESCE(SUM(quantity), 0) FROM offsite_orders "
+            f"WHERE {where} GROUP BY dr_tier", args,
+        ).fetchall()
+        return {(r[0] if r[0] is not None else 0): int(r[1]) for r in rows}
+
+    def offsite_spend(self, customer_id: str | None = None, since: str | None = None,
+                      adhoc_only: bool = False) -> float:
+        """Total real FATJOE COGS from logged orders. Optionally scope to one
+        customer and/or to orders placed since an ISO timestamp (excludes
+        cancelled). Powers the Expenses page's live variable-COGS line.
+
+        `adhoc_only=True` restricts to ad-hoc orders (those with a client sell
+        price), so it pairs correctly with `offsite_revenue` for margin — tier /
+        subscription link-building logs sell_usd=0 and would otherwise drag the
+        margin negative."""
+        where = ["status != 'cancelled'"]
+        args: list = []
+        if customer_id:
+            where.append("customer_id = ?")
+            args.append(customer_id)
+        if since:
+            where.append("ordered_at >= ?")
+            args.append(since)
+        if adhoc_only:
+            where.append("COALESCE(sell_usd, 0) > 0")
+        row = self.conn.execute(
+            f"SELECT COALESCE(SUM(cost_usd), 0) FROM offsite_orders WHERE {' AND '.join(where)}",
+            args,
+        ).fetchone()
+        return float(row[0] or 0)
+
+    def offsite_revenue(self, customer_id: str | None = None, since: str | None = None) -> float:
+        """Total client-facing revenue (retail sell_usd) from logged orders.
+        Mirrors offsite_spend; optionally scope to one customer and/or orders
+        placed since an ISO timestamp (excludes cancelled). Pairs with
+        offsite_spend to surface ad-hoc backlink margin."""
+        where = ["status != 'cancelled'"]
+        args: list = []
+        if customer_id:
+            where.append("customer_id = ?")
+            args.append(customer_id)
+        if since:
+            where.append("ordered_at >= ?")
+            args.append(since)
+        row = self.conn.execute(
+            f"SELECT COALESCE(SUM(sell_usd), 0) FROM offsite_orders WHERE {' AND '.join(where)}",
+            args,
+        ).fetchone()
+        return float(row[0] or 0)
+
+    # --- FATJOE product catalog (editable price + buy-link source of truth) ---
+    # Retail (client-facing) ad-hoc prices per product_key. Used to seed sell_usd
+    # on fresh catalogs and to backfill existing rows. Dan edits these in the
+    # dashboard afterward — never hardcode them in templates.
+    _CATALOG_SELL_DEFAULTS = {
+        "citation_100": 299.0,
+        "citation_50": 199.0,
+        "blogger_outreach_dr20": 249.0,
+        "blogger_outreach_dr30": 299.0,
+        "blogger_outreach_dr40": 499.0,
+        "blogger_outreach_dr50": 749.0,
+        "blogger_outreach_dr60": 999.0,
+        # Niche edits ~ 2× their COGS.
+        "niche_edit_dr20": 199.0,
+        "niche_edit_dr30": 249.0,
+        "niche_edit_dr40": 399.0,
+        "niche_edit_dr50": 599.0,
+        "niche_edit_dr60": 799.0,
+        "mention_brand": 749.0,
+    }
+
+    def _seed_fatjoe_catalog(self):
+        """Insert default catalog rows once, if the table is empty. Prices marked
+        verified=0 are best-known starting points to confirm against FATJOE; the
+        buy URLs are FATJOE's real product pages. Dan edits both in the dashboard."""
+        if self.conn.execute("SELECT 1 FROM fatjoe_catalog LIMIT 1").fetchone():
+            return
+        BO = "https://fatjoe.com/blogger-outreach/"
+        NE = "https://fatjoe.com/niche-edits/"
+        MEN = "https://fatjoe.com/brand-mentions/"
+        CIT = "https://fatjoe.com/local-citations/"
+        # (key, family, label, dr_tier, unit, price, url, verified)
+        # Prices = FATJOE real USD. Confirmed from Dan's FATJOE screenshots 2026-06-30:
+        # citations $135, DR40+ blogger outreach $243, brand mention $378 (verified=1).
+        # Other DR bands inferred from FATJOE's GBP ladder × the confirmed DR40 conversion
+        # (≈1.125) — flagged verified=0 until Dan confirms the exact USD.
+        rows = [
+            ("citation_100", "citation", "Local Citations — campaign", None, "campaign", 135.0, CIT, 1),
+            ("citation_50", "citation", "Local Citations — 50 pack", None, "pack", 90.0, CIT, 0),
+            # Blogger Outreach (fresh editorial placements) by DR band.
+            ("blogger_outreach_dr20", "blogger_outreach", "Blogger Outreach DR20+", 20, "link", 108.0, BO, 0),
+            ("blogger_outreach_dr30", "blogger_outreach", "Blogger Outreach DR30+", 30, "link", 135.0, BO, 0),
+            ("blogger_outreach_dr40", "blogger_outreach", "Blogger Outreach DR40+", 40, "link", 243.0, BO, 1),
+            ("blogger_outreach_dr50", "blogger_outreach", "Blogger Outreach DR50+", 50, "link", 378.0, BO, 0),
+            ("blogger_outreach_dr60", "blogger_outreach", "Blogger Outreach DR60+", 60, "link", 513.0, BO, 0),
+            # Niche Edits (links into aged posts) — DR ladder confirmed from fatjoe.com/niche-edits.
+            ("niche_edit_dr20", "niche_edit", "Niche Edit DR20+", 20, "link", 96.0, NE, 1),
+            ("niche_edit_dr30", "niche_edit", "Niche Edit DR30+", 30, "link", 120.0, NE, 1),
+            ("niche_edit_dr40", "niche_edit", "Niche Edit DR40+", 40, "link", 216.0, NE, 1),
+            ("niche_edit_dr50", "niche_edit", "Niche Edit DR50+", 50, "link", 336.0, NE, 1),
+            ("niche_edit_dr60", "niche_edit", "Niche Edit DR60+", 60, "link", 456.0, NE, 1),
+            ("mention_brand", "mention", "Brand Mention / Listicle (AI visibility)", None, "placement", 378.0, MEN, 1),
+        ]
+        for i, (key, fam, label, dr, unit, price, url, ver) in enumerate(rows):
+            sell = self._CATALOG_SELL_DEFAULTS.get(key, 0.0)
+            self.conn.execute(
+                """INSERT OR IGNORE INTO fatjoe_catalog
+                   (product_key, family, label, dr_tier, unit, price_usd, sell_usd, buy_url, verified, sort)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (key, fam, label, dr, unit, price, sell, url, ver, i),
+            )
+        self.conn.commit()
+
+    def get_fatjoe_catalog(self, active_only: bool = True) -> list[dict]:
+        q = "SELECT * FROM fatjoe_catalog"
+        if active_only:
+            q += " WHERE active = 1"
+        q += " ORDER BY sort, product_key"
+        return [dict(r) for r in self.conn.execute(q).fetchall()]
+
+    def get_catalog_item(self, product_key: str) -> dict | None:
+        row = self.conn.execute(
+            "SELECT * FROM fatjoe_catalog WHERE product_key = ?", (product_key,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def find_catalog_item(self, family: str, dr_tier: int | None = None) -> dict | None:
+        """Resolve the catalog row for a (family, dr_tier). For links, exact DR
+        match first, else the closest band ≥ requested, else any in the family."""
+        rows = [r for r in self.get_fatjoe_catalog(active_only=True) if r["family"] == family]
+        if not rows:
+            return None
+        if dr_tier is None:
+            return rows[0]
+        exact = [r for r in rows if r.get("dr_tier") == dr_tier]
+        if exact:
+            return exact[0]
+        higher = sorted((r for r in rows if (r.get("dr_tier") or 0) >= dr_tier),
+                        key=lambda r: r["dr_tier"])
+        return higher[0] if higher else rows[-1]
+
+    def update_catalog_item(self, product_key: str, price_usd: float, buy_url: str,
+                            verified: int = 1, sell_usd: float | None = None) -> None:
+        if sell_usd is None:
+            existing = self.get_catalog_item(product_key)
+            sell_usd = float(existing["sell_usd"]) if existing else 0.0
+        self.conn.execute(
+            """UPDATE fatjoe_catalog
+               SET price_usd = ?, sell_usd = ?, buy_url = ?, verified = ?,
+                   updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+               WHERE product_key = ?""",
+            (price_usd, sell_usd, buy_url, verified, product_key),
+        )
+        self.conn.commit()
 
     def update_offsite_order(self, order_id, **fields):
         allowed = set(self._OFFSITE_ORDER_COLS) | {"delivered_at"}
@@ -3575,6 +3831,23 @@ class CustomerDB:
         )
         return [dict(r) for r in cur.fetchall()]
 
+    def seo_score_and_delta(self, customer_id: str, cutoff_date: str) -> tuple[int | None, int | None]:
+        """(current SEO health score, delta vs ~30 days ago) for the dashboard trend chip.
+        Delta uses the NEWEST record on/before `cutoff_date` (a YYYY-MM-DD ~25-30 days back);
+        returns (None, None) with no history, (score, None) with too little history."""
+        rows = self.conn.execute(
+            "SELECT date, score FROM seo_health_history WHERE customer_id = ? "
+            "ORDER BY date DESC LIMIT 180",
+            (customer_id,),
+        ).fetchall()
+        if not rows:
+            return None, None
+        current = int(rows[0]["score"])
+        # rows are DESC; the first with date <= cutoff is the newest record >= ~30d old.
+        prior = next((r for r in rows if r["date"] <= cutoff_date), None)
+        delta = (current - int(prior["score"])) if (prior and prior["date"] != rows[0]["date"]) else None
+        return current, delta
+
     # --- Weekly report snapshots (R0) ---
 
     def save_report_snapshot(
@@ -3646,10 +3919,15 @@ class CustomerDB:
         row = cur.fetchone()
         return dict(row) if row else None
 
-    def get_report_snapshots(self, customer_id: str, report_type: str = "weekly", limit: int = 26) -> list[dict]:
+    def get_report_snapshots(self, customer_id: str, report_type: str = "weekly", limit: int = 26,
+                             include_payload: bool = False) -> list[dict]:
+        # Listings stay lean; `include_payload=True` also pulls the (large) captured
+        # point-in-time payload_json, needed to re-render history against a new template.
+        cols = "id, report_type, period_start, period_end, score, share_token, emailed_at, created_at"
+        if include_payload:
+            cols += ", payload_json"
         cur = self.conn.execute(
-            "SELECT id, report_type, period_start, period_end, score, share_token, emailed_at, created_at "
-            "FROM report_snapshots WHERE customer_id = ? AND report_type = ? "
+            f"SELECT {cols} FROM report_snapshots WHERE customer_id = ? AND report_type = ? "
             "ORDER BY period_end DESC LIMIT ?",
             (customer_id, report_type, limit),
         )

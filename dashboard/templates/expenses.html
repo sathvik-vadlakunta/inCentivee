@@ -61,7 +61,20 @@
   <div class="exp-card total">
     <div class="k">Est. recurring total</div>
     <div class="v">${{ '%.0f'|format(data.totals.recurring) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
-    <div class="s">Excludes setup + per-order FATJOE COGS</div>
+    <div class="s">Subscriptions + usage + annual (excl. setup)</div>
+  </div>
+</div>
+
+<div class="exp-cards" style="grid-template-columns:repeat(2,1fr);">
+  <div class="exp-card" style="border-left:3px solid #16a34a;">
+    <div class="k">FATJOE COGS — this month (real)</div>
+    <div class="v">${{ '{:,.0f}'.format(data.totals.variable_cogs) }}<span style="font-size:.9rem;font-weight:500;"> MTD</span></div>
+    <div class="s">Logged orders from the <a href="{{ url_for('fatjoe_queue') }}">FATJOE queue</a></div>
+  </div>
+  <div class="exp-card total" style="border-left:3px solid #111827;">
+    <div class="k">All-in monthly (recurring + COGS)</div>
+    <div class="v">${{ '{:,.0f}'.format(data.totals.all_in_monthly) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
+    <div class="s">True monthly spend incl. this month's link-building</div>
   </div>
 </div>
 
@@ -121,7 +134,8 @@
 <p style="color:var(--muted);font-size:.78rem;margin-top:1rem;">
   Usage and infra figures are best-effort estimates — edit the line items in
   <code>geo_agent/expenses.py</code> to keep this accurate. FATJOE link-building is pass-through
-  COGS billed per order and tracked per customer in the <b>Backlinks &amp; Authority</b> tab, so it's
-  excluded from the recurring total here.
+  COGS, now totalled live from the orders Dan logs on the <a href="{{ url_for('fatjoe_queue') }}">FATJOE queue</a>
+  (priced from the <a href="{{ url_for('fatjoe_catalog') }}">FATJOE catalog</a>) and shown above as real
+  month-to-date spend + the all-in monthly figure.
 </p>
 {% endblock %}

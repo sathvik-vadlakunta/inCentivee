@@ -19,13 +19,20 @@
             <span>{{ a.platform | upper }}</span>
         </td>
         <td>
+            {% set _auto = a.platform in ['gsc', 'ga'] %}
             {% if a.status == 'granted' %}
             <span class="badge badge-granted" style="background:#d1fae5;color:#065f46;">Connected</span>
+            {% if _auto %}
+            <span title="Auto-verified by PracticeRank" style="font-size:0.7rem;color:#065f46;margin-left:0.25rem;">✓ verified</span>
+            {% else %}
+            <span title="Marked by hand — we can't machine-verify this one. Confirm the client actually granted it." style="font-size:0.7rem;color:#92400e;margin-left:0.25rem;">⚠ manual</span>
+            {% endif %}
             {% if a.granted_at %}<span style="font-size:0.7rem; color:var(--muted); margin-left:0.25rem;">{{ a.granted_at[:10] }}</span>{% endif %}
             {% elif a.status == 'not_needed' %}
             <span class="badge" style="background:#f1f5f9;color:#64748b;">N/A</span>
             {% else %}
             <span class="badge badge-pending" style="background:#fef3c7;color:#92400e;">Pending</span>
+            {% if not _auto %}<span style="font-size:0.7rem;color:var(--muted);margin-left:0.25rem;">manual check</span>{% endif %}
             {% endif %}
         </td>
         <td>

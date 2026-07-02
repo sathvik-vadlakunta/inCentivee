@@ -17,6 +17,12 @@
             {% endfor %}
         </select>
         <button onclick="triggerRun()" class="btn btn-primary btn-sm">Trigger Run</button>
+        {% if run_stats.approved_ready %}
+        <form method="post" action="{{ url_for('publish_all_approved') }}" style="display:inline;"
+              onsubmit="return confirm('Publish approved staged changes for {{ run_stats.approved_ready }} customer(s) now? This pushes schema + llms.txt live.');">
+            <button type="submit" class="btn btn-sm" style="background:#16a34a;color:#fff;">⬆ Publish all approved ({{ run_stats.approved_ready }})</button>
+        </form>
+        {% endif %}
     </div>
 </div>
 

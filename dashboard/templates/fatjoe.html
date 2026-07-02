@@ -4,44 +4,80 @@
 {% block content %}
 <style>
   .fj-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;}
+  .fj-stat{text-align:right;}
+  .fj-stat .n{font-size:1.8rem;font-weight:800;line-height:1;}
   .fj-cust{background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
   .fj-cust h3{margin:0;padding:11px 16px;font-size:.95rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;background:#f8fafc;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-  .fj-cust h3 .who{display:flex;align-items:center;gap:.6rem;}
+  .fj-cust h3 .who{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
   .tier{display:inline-block;font-size:.62rem;font-weight:800;padding:3px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;background:#ede9fe;color:#5b21b6;}
   .tier.optimize{background:#dbeafe;color:#1e40af;} .tier.grow{background:#dcfce7;color:#166534;} .tier.dominate{background:#fae8ff;color:#86198f;}
   .paid{display:inline-block;font-size:.6rem;font-weight:800;padding:3px 8px;border-radius:999px;text-transform:uppercase;}
   .paid.yes{background:#dcfce7;color:#166534;} .paid.no{background:#fee2e2;color:#991b1b;}
-  table.fj{width:100%;border-collapse:collapse;font-size:.85rem;}
-  table.fj th{text-align:left;font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:7px 16px;border-bottom:1px solid var(--border);}
-  table.fj td{padding:9px 16px;border-bottom:1px solid var(--border);vertical-align:top;}
-  table.fj tr:last-child td{border-bottom:none;}
-  .due-pill{display:inline-block;min-width:1.6em;text-align:center;font-weight:800;border-radius:7px;padding:1px 8px;}
-  .due-pill.go{background:#fee2e2;color:#991b1b;} .due-pill.done{background:#dcfce7;color:#166534;}
   .clock{display:inline-block;font-size:.66rem;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap;}
   .clock.ok{background:#e0f2fe;color:#075985;} .clock.soon{background:#fef3c7;color:#92400e;}
   .clock.overdue{background:#fee2e2;color:#991b1b;} .clock.done{background:#dcfce7;color:#166534;}
   .sev-overdue{border-left:4px solid #dc2626 !important;} .sev-soon{border-left:4px solid #f59e0b !important;}
   .sev-ok{border-left:4px solid #38bdf8 !important;} .sev-done{border-left:4px solid #22c55e !important;}
   .alarmbar{background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:10px;margin-bottom:1rem;font-weight:600;font-size:.88rem;}
-  .cad{font-size:.6rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;}
+  .infobar{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;padding:9px 14px;border-radius:10px;margin-bottom:1rem;font-size:.82rem;}
   .muted{color:var(--muted);font-size:.8rem;}
-  .fj-note{font-size:.78rem;color:var(--muted);max-width:48ch;}
-  .fj-cta{display:flex;gap:.5rem;align-items:center;}
-  .nothing{padding:10px 16px;color:#166534;font-size:.85rem;}
+  /* Order line */
+  .fj-line{display:flex;gap:14px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .fj-line:last-child{border-bottom:none;}
+  .fj-line.done{background:#f6fef9;}
+  .fj-line .lead{flex:1 1 240px;min-width:240px;}
+  .fj-line .prod{font-weight:700;font-size:.9rem;}
+  .fj-line .spec{font-size:.8rem;color:var(--muted);margin-top:1px;}
+  .cad{font-size:.58rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:800;display:inline-block;margin-bottom:3px;}
+  .cogs{font-weight:800;font-size:.92rem;}
+  .cogs .unit{font-weight:500;color:var(--muted);font-size:.74rem;}
+  .verify{font-size:.62rem;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 6px;border-radius:6px;text-decoration:none;}
+  .duebox{flex:0 0 70px;text-align:center;}
+  .due-pill{display:inline-block;min-width:1.6em;text-align:center;font-weight:800;border-radius:7px;padding:1px 8px;}
+  .due-pill.go{background:#fee2e2;color:#991b1b;} .due-pill.done{background:#dcfce7;color:#166534;}
+  .fj-act{flex:1 1 320px;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .fj-act .ord{display:flex;gap:.4rem;align-items:center;background:#f8fafc;border:1px solid var(--border);border-radius:9px;padding:5px 7px;}
+  .fj-act input{font-size:.78rem;padding:4px 6px;border:1px solid var(--border);border-radius:6px;}
+  .fj-act input.oid{width:118px;} .fj-act input.qty{width:46px;text-align:center;}
+  .btn-buy{display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:700;padding:6px 11px;border-radius:8px;background:#111827;color:#fff;text-decoration:none;white-space:nowrap;}
+  .btn-log{font-size:.78rem;font-weight:700;padding:6px 11px;border-radius:8px;background:#16a34a;color:#fff;border:none;cursor:pointer;}
+  .nothing{padding:12px 16px;color:#166534;font-size:.85rem;}
+  /* Ordered-this-period strip */
+  .ordered{padding:9px 16px;background:#f8fafc;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted);display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
+  .ochip{display:inline-flex;gap:.35rem;align-items:center;background:#fff;border:1px solid var(--border);border-radius:999px;padding:3px 9px;}
+  .ochip.delivered{background:#dcfce7;border-color:#bbf7d0;color:#166534;}
   details.recipe{margin-top:1rem;background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;padding:0 16px;}
   details.recipe summary{cursor:pointer;font-weight:700;padding:12px 0;}
   details.recipe table{width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:12px;}
   details.recipe th,details.recipe td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);}
+  /* Per-customer economics + ad-hoc panel */
+  .econ{display:inline-flex;gap:.45rem;align-items:center;font-size:.66rem;font-weight:700;}
+  .econ .chip{background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 8px;}
+  .econ .chip.mgn.pos{color:#166534;background:#dcfce7;border-color:#bbf7d0;}
+  .econ .chip.mgn.neg{color:#991b1b;background:#fee2e2;border-color:#fca5a5;}
+  details.adhoc{border-top:1px solid var(--border);background:#fafafa;}
+  details.adhoc summary{cursor:pointer;font-weight:700;font-size:.82rem;padding:10px 16px;color:#1e40af;list-style:none;}
+  details.adhoc summary::-webkit-details-marker{display:none;}
+  details.adhoc[open] summary{border-bottom:1px solid var(--border);}
+  .adhoc-form{display:flex;gap:.5rem;align-items:flex-end;flex-wrap:wrap;padding:12px 16px;}
+  .adhoc-form .fld{display:flex;flex-direction:column;gap:2px;}
+  .adhoc-form .cap{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .adhoc-form input,.adhoc-form select{font-size:.8rem;padding:6px 8px;border:1px solid var(--border);border-radius:7px;}
+  .adhoc-form select{max-width:340px;} .adhoc-form input.qty{width:54px;text-align:center;}
+  .adhoc-form input.url{width:200px;} .adhoc-form input.anc{width:150px;} .adhoc-form input.oid{width:120px;}
+  .btn-adhoc{font-size:.8rem;font-weight:700;padding:7px 14px;border-radius:8px;background:#2563eb;color:#fff;border:none;cursor:pointer;}
 </style>
 
 <div class="fj-head">
   <div>
     <h1 style="margin:0;">FATJOE Orders <span class="muted" style="font-weight:500;">· Dan's monthly queue</span></h1>
-    <p class="muted" style="margin:.25rem 0 0;">What to order this period for each paying client, by tier. Order in the FATJOE reseller dashboard, then log each order on the client's <b>Backlinks &amp; Authority</b> tab so it drops off here and tracks to delivery.</p>
+    <p class="muted" style="margin:.25rem 0 0;max-width:70ch;">For each paying client, exactly what to order this period. Click <b>Order on FATJOE ↗</b> to buy, then <b>Log it</b> right here (with the FATJOE order #) — it drops off "due", flows into <a href="{{ url_for('expenses') }}">Expenses</a>, and tracks to delivery. <a href="{{ url_for('fatjoe_catalog') }}">Edit prices &amp; links →</a></p>
   </div>
-  <div style="text-align:right;">
-    <div style="font-size:1.8rem;font-weight:800;line-height:1;">{{ total_due }}</div>
-    <div class="cad">orders due now</div>
+  <div style="display:flex;gap:1.6rem;">
+    <div class="fj-stat"><div class="n">{{ total_due }}</div><div class="cad">orders due now</div></div>
+    <div class="fj-stat"><div class="n">${{ '{:,.0f}'.format(mtd_spend) }}</div><div class="cad">COGS this month</div></div>
+    <div class="fj-stat"><div class="n">${{ '{:,.0f}'.format(adhoc_revenue) }}</div><div class="cad">client revenue (logged)</div></div>
+    <div class="fj-stat"><div class="n" style="color:{{ '#166534' if (adhoc_revenue-adhoc_cogs) >= 0 else '#991b1b' }};">${{ '{:,.0f}'.format(adhoc_revenue - adhoc_cogs) }}</div><div class="cad">margin (logged)</div></div>
   </div>
 </div>
 
@@ -49,7 +85,11 @@
 {% if overdue_rows %}
 <div class="alarmbar">⛔ {{ overdue_rows|length }} client{{ 's' if overdue_rows|length != 1 }} past the buying window this month — order now: {{ overdue_rows | map(attribute='customer.name') | join(', ') }}</div>
 {% endif %}
-<p class="muted" style="margin:-.5rem 0 1rem;">Buying window: place each month's orders within the first <b>{{ order_by_day }} days</b>. After that the client turns <span style="color:#991b1b;font-weight:700;">overdue</span>. <b>Log every order the moment you place it</b> — an unlogged order keeps showing as due, so you'd re-order and double-pay.</p>
+{% if unverified_count %}
+<div class="infobar">💲 {{ unverified_count }} line{{ 's' if unverified_count != 1 }} use a <b>seed price</b> not yet confirmed against FATJOE. <a href="{{ url_for('fatjoe_catalog') }}">Verify prices &amp; buy links →</a></div>
+{% endif %}
+<div class="infobar" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;">💵 <b>Every $ amount here is the real FATJOE order price × the quantity due this period</b> — exactly what you'll pay on FATJOE, not amortized or averaged across months. (Prices are GBP→USD approximate; FATJOE bills in GBP.)</div>
+<p class="muted" style="margin:-.25rem 0 1rem;">Buying window: place each month's orders within the first <b>{{ order_by_day }} days</b>. <b>Log every order the moment you place it</b> — an unlogged order keeps showing as due, so you'd re-order and double-pay.</p>
 
 {% for r in rows %}
 <div class="fj-cust sev-{{ r.plan.severity }}">
@@ -58,48 +98,111 @@
       <a href="{{ url_for('customer_detail', customer_id=r.customer.id) }}" style="font-weight:700;">{{ r.customer.name }}</a>
       <span class="tier {{ r.plan.tier }}">{{ r.plan.label }}</span>
       <span class="paid {{ 'yes' if r.paid else 'no' }}">{{ 'paid · ' ~ r.status if r.paid else r.status }}</span>
+      {% if r.revenue or r.cogs %}
+      <span class="econ" title="Logged ad-hoc/order economics (all-time)">
+        <span class="chip">client ${{ '{:,.0f}'.format(r.revenue) }}</span>
+        <span class="chip">COGS ${{ '{:,.0f}'.format(r.cogs) }}</span>
+        <span class="chip mgn {{ 'pos' if r.margin >= 0 else 'neg' }}">margin ${{ '{:,.0f}'.format(r.margin) }}</span>
+      </span>
+      {% endif %}
     </span>
     {% if r.plan.total_due %}
       {% if r.plan.severity == 'overdue' %}
         <span class="clock overdue">⛔ OVERDUE by {{ -r.plan.days_left }}d · {{ r.plan.total_due }} to order</span>
-      {% elif r.plan.severity == 'soon' %}
-        <span class="clock soon">🗓 Due by {{ r.plan.deadline }} · {{ r.plan.days_left }}d left · {{ r.plan.total_due }} to order</span>
       {% else %}
-        <span class="clock ok">🗓 Due by {{ r.plan.deadline }} · {{ r.plan.days_left }}d left · {{ r.plan.total_due }} to order</span>
+        <span class="clock {{ r.plan.severity }}">🗓 Due by {{ r.plan.deadline }} · {{ r.plan.days_left }}d left · {{ r.plan.total_due }} to order</span>
       {% endif %}
     {% else %}
       <span class="clock done">✓ all ordered this period</span>
     {% endif %}
   </h3>
+
   {% if r.plan.items %}
-  <table class="fj">
-    <thead><tr><th>Cadence</th><th>Product</th><th>Spec</th><th>Done</th><th>Due</th><th>How to order</th><th></th></tr></thead>
-    <tbody>
-    {% for i in r.plan["items"] %}
-    <tr>
-      <td><span class="cad">{{ i.cadence }}</span></td>
-      <td><b>{{ i.type_label }}</b></td>
-      <td>
-        {% if i.type == 'link' %}{{ i.qty_target }} × DR{{ i.dr_tier }}–{{ i.dr_tier + 10 }} link{{ 's' if i.qty_target>1 }}
+  {% for i in r.plan["items"] %}
+  <div class="fj-line {{ 'done' if not i.qty_due }}">
+    <div class="lead">
+      <span class="cad">{{ i.cadence }}</span>
+      <div class="prod">{{ i.type_label }}</div>
+      <div class="spec">
+        {% if i.type == 'link' %}{{ i.qty_target }} × DR{{ i.dr_tier }}+ link{{ 's' if i.qty_target>1 }}
         {% elif i.type == 'citation' %}{{ i.qty_target }}-citation pack
-        {% else %}{{ i.qty_target }} × DR{{ i.dr_tier }}–60 mention{% endif %}
-        <div class="muted">~${{ i.cost_each_period }} COGS</div>
-      </td>
-      <td>{{ i.qty_done }}/{{ i.qty_target if i.type != 'citation' else 1 }}</td>
-      <td><span class="due-pill {{ 'go' if i.qty_due else 'done' }}">{{ i.qty_due }}</span></td>
-      <td class="fj-note">{{ i.note }}</td>
-      <td class="fj-cta">
-        {% if i.qty_due %}
-        <a class="btn btn-sm" href="{{ url_for('customer_detail', customer_id=r.customer.id) }}">Open client →</a>
-        {% endif %}
-      </td>
-    </tr>
+        {% else %}{{ i.qty_target }} × DR{{ i.dr_tier }}+ brand mention{{ 's' if i.qty_target>1 }}{% endif %}
+        — {{ i.note }}
+      </div>
+    </div>
+    <div style="flex:0 0 110px;">
+      <div class="cogs">${{ i.cost_each_period }}
+        {% if i.type != 'citation' and i.qty_target > 1 %}<span class="unit">(${{ '%.0f'|format(i.unit_price) }} ea)</span>{% endif %}
+      </div>
+      {% if not i.price_verified %}<a class="verify" href="{{ url_for('fatjoe_catalog') }}" title="Seed price — confirm against FATJOE">⚠ verify</a>{% endif %}
+    </div>
+    <div class="duebox">
+      <span class="cad">due</span><br>
+      <span class="due-pill {{ 'go' if i.qty_due else 'done' }}">{{ i.qty_due if i.qty_due else '✓' }}</span>
+    </div>
+    <div class="fj-act">
+      {% if i.qty_due %}
+        {% if i.buy_url %}<a class="btn-buy" href="{{ i.buy_url }}" target="_blank" rel="noopener">Order on FATJOE ↗</a>{% endif %}
+        {% set _confirm_row = request.args.get('confirm') == (r.customer.id ~ ':' ~ i.type ~ ':' ~ (i.dr_tier or 0)|string) %}
+        <form method="post" action="{{ url_for('fatjoe_quick_order', customer_id=r.customer.id) }}" class="ord">
+          <input type="hidden" name="order_type" value="{{ i.type }}">
+          {% if i.dr_tier %}<input type="hidden" name="dr_tier" value="{{ i.dr_tier }}">{% endif %}
+          <input type="hidden" name="cost_usd" value="{{ i.cost_each_period }}">
+          {% if _confirm_row %}<input type="hidden" name="confirm" value="1">{% endif %}
+          <input type="text" name="vendor_order_id" class="oid" placeholder="FATJOE order #" title="Optional FATJOE order ID">
+          <input type="number" name="quantity" class="qty" value="{{ i.qty_due if i.type != 'citation' else 1 }}" min="1" title="Quantity to log">
+          {% if _confirm_row %}
+          <button type="submit" class="btn-log" style="background:#b45309;" title="Confirm a second identical order">⚠ Log anyway</button>
+          {% else %}
+          <button type="submit" class="btn-log" title="Log this order with today's date">✓ Log it</button>
+          {% endif %}
+        </form>
+      {% else %}
+        <span class="muted">✓ ordered this period</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if r.recent_orders %}
+  <div class="ordered">
+    <span style="font-weight:700;">Logged:</span>
+    {% for o in r.recent_orders %}
+    <span class="ochip {{ 'delivered' if o.delivered_at }}">
+      {{ o.order_type }}{% if o.dr_tier %} DR{{ o.dr_tier }}{% endif %} ·
+      {% if o.quantity > 1 %}×{{ o.quantity }} · {% endif %}${{ '%.0f'|format(o.cost_usd) }} ·
+      {{ o.ordered_at[:10] }}{% if o.vendor_order_id %} · #{{ o.vendor_order_id }}{% endif %}
+      {% if o.delivered_at %}✓{% else %}
+      <form method="post" action="{{ url_for('fatjoe_mark_delivered', order_id=o.id) }}" style="display:inline;">
+        <button type="submit" style="border:none;background:none;color:#2563eb;cursor:pointer;font-size:.72rem;padding:0;text-decoration:underline;">delivered?</button>
+      </form>{% endif %}
+    </span>
     {% endfor %}
-    </tbody>
-  </table>
+  </div>
+  {% endif %}
   {% else %}
   <div class="nothing">No orders configured for this tier.</div>
   {% endif %}
+
+  <details class="adhoc">
+    <summary>➕ Add / upgrade a backlink (ad-hoc)</summary>
+    <form method="post" action="{{ url_for('fatjoe_adhoc_order', customer_id=r.customer.id) }}" class="adhoc-form">
+      <div class="fld">
+        <span class="cap">Product</span>
+        <select name="product_key" required>
+          <option value="" disabled selected>Pick a product…</option>
+          {% for it in catalog %}
+          <option value="{{ it.product_key }}">{{ it.label }}{% if it.dr_tier %} (DR{{ it.dr_tier }}+){% endif %} — client ${{ '%.0f'|format(it.sell_usd) }} / COGS ${{ '%.0f'|format(it.price_usd) }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="fld"><span class="cap">Qty</span><input type="number" name="quantity" class="qty" value="1" min="1"></div>
+      <div class="fld"><span class="cap">Target URL</span><input type="url" name="target_url" class="url" placeholder="https://…"></div>
+      <div class="fld"><span class="cap">Anchor</span><input type="text" name="anchor_text" class="anc" placeholder="anchor text"></div>
+      <div class="fld"><span class="cap">FATJOE order #</span><input type="text" name="vendor_order_id" class="oid" placeholder="optional"></div>
+      <button type="submit" class="btn-adhoc">Order</button>
+    </form>
+  </details>
 </div>
 {% else %}
 <div class="fj-cust"><div class="nothing">No paying clients with a tier yet. Once a Stripe subscription is active, its plan drives this queue.</div></div>
@@ -108,27 +211,27 @@
 {% if unplanned %}
 <div class="fj-cust" style="border-color:#fcd34d;">
   <h3 style="background:#fef3c7;color:#92400e;">⚠️ Active clients with no linked paid plan ({{ unplanned|length }})</h3>
-  <table class="fj"><tbody>
+  <div style="padding:4px 0;">
   {% for u in unplanned %}
-  <tr>
-    <td><a href="{{ url_for('customer_detail', customer_id=u.customer.id) }}" style="font-weight:600;">{{ u.customer.name }}</a></td>
-    <td class="muted">{{ u.customer.status }}</td>
-    <td class="muted">
-      {% if u.sub %}Stripe plan “{{ u.sub.plan_name }}” doesn’t map to a tier (e.g. a custom payment link).{% else %}No Stripe subscription linked — <a href="{{ url_for('billing') }}">link one on Billing</a>.{% endif %}
-      <form method="post" action="{{ url_for('fatjoe_set_tier', customer_id=u.customer.id) }}" style="display:inline-flex;gap:.4rem;align-items:center;margin-left:.5rem;">
-        <span>Set tier manually:</span>
+  <div class="fj-line">
+    <div class="lead"><a href="{{ url_for('customer_detail', customer_id=u.customer.id) }}" style="font-weight:600;">{{ u.customer.name }}</a>
+      <div class="spec">{% if u.sub %}Stripe plan “{{ u.sub.plan_name }}” doesn’t map to a tier (custom payment link).{% else %}No Stripe subscription linked — <a href="{{ url_for('billing') }}">link one on Billing</a>.{% endif %}</div>
+    </div>
+    <div class="fj-act">
+      <form method="post" action="{{ url_for('fatjoe_set_tier', customer_id=u.customer.id) }}" style="display:inline-flex;gap:.4rem;align-items:center;">
+        <span class="muted">Set tier:</span>
         <select name="tier" required>
           <option value="" disabled selected>choose…</option>
           <option value="optimize">Optimize</option>
           <option value="grow">Grow</option>
           <option value="dominate">Dominate</option>
         </select>
-        <button type="submit">Set</button>
+        <button type="submit" class="btn-log" style="background:#92400e;">Set</button>
       </form>
-    </td>
-  </tr>
+    </div>
+  </div>
   {% endfor %}
-  </tbody></table>
+  </div>
 </div>
 {% endif %}
 
@@ -141,12 +244,12 @@
     <tr>
       <td><span class="tier {{ key }}">{{ plan.label }}</span></td>
       <td class="muted">{% for s in plan.onboarding %}{{ s.qty }} citations{% else %}—{% endfor %}</td>
-      <td class="muted">{% for s in plan.monthly %}{{ s.qty }} × DR{{ s.dr_tier }}–{{ s.dr_tier+10 }} link{{ 's' if s.qty>1 }}{% else %}—{% endfor %}</td>
+      <td class="muted">{% for s in plan.monthly %}{{ s.qty }} × DR{{ s.dr_tier }}+ link{{ 's' if s.qty>1 }}{% else %}—{% endfor %}</td>
       <td class="muted">{% for s in plan.quarterly %}{{ s.qty }} brand mention{% else %}—{% endfor %}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
-  <p class="muted" style="padding-bottom:12px;">Anchor mix per client (running): ~40% branded · 20% naked URL · 20% generic · 15% partial · ≤5% exact-match (never repeat an exact-match). Full playbook: <code>docs/fatjoe-monthly-playbook.md</code>.</p>
+  <p class="muted" style="padding-bottom:12px;">Anchor mix per client (running): ~40% branded · 20% naked URL · 20% generic · 15% partial · ≤5% exact-match (never repeat an exact-match). Prices &amp; buy links live in the <a href="{{ url_for('fatjoe_catalog') }}">FATJOE catalog</a>.</p>
 </details>
 {% endblock %}

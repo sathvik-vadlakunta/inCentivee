@@ -63,6 +63,7 @@ def main():
                 logger.exception(f"  {name}: error computing score")
 
         logger.info(f"Done: {computed} scored, {skipped} skipped (insufficient data)")
+        db.record_job_run("daily_score", detail=f"{computed} scored, {skipped} skipped")
     finally:
         db.close()
 

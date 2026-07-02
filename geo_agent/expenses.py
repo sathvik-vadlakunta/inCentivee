@@ -128,16 +128,21 @@ EXPENSE_ITEMS: list[dict] = [
 ]
 
 
-def compute_expenses(active_customers: int = 1) -> dict:
+def compute_expenses(active_customers: int = 1, fatjoe_mtd: float | None = None,
+                     fatjoe_total: float | None = None) -> dict:
     """Group line items by category and total them for `active_customers`.
 
     Per-customer items are multiplied by the customer count; annual items are
-    monthlyized; variable items are listed but excluded from the recurring total.
+    monthlyized. Variable COGS (FATJOE) is now wired to the REAL month-to-date
+    spend from logged offsite_orders (`fatjoe_mtd`) — surfaced as its own
+    variable-COGS total and folded into an all-in monthly figure, instead of the
+    old placeholder that excluded it entirely.
     """
     n = max(active_customers, 0)
     groups: dict[str, list[dict]] = {}
     fixed_total = usage_total = annual_total = 0.0
     setup_total = setup_min = 0.0  # one-time onboarding cost per customer
+    variable_cogs = 0.0
 
     for item in EXPENSE_ITEMS:
         row = dict(item)
@@ -162,9 +167,19 @@ def compute_expenses(active_customers: int = 1) -> dict:
             # "min" setup = exclude the Dominate-only designer (a tier-specific add).
             if "redesign" not in item["name"].lower():
                 setup_min += item["monthly"]
-        else:  # variable
-            row["monthly_effective"] = None
-            row["display_rate"] = "variable"
+        else:  # variable — only the FATJOE line carries real logged COGS
+            is_fatjoe = item.get("vendor") == "FATJOE"
+            if is_fatjoe and fatjoe_mtd is not None:
+                row["monthly_effective"] = round(fatjoe_mtd, 2)
+                row["display_rate"] = f"${fatjoe_mtd:,.0f} this month"
+                if fatjoe_total is not None:
+                    row["note"] = (f"Real logged COGS — ${fatjoe_mtd:,.0f} month-to-date, "
+                                   f"${fatjoe_total:,.0f} all-time. Logged on the FATJOE queue "
+                                   f"per order; priced from the FATJOE catalog.")
+                variable_cogs += round(fatjoe_mtd, 2)
+            else:
+                row["monthly_effective"] = None
+                row["display_rate"] = "variable"
         groups.setdefault(item["category"], []).append(row)
 
     recurring = round(fixed_total + usage_total + annual_total, 2)
@@ -176,6 +191,8 @@ def compute_expenses(active_customers: int = 1) -> dict:
             "usage": round(usage_total, 2),
             "annual": round(annual_total, 2),
             "recurring": recurring,
+            "variable_cogs": round(variable_cogs, 2),
+            "all_in_monthly": round(recurring + variable_cogs, 2),
             "per_customer_usage": round(usage_total / n, 2) if n else 0.0,
             "setup_per_customer": round(setup_total, 2),
             "setup_per_customer_base": round(setup_min, 2),

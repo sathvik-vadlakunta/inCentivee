@@ -201,8 +201,8 @@ async function setStatus(recId, status, btn) {
     const resp = await fetch('/api/content/status', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({rec_id: recId, status})});
     const data = await resp.json();
     if (data.ok) { row.style.transition='opacity .2s'; row.style.opacity='0'; setTimeout(() => { row.remove(); applyFilters(); }, 200); }
-    else { row.querySelectorAll('button').forEach(b => b.disabled = false); alert('Failed: ' + (data.error || 'unknown')); }
-  } catch (e) { row.querySelectorAll('button').forEach(b => b.disabled = false); alert('Error: ' + e); }
+    else { row.querySelectorAll('button').forEach(b => b.disabled = false); toast('Failed: ' + (data.error || 'unknown'), 'error'); }
+  } catch (e) { row.querySelectorAll('button').forEach(b => b.disabled = false); toast('Error: ' + e, 'error'); }
 }
 
 async function approveAll(cid, name, btn) {
@@ -219,8 +219,8 @@ async function approveAll(cid, name, btn) {
       const card = document.getElementById('cust-' + cid);
       card.style.transition='opacity .2s'; card.style.opacity='0';
       setTimeout(() => { card.remove(); applyFilters(); }, 200);
-    } else { btn.disabled = false; alert('Failed: ' + (data.error || 'unknown')); }
-  } catch (e) { btn.disabled = false; alert('Error: ' + e); }
+    } else { btn.disabled = false; toast('Failed: ' + (data.error || 'unknown'), 'error'); }
+  } catch (e) { btn.disabled = false; toast('Error: ' + e, 'error'); }
 }
 
 sortCards();

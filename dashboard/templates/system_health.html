@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}System Health - PracticeRank{% endblock %}
+{% block breadcrumbs %}
+<a href="{{ url_for('index') }}">Dashboard</a>
+<span class="bc-sep">/</span>
+<span class="bc-current">System Health</span>
+{% endblock %}
+{% block content %}
+
+{% set _state_color = {'ok': '#16a34a', 'overdue': '#d97706', 'error': '#dc2626', 'never': '#6b7280'} %}
+{% set _problem_jobs = jobs | selectattr('state', 'ne', 'ok') | list %}
+
+<div class="section-header">
+    <h1>System Health</h1>
+    <span class="muted" style="font-size:.8rem;">Is the automation actually running? Anything red/amber means clients aren't being fully worked — fix it or ping Kody.</span>
+</div>
+
+<!-- Scheduled jobs -->
+<div class="card" style="margin-bottom:1.25rem;">
+    <div class="section-header" style="margin-bottom:.5rem;">
+        <h2 style="font-size:1rem;margin:0;">Scheduled automation</h2>
+        {% if _problem_jobs %}
+        <span class="badge" style="background:#fef3c7;color:#92400e;">⚠ {{ _problem_jobs | length }} need attention</span>
+        {% else %}
+        <span class="badge" style="background:#d1fae5;color:#065f46;">✓ all running</span>
+        {% endif %}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <thead>
+            <tr style="text-align:left;color:var(--muted);border-bottom:1px solid var(--border);">
+                <th style="padding:.4rem .5rem;">Job</th>
+                <th style="padding:.4rem .5rem;">Cadence</th>
+                <th style="padding:.4rem .5rem;">Last run</th>
+                <th style="padding:.4rem .5rem;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for j in jobs %}
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:.4rem .5rem;font-weight:600;">{{ j.label }}
+                    {% if j.detail %}<span class="muted" style="font-weight:400;font-size:.75rem;"> — {{ j.detail }}</span>{% endif %}
+                </td>
+                <td style="padding:.4rem .5rem;color:var(--muted);">{{ j.cadence }}</td>
+                <td style="padding:.4rem .5rem;">
+                    {% if j.last_run %}{{ j.last_run[:16] | replace('T', ' ') }} UTC
+                        {% if j.age_hours is not none %}<span class="muted" style="font-size:.75rem;">({{ j.age_hours | round(0) | int }}h ago)</span>{% endif %}
+                    {% else %}<span class="muted">never seen</span>{% endif %}
+                </td>
+                <td style="padding:.4rem .5rem;">
+                    <span class="badge" style="background:{{ _state_color[j.state] }}22;color:{{ _state_color[j.state] }};text-transform:uppercase;font-size:.7rem;">
+                        {% if j.state == 'ok' %}✓ ok{% elif j.state == 'overdue' %}⚠ overdue{% elif j.state == 'error' %}✗ error{% else %}— never{% endif %}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="muted" style="font-size:.75rem;margin:.6rem 0 0;">Jobs run via cron on the droplet. "Never seen" usually means the crontab isn't installed or the job hasn't run since this feature shipped. "Overdue" means it hasn't checked in within its expected window.</p>
+</div>
+
+<!-- Integrations -->
+<div class="card">
+    <div class="section-header" style="margin-bottom:.5rem;">
+        <h2 style="font-size:1rem;margin:0;">Integrations &amp; credentials</h2>
+        {% set _missing_critical = integrations | selectattr('critical') | rejectattr('configured') | list %}
+        {% if _missing_critical %}
+        <span class="badge" style="background:#fee2e2;color:#991b1b;">✗ {{ _missing_critical | length }} critical missing</span>
+        {% else %}
+        <span class="badge" style="background:#d1fae5;color:#065f46;">✓ core configured</span>
+        {% endif %}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+        <tbody>
+            {% for i in integrations %}
+            <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:.45rem .5rem;width:26px;">
+                    {% if i.configured %}<span style="color:#16a34a;">●</span>
+                    {% elif i.critical %}<span style="color:#dc2626;">●</span>
+                    {% else %}<span style="color:#d97706;">●</span>{% endif %}
+                </td>
+                <td style="padding:.45rem .5rem;font-weight:600;">{{ i.label }}
+                    {% if i.critical %}<span class="badge" style="background:var(--border);color:var(--text-light);font-size:.65rem;">critical</span>{% endif %}
+                </td>
+                <td style="padding:.45rem .5rem;color:var(--muted);">
+                    {% if i.configured %}Configured{% if i.via %} <span style="font-size:.72rem;">({{ i.via }})</span>{% endif %}
+                    {% else %}<span style="color:{{ '#dc2626' if i.critical else '#d97706' }};">Not configured</span> — {{ i.impact }}
+                        <span style="font-size:.72rem;">Set one of: {{ i.envs | join(', ') }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p class="muted" style="font-size:.75rem;margin:.6rem 0 0;">Set via environment variables in <code>.env</code> on the droplet. A missing critical integration means that feature silently doesn't run.</p>
+</div>
+
+{% endblock %}

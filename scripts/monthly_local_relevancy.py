@@ -61,6 +61,7 @@ def main():
             print(f"      ERROR {e}", flush=True)
         if args.all and i < len(targets) - 1:
             time.sleep(args.stagger)
+    db.record_job_run("monthly_local_relevancy")
     db.close()
     print(f"[{datetime.now().isoformat()}] done")
 

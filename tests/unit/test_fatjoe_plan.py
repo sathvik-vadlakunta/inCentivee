@@ -60,18 +60,22 @@ def test_due_orders_honors_tier_override(db):
 def test_dominate_due_then_satisfied(db):
     due = fp.due_orders(db, "c1", "Dominate", now=NOW)
     assert due["tier"] == "dominate"
-    by_type = {i["type"]: i for i in due["items"]}
-    assert by_type["link"]["qty_due"] == 4
+    # Dominate monthly is now 2 link rows: 2×DR40 + 2×DR30 (4 links total).
+    links = [i for i in due["items"] if i["type"] == "link"]
+    assert sum(l["qty_due"] for l in links) == 4
+    by_type = {i["type"]: i for i in due["items"] if i["type"] != "link"}
     assert by_type["citation"]["qty_due"] == 1
     assert by_type["mention"]["qty_due"] == 1
     assert due["total_due"] == 6
 
-    # Place this month's link drip (qty 4) + onboarding citations.
-    db.add_offsite_order("c1", "link", quantity=4, dr_tier=40, cost_usd=864)
-    db.add_offsite_order("c1", "citation", quantity=100, cost_usd=120)
+    # Place this month's drip — must match each DR band — + onboarding citations.
+    db.add_offsite_order("c1", "link", quantity=2, dr_tier=40, cost_usd=486)
+    db.add_offsite_order("c1", "link", quantity=2, dr_tier=30, cost_usd=270)
+    db.add_offsite_order("c1", "citation", quantity=100, cost_usd=135)
     due2 = fp.due_orders(db, "c1", "Dominate", now=NOW)
-    by_type2 = {i["type"]: i for i in due2["items"]}
-    assert by_type2["link"]["qty_due"] == 0
+    links2 = [i for i in due2["items"] if i["type"] == "link"]
+    assert sum(l["qty_due"] for l in links2) == 0
+    by_type2 = {i["type"]: i for i in due2["items"] if i["type"] != "link"}
     assert by_type2["citation"]["qty_due"] == 0
     # Quarterly mention still outstanding.
     assert by_type2["mention"]["qty_due"] == 1

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}FATJOE Catalog · PracticeRank{% endblock %}
+
+{% block content %}
+<style>
+  .cat-head{margin-bottom:1rem;}
+  .cat-grp{background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;margin-bottom:14px;overflow:hidden;}
+  .cat-grp h3{margin:0;padding:11px 16px;font-size:.9rem;background:#f8fafc;border-bottom:1px solid var(--border);}
+  .cat-row{display:flex;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .cat-row:last-child{border-bottom:none;}
+  .cat-row .label{flex:1 1 200px;font-weight:600;font-size:.86rem;}
+  .cat-row .label .dr{color:var(--muted);font-weight:500;font-size:.78rem;}
+  .cat-row form{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
+  .cat-row input{font-size:.82rem;padding:5px 8px;border:1px solid var(--border);border-radius:7px;}
+  .cat-row input.price{width:90px;} .cat-row input.url{width:260px;}
+  .cat-row .dollar{position:relative;}
+  .cat-row .fld{display:flex;flex-direction:column;gap:2px;}
+  .cat-row .fld .cap{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);}
+  .cat-row .margin{font-size:.72rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+  .cat-row .margin.pos{color:#166534;background:#dcfce7;}
+  .cat-row .margin.neg{color:#991b1b;background:#fee2e2;}
+  .save{font-size:.8rem;font-weight:700;padding:6px 13px;border-radius:8px;background:#16a34a;color:#fff;border:none;cursor:pointer;}
+  .v-yes{font-size:.62rem;font-weight:800;color:#166534;background:#dcfce7;padding:2px 8px;border-radius:999px;}
+  .v-no{font-size:.62rem;font-weight:800;color:#92400e;background:#fef3c7;padding:2px 8px;border-radius:999px;}
+  .muted{color:var(--muted);font-size:.82rem;}
+</style>
+
+<div class="cat-head">
+  <h1 style="margin:0;">FATJOE Catalog <span class="muted" style="font-weight:500;">· prices &amp; buy links</span></h1>
+  <p class="muted" style="margin:.25rem 0 0;max-width:74ch;">The single source of truth for what each FATJOE order <b>costs</b> and <b>where Dan buys it</b>. These prices drive COGS on the <a href="{{ url_for('fatjoe_queue') }}">FATJOE queue</a> and the <a href="{{ url_for('expenses') }}">Expenses</a> page. Open the buy link, copy the exact price you pay in your reseller dashboard, paste it here, and Save — that marks it ✓ verified.</p>
+  {% if unverified %}<p style="margin:.5rem 0 0;"><span class="v-no">⚠ {{ unverified }} unverified</span> <span class="muted">— confirm these against FATJOE so COGS is exact.</span></p>{% endif %}
+</div>
+
+{% for label, family, rows in grouped %}
+<div class="cat-grp">
+  <h3>{{ label }}</h3>
+  {% for it in rows %}
+  <div class="cat-row">
+    <div class="label">
+      {{ it.label }}
+      {% if it.dr_tier %}<span class="dr">· DR{{ it.dr_tier }}+</span>{% endif %}
+      {% if it.verified %}<span class="v-yes">✓ verified</span>{% else %}<span class="v-no">⚠ seed price</span>{% endif %}
+    </div>
+    {% set margin = it.sell_usd - it.price_usd %}
+    {% set margin_pct = (margin / it.sell_usd * 100) if it.sell_usd else 0 %}
+    <form method="post" action="{{ url_for('fatjoe_catalog_update', product_key=it.product_key) }}">
+      <div class="fld"><span class="cap">COGS $</span>
+        <input type="number" step="0.01" min="0" name="price_usd" class="price" value="{{ '%.2f'|format(it.price_usd) }}" required></div>
+      <div class="fld"><span class="cap">Client price $</span>
+        <input type="number" step="0.01" min="0" name="sell_usd" class="price" value="{{ '%.2f'|format(it.sell_usd) }}" required></div>
+      <span class="margin {{ 'pos' if margin >= 0 else 'neg' }}" title="Margin = client price − COGS">
+        +${{ '%.0f'|format(margin) }} · {{ '%.0f'|format(margin_pct) }}%
+      </span>
+      <input type="url" name="buy_url" class="url" value="{{ it.buy_url }}" placeholder="https://fatjoe.com/…">
+      {% if it.buy_url %}<a href="{{ it.buy_url }}" target="_blank" rel="noopener" class="muted" title="Open buy page">↗</a>{% endif %}
+      <button type="submit" class="save">Save</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<p class="muted">Updated prices apply immediately to the queue and to all future logged orders. Past logged orders keep the price they were logged at (so historical COGS stays accurate).</p>
+{% endblock %}
