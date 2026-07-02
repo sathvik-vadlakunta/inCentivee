@@ -1,0 +1,104 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+let posts = []
+try {
+  posts = (await getCollection('blog')).sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+} catch (e) { posts = [] }
+const cats = Array.from(new Set(posts.map((p) => p.data.tags?.[0]).filter(Boolean))).sort()
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+---
+<Base title="Blog — Physical Therapy & Bodywork in Reno" description="Practical, hands-on physical therapy and pain-relief insights from Healing Hands Physical Therapy and Bodywork in Reno, NV.">
+  <section class="section-sky py-14 relative overflow-hidden">
+    <div class="blob" style="width:360px;height:360px;background:var(--color-primary);top:-110px;right:-70px;opacity:.35;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-primary font-bold uppercase tracking-wide text-sm">Resources</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">The <span class="gradient-text">Healing Hands</span> blog</h1>
+      <p class="mt-4 text-lg text-slate-600">Hands-on physical therapy and pain-relief insights for active adults in Reno, Sparks, Carson City &amp; Incline Village.</p>
+    </div>
+  </section>
+
+  {posts.length === 0 && (
+    <div class="max-w-2xl mx-auto px-4 py-20 text-center">
+      <p class="text-slate-500 text-lg">New articles are on the way. In the meantime, give us a call — we'd love to help.</p>
+      <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent mt-6">Book an appointment</a>
+    </div>
+  )}
+  {posts.length > 0 && (
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- search -->
+    <div class="relative max-w-xl mx-auto mb-6">
+      <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M21 21l-4.3-4.3M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+      <input id="blSearch" type="search" placeholder="Search articles…" autocomplete="off" class="w-full pl-12 pr-4 py-3.5 rounded-full border border-sky bg-white focus:border-primary focus:ring-4 focus:ring-primary/15 outline-none text-base" />
+    </div>
+    <!-- category chips -->
+    <div id="blCats" class="flex flex-wrap justify-center gap-2 mb-10">
+      <button class="chip is-on" data-cat="">All</button>
+      {cats.map((c) => (<button class="chip" data-cat={c}>{c}</button>))}
+    </div>
+
+    <div id="blGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {posts.map((p) => (
+        <a class="bcard card overflow-hidden group" href={`/blog/${p.slug}`} data-cat={p.data.tags?.[0] || ''} data-t={(p.data.title + ' ' + p.data.description).toLowerCase()}>
+          <div class="aspect-[16/10] overflow-hidden relative" style="background:linear-gradient(140deg,var(--color-primary),var(--color-secondary));">
+            <img src={p.data.image} alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.style.opacity=0" />
+          </div>
+          <div class="p-6 flex flex-col flex-1">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <span class="text-[11px] font-bold text-primary uppercase tracking-wide">{p.data.tags?.[0]}</span>
+              <span class="text-xs text-slate-400">{fmt(p.data.pubDate)}</span>
+            </div>
+            <h2 class="font-bold text-dark leading-snug group-hover:text-primary transition-colors">{p.data.title}</h2>
+            <p class="mt-2 text-sm text-slate-500 line-clamp-2 flex-1">{p.data.description}</p>
+            <span class="mt-4 text-primary font-semibold text-sm group-hover:gap-2 inline-flex items-center gap-1 transition-all">Read more →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+    <div id="blEmpty" class="text-center text-slate-500 py-16" hidden>No articles match your search.</div>
+
+    <!-- conversion CTA inside the resource hub -->
+    <div class="mt-16 rounded-3xl p-8 sm:p-12 text-center text-white reveal" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+      <h2 class="text-2xl sm:text-3xl font-extrabold">Have a question about your pain?</h2>
+      <p class="mt-3 text-white/85">We're happy to talk — a full hour, one-on-one with your doctor, no pressure.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent">Book an appointment</a>
+        <a href={phoneHref} class="btn bg-white text-primary-deep">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </div>
+  )}
+</Base>
+
+<style>
+  .chip { border:1px solid var(--color-sky); background:#fff; color:var(--color-dark); font-weight:600; font-size:13px; padding:7px 15px; border-radius:999px; cursor:pointer; transition:.15s; }
+  .chip:hover { border-color:var(--color-primary); color:var(--color-primary); }
+  .chip.is-on { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+  .bcard { display:flex; flex-direction:column; }
+</style>
+
+<script is:inline>
+  function blInit(){
+    const grid=document.getElementById('blGrid'); if(!grid||grid.dataset.w) return; grid.dataset.w='1';
+    const cards=[].slice.call(grid.children), empty=document.getElementById('blEmpty'),
+      search=document.getElementById('blSearch'), cats=document.getElementById('blCats');
+    let q='', cat='';
+    function apply(){
+      let shown=0;
+      cards.forEach(function(c){
+        const ok=(!cat||c.dataset.cat===cat)&&(!q||c.dataset.t.indexOf(q)>-1);
+        c.style.display=ok?'':'none'; if(ok)shown++;
+      });
+      empty.hidden=shown>0;
+    }
+    let t; search.addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){q=search.value.toLowerCase();apply();},140);});
+    cats.addEventListener('click',function(e){const b=e.target.closest('button[data-cat]');if(!b)return;
+      [].forEach.call(cats.children,function(x){x.classList.toggle('is-on',x===b);});cat=b.dataset.cat;apply();});
+    try{const u=new URLSearchParams(location.search).get('cat'); if(u){cat=u;[].forEach.call(cats.children,function(x){x.classList.toggle('is-on',x.dataset.cat===u);});apply();}}catch(e){}
+  }
+  document.addEventListener('astro:page-load',blInit); blInit();
+</script>

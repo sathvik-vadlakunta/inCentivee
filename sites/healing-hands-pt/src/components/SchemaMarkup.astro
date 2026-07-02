@@ -1,0 +1,104 @@
+---
+import practice from '@data/practice.json'
+import testimonials from '@data/testimonials.json'
+
+const base = `https://${practice.domain}`
+const a = practice.address
+const rv = practice.reviews || {}
+const mapPlaceId = rv.placeId || practice.placeId
+
+// Map our human-readable hours to schema OpeningHoursSpecification
+const dayMap: Record<string, string> = {
+  Monday: 'Monday', Tuesday: 'Tuesday', Wednesday: 'Wednesday',
+  Thursday: 'Thursday', Friday: 'Friday', Saturday: 'Saturday', Sunday: 'Sunday',
+}
+const to24 = (t: string) => {
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i)
+  if (!m) return undefined
+  let h = parseInt(m[1], 10)
+  const min = m[2]
+  const ap = m[3].toUpperCase()
+  if (ap === 'PM' && h !== 12) h += 12
+  if (ap === 'AM' && h === 12) h = 0
+  return `${String(h).padStart(2, '0')}:${min}`
+}
+const openingHours = (practice.hours || [])
+  .filter((h: any) => h.open && h.close && dayMap[h.days])
+  .map((h: any) => ({
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: dayMap[h.days],
+    opens: to24(h.open),
+    closes: to24(h.close),
+  }))
+
+const org = {
+  '@type': ['MedicalBusiness', 'PhysicalTherapy', 'LocalBusiness'],
+  '@id': `${base}/#org`,
+  name: practice.name,
+  alternateName: practice.shortName,
+  description:
+    'Concierge, cash-pay (out-of-network) physical therapy and bodywork in Reno, NV. A full hour of hands-on, one-on-one care — manual therapy, dry needling, CranioSacral therapy, and StemWave — focused on the root cause of pain. Serving Reno, Sparks, Carson City, and Incline Village.',
+  url: base,
+  telephone: practice.phone,
+  faxNumber: practice.fax || undefined,
+  email: practice.email || undefined,
+  image: `${base}/images/og.jpg`,
+  logo: `${base}/images/logo.png`,
+  priceRange: '$$',
+  currenciesAccepted: 'USD',
+  paymentAccepted: 'Cash, Credit Card, HSA/FSA',
+  isAcceptingNewPatients: true,
+  slogan: practice.tagline,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: a.street,
+    addressLocality: a.city,
+    addressRegion: a.state,
+    postalCode: a.zip,
+    addressCountry: 'US',
+  },
+  geo: { '@type': 'GeoCoordinates', latitude: practice.geo.lat, longitude: practice.geo.lng },
+  hasMap: mapPlaceId ? `https://www.google.com/maps/place/?q=place_id:${mapPlaceId}` : undefined,
+  aggregateRating:
+    rv.rating && rv.count
+      ? { '@type': 'AggregateRating', ratingValue: rv.rating, reviewCount: rv.count, bestRating: 5, worstRating: 1 }
+      : undefined,
+  areaServed: (practice.areaServed || []).map((c: string) => ({ '@type': 'City', name: `${c}, NV` })),
+  openingHoursSpecification: openingHours,
+  medicalSpecialty: 'PhysicalTherapy',
+  availableService: (practice.serviceCategories || []).map((s: { title: string; slug: string; summary: string }) => ({
+    '@type': 'MedicalProcedure',
+    name: s.title,
+    url: `${base}/services/${s.slug}`,
+    description: s.summary,
+  })),
+  employee: (practice.providers || []).map((p: any) => ({ '@id': `${base}/about#${p.name.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '')}` })),
+  sameAs: Object.values(practice.social).filter(Boolean),
+}
+
+const people = (practice.providers || []).map((p: any) => ({
+  '@type': ['Person', 'Physician'],
+  '@id': `${base}/about#${p.name.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '')}`,
+  name: p.name,
+  jobTitle: p.title,
+  description: p.bio,
+  image: p.photo ? `${base}${p.photo}` : undefined,
+  worksFor: { '@id': `${base}/#org` },
+  alumniOf: (p.education || []).map((e: string) => ({ '@type': 'EducationalOrganization', name: e })),
+  knowsAbout: p.specialties || [],
+}))
+
+// Individual Review nodes from real, verified 5-star Google reviews
+const reviewNodes = ((testimonials as any).google || []).map((r: any) => ({
+  '@type': 'Review',
+  itemReviewed: { '@id': `${base}/#org` },
+  author: { '@type': 'Person', name: r.author },
+  reviewRating: { '@type': 'Rating', ratingValue: r.rating || 5, bestRating: 5, worstRating: 1 },
+  reviewBody: r.text,
+  publisher: { '@type': 'Organization', name: r.source || 'Google' },
+}))
+
+const schema = { '@context': 'https://schema.org', '@graph': [org, ...people, ...reviewNodes] }
+---
+
+<script type="application/ld+json" set:html={JSON.stringify(schema)} />

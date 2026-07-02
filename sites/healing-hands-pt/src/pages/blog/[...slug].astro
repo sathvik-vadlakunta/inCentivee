@@ -1,0 +1,112 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog')
+  return posts
+    .filter((p) => !p.data.draft)
+    .map((post) => ({
+      params: { slug: post.slug },
+      props: { post },
+    }))
+}
+
+const { post } = Astro.props
+const { Content } = await post.render()
+const base = `https://${practice.domain}`
+
+// Parse the "## Frequently Asked Questions" block (**Q?** then answer) into FAQPage schema.
+function extractFaqs(md: string) {
+  const m = md.match(/##\s*Frequently Asked Questions\s*([\s\S]*?)(?:\n##\s|$)/i)
+  if (!m) return [] as { q: string; a: string }[]
+  const out: { q: string; a: string }[] = []
+  const re = /\*\*(.+?)\*\*\s*\n+([\s\S]*?)(?=\n\*\*|\n##\s|$)/g
+  let x
+  while ((x = re.exec(m[1])) !== null) {
+    const q = x[1].replace(/\*/g, '').trim()
+    const a = x[2]
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // strip markdown links → text
+      .replace(/[*_`>#]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (q.endsWith('?') && a.length > 20) out.push({ q, a })
+  }
+  return out
+}
+const faqs = extractFaqs(post.body)
+const formattedDate = post.data.pubDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+})
+---
+
+<Base title={post.data.title} description={post.data.description} image={post.data.image}>
+  <!-- Breadcrumb -->
+  <nav class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-sm text-gray-500">
+    <a href="/" class="hover:text-primary">Home</a>
+    <span class="mx-2">/</span>
+    <a href="/blog" class="hover:text-primary">Blog</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-900 truncate">{post.data.title}</span>
+  </nav>
+
+  <article class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+    <header class="mb-8">
+      <time class="text-sm text-gray-500">{formattedDate}</time>
+      <h1 class="mt-2 text-3xl sm:text-4xl font-bold font-heading">{post.data.title}</h1>
+      <p class="mt-3 text-lg text-gray-600">{post.data.description}</p>
+      {post.data.tags.length > 0 && (
+        <div class="mt-4 flex flex-wrap gap-2">
+          {post.data.tags.map((tag: string) => (
+            <span class="text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full">{tag}</span>
+          ))}
+        </div>
+      )}
+    </header>
+
+    {post.data.image && (
+      <img
+        src={post.data.image}
+        alt={post.data.title}
+        class="w-full rounded-xl mb-8 aspect-[21/9] object-cover"
+      />
+    )}
+
+    <div class="prose prose-lg max-w-none">
+      <Content />
+    </div>
+
+    <!-- Article Schema (E-E-A-T: credentialed author + publisher) -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.data.title,
+      description: post.data.description,
+      datePublished: post.data.pubDate.toISOString(),
+      dateModified: (post.data.updatedDate || post.data.pubDate).toISOString(),
+      mainEntityOfPage: { '@type': 'WebPage', '@id': `${base}/blog/${post.slug}` },
+      author: post.data.author
+        ? { '@type': 'Person', name: post.data.author.replace(/,.*$/, '').trim(), jobTitle: 'Doctor of Physical Therapy (PT, DPT, MTC)', worksFor: { '@id': `${base}/#org` } }
+        : { '@id': `${base}/#org` },
+      publisher: { '@id': `${base}/#org`, '@type': 'Organization', name: practice.name, url: base, logo: { '@type': 'ImageObject', url: `${base}/images/logo.png` } },
+      image: post.data.image ? `${base}${post.data.image}` : undefined,
+    })} />
+
+    {faqs.length > 0 && (
+      <script type="application/ld+json" set:html={JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+      })} />
+    )}
+
+    <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${base}/` },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: `${base}/blog` },
+      { '@type': 'ListItem', position: 3, name: post.data.title, item: `${base}/blog/${post.slug}` },
+    ] })} />
+  </article>
+</Base>

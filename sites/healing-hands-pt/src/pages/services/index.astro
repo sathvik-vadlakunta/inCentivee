@@ -1,0 +1,70 @@
+---
+import Base from '@layouts/Base.astro'
+import Pic from '@components/Pic.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+
+const services = (await getCollection('services')).sort((a, b) => a.data.order - b.data.order)
+const conditions = practice.conditions
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+---
+<Base title="Physical Therapy Services in Reno, NV" description="Concierge, hands-on physical therapy services in Reno, Sparks, Carson City & Incline Village — manual therapy, dry needling, CranioSacral therapy, StemWave, myofascial release, cupping and more.">
+  <!-- HERO -->
+  <section class="section-sky relative overflow-hidden py-16 sm:py-20">
+    <div class="aurora"></div>
+    <div class="parallax blob" data-speed="0.3" style="width:360px;height:360px;background:var(--color-primary);top:-110px;left:-70px;opacity:.35;"></div>
+    <div class="parallax blob" data-speed="0.5" style="width:280px;height:280px;background:var(--color-secondary);bottom:-100px;right:-40px;opacity:.3;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-primary font-bold uppercase tracking-wide text-sm">Our services</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">Physical Therapy Services in <span class="gradient-text">Reno, NV</span></h1>
+      <p class="mt-5 text-lg text-slate-600">Every client is unique — you'll receive personalized, hands-on treatments tailored to your needs. Our one-on-one sessions are designed to help you recover faster and get back to the activities you enjoy. Serving Reno, Sparks, Carson City &amp; Incline Village.</p>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent text-lg">Book an appointment</a>
+        <a href={phoneHref} class="btn btn-ghost text-lg">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES GRID -->
+  <section class="py-16 sm:py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
+      {services.map((s, i) => (
+        <a href={`/services/${s.slug}`} class={`card overflow-hidden reveal reveal-delay-${(i%3)+1} group`}>
+          <div class="zoom-frame aspect-[16/10]" style="background:linear-gradient(140deg,var(--color-primary),var(--color-secondary));" transition:name={`svc-${s.slug}`}>
+            <Pic src={s.data.image} alt={`${s.data.title} in Reno, NV`} width={520} height={325} eager={i < 3} class="w-full h-full object-cover" />
+          </div>
+          <div class="p-7">
+            <h2 class="text-xl font-bold text-dark group-hover:text-primary transition-colors">{s.data.title}</h2>
+            <p class="mt-2 text-slate-600 text-sm leading-relaxed line-clamp-3">{s.data.description}</p>
+            <span class="mt-4 inline-flex items-center gap-1 text-primary font-semibold text-sm group-hover:gap-2 transition-all">Learn more →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- CONDITIONS -->
+  <section class="py-16 section-cream">
+    <div class="max-w-5xl mx-auto px-4 text-center reveal">
+      <span class="text-primary font-bold uppercase tracking-wide text-sm">Conditions we treat</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">Effective treatment for various conditions</h2>
+      <div class="mt-8 flex flex-wrap justify-center gap-2.5">
+        {conditions.map((c) => (<span class="px-4 py-2 bg-white rounded-full text-sm font-semibold text-primary-deep border border-sky shadow-sm">{c}</span>))}
+      </div>
+      <p class="mt-6 text-slate-500 text-sm">…and more. No matter whether your condition came from a sport, a work accident, or otherwise, we welcome the chance to serve you.</p>
+    </div>
+  </section>
+
+  <!-- CTA BAND -->
+  <section class="py-16 relative overflow-hidden" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="aurora opacity-30"></div>
+    <div class="relative max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl font-extrabold">Not sure which service fits? Let's talk.</h2>
+      <p class="mt-3 text-white/85">Reach out and we'll help you find the right starting point — a full hour, one-on-one with your doctor.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent text-lg">Book your appointment</a>
+        <a href={phoneHref} class="btn bg-white text-primary-deep text-lg">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>

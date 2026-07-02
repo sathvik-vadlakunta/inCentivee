@@ -1,0 +1,75 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import testimonials from '@data/testimonials.json'
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const reviewMeta = practice.reviews || {}
+const reviewUrl = reviewMeta.googleReviewUrl || ''
+const base = `https://${practice.domain}`
+
+// Merge live verified Google 5-star reviews (with source tag) + the site's transcribed stories.
+const google = ((testimonials as any).google || []).map((r) => ({ author: r.author, date: r.when, text: r.text, source: 'Google' }))
+const site = ((testimonials as any).reviews || []).map((r) => ({ author: r.author, date: r.date, text: r.text, source: 'Site' }))
+const reviews = [...google, ...site]
+
+const reviewSchema = reviews.map((r) => ({
+  '@context': 'https://schema.org',
+  '@type': 'Review',
+  itemReviewed: { '@type': 'MedicalBusiness', name: practice.name, '@id': `${base}/#org` },
+  author: { '@type': 'Person', name: r.author },
+  reviewBody: r.text,
+  reviewRating: { '@type': 'Rating', ratingValue: 5, bestRating: 5 },
+}))
+---
+<Base title="Physical Therapy Reviews in Reno, NV" description="Read what Reno patients say about Dr. Jamie Pribyl and Healing Hands Physical Therapy and Bodywork — manual therapy, dry needling, CranioSacral, and StemWave success stories.">
+  <script type="application/ld+json" set:html={JSON.stringify(reviewSchema)} />
+  <!-- HERO -->
+  <section class="section-sky py-16 sm:py-20 relative overflow-hidden">
+    <div class="parallax blob" data-speed="0.3" style="width:360px;height:360px;background:var(--color-primary);top:-110px;left:-70px;opacity:.35;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-primary font-bold uppercase tracking-wide text-sm">Testimonials</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">What Reno patients say about <span class="gradient-text">Healing Hands</span></h1>
+      <p class="mt-5 text-lg text-slate-600">Inspired by these success stories? If you're ready to experience relief and recovery like they did, reach out today.</p>
+      {reviewMeta.rating && (
+        <div class="mt-6 inline-flex items-center gap-3 bg-white rounded-full shadow-sm pl-4 pr-5 py-2.5">
+          <svg class="w-6 h-6 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 12 1 11 11 0 0 0 2.3 7.4L6 10.2C6.9 7.7 9.2 5.4 12 5.4z"/></svg>
+          <span class="font-extrabold text-dark text-lg">{reviewMeta.rating}</span>
+          <span class="text-primary">★★★★★</span>
+          <span class="text-sm text-slate-500">{reviewMeta.count}+ Google reviews</span>
+        </div>
+      )}
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent">Book your appointment</a>
+        {reviewUrl && <a href={reviewUrl} target="_blank" rel="noopener" class="btn btn-ghost">⭐ Leave a Google review</a>}
+      </div>
+    </div>
+  </section>
+
+  <!-- REVIEW WALL -->
+  <section class="py-16 sm:py-20 bg-white">
+    <div class="max-w-5xl mx-auto px-4 columns-1 md:columns-2 gap-6 [column-fill:_balance]">
+      {reviews.map((r) => (
+        <figure class="card p-7 mb-6 break-inside-avoid reveal">
+          <div class="flex items-center justify-between mb-2">
+            <div class="text-primary text-xl">★★★★★</div>
+            {r.source === 'Google' && <svg class="w-5 h-5" viewBox="0 0 24 24" aria-label="Google review"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 12 1 11 11 0 0 0 2.3 7.4L6 10.2C6.9 7.7 9.2 5.4 12 5.4z"/></svg>}
+          </div>
+          <blockquote class="text-slate-600 leading-relaxed">"{r.text}"</blockquote>
+          <figcaption class="mt-4 font-bold text-dark">{r.author} {r.date && <span class="text-slate-400 font-normal">· {r.date}</span>}</figcaption>
+        </figure>
+      ))}
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl font-extrabold">Ready to write your own success story?</h2>
+      <p class="mt-3 text-white/85">A full hour of hands-on, one-on-one care — serving Reno, Sparks, Carson City &amp; Incline Village.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent text-lg">Book an appointment</a>
+        <a href={phoneHref} class="btn bg-white text-primary-deep text-lg">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>

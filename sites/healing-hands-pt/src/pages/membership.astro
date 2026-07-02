@@ -1,0 +1,150 @@
+---
+import Base from '@layouts/Base.astro'
+import Pic from '@components/Pic.astro'
+import practice from '@data/practice.json'
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const provider = practice.providers[0]
+const m = practice.pricing.membership
+const intro = practice.pricing.intro
+
+const benefits = [
+  { icon: '🌿', t: 'Maintain your results', d: "We fixed the root cause — monthly tune-ups keep it from creeping back. The body needs upkeep, just like your car or your teeth." },
+  { icon: '🛡️', t: 'Prevent future injuries', d: 'Proactive maintenance means we catch the small things before they become the next flare-up. Stay ahead instead of starting over.' },
+  { icon: '⚡', t: 'Same-day access for new injuries', d: "Tweak your back lifting something? Members get seen the same day — no waiting weeks while it gets worse." },
+  { icon: '⭐', t: 'Priority booking', d: 'Members get first pick of the schedule and an ongoing relationship with your doctor.' },
+  { icon: '💸', t: '10% off all services', d: 'Every add-on, package, and StemWave session is discounted for members.' },
+  { icon: '🎁', t: 'Credit toward your first session', d: 'Your membership puts money back toward getting started with Dr. Jamie.' },
+]
+
+const faqs = [
+  { q: `What's included in the ${m.label.toLowerCase()}?`, a: `For $${m.price}/month you get: ${m.perks.join(', ')}. It's built for people who've fixed the root cause and want to stay ahead of pain with regular, proactive care.` },
+  { q: 'Who is the membership for?', a: "It's the natural next step after your initial course of care. Once Dr. Jamie has resolved the underlying issue, the membership keeps you there — ongoing maintenance so you don't slide back into pain and end up starting over." },
+  { q: 'How is this different from just booking visits when I hurt?', a: 'Waiting until you\'re hurt again means starting from a worse place every time. Maintenance is proactive: small, regular tune-ups keep the problem we fixed from returning, and members get same-day access if something new comes up.' },
+  { q: 'How do I start?', a: `Most people start with a $${intro.price} intro session so Dr. Jamie can build your plan and fix the root cause first. From there, the membership keeps you maintained. Call or text ${practice.phone} to get started. (Pricing shown is provisional and confirmed at booking.)` },
+]
+---
+<Base title="Maintenance Membership" description={`Stay ahead of pain with the Healing Hands Maintenance Membership ($${m.price}/mo) — ongoing tune-ups, same-day access for new injuries, priority booking, and 10% off. Fix the root cause, then keep it fixed.`}>
+  <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `https://${practice.domain}/` },
+    { '@type': 'ListItem', position: 2, name: 'Maintenance Membership', item: `https://${practice.domain}/membership` },
+  ] })} />
+
+  <!-- HERO -->
+  <section class="section-bone relative overflow-hidden">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24 grid lg:grid-cols-2 gap-14 items-center">
+      <div class="reveal is-visible">
+        <span class="eyebrow">Fix the root cause → stay there</span>
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-3 leading-[1.08]">Don't fix it and let it<br/><span class="gradient-text">slide back</span></h1>
+        <p class="mt-6 text-lg sm:text-xl text-slate-600 leading-relaxed max-w-xl">The body needs upkeep. Once we've resolved the root cause of your pain, the Maintenance Membership keeps you ahead of it — proactive monthly care instead of waiting until you're hurt again.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="/contact" class="btn btn-accent text-lg">Ask about membership</a>
+          <a href={phoneHref} class="btn btn-ghost text-lg">📞 Call / Text</a>
+        </div>
+      </div>
+      <div class="reveal is-visible">
+        <div class="relative max-w-md mx-auto rounded-[2rem] p-8 sm:p-10 text-white shadow-lift overflow-hidden" style="background:linear-gradient(155deg,var(--color-primary),var(--color-primary-deep));">
+          <div class="absolute -top-14 -right-14 w-48 h-48 rounded-full bg-white/10"></div>
+          <div class="relative">
+            <span class="inline-flex items-center gap-2 bg-white/15 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Membership</span>
+            <h2 class="mt-4 text-2xl font-extrabold">{m.label}</h2>
+            <div class="mt-3 flex items-end gap-1"><span class="text-6xl font-extrabold leading-none">${m.price}</span><span class="text-white/80 mb-1.5">/{m.period}</span></div>
+            <ul class="mt-6 space-y-3">
+              {m.perks.map((p) => (
+                <li class="flex items-start gap-2.5 text-white/95"><svg class="w-5 h-5 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>{p}</li>
+              ))}
+            </ul>
+            <a href={practice.booking.url} target="_blank" rel="noopener" class="btn bg-white text-primary-deep mt-8 w-full justify-center">Get started</a>
+            <p class="mt-3 text-center text-xs text-white/70">Pricing provisional · confirmed at booking</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BENEFITS -->
+  <section class="py-20 sm:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">Why members stay</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Maintenance is cheaper than starting over</h2>
+        <p class="mt-5 text-slate-600 text-lg">Regular upkeep keeps the problem we solved from returning — and keeps you doing what you love, without another full course of care.</p>
+      </div>
+      <div class="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {benefits.map((b, i) => (
+          <div class={`card-lux p-7 reveal reveal-delay-${(i%3)+1}`}>
+            <div class="w-14 h-14 rounded-2xl bg-sky flex items-center justify-center text-3xl mb-4">{b.icon}</div>
+            <h3 class="text-lg font-extrabold text-dark">{b.t}</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">{b.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- THE JOURNEY -->
+  <section class="py-20 sm:py-28 section-sand overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">The Healing Hands journey</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Fix it. Then keep it fixed.</h2>
+      </div>
+      <div class="mt-14 grid sm:grid-cols-3 gap-6">
+        {[
+          { n: '1', t: 'Start with an intro session', d: `A $${intro.price} hands-on hour where Dr. Jamie finds the root cause and builds your plan.` },
+          { n: '2', t: 'Fix the root cause', d: 'A short, focused course of hands-on care — manual therapy, dry needling, StemWave — resolves the underlying issue.' },
+          { n: '3', t: 'Maintain with membership', d: `$${m.price}/mo keeps you ahead of pain with proactive tune-ups, same-day access, and priority booking.` },
+        ].map((s) => (
+          <div class="card-lux p-7 reveal text-center">
+            <div class="w-14 h-14 rounded-full bg-primary text-white text-2xl font-extrabold grid place-items-center mx-auto shadow-lg">{s.n}</div>
+            <h3 class="mt-4 font-extrabold text-dark">{s.t}</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">{s.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- IMAGE + QUOTE -->
+  <section class="py-20 sm:py-28 bg-white overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-14 items-center">
+      <div class="reveal relative">
+        <div class="frame-lux aspect-[5/4]">
+          <Pic src="/images/services/manual-therapy.jpg" alt="Ongoing maintenance bodywork with Dr. Jamie at Healing Hands in Reno" width={640} height={512} sizes="(max-width: 1024px) 90vw, 540px" class="w-full h-full object-cover" />
+        </div>
+      </div>
+      <figure class="reveal reveal-delay-1">
+        <span class="text-7xl text-primary/15 font-heading leading-none">“</span>
+        <blockquote class="text-2xl font-heading text-dark leading-snug -mt-6">We don't chase the symptom — we find and fix the root cause, then keep you there with simple, regular maintenance so the pain doesn't come back.</blockquote>
+        <figcaption class="mt-5 text-sm font-bold text-primary-deep">— {provider.name}, {provider.credentials} · {provider.title}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="py-20 sm:py-28 section-bone">
+    <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) })} />
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal"><span class="eyebrow">Membership questions</span><h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Good to know</h2></div>
+      <div class="mt-12 space-y-3">
+        {faqs.map((f) => (
+          <details class="card-lux p-5 group reveal">
+            <summary class="font-bold text-dark cursor-pointer flex justify-between items-center gap-4">{f.q}<span class="text-primary group-open:rotate-45 transition-transform text-2xl shrink-0">+</span></summary>
+            <p class="mt-3 text-slate-600 leading-relaxed">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 relative overflow-hidden" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="relative max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl sm:text-4xl font-extrabold">Stay ahead of pain.</h2>
+      <p class="mt-4 text-white/90 text-lg">Start with a ${intro.price} intro session to fix the root cause — then let the membership keep you there.</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn bg-white text-primary-deep text-lg">Get started</a>
+        <a href={phoneHref} class="btn btn-ghost text-lg" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4)">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+</Base>

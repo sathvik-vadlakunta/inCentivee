@@ -1,0 +1,223 @@
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+/* Fonts (Nunito + Open Sans) are loaded via <link> in Base.astro from practice.json. */
+
+/* =========================================================================
+   Healing Hands Physical Therapy & Bodywork — Reno, NV
+   Brand: Healing Hands logo PURPLE (#a26fa8) + warm grey, on a luxe warm-neutral
+   canvas. Fonts: Nunito (headings) + Open Sans (body). Motion is gentle and fully
+   respects reduced-motion. NOTE: the --color-mint / --color-sun var NAMES are
+   kept (many shared components reference them) but remapped to the purple brand
+   so nothing renders off-brand.
+   ========================================================================= */
+:root {
+  --color-primary: #8a4a92;      /* brand purple, deepened for AA contrast (white text on buttons) */
+  --color-primary-bright: #a26fa8; /* exact Healing Hands logo purple — accents/highlights */
+  --color-primary-deep: #6e3a77; /* hover / deep purple */
+  --color-secondary: #7a6a82;    /* warm mauve-grey (echoes the logo's grey hands) */
+  --color-accent: #a26fa8;       /* purple accents */
+  --color-accent-soft: #c49bc9;  /* soft lilac */
+  --color-sun: #9a5aa0;          /* muted plum pop (remapped) */
+  --color-mint: #a26fa8;         /* purple — checks / accents (remapped) */
+  --color-dark: #261a2b;         /* deep plum-ink */
+  --color-ink: #1d1422;
+  --color-light: #f7f4f9;        /* soft lilac wash */
+  --color-sky: #f2eaf6;          /* pale lilac wash */
+  --color-cloud: #ffffff;
+  --color-bone: #faf8f4;         /* warm serene off-white — luxe boutique wash */
+  --color-sand: #f3efe7;         /* deeper warm sand for premium bands */
+  --font-heading: 'Nunito', system-ui, sans-serif;
+  --font-body: 'Open Sans', system-ui, sans-serif;
+  --radius: 1.25rem;
+  --radius-lg: 2rem;
+  --shadow-soft: 0 10px 40px -12px rgba(27, 94, 140, 0.25);
+  --shadow-lift: 0 24px 60px -18px rgba(27, 94, 140, 0.35);
+}
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-bright: var(--color-primary-bright);
+  --color-primary-deep: var(--color-primary-deep);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-sun: var(--color-sun);
+  --color-mint: var(--color-mint);
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
+  --color-sky: var(--color-sky);
+  --color-bone: var(--color-bone);
+  --color-sand: var(--color-sand);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --radius-brand: var(--radius);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  color: var(--color-dark);
+  background: var(--color-light);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); letter-spacing: -0.022em; line-height: 1.08; }
+
+/* Luxe boutique-wellness layer — restrained, serene, airy.
+   Warm off-white bands, hairline rules, refined eyebrow labels, generous
+   whitespace. Used alongside the existing system; nothing off-brand. */
+.section-bone { background: linear-gradient(180deg, var(--color-bone), #fff); }
+.section-sand { background: var(--color-sand); }
+.eyebrow {
+  display: inline-block; font-family: var(--font-heading); font-weight: 700;
+  font-size: .72rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--color-primary-deep);
+}
+.eyebrow--quiet { color: #9a8f7e; }
+.hairline { height: 1px; background: linear-gradient(90deg, transparent, rgba(28,43,58,.12), transparent); }
+/* Premium card — softer, warmer, hairline ring instead of heavy shadow */
+.card-lux {
+  background: #fff; border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(28,43,58,.04), 0 18px 50px -30px rgba(28,43,58,.28);
+  border: 1px solid rgba(28,43,58,.06); transition: transform .3s ease, box-shadow .3s ease;
+}
+.card-lux:hover { transform: translateY(-4px); box-shadow: 0 1px 2px rgba(28,43,58,.05), 0 30px 60px -28px rgba(28,43,58,.34); }
+/* Refined framed photo — subtle warm ring, gentle radius (premium gallery feel) */
+.frame-lux { border-radius: var(--radius-lg); overflow: hidden; box-shadow: 0 30px 70px -34px rgba(28,43,58,.45); outline: 1px solid rgba(28,43,58,.06); }
+
+/* ---- Brand utilities ------------------------------------------------- */
+.gradient-text {
+  background: linear-gradient(100deg, var(--color-primary), var(--color-mint) 60%, var(--color-sun));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.btn {
+  display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-heading);
+  font-weight: 700; padding: .9rem 1.6rem; border-radius: 999px; transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  white-space: nowrap;
+}
+.btn-accent { background: var(--color-accent); color: #fff; box-shadow: 0 12px 28px -10px rgba(230,58,46,.6); }
+.btn-accent:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 18px 36px -10px rgba(230,58,46,.7); }
+.btn-primary { background: var(--color-primary); color: #fff; box-shadow: 0 12px 28px -10px rgba(46,143,206,.55); }
+.btn-primary:hover { transform: translateY(-2px) scale(1.02); }
+.btn-ghost { background: #fff; color: var(--color-primary-deep); border: 2px solid var(--color-sky); }
+.btn-ghost:hover { border-color: var(--color-primary); transform: translateY(-2px); }
+
+.card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-soft); border: 1px solid rgba(46,143,206,.08); transition: transform .25s ease, box-shadow .25s ease; }
+.card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lift); }
+
+/* Decorative background wash — clean, conventional radial glow (NO organic
+   morphing). The legacy `.blob` class name is kept so existing markup keeps
+   working, but it now renders as a subtle soft circle, not an amoeba shape. */
+.blob { position: absolute; border-radius: 9999px; filter: blur(80px); opacity: .18; z-index: 0; pointer-events: none; }
+
+/* Clean framed photo treatment (rounded-rectangle, ring + soft shadow).
+   Replaces the old organic photo mask — premium clinical look, no morphing. */
+.blob-mask { border-radius: 1.25rem; overflow: hidden; box-shadow: var(--shadow-lift); outline: 1px solid rgba(46,143,206,.10); outline-offset: 0; }
+
+/* ---- Animations (gentle, sensory-safe) ------------------------------- */
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.float { animation: floaty 6s ease-in-out infinite; }
+
+/* scroll reveal — elements start hidden, .is-visible added by IntersectionObserver */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+.reveal.is-visible { opacity: 1; transform: none; }
+.reveal-delay-1 { transition-delay: .08s; } .reveal-delay-2 { transition-delay: .16s; }
+.reveal-delay-3 { transition-delay: .24s; } .reveal-delay-4 { transition-delay: .32s; }
+
+/* animated wave divider + soft section tints */
+.section-sky { background: linear-gradient(180deg, var(--color-sky), #fff); }
+.section-cream { background: var(--color-light); }
+
+/* trust bar */
+.trust-pill { display:inline-flex; align-items:center; gap:.4rem; font-weight:600; font-size:.85rem; color: var(--color-primary-deep); }
+
+/* ---- WOW layer (all sensory-safe, reduced-motion-wrapped) ------------ */
+/* Aurora mesh backdrop — slow, calm drift behind heroes */
+.aurora {
+  position:absolute; inset:-20%; z-index:0; pointer-events:none; filter:blur(60px); opacity:.5;
+  background:
+    radial-gradient(40% 50% at 20% 30%, var(--color-primary) 0%, transparent 60%),
+    radial-gradient(35% 45% at 80% 20%, var(--color-mint) 0%, transparent 60%),
+    radial-gradient(45% 55% at 60% 80%, var(--color-sun) 0%, transparent 60%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aurora { animation: auroraDrift 26s ease-in-out infinite alternate; }
+}
+@keyframes auroraDrift { from { transform: translate3d(-3%,-2%,0) scale(1); } to { transform: translate3d(3%,2%,0) scale(1.08); } }
+
+/* Glassmorphism + image polish */
+.glass { background:rgba(255,255,255,.32); backdrop-filter:blur(16px) saturate(140%); border:1px solid rgba(255,255,255,.5); border-radius:var(--radius-lg); box-shadow:var(--shadow-soft); }
+.zoom-frame { overflow:hidden; border-radius:var(--radius); }
+.zoom-frame img { transition:transform .6s cubic-bezier(.2,.7,.2,1); }
+.zoom-frame:hover img { transform:scale(1.06); }
+
+/* Scroll progress bar + scroll-driven reveals (progressive enhancement) */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    .scroll-progress { position:fixed; inset-block-start:0; inset-inline:0; height:4px; z-index:60; transform-origin:left center; background:linear-gradient(90deg,var(--color-primary),var(--color-mint),var(--color-sun)); animation:growProgress linear; animation-timeline:scroll(root); }
+  }
+  @supports (animation-timeline: view()) {
+    .reveal-css { animation:fadeUp linear both; animation-timeline:view(); animation-range:entry 4% entry 38%; }
+    .parallax-soft { animation:parY linear both; animation-timeline:view(); animation-range:cover; }
+    .stagger > :nth-child(2){ animation-range:entry 10% entry 44%; }
+    .stagger > :nth-child(3){ animation-range:entry 16% entry 50%; }
+    .stagger > :nth-child(4){ animation-range:entry 22% entry 56%; }
+  }
+}
+@keyframes growProgress { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@keyframes parY { from { translate:0 -14px; } to { translate:0 14px; } }
+
+/* Infinite marquee trust strip (pauses on hover + reduced-motion) */
+.marquee { overflow:hidden; -webkit-mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
+.marquee__track { display:flex; gap:2.5rem; width:max-content; align-items:center; }
+@media (prefers-reduced-motion: no-preference) { .marquee__track { animation:scrollX 32s linear infinite; } .marquee:hover .marquee__track { animation-play-state:paused; } }
+@media (prefers-reduced-motion: reduce) { .marquee__track { flex-wrap:wrap; justify-content:center; } }
+@keyframes scrollX { to { transform:translateX(-50%); } }
+
+/* ---- Premium motion pass (2026-07) — GPU-cheap, all reduced-motion-safe ---- */
+/* #3 Ken Burns — very slow, serene scale on hero media */
+@media (prefers-reduced-motion: no-preference) {
+  .kenburns img { animation: kenburns 24s ease-in-out infinite alternate; will-change: transform; }
+}
+@keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.07); } }
+
+/* #2 Editorial unveil — inner image eases from a soft over-scale as it reveals in */
+.img-reveal { overflow: hidden; }
+.img-reveal img { transform: scale(1.09); transition: transform 1.2s cubic-bezier(.2,.7,.2,1); will-change: transform; }
+.img-reveal.is-visible img { transform: scale(1); }
+
+/* #5 Journey path draw-on-scroll (path uses pathLength="1" → resolution-independent) */
+.draw-path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.8s ease; }
+.is-visible .draw-path { stroke-dashoffset: 0; }
+
+/* #6 Micro-interactions */
+/* button sheen (reuses the premium-CTA feel) */
+.btn-accent, .btn-primary { position: relative; overflow: hidden; }
+.btn-accent::after, .btn-primary::after {
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg, transparent 30%, rgba(255,255,255,.4) 50%, transparent 70%);
+  background-size:220% 100%; background-position:200% 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .btn-accent:hover::after, .btn-primary:hover::after { animation: sheen 1.05s ease; }
+}
+@keyframes sheen { to { background-position:-120% 0; } }
+/* service-card icon lift/tint on hover */
+.svc-icon { transition: transform .3s cubic-bezier(.2,.7,.2,1); }
+.group:hover .svc-icon { transform: translateY(-3px) scale(1.12); }
+/* animated underline for text links */
+.link-underline { background-image: linear-gradient(currentColor,currentColor); background-size:0% 2px; background-position:0 100%; background-repeat:no-repeat; transition: background-size .3s ease; }
+.link-underline:hover { background-size:100% 2px; }
+
+/* #7 Grain overlay — tactile luxe finish (~3.5%), site-wide, click-through */
+body::after {
+  content:""; position:fixed; inset:0; z-index:70; pointer-events:none; opacity:.035; mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* sensory-safe: honor reduced motion fully */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}

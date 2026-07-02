@@ -1,0 +1,23 @@
+# Healing Hands PT — preserve old HighLevel URLs after cutover.
+# Old site URL inventory (from healinghandspt.net/sitemap.xml).
+
+# Core pages map 1:1 (about, services, contact, blog already exist) — no redirect needed.
+
+# Reviews/testimonials: old path is /testimonials (we keep it). Also alias /reviews.
+/reviews            /testimonials            301
+
+# Area / location aliases: blog + internal links use /areas-we-serve/* -> /locations/*.
+/areas-we-serve/reno            /locations/reno          301
+/areas-we-serve/*               /locations/:splat        301
+
+# Retired funnel / lead-magnet pages -> sensible homes (302 in case they become real pages later).
+/schedule-your-time-with-us-3898   /contact      302
+/thank-you-2630                    /contact      302
+/low-back-pain-free                /services/physical-therapy   302
+/low-back-pain-free-9846           /services/physical-therapy   302
+/playbook                          /services     302
+
+# Legal pages: rebuild later; for now point to home so they don't 404 (revisit on cutover).
+/website-disclaimer        /        302
+/website-disclaimer-2106   /        302
+/termsandconditions        /        302

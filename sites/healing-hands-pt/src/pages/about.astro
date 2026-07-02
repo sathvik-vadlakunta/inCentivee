@@ -1,0 +1,201 @@
+---
+import Base from '@layouts/Base.astro'
+import Pic from '@components/Pic.astro'
+import practice from '@data/practice.json'
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const providers = practice.providers
+const slugify = (n) => n.toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '')
+
+const conciergeDiff = [
+  ['🕐', 'A full hour, every visit', 'Our doctor spends an average of one hour with each client at every appointment — not 15 minutes shared with support staff.'],
+  ['🌿', 'A warm, tranquil space', 'A welcoming, calming atmosphere built around your comfort and healing.'],
+  ['📝', 'Your plan, your call', 'Your care plan is determined by you and the doctor — not dictated by insurance.'],
+  ['📞', 'A direct line to your doctor', 'Reach your doctor directly by phone, text, or email. No leaving multiple messages.'],
+  ['🚗', 'We can come to you', 'Mobile visits are available for the Reno-Sparks area.'],
+  ['🎯', 'Pain relief is the goal', 'Helping you find relief and return to what you love — as quickly as possible.'],
+]
+const techniques = [
+  'Joint mobilizations', 'StemWave treatments', 'Muscle energy techniques',
+  'Soft tissue mobilizations', 'Myofascial release', 'CranioSacral therapy',
+  'Dry needling', 'Proprioceptive Neuromuscular Facilitation (PNF)', 'Rehabilitation exercises',
+]
+
+// Real podcast appearances featuring Dr. Jamie (carried over from the old homepage; URLs verified from the scrape).
+const podcasts = [
+  {
+    title: 'How Jamie Pribyl Transformed Her Physical Therapy Practice',
+    platform: 'Apple Podcasts',
+    url: 'https://podcasts.apple.com/us/podcast/episode-68-how-jamie-pribyl-transformed-her-physical/id1710626212?i=1000656496802',
+  },
+  {
+    title: 'Redefining Physical Therapy and Healing: A Holistic Approach',
+    platform: 'Spotify',
+    url: 'https://open.spotify.com/episode/5ZvvFGhgvJlLylezElB0u8?si=P1At5Co3SF2Ap9FaPU7Ztw&nd=1&dlsi=ff462fd1aca54264',
+  },
+  {
+    title: 'What Healing Hands is All About',
+    platform: 'YouTube',
+    url: 'https://youtu.be/m-O0pbNX-G4?si=72qXfq1VGVePzHcW',
+  },
+  {
+    title: "A Physical Therapist's advice on what to do before a mastectomy",
+    platform: 'YouTube',
+    url: 'https://www.youtube.com/watch?v=WyTdHJfcRic&feature=youtu.be',
+  },
+]
+---
+<Base title="Physical Therapy Experts in Nevada" description="Meet Dr. Jamie Pribyl, PT, DPT, MTC — owner of Healing Hands Physical Therapy and Bodywork in Reno. Concierge, hands-on physical therapy that honors your time and your healing.">
+  <!-- HERO -->
+  <section class="section-sky py-16 sm:py-20 relative overflow-hidden">
+    <div class="parallax blob" data-speed="0.3" style="width:380px;height:380px;background:var(--color-primary);top:-120px;left:-80px;opacity:.35;"></div>
+    <div class="parallax blob" data-speed="0.5" style="width:280px;height:280px;background:var(--color-secondary);bottom:-100px;right:-40px;opacity:.3;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-primary font-bold uppercase tracking-wide text-sm">About us</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">Physical Therapy Experts in <span class="gradient-text">Nevada</span></h1>
+      <p class="mt-5 text-lg text-slate-600">Tired of long wait times, limited time with your practitioner, and being blocked by front-office staff? Healing Hands offers a different approach — one that honors your time, your needs, and your unique healing journey.</p>
+      <div class="mt-7 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent">Schedule an appointment</a>
+        <a href={phoneHref} class="btn btn-ghost">📞 {practice.phone}</a>
+      </div>
+      <div class="mt-6">
+        <span class="inline-flex items-center gap-2 bg-white text-primary-deep text-xs font-bold px-3.5 py-2 rounded-full shadow-sm ring-1 ring-primary/15">
+          <span class="text-base">🐺</span> Proud partner of Nevada Wolf Pack Athletics
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONCIERGE DIFFERENCE -->
+  <section class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-primary font-bold uppercase tracking-wide text-sm">The concierge difference</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">How concierge healthcare is different</h2>
+        <p class="mt-4 text-slate-600">We provide concierge physical therapy so our experts can spend quality, one-on-one time with each client and deliver the highest level of care.</p>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {conciergeDiff.map(([icon, t, d], i) => (
+          <div class={`card p-7 reveal reveal-delay-${(i%3)+1}`}>
+            <div class="w-14 h-14 rounded-2xl bg-sky flex items-center justify-center text-3xl mb-4">{icon}</div>
+            <h3 class="text-lg font-extrabold text-dark">{t}</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">{d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- IMAGE BAND -->
+  <section class="py-16 sm:py-20 section-bone overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal relative">
+        <div class="frame-lux aspect-[5/4] reveal img-reveal">
+          <Pic src="/images/hero.jpg" alt="Dr. Jamie Pribyl providing hands-on, one-on-one care at Healing Hands Physical Therapy in Reno" width={640} height={512} sizes="(max-width: 1024px) 90vw, 540px" class="w-full h-full object-cover" />
+        </div>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <span class="eyebrow">Not temporary relief — a real fix</span>
+        <h2 class="text-3xl sm:text-[2.4rem] font-extrabold text-dark mt-3 leading-tight">We find the root cause, then keep you there</h2>
+        <p class="mt-5 text-slate-600 leading-relaxed text-lg">A quick rub, a pill, or an injection only masks pain for a while. Dr. Jamie's hands-on, root-cause care fixes the underlying problem — and then sets you up with simple, long-term maintenance so it doesn't creep back. Fewer visits, lasting results.</p>
+        <a href="/membership" class="btn btn-ghost mt-7">How maintenance works →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECHNIQUES -->
+  <section class="py-16 section-cream">
+    <div class="max-w-4xl mx-auto px-4 text-center reveal">
+      <span class="text-primary font-bold uppercase tracking-wide text-sm">Hands-on, every visit</span>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">A variety of hands-on techniques</h2>
+      <p class="mt-4 text-slate-600">This isn't a massage and it isn't rushed insurance PT. Our goal is to facilitate real healing and restore efficient, comfortable movement as quickly as possible — using doctor-performed hands-on techniques, one-on-one therapy, and personalized treatment plans.</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-2.5">
+        {techniques.map((t) => (<span class="px-4 py-2 bg-white rounded-full text-sm font-semibold text-primary-deep border border-sky shadow-sm">{t}</span>))}
+      </div>
+    </div>
+  </section>
+
+  <!-- PROVIDER(S) -->
+  <section class="py-20 bg-white">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-primary font-bold uppercase tracking-wide text-sm">Meet your therapist</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">Physical Therapy Experts in Nevada</h2>
+      </div>
+      {providers.map((p, i) => (
+        <div id={slugify(p.name)} class="mt-12 grid md:grid-cols-[260px_1fr] gap-8 items-start reveal">
+          <div class="relative aspect-[4/5] frame-lux bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-4xl font-extrabold" transition:name={i === 0 ? 'jamie-portrait' : undefined}>
+            <span class="absolute">{p.name.split(' ').map((w) => w[0]).join('').slice(0,2)}</span>
+            <Pic src={p.photo} alt={`${p.name}, ${p.credentials} — Healing Hands Physical Therapy, Reno`} width={300} height={375} sizes="(max-width: 768px) 80vw, 260px" class="relative w-full h-full object-cover object-top" />
+          </div>
+          <div>
+            <h3 class="text-2xl font-extrabold text-dark">{p.name}<span class="text-primary">, {p.credentials}</span></h3>
+            <p class="text-primary-deep font-semibold">{p.title}</p>
+            <p class="mt-4 text-slate-600 leading-relaxed">{p.bio}</p>
+            {p.education?.length > 0 && (
+              <ul class="mt-5 space-y-1.5">
+                {p.education.map((e) => (<li class="flex items-start gap-2 text-sm text-slate-700"><span class="text-primary">🎓</span>{e}</li>))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- FEATURED ON THE PODCAST -->
+  <section class="py-16 sm:py-20 bg-white overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="text-primary font-bold uppercase tracking-wide text-sm">🎙️ Featured on the podcast</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-dark mt-2">Dr. Jamie, in conversation</h2>
+        <p class="mt-4 text-slate-600">Dr. Jamie has shared her holistic, root-cause approach to healing on several podcast episodes. Listen in to hear how she thinks about pain, recovery, and concierge care.</p>
+      </div>
+      <div class="mt-12 grid sm:grid-cols-2 gap-5">
+        {podcasts.map((p, i) => (
+          <a
+            href={p.url}
+            target="_blank"
+            rel="noopener"
+            class={`card p-6 reveal reveal-delay-${(i % 3) + 1} group flex items-start gap-4`}
+          >
+            <span class="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-primary to-secondary text-white text-2xl grid place-items-center group-hover:scale-110 transition-transform">🎧</span>
+            <div class="min-w-0">
+              <span class="text-[11px] font-bold uppercase tracking-widest text-primary-deep/70">{p.platform}</span>
+              <h3 class="mt-0.5 font-bold text-dark leading-snug group-hover:text-primary transition-colors">{p.title}</h3>
+              <span class="mt-2 inline-flex items-center gap-1 text-primary font-semibold text-sm group-hover:gap-2 transition-all">Listen →</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- HOURS / LOCATION -->
+  <section class="py-16 section-cream">
+    <div class="max-w-4xl mx-auto px-4 grid sm:grid-cols-2 gap-6">
+      <div class="card p-7 reveal">
+        <h3 class="text-lg font-extrabold text-dark mb-3">Visit our location</h3>
+        <p class="text-slate-600">{practice.address.street}<br/>{practice.address.city}, {practice.address.state} {practice.address.zip}</p>
+        <p class="mt-3 text-sm text-slate-600">Call/Text: <a href={phoneHref} class="text-primary font-semibold">{practice.phone}</a></p>
+        <p class="text-sm text-slate-600">Fax: {practice.fax}</p>
+        <p class="mt-1 text-sm text-slate-600"><a href={`mailto:${practice.email}`} class="text-primary">{practice.email}</a></p>
+      </div>
+      <div class="card p-7 reveal reveal-delay-1">
+        <h3 class="text-lg font-extrabold text-dark mb-3">Hours of operation</h3>
+        <ul class="space-y-1 text-sm text-slate-600">
+          {practice.hours.map((h) => (<li class="flex justify-between gap-4"><span class="font-semibold">{h.days}</span><span>{h.note ? h.note : `${h.open} – ${h.close}`}</span></li>))}
+        </ul>
+        <p class="mt-3 text-xs text-slate-500">{practice.afterHours}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="max-w-2xl mx-auto px-4 text-center text-white reveal">
+      <h2 class="text-3xl font-extrabold">Ready to get to the root of your pain?</h2>
+      <p class="mt-3 text-white/85">A full hour of hands-on, one-on-one care — in Reno, Sparks, Carson City &amp; Incline Village.</p>
+      <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent mt-6 text-lg">Book your appointment</a>
+    </div>
+  </section>
+</Base>

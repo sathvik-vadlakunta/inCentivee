@@ -1,0 +1,52 @@
+---
+import practice from '@data/practice.json'
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const a = practice.address
+const year = 2026
+const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(`${practice.name}, ${a.street}, ${a.city}, ${a.state} ${a.zip}`)}`
+---
+<footer class="bg-dark text-slate-300 pt-16 pb-8 mt-0">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid gap-10 md:grid-cols-4">
+    <div class="md:col-span-1">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="w-9 h-9 rounded-xl bg-primary text-white font-extrabold flex items-center justify-center font-heading text-lg">H</span>
+        <span class="text-lg font-extrabold font-heading text-white leading-tight">Healing Hands PT</span>
+      </div>
+      <p class="text-sm text-slate-400 leading-relaxed">Concierge, cash-pay physical therapy &amp; bodywork in Reno, NV. A full hour of hands-on, one-on-one care — focused on the root cause of your pain.</p>
+      <div class="flex flex-wrap gap-3 mt-4 text-sm">
+        {practice.social.facebook && <a href={practice.social.facebook} target="_blank" rel="noopener" class="text-slate-400 hover:text-white">Facebook</a>}
+        {practice.social.instagram && <a href={practice.social.instagram} target="_blank" rel="noopener" class="text-slate-400 hover:text-white">Instagram</a>}
+        {practice.social.youtube && <a href={practice.social.youtube} target="_blank" rel="noopener" class="text-slate-400 hover:text-white">YouTube</a>}
+        {practice.social.tiktok && <a href={practice.social.tiktok} target="_blank" rel="noopener" class="text-slate-400 hover:text-white">TikTok</a>}
+      </div>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-3">Services</h3>
+      <ul class="space-y-2 text-sm">
+        {practice.serviceCategories.map((s) => (<li><a href={`/services/${s.slug}`} class="hover:text-white">{s.title}</a></li>))}
+      </ul>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-3">Visit Our Location</h3>
+      <a href={mapsUrl} target="_blank" rel="noopener" class="block text-sm text-slate-400 hover:text-white leading-relaxed mb-3">
+        {a.street}<br />{a.city}, {a.state} {a.zip}
+      </a>
+      <p class="text-sm text-slate-400 mb-1">Call/Text: <a href={phoneHref} class="hover:text-white font-semibold">{practice.phone}</a></p>
+      <p class="text-sm text-slate-400 mb-3">Fax: {practice.fax}</p>
+      <a href="/locations" class="text-sm font-semibold text-slate-300 hover:text-white">Areas We Serve →</a>
+      <p class="text-xs text-slate-500 mt-1">Reno · Sparks · Carson City · Incline Village · Truckee · Lake Tahoe</p>
+    </div>
+    <div>
+      <h3 class="text-white font-bold mb-3">Hours &amp; Booking</h3>
+      <p class="text-sm text-slate-400 mb-1">{practice.hoursShort}</p>
+      <p class="text-xs text-slate-500 mb-3">Wed, Sat &amp; Sun closed</p>
+      <a href={`mailto:${practice.email}`} class="block text-sm hover:text-white mb-3">{practice.email}</a>
+      <a href="/membership" class="block text-sm font-semibold text-slate-300 hover:text-white mb-4">Maintenance Membership →</a>
+      <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent text-sm">Book an appointment</a>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-4 mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between gap-3 text-xs text-slate-500">
+    <p>© {year} {practice.name}. All rights reserved. · Reno, Nevada</p>
+    <p>Concierge · Cash-pay (out-of-network) · Hands-on care</p>
+  </div>
+</footer>

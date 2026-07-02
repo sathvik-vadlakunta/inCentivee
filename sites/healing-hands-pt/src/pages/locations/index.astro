@@ -1,0 +1,47 @@
+---
+import Base from '@layouts/Base.astro'
+import practice from '@data/practice.json'
+import { getCollection } from 'astro:content'
+const locations = (await getCollection('locations')).sort((a, b) => a.data.order - b.data.order)
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const breadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: `https://${practice.domain}/` },
+    { '@type': 'ListItem', position: 2, name: 'Areas We Serve', item: `https://${practice.domain}/locations` },
+  ],
+}
+---
+<Base title="Areas We Serve — Physical Therapy for Reno, Sparks, Carson City, Tahoe & Truckee" description="Healing Hands Physical Therapy & Bodywork serves the greater Reno-Tahoe region — concierge, cash-pay PT in our South Reno clinic plus mobile visits across Reno-Sparks. Serving Reno, Sparks, Carson City, Incline Village, Truckee, and the Lake Tahoe area.">
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumb)} />
+  <section class="section-sky py-16 relative overflow-hidden">
+    <div class="aurora"></div>
+    <div class="blob" style="width:360px;height:360px;background:var(--color-primary);top:-100px;right:-80px;"></div>
+    <div class="relative max-w-5xl mx-auto px-4 text-center reveal is-visible">
+      <span class="text-accent font-bold uppercase tracking-wide text-sm">Areas we serve</span>
+      <h1 class="text-4xl sm:text-5xl font-extrabold text-dark mt-2">Concierge physical therapy across <span class="gradient-text">Reno-Tahoe</span></h1>
+      <p class="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">A full hour of hands-on, one-on-one care from our South Reno clinic — plus mobile (in-home) visits across Reno-Sparks. Choose your area to learn more.</p>
+    </div>
+  </section>
+  <section class="py-16 section-cream">
+    <div class="max-w-6xl mx-auto px-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {locations.map((l, i) => (
+        <a href={`/locations/${l.slug}`} class={`card overflow-hidden reveal reveal-delay-${(i % 3) + 1} group`}>
+          <div class="zoom-frame aspect-[16/10] bg-sky"><img src={l.data.image} alt={`Physical therapy for ${l.data.city}`} class="w-full h-full object-cover" loading="lazy" onerror="this.style.opacity=0" /></div>
+          <div class="p-6">
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl font-bold text-dark group-hover:text-primary transition-colors">{l.data.city}, {l.data.state}</h2>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky text-primary-deep">{l.data.mobile ? 'Clinic + mobile' : 'In-clinic'}</span>
+            </div>
+            <p class="mt-2 text-sm text-slate-600 line-clamp-3">{l.data.description}</p>
+            <span class="mt-4 inline-block text-primary font-semibold text-sm">View {l.data.city} →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+    <div class="text-center mt-12 reveal">
+      <a href={phoneHref} class="btn btn-accent text-lg">📞 {practice.phone} — book today</a>
+    </div>
+  </section>
+</Base>

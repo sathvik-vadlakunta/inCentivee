@@ -1,0 +1,82 @@
+---
+/**
+ * Pic — optimized, layout-shift-free image.
+ *
+ * Wraps astro:assets <Image>/<Picture> so callers can keep passing the familiar
+ * public-style path ("/images/hero.jpg"). The real file is resolved from
+ * src/assets/images via a glob so Astro+sharp can emit responsive AVIF/WebP and
+ * stamp explicit width/height (no CLS). If a path isn't found in the glob it
+ * falls back to a plain <img> pointing at /public so nothing ever breaks.
+ *
+ * Props:
+ *   src      "/images/…" path (maps to src/assets/images/…)
+ *   alt      required alt text
+ *   class    classes applied to the rendered <img>
+ *   eager    true ⇒ loading=eager + fetchpriority=high (use ONLY for the LCP image)
+ *   widths   responsive widths for srcset (defaults tuned per use)
+ *   sizes    sizes attribute
+ *   width/height  intrinsic box (defaults derived; sharp overrides with real dims)
+ */
+import { Image } from 'astro:assets'
+
+interface Props {
+  src: string
+  alt: string
+  class?: string
+  eager?: boolean
+  widths?: number[]
+  sizes?: string
+  width?: number
+  height?: number
+}
+
+const {
+  src,
+  alt,
+  class: className = '',
+  eager = false,
+  widths = [400, 640, 960, 1280],
+  sizes = '(max-width: 768px) 100vw, 50vw',
+  width,
+  height,
+} = Astro.props
+
+// Eagerly glob every asset so we can resolve by path at build time.
+const images = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/images/**/*.{jpg,jpeg,png,webp,avif}',
+  { eager: true }
+)
+
+// "/images/foo.jpg" -> "/src/assets/images/foo.jpg"
+const safeSrc = src || '/images/hero.jpg'
+const key = `/src/assets/images${safeSrc.replace(/^\/images/, '')}`
+const mod = images[key]
+const resolved = mod?.default
+---
+
+{
+  resolved ? (
+    <Image
+      src={resolved}
+      alt={alt}
+      class={className}
+      widths={widths}
+      sizes={sizes}
+      {...(width ? { width } : {})}
+      {...(height ? { height } : {})}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding={eager ? 'auto' : 'async'}
+      fetchpriority={eager ? 'high' : 'auto'}
+      format="webp"
+    />
+  ) : (
+    <img
+      src={safeSrc}
+      alt={alt}
+      class={className}
+      loading={eager ? 'eager' : 'lazy'}
+      decoding={eager ? 'auto' : 'async'}
+      onerror="this.style.opacity=0"
+    />
+  )
+}

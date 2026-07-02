@@ -1,0 +1,690 @@
+---
+import Base from '@layouts/Base.astro'
+import Pic from '@components/Pic.astro'
+import practice from '@data/practice.json'
+import testimonials from '@data/testimonials.json'
+import { getCollection } from 'astro:content'
+
+const services = practice.serviceCategories
+const svcIcons = {
+  'physical-therapy': '🤲',
+  'manual-therapy': '💪',
+  'dry-needling': '🪡',
+  'craniosacral-therapy': '🧠',
+  'stemwave': '🌊',
+  'myofascial-release': '🌀',
+  'muscle-energy-technique': '⚙️',
+  'cupping': '🟣',
+  'visceral-mobilization': '🫁',
+}
+const conditions = practice.conditions
+const provider = practice.providers[0]
+const reviews = practice.reviews
+const pricing = practice.pricing
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+
+const googleReviews = (testimonials as any).google || []
+const siteReviews = (testimonials as any).reviews || []
+
+let posts = []
+try {
+  posts = (await getCollection('blog'))
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+    .slice(0, 3)
+} catch (e) { posts = [] }
+
+// CONTRAST 1 — Massage vs. real (doctor-performed) bodywork. The premium education hook.
+const massageContrast = [
+  { label: 'How it feels', massage: 'Relaxing in the moment', us: 'Just as relaxing — calm, unhurried, hands-on' },
+  { label: 'What it treats', massage: 'The surface — tight muscles you can feel', us: 'The root cause beneath the symptom' },
+  { label: 'Who performs it', massage: 'A massage therapist', us: 'Dr. Jamie — a doctor of physical therapy (DPT, MTC)' },
+  { label: 'The toolkit', massage: 'Kneading & general relaxation', us: 'Manual therapy, myofascial release, dry needling, CranioSacral & StemWave' },
+  { label: 'The result', massage: 'Feels good for a day or two, then returns', us: 'Lasting change — and a plan to keep you there' },
+]
+
+// CONTRAST 2 — Insurance PT vs. concierge (kept, verbatim from §3.5)
+const contrast = [
+  { label: 'Time with the doctor', insurance: '~15–20 min, shared with 2–4 patients an hour', us: 'A full 60 minutes, one-on-one, every visit' },
+  { label: 'Who treats you', insurance: 'Often an aide or tech for much of the visit', us: 'Dr. Jamie (PT, DPT, MTC) — the whole time' },
+  { label: 'What you do', insurance: 'Repetitive gym exercises & machines', us: 'Hands-on manual therapy first, then targeted home exercises' },
+  { label: 'Who decides your care', insurance: 'Insurance "medical necessity" rules', us: 'You and your doctor' },
+  { label: 'Visit cadence', insurance: '2–3 visits a week for weeks', us: 'Fewer, longer visits — often 6–10 total' },
+  { label: 'Cost reality', insurance: 'Copays + deductible + possibly denied claims', us: 'Known up front; superbill for out-of-network reimbursement' },
+]
+
+const homeFaqs = [
+  { q: 'How is this different from a massage?', a: "A massage feels great, but it works on the surface and the relief is usually temporary. Healing Hands is doctor-performed therapeutic bodywork — manual therapy, myofascial release, dry needling, CranioSacral, and StemWave — that is just as relaxing but is designed to find and fix the underlying cause of your pain, then keep you there with a maintenance plan. You leave feeling great AND actually better." },
+  { q: 'Is dry needling the same as acupuncture?', a: "No — and this is our most-asked question. Dry needling uses a thin filiform needle to release tight tissue and reach myofascial trigger points within the muscle, based on Western anatomy and pain science. Acupuncture is rooted in Traditional Chinese Medicine and meridian-energy theory. Dry needling is an evidence-based technique physical therapists use to relieve pain and reactivate muscles — it is not acupuncture." },
+  { q: 'What is StemWave (sonic / acoustic wave) therapy?', a: "StemWave is a noninvasive, FDA-listed sonic / acoustic wave (shockwave) therapy — the latest, more powerful evolution of shockwave used in medical offices for over 20 years. It uses harmless acoustic waves to increase blood flow, reduce inflammation, and activate your body's natural healing. At Healing Hands it's a quick 10–15 minute add-on layered onto your hands-on session — just ask to add it to your visit." },
+  { q: 'How does pricing work?', a: `Most people start with a one-hour intro session ($${pricing.intro.price}) — a real, hands-on working visit where Dr. Jamie treats you and builds a custom plan to fix the root cause. From there she'll recommend the best path: a package of sessions, or the $${pricing.membership.price}/month Maintenance Membership. You can also add StemWave to any visit for $${pricing.stemwaveAddOn.price}. Pricing is always shared up front — no surprise bills. (Prices shown are provisional and confirmed at booking.)` },
+  { q: 'What is the Maintenance Membership?', a: `The Maintenance Membership ($${pricing.membership.price}/mo) is for staying ahead of pain once we've fixed the root cause — ongoing tune-ups so the problem doesn't creep back, plus ${pricing.membership.perks[0].toLowerCase()}, a credit toward your first session, same-day access if you tweak something new, and priority booking. The body needs upkeep; the membership keeps you there.` },
+  { q: 'Do you take insurance?', a: "We're an out-of-network, private-pay (cash-pay) clinic by design. Not contracting with insurance lets us give every client a full hour of customized, hands-on care that isn't dictated by insurance limits. We provide a superbill you may submit to your insurer for possible out-of-network reimbursement — and because we resolve the root cause in fewer visits, the total cost is often comparable to, or less than, a full course of insurance PT." },
+  { q: 'Where are you located and what are your hours?', a: `We're at ${practice.address.street}, ${practice.address.city}, ${practice.address.state} ${practice.address.zip} in South Reno. Hours are ${practice.hoursShort} (closed Wednesday, Saturday, and Sunday). After-hours visits are available upon request. Call or text ${practice.phone}.` },
+]
+---
+
+<Base title={practice.name} description="A relaxing, doctor-performed alternative to massage and standard PT in South Reno — hands-on bodywork that fixes the root cause for lasting results. Start with a $150 intro session." image="/images/og.jpg">
+  <!-- ============================================================= -->
+  <!-- 1 · HERO — premium reposition: experience + results, not price -->
+  <!-- ============================================================= -->
+  <section id="hero" class="relative overflow-hidden section-bone pt-10 pb-24 lg:pt-16">
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[1.05fr_.95fr] gap-12 lg:gap-16 items-center w-full">
+      <div class="reveal is-visible">
+        <span class="inline-flex items-center gap-2.5 bg-white text-primary-deep font-bold text-xs tracking-wide px-4 py-2 rounded-full shadow-sm mb-7 ring-1 ring-black/5">
+          <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-50"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span></span>
+          Concierge bodywork · Cash-pay · South Reno
+        </span>
+        <h1 class="text-[2.35rem] sm:text-5xl lg:text-[3.5rem] font-extrabold text-dark leading-[1.06] tracking-tight">
+          More relaxing than a massage.<br /><span class="gradient-text">More effective than PT.</span><br />The fix you've been looking for.
+        </h1>
+        <p class="mt-7 text-lg sm:text-xl text-slate-600 max-w-xl leading-relaxed">
+          You've tried the rushed, insurance-run PT and the massage that felt great for a day. Healing Hands is different: a calm, unhurried hour of <strong class="text-dark">doctor-performed hands-on bodywork</strong> that finds and fixes the <strong class="text-dark">root cause</strong> of your pain — so the relief actually lasts.
+        </p>
+        <div class="mt-9 flex flex-wrap gap-3">
+          <a href={practice.booking.url} target="_blank" rel="noopener" class="btn btn-accent text-lg">Start with a ${pricing.intro.price} intro session</a>
+          <a href={phoneHref} class="btn btn-ghost text-lg">📞 Call / Text</a>
+        </div>
+        <p class="mt-4 text-sm text-slate-500">A real, hands-on working hour with Dr. Jamie + a custom plan to fix the root cause.</p>
+        <div class="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-primary-deep">
+          {['DPT · Doctor of Physical Therapy', 'MTC · Manual Therapy Certified', '15+ years', 'Best of Sierra Nevada'].map((c) => (
+            <span class="inline-flex items-center gap-1.5"><svg class="w-4 h-4 text-mint shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>{c}</span>
+          ))}
+        </div>
+        <div class="mt-5">
+          <span class="inline-flex items-center gap-2 bg-white text-primary-deep text-xs font-bold px-3.5 py-2 rounded-full shadow-sm ring-1 ring-primary/15">
+            <span class="text-base">🐺</span> Proud partner of Nevada Wolf Pack Athletics
+          </span>
+        </div>
+      </div>
+
+      <div class="relative reveal is-visible">
+        <div class="frame-lux aspect-[4/5] w-full max-w-md mx-auto kenburns">
+          <Pic src="/images/hero.jpg" alt="Close-up of hands-on manual therapy relieving low-back tension — illustrative of the bodywork at Healing Hands Physical Therapy in South Reno" eager={true} width={520} height={650} widths={[420, 520, 760, 1040]} sizes="(max-width: 1024px) 80vw, 460px" class="w-full h-full object-cover object-center" />
+        </div>
+        <div class="absolute -bottom-4 -left-2 sm:-left-5 bg-white rounded-2xl shadow-lift px-5 py-3 ring-1 ring-black/5">
+          {reviews.rating ? (
+            <div class="flex items-center gap-3">
+              <svg class="w-7 h-7 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 12 1 11 11 0 0 0 2.3 7.4L6 10.2C6.9 7.7 9.2 5.4 12 5.4z"/></svg>
+              <div>
+                <div class="flex items-center gap-1.5"><span class="font-extrabold text-dark text-lg leading-none">{reviews.rating}</span><span class="text-primary text-sm leading-none">★★★★★</span></div>
+                <div class="text-xs text-slate-500 mt-0.5">{reviews.count}+ Google reviews</div>
+              </div>
+            </div>
+          ) : (
+            <div class="flex items-center gap-3"><span class="text-2xl">⭐</span><div><div class="font-extrabold text-dark leading-tight">5-star rated</div><div class="text-xs text-slate-500">on Google</div></div></div>
+          )}
+        </div>
+        <div class="absolute -top-3 -right-1 bg-white rounded-2xl shadow-lift px-4 py-2.5 flex items-center gap-2 ring-1 ring-black/5">
+          <span class="text-2xl">🏆</span><div class="font-bold text-dark text-sm leading-tight">Best of Sierra<br/>Nevada</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 1.5 · TRUST STAT BAND — instant credibility (count-up) -->
+  <!-- ============================================================= -->
+  <section class="bg-white border-y border-sky">
+    <div class="max-w-6xl mx-auto px-4 py-7 grid grid-cols-2 md:grid-cols-4 gap-6 text-center stagger">
+      <div class="reveal">
+        <div class="text-3xl sm:text-4xl font-extrabold gradient-text"><span data-count="15">15</span>+</div>
+        <p class="mt-1 text-xs sm:text-sm text-slate-500 font-semibold">Years of manual-therapy experience</p>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <div class="text-3xl sm:text-4xl font-extrabold gradient-text">{reviews.rating || '4.9'}<span class="text-primary text-2xl align-top">★</span></div>
+        <p class="mt-1 text-xs sm:text-sm text-slate-500 font-semibold">Average Google rating</p>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <div class="text-3xl sm:text-4xl font-extrabold gradient-text"><span data-count={reviews.count || 86}>{reviews.count || 86}</span>+</div>
+        <p class="mt-1 text-xs sm:text-sm text-slate-500 font-semibold">Five-star Google reviews</p>
+      </div>
+      <div class="reveal reveal-delay-3">
+        <div class="text-3xl sm:text-4xl font-extrabold gradient-text"><span data-count="60">60</span> min</div>
+        <p class="mt-1 text-xs sm:text-sm text-slate-500 font-semibold">One-on-one with your doctor, every visit</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 2 · MASSAGE vs. REAL BODYWORK — the premium education hook -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 bg-white overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">It feels like a spa. It works like medicine.</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3 leading-tight">It's not just a massage</h2>
+        <p class="mt-5 text-slate-600 text-lg leading-relaxed">A massage relaxes the surface and fades in a day or two. Dr. Jamie's doctor-performed bodywork is just as calming — but it finds and fixes the <strong class="text-dark">root cause</strong> for results that last.</p>
+      </div>
+
+      <!-- Desktop -->
+      <div class="mt-14 reveal hidden md:block">
+        <div class="grid grid-cols-[1fr_1fr_1.15fr] rounded-[2rem] overflow-hidden border border-black/5 bg-white shadow-soft">
+          <div class="bg-sand px-6 py-5"></div>
+          <div class="bg-sand px-6 py-5 text-center"><div class="text-xs font-bold uppercase tracking-widest text-slate-400">A typical massage</div></div>
+          <div class="px-6 py-5 text-center text-white" style="background:linear-gradient(135deg,var(--color-primary),var(--color-primary-deep));"><div class="text-xs font-bold uppercase tracking-widest text-white/80">Healing Hands bodywork</div><div class="text-sm font-extrabold mt-0.5">Doctor-performed</div></div>
+          {massageContrast.map((row, i) => (
+            <>
+              <div class={`px-6 py-5 font-bold text-dark text-sm flex items-center ${i % 2 ? 'bg-bone' : ''}`}>{row.label}</div>
+              <div class={`px-6 py-5 text-sm text-slate-500 flex items-center gap-2 ${i % 2 ? 'bg-bone' : ''}`}><span class="text-slate-300 shrink-0">~</span><span>{row.massage}</span></div>
+              <div class={`px-6 py-5 text-sm text-dark font-semibold flex items-center gap-2 ${i % 2 ? 'bg-sky/40' : 'bg-sky/25'}`}>
+                <svg class="w-4 h-4 text-primary shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg><span>{row.us}</span>
+              </div>
+            </>
+          ))}
+        </div>
+      </div>
+
+      <!-- Mobile -->
+      <div class="mt-12 space-y-3 reveal md:hidden">
+        {massageContrast.map((row) => (
+          <div class="card-lux p-5">
+            <div class="font-extrabold text-dark text-sm mb-3">{row.label}</div>
+            <div class="flex items-start gap-2 text-sm text-slate-500 mb-3 pb-3 border-b border-black/5"><span class="text-slate-300 shrink-0 mt-0.5">~</span><div><span class="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">A massage</span>{row.massage}</div></div>
+            <div class="flex items-start gap-2 text-sm font-semibold text-dark"><svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg><div><span class="block text-[11px] font-bold uppercase tracking-widest text-primary-deep mb-0.5">Healing Hands</span>{row.us}</div></div>
+          </div>
+        ))}
+      </div>
+      <p class="mt-10 text-center text-slate-500 reveal max-w-xl mx-auto">We don't chase the symptom — we find and fix the <strong class="text-dark">root cause</strong>, then keep you there with simple ongoing maintenance.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 3 · SIGNATURE TREATMENTS — Dry Needling + StemWave -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-sand overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">Her signature tools</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Two treatments people drive across Nevada for</h2>
+        <p class="mt-5 text-slate-600 text-lg">Woven into her hands-on sessions — precise, evidence-based, and genuinely relaxing.</p>
+      </div>
+      <div class="mt-14 grid lg:grid-cols-2 gap-7">
+        <!-- Dry needling -->
+        <a href="/services/dry-needling" class="card-lux overflow-hidden block group reveal">
+          <div class="aspect-[16/10] overflow-hidden">
+            <Pic src="/images/services/dry-needling.jpg" alt="Dry needling treatment at Healing Hands Physical Therapy in Reno" width={760} height={475} class="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700" />
+          </div>
+          <div class="p-7 sm:p-8">
+            <span class="eyebrow eyebrow--quiet">Signature · not acupuncture</span>
+            <h3 class="text-2xl font-extrabold text-dark mt-2">Dry Needling</h3>
+            <p class="mt-3 text-slate-600 leading-relaxed">A thin filiform needle releases tight tissue and reaches the myofascial trigger points hands alone can't — calming overactive muscles and unlocking pain that's been stuck for months. Based on Western anatomy and pain science.</p>
+            <span class="mt-5 inline-flex items-center gap-1 text-primary font-bold group-hover:gap-2 transition-all">How dry needling works →</span>
+          </div>
+        </a>
+        <!-- StemWave (add-on framing) -->
+        <a href="/services/stemwave" class="card-lux overflow-hidden block group reveal reveal-delay-1">
+          <div class="aspect-[16/10] overflow-hidden relative" transition:name="svc-stemwave">
+            <Pic src="/images/services/stemwave.jpg" alt="StemWave sonic / acoustic wave therapy at Healing Hands in Reno" width={760} height={475} class="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700" />
+            <span class="absolute top-4 left-4 bg-white text-primary-deep text-xs font-extrabold px-3 py-1.5 rounded-full shadow-sm">⚡ Add to your visit · ${pricing.stemwaveAddOn.price}</span>
+          </div>
+          <div class="p-7 sm:p-8">
+            <span class="eyebrow eyebrow--quiet">Signature · sonic / acoustic wave</span>
+            <h3 class="text-2xl font-extrabold text-dark mt-2">StemWave Therapy</h3>
+            <p class="mt-3 text-slate-600 leading-relaxed">A quick <strong class="text-dark">10–15 minute</strong> sonic / acoustic-wave (shockwave) booster you can add to any session for <strong class="text-dark">${pricing.stemwaveAddOn.price}</strong>. It increases blood flow, calms inflammation, and activates your body's own healing — drug-free, no downtime. Works best layered over a course of hands-on care.</p>
+            <span class="mt-5 inline-flex items-center gap-1 text-primary font-bold group-hover:gap-2 transition-all">More on StemWave →</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 4 · INSURANCE PT CONTRAST -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 bg-white overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">The difference, side by side</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">And it's nothing like rushed insurance PT</h2>
+        <p class="mt-5 text-slate-600 text-lg">If standard PT didn't fix you, here's exactly why — and what we do instead.</p>
+      </div>
+
+      <div class="mt-14 reveal hidden md:block">
+        <div class="grid grid-cols-[1.1fr_1fr_1.15fr] rounded-[2rem] overflow-hidden border border-black/5 bg-white shadow-soft">
+          <div class="bg-sand px-6 py-5"></div>
+          <div class="bg-sand px-6 py-5 text-center"><div class="text-xs font-bold uppercase tracking-widest text-slate-400">Typical insurance PT</div></div>
+          <div class="px-6 py-5 text-center text-white" style="background:linear-gradient(135deg,var(--color-primary),var(--color-primary-deep));"><div class="text-xs font-bold uppercase tracking-widest text-white/80">Healing Hands</div><div class="text-sm font-extrabold mt-0.5">Concierge · cash-pay</div></div>
+          {contrast.map((row, i) => (
+            <>
+              <div class={`px-6 py-5 font-bold text-dark text-sm flex items-center ${i % 2 ? 'bg-bone' : ''}`}>{row.label}</div>
+              <div class={`px-6 py-5 text-sm text-slate-500 flex items-center gap-2 ${i % 2 ? 'bg-bone' : ''}`}><span class="text-slate-300 shrink-0">✕</span><span>{row.insurance}</span></div>
+              <div class={`px-6 py-5 text-sm text-dark font-semibold flex items-center gap-2 ${i % 2 ? 'bg-sky/40' : 'bg-sky/25'}`}>
+                <svg class="w-4 h-4 text-primary shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg><span>{row.us}</span>
+              </div>
+            </>
+          ))}
+        </div>
+      </div>
+
+      <div class="mt-12 space-y-3 reveal md:hidden">
+        {contrast.map((row) => (
+          <div class="card-lux p-5">
+            <div class="font-extrabold text-dark text-sm mb-3">{row.label}</div>
+            <div class="flex items-start gap-2 text-sm text-slate-500 mb-3 pb-3 border-b border-black/5"><span class="text-slate-300 shrink-0 mt-0.5">✕</span><div><span class="block text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Insurance PT</span>{row.insurance}</div></div>
+            <div class="flex items-start gap-2 text-sm font-semibold text-dark"><svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg><div><span class="block text-[11px] font-bold uppercase tracking-widest text-primary-deep mb-0.5">Healing Hands</span>{row.us}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 5 · BEFORE → AFTER story band (Jeff & Judy, real quotes) -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-bone overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">Real Reno stories</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">From "they want to operate" to back in the game</h2>
+      </div>
+      <div class="mt-14 grid md:grid-cols-2 gap-6">
+        <figure class="card-lux p-7 sm:p-9 reveal flex flex-col">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="bg-sand text-slate-500 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">Before</span>
+            <span class="text-slate-400">→</span>
+            <span class="text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full" style="background:var(--color-primary);">After</span>
+          </div>
+          <p class="text-dark font-bold text-lg leading-snug">Spinal stenosis, a bulging disc, and 800mg of Ibuprofen twice a day — facing a second back surgery.</p>
+          <blockquote class="mt-4 text-slate-600 leading-relaxed grow">"After spending <strong class="text-dark">one hour with Jamie on my very first visit</strong>, I have not had to take any Ibuprofen in three days. My functionality has been restored to at least 70%. The manual bodywork plus time with that amazing StemWave device gave me results I never imagined."</blockquote>
+          <figcaption class="mt-5 pt-5 border-t border-black/5 flex items-center justify-between"><span class="font-extrabold text-dark">Jeff</span><span class="text-primary text-sm font-semibold">Relief in 1 visit · avoided surgery</span></figcaption>
+        </figure>
+        <figure class="card-lux p-7 sm:p-9 reveal reveal-delay-1 flex flex-col">
+          <div class="flex items-center gap-3 mb-5">
+            <span class="bg-sand text-slate-500 text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full">Before</span>
+            <span class="text-slate-400">→</span>
+            <span class="text-white text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full" style="background:var(--color-primary);">After</span>
+          </div>
+          <p class="text-dark font-bold text-lg leading-snug">Four years of knee pain and "threatened with knee replacement" — but she golfs three times a week.</p>
+          <blockquote class="mt-4 text-slate-600 leading-relaxed grow">"There was <strong class="text-dark">immediate success</strong> with the program! Jamie targeted the real issue with my pain and explained what caused it. The StemWave treatments alleviated more pain with each weekly visit. I highly recommend Healing Hands."</blockquote>
+          <figcaption class="mt-5 pt-5 border-t border-black/5 flex items-center justify-between"><span class="font-extrabold text-dark">Judy <span class="font-normal text-slate-400 text-sm">· healthcare professional</span></span><span class="text-primary text-sm font-semibold">Avoided knee replacement</span></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 5.5 · THE EXPERIENCE — sell the calm, unhurried hour (premium) -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-bone overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">The experience</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3 leading-tight">What your hour feels like</h2>
+        <p class="mt-5 text-slate-600 text-lg leading-relaxed">No waiting room shuffle, no being handed off to an aide. Just a calm, private hour built entirely around you.</p>
+      </div>
+      <div class="mt-14 grid md:grid-cols-3 gap-6 stagger">
+        <div class="reveal card-lux p-8 text-center">
+          <div class="text-4xl svc-icon">🕯️</div>
+          <h3 class="mt-4 text-xl font-extrabold text-dark">A calm, private space</h3>
+          <p class="mt-3 text-slate-600 leading-relaxed">Quiet, unhurried, spa-like. One patient at a time — your appointment is yours alone, in clinic or in your own home.</p>
+        </div>
+        <div class="reveal reveal-delay-1 card-lux p-8 text-center">
+          <div class="text-4xl svc-icon">⏳</div>
+          <h3 class="mt-4 text-xl font-extrabold text-dark">A full, unrushed hour</h3>
+          <p class="mt-3 text-slate-600 leading-relaxed">Sixty minutes, one-on-one with Dr. Jamie — time to actually understand your body and treat the real cause, not just the clock.</p>
+        </div>
+        <div class="reveal reveal-delay-2 card-lux p-8 text-center">
+          <div class="text-4xl svc-icon">🤲</div>
+          <h3 class="mt-4 text-xl font-extrabold text-dark">Expert hands, the whole time</h3>
+          <p class="mt-3 text-slate-600 leading-relaxed">Doctor-performed manual therapy from start to finish — the relaxing feel of a massage with the precision of a specialist.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 6 · PRICING FUNNEL — lead with $150 intro, feature $97 membership -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 bg-white overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">A simple, honest path</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Start with one focused hour</h2>
+        <p class="mt-5 text-slate-600 text-lg">No commitment, no insurance maze. Begin with an intro session; Dr. Jamie builds the plan from there.</p>
+      </div>
+      <div class="mt-14 grid lg:grid-cols-3 gap-6 items-stretch">
+        <!-- Intro (the lead / qualifier) -->
+        <div class="reveal rounded-[2rem] p-8 text-white shadow-lift relative overflow-hidden flex flex-col" style="background:linear-gradient(155deg,var(--color-primary),var(--color-primary-deep));">
+          <div class="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-white/10"></div>
+          <div class="relative flex flex-col grow">
+            <span class="inline-flex w-fit items-center gap-2 bg-white/15 text-white text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Start here</span>
+            <h3 class="mt-4 text-2xl font-extrabold">Intro Session</h3>
+            <div class="mt-3 flex items-end gap-1"><span class="text-5xl font-extrabold leading-none">${pricing.intro.price}</span><span class="text-white/80 mb-1">· {pricing.intro.duration}</span></div>
+            <p class="mt-4 text-white/90 leading-relaxed grow">A real, hands-on working visit — Dr. Jamie treats you, finds the root cause, and builds a custom plan to fix it. The smartest first step.</p>
+            <a href={practice.booking.url} target="_blank" rel="noopener" class="btn bg-white text-primary-deep mt-7 w-full justify-center">Book your intro session</a>
+          </div>
+        </div>
+        <!-- Membership — featured "club" card -->
+        <div class="reveal reveal-delay-1 relative rounded-[2rem] p-[2px] shadow-lift lg:-mt-4 lg:mb-4" style="background:linear-gradient(155deg,var(--color-primary-bright),var(--color-primary-deep));">
+          <span class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1.5 bg-dark text-white text-[10px] font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-full shadow-lg whitespace-nowrap">★ Members' club · most chosen</span>
+          <div class="rounded-[calc(2rem-2px)] bg-white p-8 h-full flex flex-col">
+            <span class="inline-flex w-fit items-center gap-2 bg-sky text-primary-deep text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Stay ahead of pain</span>
+            <h3 class="mt-4 text-2xl font-extrabold text-dark">Maintenance Membership</h3>
+            <div class="mt-3 flex items-end gap-1"><span class="text-5xl font-extrabold leading-none text-dark">${pricing.membership.price}</span><span class="text-slate-500 mb-1">/{pricing.membership.period}</span></div>
+            <p class="mt-2 text-sm text-primary-deep font-semibold">Join the members who never let pain creep back.</p>
+            <ul class="mt-5 space-y-2.5 grow">
+              {pricing.membership.perks.map((p) => (
+                <li class="flex items-start gap-2.5 text-sm text-slate-600"><svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>{p}</li>
+              ))}
+            </ul>
+            <a href="/membership" class="btn btn-primary mt-7 w-full justify-center">See the membership</a>
+          </div>
+        </div>
+        <!-- StemWave add-on + packages -->
+        <div class="reveal reveal-delay-2 flex flex-col gap-6">
+          <div class="card-lux p-7 flex flex-col grow">
+            <span class="inline-flex w-fit items-center gap-2 bg-sand text-slate-600 text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Try it</span>
+            <h3 class="mt-3 text-xl font-extrabold text-dark">Add StemWave</h3>
+            <div class="mt-2 flex items-end gap-1"><span class="text-4xl font-extrabold leading-none text-dark">${pricing.stemwaveAddOn.price}</span><span class="text-slate-500 mb-1">· {pricing.stemwaveAddOn.duration}</span></div>
+            <p class="mt-3 text-sm text-slate-600 leading-relaxed grow">A quick sonic-wave booster you can layer onto any visit — an easy way to try our signature tech.</p>
+          </div>
+          <div class="rounded-[1.5rem] border border-dashed border-black/15 bg-bone p-7">
+            <h3 class="font-extrabold text-dark">Session packages</h3>
+            <p class="mt-2 text-sm text-slate-600 leading-relaxed">Most people fix the root cause over a short series. Ask Dr. Jamie about packages at your intro — she'll recommend the right number of visits for you.</p>
+          </div>
+        </div>
+      </div>
+      <p class="mt-8 text-center text-sm text-slate-400 reveal">Transparent pricing, shared up front — no surprise bills. Prices shown are provisional and confirmed at booking.</p>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 6.5 · YOUR JOURNEY — line draws on scroll (retention story) -->
+  <!-- ============================================================= -->
+  <section class="py-16 sm:py-20 bg-white overflow-hidden">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">Your path with us</span>
+        <h2 class="text-3xl sm:text-[2.4rem] font-extrabold text-dark mt-3">Fix the root cause → then stay there</h2>
+      </div>
+      <div class="reveal mt-14 relative">
+        <!-- connecting line (draws on scroll); hidden on mobile where steps stack -->
+        <svg class="hidden md:block absolute left-0 right-0 top-9 w-full h-6" viewBox="0 0 1000 24" preserveAspectRatio="none" aria-hidden="true">
+          <path class="draw-path" d="M120 12 H880" fill="none" stroke="var(--color-primary-bright)" stroke-width="3" stroke-linecap="round" stroke-dasharray="1" pathLength="1" />
+        </svg>
+        <ol class="relative grid md:grid-cols-3 gap-8 md:gap-4">
+          {[
+            ['1','Start', 'One focused intro hour — Dr. Jamie finds what is really driving your pain.'],
+            ['2','Fix the root cause', 'A short series of hands-on visits resolves the underlying issue — not just the symptom.'],
+            ['3','Stay ahead', 'Join the Maintenance Membership so the problem we fixed never creeps back.'],
+          ].map(([n,t,d]) => (
+            <li class="text-center">
+              <span class="relative z-10 mx-auto w-[4.5rem] h-[4.5rem] rounded-full bg-white ring-2 ring-primary text-primary text-2xl font-extrabold grid place-items-center shadow-md">{n}</span>
+              <h3 class="mt-4 font-extrabold text-dark text-lg">{t}</h3>
+              <p class="mt-2 text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">{d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 7 · MAINTENANCE MEMBERSHIP — retention play -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-sand overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-14 items-center">
+      <div class="reveal order-2 lg:order-1 relative">
+        <div class="frame-lux aspect-[5/4] reveal img-reveal">
+          <Pic src="/images/services/manual-therapy.jpg" alt="Ongoing maintenance bodywork session at Healing Hands in Reno" width={640} height={512} sizes="(max-width: 1024px) 90vw, 540px" class="w-full h-full object-cover" />
+        </div>
+      </div>
+      <div class="reveal reveal-delay-1 order-1 lg:order-2">
+        <span class="eyebrow">Fix it → then stay there</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3 leading-tight">Don't fix it and let it slide back</h2>
+        <p class="mt-5 text-slate-600 leading-relaxed text-lg">The body needs upkeep. Once we've resolved the root cause, the <strong class="text-dark">Maintenance Membership (${pricing.membership.price}/mo)</strong> keeps you ahead of pain — proactive tune-ups instead of waiting until you're hurt again.</p>
+        <ul class="mt-7 space-y-4">
+          {[
+            ['Maintain your results', "Ongoing tune-ups so the problem we fixed doesn't creep back."],
+            ['Prevent future injuries', 'Proactive maintenance — stay ahead instead of starting over.'],
+            ['Same-day access for new injuries', 'Tweak something? Members get seen the same day.'],
+            ['Priority booking + 10% off', 'An ongoing relationship with your doctor, plus a credit toward your first session.'],
+          ].map(([t, d]) => (
+            <li class="flex items-start gap-3.5">
+              <span class="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center shrink-0"><svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg></span>
+              <span class="text-slate-600 leading-relaxed"><strong class="text-dark">{t}.</strong> {d}</span>
+            </li>
+          ))}
+        </ul>
+        <a href="/membership" class="btn btn-accent mt-8">Explore the Maintenance Membership →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 8 · SERVICES grid -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">Our services</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Every tool to find the root cause</h2>
+        <p class="mt-5 text-slate-600 text-lg">Hands-on first. Dr. Jamie blends these modalities into one personalized plan — never a one-size-fits-all protocol.</p>
+      </div>
+      <div class="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {services.map((s, i) => (
+          <a href={`/services/${s.slug}`} class={`card-lux p-7 reveal reveal-delay-${(i%3)+1} block group`}>
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">{svcIcons[s.slug] || '✨'}</div>
+            <h3 class="text-xl font-bold text-dark">{s.title}</h3>
+            <p class="mt-2 text-slate-600 text-sm leading-relaxed line-clamp-3">{s.summary}</p>
+            <span class="mt-4 inline-flex items-center gap-1 text-primary font-semibold text-sm group-hover:gap-2 transition-all">Learn more →</span>
+          </a>
+        ))}
+      </div>
+      <div class="mt-12 text-center reveal"><a href="/services" class="btn btn-primary">See all services</a></div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 9 · NOT DICTATED BY INSURANCE -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-bone overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-14 items-center">
+      <div class="reveal order-2 lg:order-1 relative">
+        <div class="frame-lux aspect-[5/4] reveal img-reveal">
+          <Pic src="/images/services/myofascial-release.jpg" alt="Doctor-performed, hands-on manual therapy at Healing Hands Physical Therapy in Reno" width={640} height={512} sizes="(max-width: 1024px) 90vw, 540px" class="w-full h-full object-cover" />
+        </div>
+      </div>
+      <div class="reveal reveal-delay-1 order-1 lg:order-2">
+        <span class="eyebrow">The cash-pay advantage</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Care that's not dictated by insurance</h2>
+        <p class="mt-5 text-slate-600 leading-relaxed text-lg">Insurance PT is built around what a plan deems "medically necessary" — short, shared visits and a cap on real care. By stepping outside that system, we give you a <strong class="text-dark">full hour of one-on-one, customized care</strong> built entirely around <em>you</em>.</p>
+        <ul class="mt-7 space-y-3">
+          {[
+            ['No gatekeeping', 'Your plan is decided by you and your doctor — not an insurance reviewer.'],
+            ['Often fewer total visits', 'We resolve the root cause in fewer, longer sessions — not 2–3 a week for weeks.'],
+            ['Superbill done for you', 'Submit it to your insurer for possible out-of-network reimbursement.'],
+          ].map(([t, d]) => (
+            <li class="flex items-start gap-3"><svg class="w-5 h-5 text-primary shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg><span class="text-slate-600 leading-relaxed"><strong class="text-dark">{t}.</strong> {d}</span></li>
+          ))}
+        </ul>
+        <a href="/about" class="btn btn-ghost mt-8">How concierge care works →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 10 · CONDITIONS -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-24 bg-white">
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <div class="reveal max-w-2xl mx-auto">
+        <span class="eyebrow">Conditions we treat</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Hands-on care for what's been holding you back</h2>
+        <p class="mt-5 text-slate-600 text-lg">Reno, Sparks, Carson City, Incline Village &amp; the Tahoe basin — whether your pain came from a sport, a work accident, surgery, or otherwise, we welcome the chance to help.</p>
+      </div>
+      <div class="mt-10 flex flex-wrap justify-center gap-2.5 reveal">
+        {conditions.map((c) => (<span class="px-4 py-2 bg-bone rounded-full text-sm font-semibold text-primary-deep border border-black/5">{c}</span>))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 11 · Dry needling is NOT acupuncture -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-sand overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-14 items-center">
+      <div class="reveal">
+        <span class="eyebrow">🪡 Our most-asked question</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Dry needling is <span class="gradient-text">not</span> acupuncture</h2>
+        <p class="mt-5 text-slate-600 leading-relaxed text-lg">They both use thin needles — but that's where the similarity ends. Here's the honest difference, so you know exactly what you're getting.</p>
+        <a href="/services/dry-needling" class="btn btn-ghost mt-8">More on dry needling →</a>
+      </div>
+      <div class="reveal reveal-delay-1 grid sm:grid-cols-2 gap-4">
+        <div class="rounded-[1.5rem] p-6 border border-black/5 bg-white">
+          <div class="text-xs font-bold uppercase tracking-widest text-slate-400">Acupuncture</div>
+          <ul class="mt-3 space-y-2.5 text-sm text-slate-600">
+            {['Rooted in Traditional Chinese Medicine','Based on meridian "energy" theory','Needles placed along energy lines','Performed by an acupuncturist'].map((p) => (<li class="flex gap-2"><span class="text-slate-300">•</span> {p}</li>))}
+          </ul>
+        </div>
+        <div class="rounded-[1.5rem] p-6 border-2 border-primary/25 bg-sky/40">
+          <div class="text-xs font-bold uppercase tracking-widest text-primary-deep">Dry needling (what we do)</div>
+          <ul class="mt-3 space-y-2.5 text-sm text-dark font-medium">
+            {['Based on Western anatomy & pain science','Targets myofascial trigger points in the muscle',"Releases tight tissue your hands can't reach",'Performed by a licensed physical therapist'].map((p) => (<li class="flex gap-2"><svg class="w-4 h-4 text-primary shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0L3.3 9.7a1 1 0 011.4-1.4l3.1 3.1 6.8-6.8a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>{p}</li>))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 12 · TESTIMONIAL WALL -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto reveal">
+        <span class="eyebrow">Patient stories</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Reno patients trust Healing Hands</h2>
+        {reviews.rating && (
+          <div class="mt-6 inline-flex items-center gap-3 bg-bone rounded-full shadow-sm pl-4 pr-5 py-2.5 ring-1 ring-black/5">
+            <svg class="w-6 h-6 shrink-0" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 12 1 11 11 0 0 0 2.3 7.4L6 10.2C6.9 7.7 9.2 5.4 12 5.4z"/></svg>
+            <span class="font-extrabold text-dark text-lg">{reviews.rating}</span><span class="text-primary">★★★★★</span><span class="text-sm text-slate-500">{reviews.count}+ Google reviews</span>
+          </div>
+        )}
+      </div>
+      <div class="mt-14 grid md:grid-cols-3 gap-6">
+        {(googleReviews.length ? googleReviews : siteReviews).slice(0, 6).map((r, i) => (
+          <figure class={`card-lux p-7 reveal reveal-delay-${(i%3)+1} flex flex-col`}>
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-primary text-xl">★★★★★</div>
+              {r.source === 'Google' && <svg class="w-5 h-5" viewBox="0 0 24 24" aria-label="Google review"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M6 14.4a6.6 6.6 0 0 1 0-4.2V7.4H2.3a11 11 0 0 0 0 9.8L6 14.4z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 12 1 11 11 0 0 0 2.3 7.4L6 10.2C6.9 7.7 9.2 5.4 12 5.4z"/></svg>}
+            </div>
+            <blockquote class="text-slate-600 leading-relaxed text-sm line-clamp-6 grow">"{r.text}"</blockquote>
+            <figcaption class="mt-4 font-bold text-dark text-sm">{r.author} {(r.when || r.date) && <span class="text-slate-400 font-normal">· {r.when || r.date}</span>}</figcaption>
+          </figure>
+        ))}
+      </div>
+      <div class="mt-12 text-center reveal flex flex-wrap justify-center gap-3">
+        <a href="/testimonials" class="btn btn-primary">Read more stories</a>
+        <a href={reviews.googleReviewUrl} target="_blank" rel="noopener" class="btn btn-ghost">Leave a Google review</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 13 · MEET DR. JAMIE -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-bone overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 grid lg:grid-cols-[.85fr_1.15fr] gap-14 items-center">
+      <div class="reveal relative">
+        <div class="frame-lux aspect-[4/5] max-w-sm mx-auto" transition:name="jamie-portrait">
+          <Pic src={provider.photo} alt={`${provider.name}, ${provider.credentials} — owner of Healing Hands Physical Therapy in Reno`} width={420} height={525} sizes="(max-width: 1024px) 80vw, 380px" class="w-full h-full object-cover object-top" />
+        </div>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <span class="eyebrow">Meet your doctor</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">{provider.name}, <span class="text-slate-400 font-bold">{provider.credentials}</span></h2>
+        <p class="mt-2 font-semibold text-primary-deep">{provider.title} · Native Nevadan · 15+ years</p>
+        <p class="mt-5 text-slate-600 leading-relaxed text-lg">A native Nevadan, Dr. Jamie earned her Doctorate of Physical Therapy and her Manual Therapy Certification (MTC) from the University of St. Augustine. Manual therapy and bodywork have been her passion ever since — and as a natural healer with a deep understanding of body mechanics, she brings over 15 years of hands-on experience to every visit.</p>
+        <div class="mt-6 flex flex-wrap gap-2">
+          {provider.specialties.map((s) => (<span class="px-3.5 py-1.5 bg-white rounded-full text-sm font-semibold text-primary-deep border border-black/5">{s}</span>))}
+        </div>
+        <a href="/about" class="btn btn-ghost mt-8">Read Dr. Jamie's full story →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================= -->
+  <!-- 14 · FAQ -->
+  <!-- ============================================================= -->
+  <section class="py-20 sm:py-28 section-sand">
+    <script type="application/ld+json" set:html={JSON.stringify({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: homeFaqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) })} />
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center reveal">
+        <span class="eyebrow">Common questions</span>
+        <h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">Answers for Reno patients</h2>
+      </div>
+      <div class="mt-12 space-y-3">
+        {homeFaqs.map((f) => (
+          <details class="card-lux p-5 group reveal">
+            <summary class="font-bold text-dark cursor-pointer flex justify-between items-center gap-4">{f.q}<span class="text-primary group-open:rotate-45 transition-transform text-2xl shrink-0">+</span></summary>
+            <p class="mt-3 text-slate-600 leading-relaxed">{f.a}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  {posts.length > 0 && (
+    <section class="py-20 sm:py-28 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between flex-wrap gap-4 reveal">
+          <div><span class="eyebrow">Resources</span><h2 class="text-3xl sm:text-[2.6rem] font-extrabold text-dark mt-3">From our blog</h2></div>
+          <a href="/blog" class="btn btn-ghost">Browse all articles →</a>
+        </div>
+        <div class="mt-12 grid md:grid-cols-3 gap-6">
+          {posts.map((p, i) => (
+            <a href={`/blog/${p.slug}`} class={`card-lux overflow-hidden reveal reveal-delay-${i+1} group`}>
+              <div class="aspect-[16/10] overflow-hidden bg-sand">
+                <Pic src={p.data.image} alt={p.data.title} width={520} height={325} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div class="p-6">
+                <span class="text-xs font-bold text-primary uppercase">{p.data.tags?.[0]}</span>
+                <h3 class="mt-2 font-bold text-dark leading-snug group-hover:text-primary transition-colors">{p.data.title}</h3>
+                <p class="mt-2 text-sm text-slate-500 line-clamp-2">{p.data.description}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ============================================================= -->
+  <!-- 15 · FINAL CTA -->
+  <!-- ============================================================= -->
+  <section class="py-24 relative overflow-hidden" style="background:linear-gradient(120deg,var(--color-primary-deep),var(--color-primary));">
+    <div class="parallax blob" data-speed="0.4" style="width:380px;height:380px;background:#fff;opacity:.08;top:-90px;right:8%;"></div>
+    <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white reveal">
+      <h2 class="text-3xl sm:text-5xl font-extrabold leading-tight">The fix you've been looking for.</h2>
+      <p class="mt-5 text-white/90 text-lg">Start with a ${pricing.intro.price} intro session — a calm, hands-on hour with Dr. Jamie at our South Reno clinic or in your own home. No insurance gatekeeping, no rushed handoffs.</p>
+      <div class="mt-9 flex flex-wrap justify-center gap-3">
+        <a href={practice.booking.url} target="_blank" rel="noopener" class="btn bg-white text-primary-deep text-lg">Book your intro session</a>
+        <a href={phoneHref} class="btn btn-ghost text-lg" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.4)">📞 {practice.phone}</a>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    (function () {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const els = Array.from(document.querySelectorAll('.parallax'));
+      if (!els.length) return;
+      let ticking = false;
+      function update() {
+        const vh = window.innerHeight;
+        for (const el of els) {
+          const speed = parseFloat(el.dataset.speed || '0');
+          const rect = el.getBoundingClientRect();
+          const center = rect.top + rect.height / 2 - vh / 2;
+          el.style.transform = `translate3d(0, ${(-center * speed * 0.12).toFixed(1)}px, 0)`;
+        }
+        ticking = false;
+      }
+      function onScroll() { if (!ticking) { requestAnimationFrame(update); ticking = true; } }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      window.addEventListener('resize', update);
+      update();
+    })();
+  </script>
+</Base>
