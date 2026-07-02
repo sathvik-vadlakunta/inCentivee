@@ -283,6 +283,31 @@
 <!-- ==================== OVERVIEW TAB ==================== -->
 <div id="tab-overview" class="tab-content active">
 
+    <!-- Day-1 quick win — standardized first-result pass (onboarding, not yet shipped) -->
+    {% if first_win %}
+    <div id="quick-win" class="card" style="margin-bottom:1rem;border-left:4px solid #7c3aed;background:#faf5ff;">
+        <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;flex-wrap:wrap;">
+            <div>
+                <div style="font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;">Day-1 quick win · ship before onboarding completes</div>
+                <div style="font-weight:700;margin-top:4px;">{{ first_win.title }}</div>
+                <div style="color:var(--muted);font-size:.85rem;margin-top:2px;max-width:60ch;">{{ first_win.description }}</div>
+                <div style="font-size:.78rem;color:#7c3aed;margin-top:4px;">Est. +{{ first_win.est_score_boost }} to PracticeRank Score · {{ first_win.impact }} impact / {{ first_win.effort }} effort</div>
+            </div>
+            <div style="display:flex;gap:.5rem;align-items:center;">
+                {% if first_win.action_url %}<a href="{{ first_win.action_url }}" class="btn btn-outline btn-sm">{{ first_win.action_label or 'Open' }}</a>{% endif %}
+                <form method="post" action="{{ url_for('mark_quick_win_shipped', customer_id=customer.id) }}" style="margin:0;">
+                    <button type="submit" class="btn btn-primary btn-sm">✓ Mark shipped</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% elif customer.status == 'onboarding' and customer.quick_win_shipped_at %}
+    <div id="quick-win" class="card" style="margin-bottom:1rem;border-left:4px solid var(--success);">
+        <span style="color:var(--success);font-weight:600;">✓ Day-1 quick win shipped</span>
+        <span style="color:var(--muted);font-size:.82rem;">— baseline locked; first report will show the result.</span>
+    </div>
+    {% endif %}
+
     <!-- Top summary row -->
     {% if places or (todos and todos | length > 0) %}
     <div class="grid grid-3" style="margin-bottom: 1rem;">

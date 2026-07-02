@@ -52,6 +52,12 @@ def customer_action_items(db, customer: dict) -> list[dict]:
         items.append(_ai("approval", "warning", "Content awaiting approval",
                          "Review & approve the staged changes."))
 
+    # --- Day-1 quick win: onboarding isn't done until a visible result ships ---
+    if status == "onboarding" and not customer.get("quick_win_shipped_at"):
+        items.append(_ai("quickwin", "warning", "Ship the Day-1 quick win",
+                         "New client — ship a visible first result before onboarding completes.",
+                         f"/customer/{cid}#quick-win"))
+
     # --- FATJOE orders due this period (driven by paid tier) ---
     plan_name = sub["plan_name"] if sub else None
     due = fatjoe_plan.due_orders(db, cid, plan_name)

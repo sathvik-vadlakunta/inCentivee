@@ -65,6 +65,18 @@ def prioritize(wins: list[QuickWin]) -> list[QuickWin]:
     return sorted(wins, key=lambda w: (-w.priority, -w.est_score_boost))
 
 
+def first_quick_win(db: CustomerDB, customer_id: str) -> QuickWin | None:
+    """The single highest-impact/lowest-effort action to ship on Day 1.
+
+    Standardizes the onboarding quick-win pass: prefer an auto-actionable win (we can
+    ship it immediately) at the top priority, else the top-priority win overall."""
+    wins = detect_quick_wins(db, customer_id)
+    if not wins:
+        return None
+    auto = [w for w in wins if w.auto_actionable]
+    return (auto or wins)[0]
+
+
 def format_for_email(wins: list[QuickWin], max_items: int = 3) -> str:
     """Format top quick wins as markdown for email templates."""
     if not wins:

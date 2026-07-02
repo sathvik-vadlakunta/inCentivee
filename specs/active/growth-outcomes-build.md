@@ -27,9 +27,29 @@ Building the 6 initiatives. Phase 1 = #01, #03, #04.
 - Report: intent-mix bar in "What we did this week" (buyer% vs research, from published recs).
 - Content queue: Buyer/Compare/Research chip per rec.
 
-## Phase 2/3 (NEXT): #02 AI Share-of-Voice, #05 Day-1 quick win, #06 churn radar
-- BIG FIND: #02 already has real infra — `weekly_report` renders an "AI search visibility"
-  block with `s["ai"]["sov"]` (customer_share, competitors[], customer_rank). Need to verify the
-  SoV computation source (ai_mention_runs) and productize the 0–100 score + dashboard tile + trend.
-- #05 quick_wins.detect_quick_wins exists → standardize Day-1 pass + gate onboarding + first-result.
-- #06 churn_risk.py new: combine seo_score_and_delta + review_velocity + engagement + recency.
+## #02 AI Share-of-Voice — ✅ DONE (tested)
+- `db._sov_from_run_ids()` refactor + `db.get_share_of_voice_history()` (per-run trend).
+- `geo_agent/share_of_voice.py`: `sov_summary()` (score 0–100 = pooled share, rank, delta vs
+  baseline, per-run history, top competitors) + `sov_score()`.
+- Report: flagship SoV score band (purple) leading the AI section, with delta + rank sub-line.
+- Dashboard: "AI share" column (score% + #rank).
+- Tests appended to `tests/unit/test_share_of_voice.py`.
+
+## #06 Churn-risk radar — ✅ DONE (tested)
+- `geo_agent/churn_risk.py`: additive 0–100 risk from payment health, results trend
+  (seo delta), SoV delta, review velocity, no-inquiries-30d, report recency, pending access.
+  Returns {score, level, reasons, top_reason}; inert for non-active.
+- Dashboard: "Renewal risk" column (chip + top reason), "At Renewal Risk" stat, `?sort=risk` toggle.
+- Tests: `tests/unit/test_churn_risk.py`.
+
+## #05 Day-1 quick win — ✅ DONE (tested)
+- `customers.quick_win_shipped_at` column; `quick_wins.first_quick_win()` (auto-actionable top pick).
+- action_items onboarding gate ("Ship the Day-1 quick win") clears when shipped.
+- `/customer/<id>/quick-win-shipped` route locks baseline_score for the first-report "first result".
+- Customer page: Day-1 quick-win banner (recommend + mark-shipped) → shipped confirmation.
+- Tests: `tests/unit/test_quick_win_pass.py`.
+
+## STATUS: all 6 built + tested (878 unit tests green). Remaining = ops/external:
+- #04: stand up Grade.us white-label + contact intake + review-sync (so velocity/churn have data).
+- #02: cost-manage the query panels (weekly runs, ~10 queries) when live.
+- Nice-to-haves: churn → daily digest feed; SoV sparkline in report; first-report "first result" callout.

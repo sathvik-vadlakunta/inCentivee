@@ -225,6 +225,17 @@ def index():
                 from geo_agent import outcomes as _oc
                 c["inquiries_30d"] = _oc.inquiries_in_window(
                     db, c["id"], _earlier_date(30), _earlier_date(0))
+                # AI Share-of-Voice (flagship moat metric) — score + rank, kept cheap
+                # for the dashboard (pooled last runs, no per-customer history loop).
+                _sov = db.get_share_of_voice(c["id"])
+                if _sov.get("total_entity_mentions"):
+                    c["sov_score"] = round((_sov.get("customer_share", 0) or 0) * 100)
+                    c["sov_rank"] = _sov.get("customer_rank")
+                else:
+                    c["sov_score"] = None
+                # Churn-risk radar — who's about to leave (active accounts only).
+                from geo_agent import churn_risk as _cr
+                c["churn"] = _cr.churn_risk(db, c)
 
         # Filter out archived for main view
         customers = [c for c in all_customers if c["status"] != "archived"]
@@ -232,8 +243,13 @@ def index():
 
         active_alerts = db.get_active_alert_count()
         # Sort so customers needing the most urgent attention float to the top.
-        _sev_rank = {"critical": 3, "warning": 2, "info": 1, None: 0}
-        customers.sort(key=lambda c: (_sev_rank.get(c.get("worst_severity")), len(c.get("action_items") or [])), reverse=True)
+        # ?sort=risk flips to renewal-risk order (churn radar); default is severity.
+        sort_mode = request.args.get("sort", "attention")
+        if sort_mode == "risk":
+            customers.sort(key=lambda c: (c.get("churn") or {}).get("score", 0), reverse=True)
+        else:
+            _sev_rank = {"critical": 3, "warning": 2, "info": 1, None: 0}
+            customers.sort(key=lambda c: (_sev_rank.get(c.get("worst_severity")), len(c.get("action_items") or [])), reverse=True)
 
         stats = {
             "total": len(customers),
@@ -244,9 +260,10 @@ def index():
             "active_alerts": active_alerts,
             "needs_attention": sum(1 for c in customers if c.get("worst_severity") in ("critical", "warning")),
             "critical": sum(1 for c in customers if c.get("worst_severity") == "critical"),
+            "at_risk": sum(1 for c in customers if (c.get("churn") or {}).get("level") == "high"),
         }
 
-        return render_template("index.html", customers=customers, stats=stats)
+        return render_template("index.html", customers=customers, stats=stats, sort_mode=sort_mode)
     finally:
         db.close()
 
@@ -264,6 +281,28 @@ def system_health():
         db.close()
     integrations = jh.integration_health()
     return render_template("system_health.html", jobs=jobs, integrations=integrations)
+
+
+@app.route("/customer/<customer_id>/quick-win-shipped", methods=["POST"])
+@login_required
+def mark_quick_win_shipped(customer_id):
+    """Mark the Day-1 quick win as shipped. Locks a baseline score (if not already
+    set) so the first report can show a concrete 'first result' against it."""
+    db = get_db()
+    try:
+        cust = db.get_customer(customer_id) or {}
+        updates = {"quick_win_shipped_at": datetime.now(timezone.utc).isoformat()}
+        if not cust.get("baseline_score"):
+            score, _ = db.seo_score_and_delta(customer_id, _earlier_date(0))
+            if score is not None:
+                updates["baseline_score"] = score
+                updates["baseline_date"] = _earlier_date(0)
+        db.update_customer(customer_id, **updates)
+        audit_log("quick_win_shipped", customer_id=customer_id)
+        flash("Day-1 quick win marked as shipped — baseline locked for the first report.", "success")
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id) + "#quick-win")
 
 
 @app.route("/customer/<customer_id>/case-value", methods=["POST"])
@@ -695,9 +734,21 @@ def customer_detail(customer_id):
         _fatjoe_due = _fp.due_orders(db, customer_id,
                                      _subscription["plan_name"] if _subscription else None)
 
+        # Day-1 quick win — the standardized first-result pass (onboarding only, kept
+        # cheap by skipping detection once the win is shipped or the client is live).
+        first_win = None
+        if customer.get("status") == "onboarding" and not customer.get("quick_win_shipped_at"):
+            try:
+                from geo_agent.quick_wins import first_quick_win
+                _fw = first_quick_win(db, customer_id)
+                first_win = _fw.to_dict() if _fw else None
+            except Exception:
+                first_win = None
+
         return render_template(
             "customer_detail.html",
             customer=customer, providers=providers, contacts=contacts,
+            first_win=first_win,
             access=access, places=places, competitors=competitors,
             runs=runs, kpis=kpis, staged=staged, approved=approved,
             diff_report=diff_report, staged_files=staged_files, schema_content=schema_content,

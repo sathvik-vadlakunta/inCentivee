@@ -423,6 +423,10 @@ class CustomerDB:
             # Target new Google reviews per month. Review velocity below this raises a
             # stall signal (action item) — reviews/month is the top local-pack lever.
             self.conn.execute("ALTER TABLE customers ADD COLUMN review_target_pm INTEGER NOT NULL DEFAULT 4")
+        if "quick_win_shipped_at" not in cols:
+            # Day-1 quick-win pass: timestamp when the first visible result shipped.
+            # Onboarding isn't "done" until this is set — kills first-60-day churn.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN quick_win_shipped_at TEXT")
 
         # Per-customer activity timeline: notes, status changes, and ingested
         # emails. Mirrors prospect_activities so the customer detail page gets the
@@ -2219,7 +2223,13 @@ class CustomerDB:
         run_ids = [r["id"] for r in run_cur.fetchall()]
         if not run_ids:
             return {"customer_share": 0, "competitors": [], "total_entity_mentions": 0}
+        return self._sov_from_run_ids(customer_id, run_ids)
 
+    def _sov_from_run_ids(self, customer_id: str, run_ids: list[str]) -> dict:
+        """Entity share-of-voice across the given run_ids (shared by the pooled
+        get_share_of_voice() and the per-run get_share_of_voice_history())."""
+        if not run_ids:
+            return {"customer_share": 0, "competitors": [], "total_entity_mentions": 0}
         placeholders = ",".join("?" * len(run_ids))
         cur = self.conn.execute(
             f"""SELECT entity_name_normalized, entity_name, is_customer,
@@ -2273,6 +2283,29 @@ class CustomerDB:
             "total_unique_entities": len(rows),
             "runs_analyzed": len(run_ids),
         }
+
+    def get_share_of_voice_history(self, customer_id: str, limit_runs: int = 12) -> list[dict]:
+        """Per-run AI Share-of-Voice for the flagship-score trend (chronological).
+
+        Each point: {date, sov_pct (0..100), rank}. Powers the "34% → 51%" story on
+        the report + the dashboard sparkline. One point per mention run so movement
+        is visible run-over-run."""
+        run_cur = self.conn.execute(
+            """SELECT id, run_date FROM ai_mention_runs
+               WHERE customer_id = ? AND total_queries > 0
+               ORDER BY run_date DESC LIMIT ?""",
+            (customer_id, limit_runs),
+        )
+        runs = [dict(r) for r in run_cur.fetchall()]
+        history = []
+        for run in reversed(runs):  # oldest → newest
+            sov = self._sov_from_run_ids(customer_id, [run["id"]])
+            history.append({
+                "date": (run.get("run_date") or "")[:10],
+                "sov_pct": round((sov.get("customer_share", 0) or 0) * 100, 1),
+                "rank": sov.get("customer_rank"),
+            })
+        return history
 
     def get_competitor_entity_trend(self, customer_id: str, limit_weeks: int = 8) -> list[dict]:
         """Get weekly share of voice trend for customer + top competitors.

@@ -169,6 +169,11 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
         sov = db.get_share_of_voice(customer_id)
     except Exception:
         sov = None
+    try:
+        from geo_agent import share_of_voice as _sovmod
+        sov_flag = _sovmod.sov_summary(db, customer_id)  # flagship score + trend
+    except Exception:
+        sov_flag = None
     if rolling or llms or latest_ai:
         data["sections"]["ai"] = {
             "rolling": rolling,
@@ -177,6 +182,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
             "latest": latest_ai,
             "engines": engines,
             "sov": sov,
+            "sov_flag": sov_flag,
         }
 
     # --- Leads / conversions (R3; renders only when GA4 conversions configured) ---
@@ -669,8 +675,29 @@ def render_html(data: dict) -> str:
             rank_txt = f'<b>#{rank} of {n}</b> in AI search share of voice' if rank else 'AI search share of voice'
             sov_html = (f'<p class="mini" style="margin:14px 0 6px">{rank_txt} — who AI engines name for your queries:</p>'
                         f'<table><tr><th>Business</th><th>Share</th></tr>{rows}</table>')
-        if kpis or engine_chips or sov_html:
+        # Flagship AI Share-of-Voice score — the moat metric, led with.
+        flag_html = ""
+        flag = ai.get("sov_flag")
+        if flag and flag.get("score") is not None:
+            delta = flag.get("delta")
+            dtxt = ""
+            if delta:
+                dcol = "#0f766e" if delta > 0 else "#b45309"
+                dtxt = (f'<span style="font-size:13px;font-weight:700;color:{dcol};margin-left:8px;">'
+                        f'{"▲" if delta > 0 else "▼"} {abs(delta)} pts</span>')
+            rank = flag.get("rank")
+            sub = ("You’re the <b>#1</b> business AI engines name for your buyer queries."
+                   if flag.get("leads") else
+                   (f'Ranked <b>#{rank}</b> of {flag.get("total_named", 0)} businesses AI engines name for your queries.'
+                    if rank else "Share of AI answers that name your practice."))
+            flag_html = (
+                f'<div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:16px 20px;margin-bottom:14px;">'
+                f'<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7c3aed;">AI Share-of-Voice</div>'
+                f'<div style="font-size:34px;font-weight:800;color:#7c3aed;line-height:1.1;">{flag["score"]}%{dtxt}</div>'
+                f'<div style="font-size:12.5px;color:#475569;margin-top:2px;">{sub}</div></div>')
+        if kpis or engine_chips or sov_html or flag_html:
             block = '<div class="r-sec"><h3>AI search visibility</h3>'
+            block += flag_html
             if kpis:
                 block += f'<div class="kpis" style="grid-template-columns:repeat(3,1fr)">{kpis}</div>'
             if engine_chips:

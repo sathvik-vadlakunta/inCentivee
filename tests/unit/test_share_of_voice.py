@@ -70,3 +70,48 @@ def test_aggregators_excluded_and_rank(db):
     assert sov["total_entity_mentions"] == 12
     assert sov["customer_share"] == round(8 / 12, 4)
     assert sov["customer_rank"] == 1  # 8 > 4, customer ranks first
+
+
+# --- Flagship score module (geo_agent/share_of_voice.py) ---
+
+from geo_agent import share_of_voice as sov_mod  # noqa: E402
+
+
+def _seed_run(db, rid, date, customer_n, competitors):
+    db.save_ai_mention_run({
+        "id": rid, "customer_id": "acme", "run_date": date,
+        "total_mentions": customer_n, "total_queries": 10,
+        "mention_rate": customer_n / 10, "engines": {}, "prompt_set": "benchmark",
+    })
+    cur = db.conn.execute(
+        "INSERT INTO ai_mention_results (run_id, customer_id, engine, prompt, mentioned) "
+        "VALUES (?,?,?,?,?)", (rid, "acme", "Claude", "q", 1))
+    result_id = cur.lastrowid
+    db.conn.commit()
+    _ent(db, rid, result_id, "Acme Dental", True, customer_n)
+    for name, n in competitors.items():
+        _ent(db, rid, result_id, name, False, n)
+
+
+def test_sov_summary_none_without_data(db):
+    assert sov_mod.sov_summary(db, "acme") is None
+    assert sov_mod.sov_score(db, "acme") == (None, None)
+
+
+def test_flagship_score_rank_and_delta(db):
+    # pooled: acme 7, Bright 8, City 5 → total 20 → 35%, rank #2
+    _seed_run(db, "r1", "2026-05-01", 2, {"Bright Smile": 5, "City Dental": 3})  # 20%
+    _seed_run(db, "r2", "2026-06-01", 5, {"Bright Smile": 3, "City Dental": 2})  # 50%
+    s = sov_mod.sov_summary(db, "acme")
+    assert s["score"] == 35
+    assert s["rank"] == 2
+    assert s["leads"] is False
+    assert [h["sov_pct"] for h in s["history"]] == [20.0, 50.0]
+    assert s["delta"] == 15  # pooled 35 − first tracked 20
+    assert sov_mod.sov_score(db, "acme") == (35, 15)
+
+
+def test_leads_when_rank_one(db):
+    _seed_run(db, "r1", "2026-06-01", 9, {"Bright Smile": 1})  # 90%, #1
+    s = sov_mod.sov_summary(db, "acme")
+    assert s["rank"] == 1 and s["leads"] is True
