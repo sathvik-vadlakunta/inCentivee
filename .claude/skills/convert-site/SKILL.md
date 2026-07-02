@@ -11,6 +11,11 @@ or runs `/convert-site <url>`.
 process, the gotcha library, the QA checklist, and the anti-cookie-cutter guidance. This
 skill is the runbook that ties the sub-skills together.
 
+**Worked examples (real builds):** Oak Ridge (scratch, playbook §12) · Parian Lawyers
+(WordPress/Elementor port, §13) · **Healing Hands PT (cash-pay, conversion-first, §14)** —
+`sites/healing-hands-pt/` + `specs/customers/healing-hands-pt-*.{html,md}` is the reference for
+premium/out-of-pocket clients where the conversion layer is the deliverable.
+
 ## User-invocable
 `/convert-site <client-url> [slug]` — convert the site at `<client-url>` into
 `sites/<slug>/`. If no slug, derive one from the business name.
@@ -33,27 +38,47 @@ skill is the runbook that ties the sub-skills together.
     site/GBP/CRM phone or address disagree — surface it, don't auto-pick. [§12.7]
 12. **Full schema set + both llms files + cited 1,500-word blogs + persistent chat widget.**
     [§12.3–12.5]
+13. **Optimized imagery lives in `src/assets/images/`, not `public/`** — only `src/assets` goes
+    through sharp (WebP/AVIF + srcset + width/height → zero CLS). `Pic.astro` prefers it; a swap
+    that only touches `public/` silently keeps the old image live. `eager`/LCP flag = hero only.
+    [§14.4]
+14. **Self-host fonts via `@fontsource`** (no external Google Fonts `<link>`) → no FOUC / font-swap
+    CLS. Re-bind interactive JS **and** GA4 on `astro:page-load` / `astro:after-swap`. [§14.5–14.6]
 
 **When porting an EXISTING WordPress/Elementor site (clone-then-clean — playbook §13):**
-13. **Clone for breadth, rebuild high-value pages clean.** Pixel-match first (clients reject
+15. **Clone for breadth, rebuild high-value pages clean.** Pixel-match first (clients reject
     redesign-from-scratch). Serve clones via a catch-all; rebuild home/bios/hubs/scholarship as
     clean responsive Astro pages, excluded via an `OVERRIDDEN` set. **Elementor-heavy pages don't
     survive static cloning (render empty) — always rebuild them.** [§13.1–13.2]
-14. **Do all enhancements at BUILD time, never runtime** (runtime = FOUC "flashes legacy then
+16. **Do all enhancements at BUILD time, never runtime** (runtime = FOUC "flashes legacy then
     new"; verify with JS disabled). Wrap ingested bodies in `display:flow-root`; pin
     `color-scheme:light`. [§13.3–13.4, §13.7]
-15. **Strip the firm's inherited GTM** (it can swap your phone for a stale call-tracking number)
+17. **Strip the firm's inherited GTM** (it can swap your phone for a stale call-tracking number)
     — bound the regex with `(?!</script>)` lookahead or it eats page content. Rewrite the staging
     domain → real domain; pull every referenced asset local before cutover. [§13.5–13.6]
-16. **Strip the dead WP asset stack** (~570 KB/page: CF7/CleanTalk/SmartMenus/Swiper/Owl/Isotope/
+18. **Strip the dead WP asset stack** (~570 KB/page: CF7/CleanTalk/SmartMenus/Swiper/Owl/Isotope/
     Elementor) at build, head + footer; keep Font Awesome + jQuery. Fix WP stray-apostrophe
     artifacts on text-between-tags only. Blog: pull via the **WP REST API** (slug from `link`, not
     `slug`; newest-first). Use **302** for convertible stub redirects (cached-301 gotcha). Run a
     **390px mobile QA sweep**. [§13.8–13.13]
 
-> Read **playbook §12 (Oak Ridge lessons)** for scratch builds, and **§13 (Parian Lawyers
-> lessons)** before any clone-then-clean port of an existing WordPress/Elementor site — they
-> capture the gotchas that cost the most time.
+**When the client sells a PREMIUM / CASH-PAY / out-of-pocket service (conversion-first — playbook §14):**
+19. **The conversion layer IS the deliverable** — the client's real problem is *articulating* why
+    someone should pay, not their care. Build it before polish: one-sentence positioning, a
+    buyer-dimension **contrast table** (grounded in real competitors), the **Hormozi value
+    equation** as a page checklist, and a **conditional/experience-based** guarantee (never an
+    outcome guarantee for a licensed provider). [§14.1]
+20. **One primary CTA everywhere = the paid intro offer** (the qualifier, not the pricey package);
+    conversion-first homepage order; sticky CTA bar after the hero. Feature the **retention/
+    membership** play. [§14.2–14.3]
+21. **Never advertise the high package price; never reward Google reviews; gate referrals on a
+    *paid* conversion.** 🚦 Prices, guarantee wording, and referral compliance are human gates —
+    all UNCONFIRMED until client + (for healthcare) state-board sign-off. [§14.3, §14.9]
+
+> Read **playbook §12 (Oak Ridge lessons)** for scratch builds, **§13 (Parian Lawyers lessons)**
+> before any clone-then-clean port of an existing WordPress/Elementor site, and **§14 (Healing
+> Hands lessons)** for any premium/cash-pay client where conversion is the value — they capture the
+> gotchas that cost the most time.
 
 ## Process
 
@@ -66,6 +91,10 @@ Run the sub-skills in order. After each, summarize and continue; stop at the hum
    download assets, pick a design variant for variety (see playbook §8).
 3. **`/generate-content <slug>`** → real services (reuse old slugs), team bios, N sourced blog
    posts. Use web search for **real, cited** stats.
+   - **Conversion layer (premium/cash-pay clients):** before styling, write the positioning +
+     offer per **§14** — one-sentence positioning, contrast table(s), value stack + guarantee,
+     conversion-first homepage order, one primary CTA on the paid intro, membership/retention band.
+     🚦 Surface pricing + guarantee wording for client (and state-board) confirmation.
 4. **`/seo-aeo <slug>`** → schema, llms.txt, robots (allow AI), sitemap, `_redirects`,
    `404.astro`, analytics wiring (reuse the client's GTM).
 5. **`/local-seo <slug>`** → `/dentist/<area>` pages with drive times + route maps.

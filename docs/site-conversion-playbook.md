@@ -526,5 +526,104 @@ real data only, conservative display ("1,000+"), Google deep link
 
 ---
 
+## 14. Lessons from the Healing Hands build (2026-06-29) — cash-pay, conversion-first
+
+Our first **cash-pay / concierge** client (physical therapy, not dental). The technical port
+was routine; the *value* was the conversion layer. Worked example lives in
+`sites/healing-hands-pt/` + `specs/customers/healing-hands-pt-*.{html,md}`. Read this section
+before any conversion where the client sells a **premium, out-of-pocket** service and their real
+problem is *articulating why someone should pay* — not their care.
+
+### 14.1 — Conversion is the product; build the articulation layer first
+The owner's care was excellent; she couldn't explain why a patient should pay cash. The whole CRO
+layer exists to solve that. Reusable frameworks — put these on the page in this order:
+- **One-sentence positioning** — contrast the commodity vs. the premium in a sentence the owner
+  can say out loud ("At a typical insurance clinic your therapist sees 3 patients an hour…; here
+  you get a full hour, 1:1, hands-on with a doctor — we fix the root cause in fewer visits").
+- **The contrast table** — rows = buyer-relevant dimensions (time with provider, who treats you,
+  who decides care, cadence, cost reality); two columns (commodity vs. premium), premium bolded.
+  Ground it in **real** competitor practices, not invented rows. Build a second contrast table
+  against whatever the prospect's *cheaper mental substitute* is ("Massage vs. real Bodywork").
+- **Hormozi value equation** `Value = (Dream Outcome × Perceived Likelihood) ÷ (Time Delay ×
+  Effort)` as a 4-lever checklist for what to show: ↑ concrete dream outcome, ↑ likelihood
+  (credentials, award, real named testimonials, live rating), ↓ time delay (relief in first
+  visit, fewer visits), ↓ effort (superbill done for you, direct text line, mobile visits).
+- **Grand-slam offer + guarantee** — for a **licensed healthcare provider an outcome guarantee is
+  legally/ethically off-limits.** Use a **conditional, experience-based** promise ("The
+  First-Visit Promise: a full hour, hands-on eval, clear plan — if you don't feel *heard* and
+  confident by the end, we'll make it right") + a **value stack** (each line = something the
+  commodity doesn't give). 🚦 Run guarantee wording past client / state board.
+
+### 14.2 — Conversion-first homepage order + one primary CTA
+Section order: **hero (positioning + CTA) → contrast table → before→after story band (real named
+patient) → services → cash-pay-as-benefit → value stack + guarantee → conditions → testimonial
+wall + live rating → provider bio → FAQ (AEO) → final CTA.** One **primary CTA everywhere** = the
+paid intro offer (not the expensive package). **Sticky conversion bar** appears after the hero
+scrolls off (~600px), respecting `env(safe-area-inset-bottom)`.
+
+### 14.3 — "Don't waste their time on non-buyers" (conversion-efficiency)
+Optimize for qualified buyers, not raw lead volume:
+- **The paid intro IS the qualifier** — a paid (not free) first visit filters tire-kickers; its
+  job is to build a plan and convert to a package/membership.
+- **Reward referrals on the friend's first *paid conversion*, never on booking/showing up.**
+- **Use low-chair-time trials** (a $50 / 10-min device add-on), not free hours.
+- **Feature the retention play** (monthly maintenance membership) prominently — churn was the
+  owner's actual business problem. Funnel: paid intro → package **or** membership.
+- **Never reward Google reviews** (FTC penalties up to ~$51k/violation; Google delists). Ask for
+  reviews at the success moment, unconditionally — see the review-engine spec.
+- **Pricing discipline:** publish only the entry price + membership + the cheap add-on; keep the
+  high package price **off the site** ("ask about her packages"). 🚦 All prices UNCONFIRMED until
+  the client signs off — never fabricate a price.
+
+### 14.4 — Optimized images: serve from `src/assets/images`, NOT `public/`
+`Pic.astro` wraps `astro:assets` `<Image>` but keeps public-style call paths (`/images/foo.jpg`).
+It `import.meta.glob`s `/src/assets/images/**/*.{jpg,png,webp,avif}` `{eager:true}` and rewrites
+the path to the real module. **Only files under `src/assets` go through sharp** → responsive
+WebP/AVIF, `srcset`, and explicit width/height (**zero CLS**). Files in `public/` serve raw,
+unoptimized, dimensionless. Keep the same images in both (graceful `<img>` fallback with
+`onerror`), but **new/swapped imagery must land in `src/assets/images/` or it silently serves the
+unoptimized copy** (this bit us — a photo swap only touched `public/` and the old image stayed
+live). `eager` (→ `fetchpriority=high`) is **only** for the hero/LCP image; everything else lazy.
+
+### 14.5 — Self-host fonts (`@fontsource`) → no FOUC, no font-swap CLS
+Import fonts in `Base.astro` frontmatter from `@fontsource/*` (e.g. Nunito 400/600/700, Open Sans
+400/600). Same-origin, no render-blocking Google Fonts request → faster FCP, **no swap flash, no
+CLS.** Never add an external Google Fonts `<link>`.
+
+### 14.6 — View Transitions: re-bind JS + GA4 on every navigation
+`<ClientRouter />` (Astro 5) in `<head>`; `<main transition:animate={fade({duration:'0.35s'})}>`.
+Because VT swaps the DOM without a reload, **every interactive script must init on
+`astro:page-load`** (nav, scroll-reveal, count-ups, TOC-spy), and GA4 must re-`config` on
+`astro:after-swap` with the new `page_path`. Motion rule: **"nothing flashy — calm signals
+premium,"** and wrap the whole motion layer in `@media (prefers-reduced-motion: reduce)` that
+forces reveals visible.
+
+### 14.7 — Baseline capture: live-API-only, and name what's missing
+Before touching anything, record a BEFORE snapshot from **live API calls only** (real PageSpeed +
+Moz). Distinguish the **cold-domain proxy** score from the **canonical composite** (which returns
+"Insufficient Data" with <2 DB-backed pillars) and explicitly label the structural gaps (no
+GSC/GA/GBP → `aeo=0`, `pages_indexed=0`). Never fabricate a baseline metric.
+
+### 14.8 — Two-phase delivery + sign-off gating
+**Phase 1 = faithful clone** (recognizable to the client), **Phase 2 = redesign.** Deploy to
+staging on **`*.practicerank.ai` first**, never straight to the client domain. The client reviews
+Phase 1 before the redesign and signs off before cutover. DNS cutover happens at the
+**client-owned registrar** and is the **last** step, together with flipping them to paying-customer
+status — only after every gate clears and the curl + 390px mobile QA sweep pass.
+
+### 14.9 — Trust the code over stale specs; delete dead references
+Specs drift as the build moves. On this project the conversion HTML said the brand was green/blue
+but the shipped site is **purple**; `ASSETS.md` + the spec cited a **stale Google Place ID** while
+the live one lived in `reviews.placeId`. Rule: **when a doc and the shipped code disagree, trust
+the code**, fix the doc, and delete dead IDs/paths so they can't regress. Keep new imagery in
+`src/assets/images` (§14.4).
+
+**New human gates this build surfaced:** guarantee/legal wording (state licensing board);
+referral-program compliance (e.g. NV "unearned fee" NAC/NRS 640 — capped in-clinic service credit,
+never cash, attorney read); republishing *dropped* trust assets (partnerships, podcasts, a retired
+service) only after confirming they're still current.
+
+---
+
 *Living doc — update after each conversion with new gotchas. Companion: the per-client
 results HTML (e.g. `docs/hilltop-rebuild-2026-06-12.html`).*
