@@ -271,6 +271,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
             "competitors": competitors,
         }
 
+
     # --- Visitors / clicks over time (last 8 weeks) for the trend chart ---
     try:
         wk = db.get_gsc_weekly_summary(customer_id, weeks=8)
@@ -287,7 +288,37 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     try:
         since30 = ds(end - timedelta(days=30))
         osum = db.offsite_summary(customer_id, since=since30)
-        if osum["links"] or osum["citations"] or osum["mentions"]:
+        # In-progress orders = ordered/in_progress/redo (placed, not yet live). Shows
+        # the client the work that's underway, so a light-delivery month still reads
+        # as active. Grouped into friendly line items, never cost.
+        wip_items = []
+        try:
+            wip_states = {"ordered", "in_progress", "redo_requested"}
+            links_wip = cites_wip = mentions_wip = 0
+            link_tiers = set()
+            for o in (db.get_offsite_orders(customer_id) or []):
+                if (o.get("status") or "") not in wip_states:
+                    continue
+                typ = o.get("order_type") or "link"
+                qty = int(o.get("quantity") or 1)
+                if typ == "link":
+                    links_wip += qty
+                    if o.get("dr_tier"):
+                        link_tiers.add(int(o["dr_tier"]))
+                elif typ == "citation":
+                    cites_wip += 1  # a package (yields many directory listings)
+                elif typ == "mention":
+                    mentions_wip += qty
+            if links_wip:
+                tier = f" (DR{min(link_tiers)}+)" if link_tiers else ""
+                wip_items.append(f"{links_wip} backlink{'s' if links_wip != 1 else ''}{tier} being built")
+            if cites_wip:
+                wip_items.append(f"{cites_wip} local citation package{'s' if cites_wip != 1 else ''} in progress")
+            if mentions_wip:
+                wip_items.append(f"{mentions_wip} brand mention{'s' if mentions_wip != 1 else ''} in progress")
+        except Exception:
+            wip_items = []
+        if osum["links"] or osum["citations"] or osum["mentions"] or wip_items:
             assets = [a for a in db.get_offsite_assets(customer_id)
                       if (a.get("live_at") or "")[:10] >= since30]
             link_da = [a for a in assets if a["asset_type"] == "link" and a.get("da") is not None]
@@ -302,6 +333,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
                 "total_ref_domains": db.offsite_summary(customer_id)["ref_domains"],
                 "top_link": {"domain": top_link["domain"], "da": top_link["da"]} if top_link else None,
                 "mention_domain": mention["domain"] if mention else None,
+                "wip_items": wip_items,
             }
     except Exception:
         pass
@@ -838,10 +870,19 @@ def render_html(data: dict) -> str:
             items.append(f'{o["mentions"]} brand mention{"s" if o["mentions"] != 1 else ""} live')
         if o.get("new_ref_domains"):
             items.append(f'Referring domains: <b>+{o["new_ref_domains"]}</b> this period ({o["total_ref_domains"]} total)')
-        lis = "".join(f'<li>{it}</li>' for it in items)
+        completed_html = ""
+        if items:
+            lis = "".join(f'<li>✅ {it}</li>' for it in items)
+            completed_html = (f'<p class="mini" style="margin:6px 0 2px;font-weight:600;color:#16a34a">Completed</p>'
+                              f'<ul style="margin:0;padding-left:18px">{lis}</ul>')
+        wip_html = ""
+        if o.get("wip_items"):
+            wlis = "".join(f'<li>⏳ {e(it)}</li>' for it in o["wip_items"])
+            wip_html = (f'<p class="mini" style="margin:10px 0 2px;font-weight:600;color:#b45309">In progress</p>'
+                        f'<ul style="margin:0;padding-left:18px;color:#475569">{wlis}</ul>')
         parts.append(
             f'<div class="r-sec"><h3>Authority work · last 30 days</h3>'
-            f'<ul style="margin:6px 0 0;padding-left:18px">{lis}</ul></div>')
+            f'{completed_html}{wip_html}</div>')
 
     # 9. Sources now citing you (from grounded AI answers)
     if "sources" in s and s["sources"]:
