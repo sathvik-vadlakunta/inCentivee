@@ -463,7 +463,12 @@ def process_customer(
     else:
         _start("schema_validation")
         try:
-            schema_results = validate_site_schema(customer.domain)
+            # Validate schema on the customer's REAL crawled pages (not an assumed
+            # dental-style path list like /about,/services,/contact) so we never fire
+            # bogus 404 "schema invalid" alerts on sites whose pages live elsewhere.
+            # Cap to bound request volume; fall back to the homepage if no crawl.
+            page_urls = [p.url for p in (pages or []) if getattr(p, "url", "")][:25]
+            schema_results = validate_site_schema(customer.domain, pages=page_urls or None)
             issues_count = sum(len(r.issues) for r in schema_results)
             error_results = [r for r in schema_results if r.status in ("error", "missing")]
 

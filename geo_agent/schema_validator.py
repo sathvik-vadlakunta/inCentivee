@@ -38,27 +38,31 @@ def validate_site_schema(domain: str, pages: list[str] | None = None) -> list[Sc
     """Validate schema markup across a site's pages.
 
     Args:
-        domain: The domain to check (e.g., "hilltopfamilydental.com")
-        pages: Optional list of page paths to check. If None, checks homepage + common pages.
+        domain: The domain to check (e.g., "hilltopfamilydental.com").
+        pages: Page paths ("/team") or full URLs ("https://…/team") to check. Prefer
+            passing the customer's REAL crawled pages. When omitted we probe only the
+            homepage — NOT an assumed set like "/about" / "/services" / "/contact",
+            which 404 on sites whose pages live elsewhere (e.g. non-dental clients)
+            and fire bogus "schema invalid" alerts.
 
     Returns:
         List of SchemaValidationResult for each checked page.
     """
-    if pages is None:
-        pages = [
-            "/",
-            "/about",
-            "/services",
-            "/contact",
-        ]
+    if not pages:
+        pages = ["/"]  # homepage always exists; real pages should be passed in
 
-    results = []
     base_url = f"https://{domain}"
-
-    for page_path in pages:
-        url = base_url + page_path
-        result = _validate_page_schema(url)
-        results.append(result)
+    results = []
+    seen: set[str] = set()
+    for page in pages:
+        if page.startswith("http"):
+            url = page
+        else:
+            url = base_url + (page if page.startswith("/") else "/" + page)
+        if url in seen:
+            continue
+        seen.add(url)
+        results.append(_validate_page_schema(url))
 
     return results
 

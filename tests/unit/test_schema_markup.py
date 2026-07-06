@@ -342,3 +342,30 @@ class TestProductValidation:
         }
         issues = _validate_schema_fields(schema, "LocalBusiness")
         assert not any("Nested Product" in i for i in issues)
+
+
+class TestValidateSiteSchemaTargets:
+    """Regression: the site validator must probe REAL pages, never an assumed
+    dental-style path list that 404s on other sites and fires bogus alerts."""
+
+    def _targets(self, domain, pages=None):
+        from unittest.mock import patch
+        import geo_agent.schema_validator as sv
+        with patch.object(sv, "_validate_page_schema", side_effect=lambda u: u):
+            return sv.validate_site_schema(domain, pages=pages)
+
+    def test_default_is_homepage_only(self):
+        assert self._targets("ex.com") == ["https://ex.com/"]
+
+    def test_never_assumes_services_path(self):
+        # The Paradigm bug: /services was probed on a site that has no such page.
+        assert all("/services" not in u for u in self._targets("paradigmexperts.com"))
+
+    def test_full_urls_passed_through(self):
+        out = self._targets("ex.com", pages=["https://ex.com/team", "/about"])
+        assert "https://ex.com/team" in out
+        assert "https://ex.com/about" in out
+
+    def test_dedupes_repeated_pages(self):
+        out = self._targets("ex.com", pages=["/", "https://ex.com/", "/about"])
+        assert out.count("https://ex.com/") == 1
