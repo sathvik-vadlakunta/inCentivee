@@ -421,6 +421,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     # --- Alerts (REAL) → inform "what's next" ---
     data["alerts"] = db.get_alerts(customer_id, active_only=True, limit=10)
 
+    data["progress"] = _progress_since_start(db, customer_id)
     data["exec_summary"] = _exec_summary(data)
     return data
 
@@ -537,6 +538,165 @@ def _hbars(rows: list[tuple], *, you_color: str = "#16a34a", other: str = "#cbd5
     return out + "</table>"
 
 
+# ---------------------------------------------------------------------------
+# Progress since inception (full-history trends, not just one window back)
+# ---------------------------------------------------------------------------
+
+# (kpi metric, label, format kind, higher_is_better)
+_PROGRESS_METRICS = [
+    ("domain_authority", "Domain authority", "int", True),
+    ("ai_mentions", "AI mentions", "int", True),
+    ("organic_clicks", "Organic clicks / mo", "int", True),
+    ("organic_impressions", "Organic impressions / mo", "int", True),
+    ("avg_search_position", "Avg search position", "pos", False),
+    ("rating", "Google rating", "rating", True),
+    ("review_count", "Total reviews", "int", True),
+]
+
+
+def _fmt_metric(kind: str, v) -> str:
+    if v is None:
+        return "—"
+    if kind == "rating":
+        return f"{v:.1f}"
+    if kind == "pos":
+        return f"{v:.1f}"
+    return f"{int(round(v)):,}"
+
+
+def _short_num(v) -> str:
+    v = float(v)
+    if abs(v) >= 1000:
+        return f"{v/1000:.1f}k".replace(".0k", "k")
+    return str(int(v)) if v == int(v) else f"{v:.1f}"
+
+
+def _progress_since_start(db, customer_id: str) -> dict | None:
+    """Full-history trend for every tracked metric since the customer started —
+    each metric's first value → latest value + the whole series (for sparklines),
+    plus score & traffic series for the headline charts."""
+    metrics: list[dict] = []
+    all_start_dates: list[str] = []
+
+    def _add(label, kind, higher, series):
+        # series: list of (date, value) ascending; need >=2 real points
+        series = [(d, v) for d, v in series if v is not None]
+        if len(series) < 2:
+            return
+        start_v, cur_v = series[0][1], series[-1][1]
+        metrics.append({
+            "label": label, "kind": kind, "higher_better": higher,
+            "start": start_v, "current": cur_v, "delta": round(cur_v - start_v, 2),
+            "series": [v for _, v in series], "start_date": series[0][0],
+            "start_str": _fmt_metric(kind, start_v), "cur_str": _fmt_metric(kind, cur_v),
+        })
+        all_start_dates.append(series[0][0])
+
+    score_rows = list(reversed(db.get_practicerank_scores(customer_id, limit=60)))
+    score_series = [(r["date"], r.get("overall_score")) for r in score_rows]
+    _add("PracticeRank score", "int", True, score_series)
+
+    for metric, label, kind, higher in _PROGRESS_METRICS:
+        rows = list(reversed(db.get_kpis(customer_id, metric, limit=60)))
+        _add(label, kind, higher, [(r["date"], r.get("value")) for r in rows])
+
+    if not metrics:
+        return None
+    traffic_rows = list(reversed(db.get_kpis(customer_id, "organic_clicks", limit=60)))
+    return {
+        "start_date": min(all_start_dates) if all_start_dates else None,
+        "metrics": metrics,
+        "score_chart": [(d, v) for d, v in score_series if v is not None],
+        "traffic_chart": [(r["date"], r.get("value")) for r in traffic_rows if r.get("value") is not None],
+    }
+
+
+def _sparkline_svg(values: list[float], *, w: int = 96, h: int = 26, color: str = "#16a34a") -> str:
+    if not values or len(values) < 2:
+        return ""
+    lo, hi = min(values), max(values)
+    rng = (hi - lo) or 1
+    n = len(values)
+    pts = []
+    for i, v in enumerate(values):
+        x = round(i / (n - 1) * (w - 4) + 2, 1)
+        y = round(h - 3 - (v - lo) / rng * (h - 6), 1)
+        pts.append(f"{x},{y}")
+    lx, ly = pts[-1].split(",")
+    return (f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
+            f'<polyline points="{" ".join(pts)}" fill="none" stroke="{color}" '
+            f'stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>'
+            f'<circle cx="{lx}" cy="{ly}" r="2.2" fill="{color}"/></svg>')
+
+
+def _trend_chart_svg(points: list[tuple], *, title: str, color: str = "#16a34a",
+                     w: int = 640, h: int = 180) -> str:
+    pts = [(d, v) for d, v in points if v is not None]
+    if len(pts) < 2:
+        return ""
+    vals = [v for _, v in pts]
+    lo, hi = min(vals), max(vals)
+    if lo == hi:
+        lo, hi = lo - 1, hi + 1
+    rng = hi - lo
+    n = len(pts)
+    padL, padR, padT, padB = 42, 10, 14, 24
+    pw, ph = w - padL - padR, h - padT - padB
+
+    def X(i):
+        return round(padL + i / (n - 1) * pw, 1)
+
+    def Y(v):
+        return round(padT + (1 - (v - lo) / rng) * ph, 1)
+
+    line = " ".join(f"{X(i)},{Y(v)}" for i, (_, v) in enumerate(pts))
+    area = f"{X(0)},{Y(lo)} {line} {X(n-1)},{Y(lo)}"
+    grid = ""
+    for gv in (lo, (lo + hi) / 2, hi):
+        gy = Y(gv)
+        grid += (f'<line x1="{padL}" y1="{gy}" x2="{w-padR}" y2="{gy}" stroke="#eef1f4" stroke-width="1"/>'
+                 f'<text x="{padL-6}" y="{gy+3}" text-anchor="end" font-size="10" fill="#9aa6b2">{_short_num(gv)}</text>')
+    xl = (f'<text x="{padL}" y="{h-5}" font-size="10" fill="#9aa6b2">{html.escape(pts[0][0][:7])}</text>'
+          f'<text x="{w-padR}" y="{h-5}" text-anchor="end" font-size="10" fill="#9aa6b2">{html.escape(pts[-1][0][:7])}</text>')
+    lx, ly = X(n - 1), Y(pts[-1][1])
+    return (f'<div class="trend"><div class="trend-t">{html.escape(title)}</div>'
+            f'<svg viewBox="0 0 {w} {h}" role="img">{grid}'
+            f'<polygon points="{area}" fill="{color}" opacity="0.09"/>'
+            f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round"/>'
+            f'<circle cx="{lx}" cy="{ly}" r="3.2" fill="{color}"/>{xl}</svg></div>')
+
+
+def _maturation_note(data: dict) -> str:
+    """Set expectations: SEO/AEO changes take time to surface, so short windows
+    under-report real progress. Tailors the message to how long the client has run."""
+    prog = data.get("progress") or {}
+    sd = prog.get("start_date")
+    weeks = None
+    if sd:
+        try:
+            start = datetime.strptime(sd[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            weeks = max(0, (datetime.now(timezone.utc) - start).days // 7)
+        except ValueError:
+            weeks = None
+    if weeks is None:
+        return ("SEO and AEO compound over time — AI-search (AEO) changes typically take "
+                "6+ weeks to surface in results, and traditional SEO/ranking gains build over "
+                "3–6 months. Recent work is always maturing behind the current numbers.")
+    if weeks < 6:
+        return (f"You're about {weeks} week{'s' if weeks != 1 else ''} in. Most of the AEO work "
+                f"we've put in place is still maturing — AI engines typically take 6+ weeks to "
+                f"reflect changes, and SEO/ranking gains build over 3–6 months. This period sets "
+                f"the baseline; early signals come first and the larger movement follows.")
+    if weeks < 16:
+        return (f"You're about {weeks} weeks in — AEO effects are starting to compound (they "
+                f"usually take 6+ weeks to appear), while SEO/ranking gains keep building for "
+                f"3–6 months after each change. So the numbers here still trail the work behind them.")
+    months = weeks // 4
+    return (f"You're about {months} months in — past the initial ramp, so changes should be "
+            f"materializing steadily. AEO still takes ~6+ weeks per change to surface and SEO "
+            f"compounds over months, so the most recent work is always maturing behind the numbers.")
+
+
 def render_html(data: dict) -> str:
     b = BRAND
     s = data["sections"]
@@ -554,6 +714,46 @@ def render_html(data: dict) -> str:
     # 1. Exec summary
     parts.append(f"""<div class="r-sec"><h3>The headline</h3>
       <div class="summary"><p>📈 {e(data['exec_summary'])}</p></div></div>""")
+
+    # 1b. Progress since you started — full-history trends (hybrid: strip + charts)
+    prog = data.get("progress")
+    if prog and prog.get("metrics"):
+        rows_html = ""
+        for m in prog["metrics"]:
+            improved = (m["delta"] > 0) if m["higher_better"] else (m["delta"] < 0)
+            worse = (m["delta"] < 0) if m["higher_better"] else (m["delta"] > 0)
+            cls = "up" if improved else ("down" if worse else "flat")
+            col = b["good"] if improved else (b["bad"] if worse else b["muted"])
+            sign = "+" if m["delta"] > 0 else ("−" if m["delta"] < 0 else "±")
+            gain = _fmt_metric(m["kind"], abs(m["delta"]))
+            spark = _sparkline_svg(m["series"], color=col)
+            rows_html += (
+                f'<tr><td class="pm-l">{e(m["label"])}</td>'
+                f'<td class="pm-v">{e(m["start_str"])} <span class="pm-ar">→</span> <b>{e(m["cur_str"])}</b></td>'
+                f'<td class="pm-s">{spark}</td>'
+                f'<td class="pm-d {cls}">{sign}{e(gain)}</td></tr>')
+        sc = _trend_chart_svg(prog.get("score_chart") or [], title="PracticeRank Score", color=b["accent"])
+        tc = _trend_chart_svg(prog.get("traffic_chart") or [], title="Organic Traffic (clicks)", color="#2563eb")
+        charts = f'<div class="trends">{sc}{tc}</div>' if (sc or tc) else ""
+        sd = prog.get("start_date")
+        since = f" since {e(sd[:10])}" if sd else ""
+        has_pos = any(m["label"] == "Avg search position" for m in prog["metrics"])
+        pos_note = (
+            '<p class="pm-note">📌 <b>About average position:</b> it can <b>rise (look worse)</b> '
+            'precisely when things are going well — as you start ranking for <b>more</b> queries, '
+            'new keywords enter at lower positions and pull the <i>average</i> down even while your '
+            'total visibility (impressions) grows and your best pages hold. Read it alongside '
+            'impressions and query count, never on its own.</p>') if has_pos else ""
+        parts.append(
+            f'<div class="r-sec"><h3>Your progress{since}</h3>'
+            f'<table class="pm">{rows_html}</table>{pos_note}{charts}</div>')
+
+    # 1c. What to expect — maturation timeline (AEO 6+ weeks, SEO longer)
+    parts.append(
+        f'<div class="r-sec"><div class="expect">'
+        f'<div class="expect-t">⏳ What to expect</div>'
+        f'<p>{e(_maturation_note(data))} Week-to-week swings are normal noise — judge progress '
+        f'by the trend since you started, not any single week.</p></div></div>')
 
     # 1·outcome — the number clients renew for: new-patient inquiries + production
     if s.get("outcomes"):
@@ -970,6 +1170,21 @@ def render_html(data: dict) -> str:
   .kpi .v{{font-size:22px;font-weight:700}} .kpi .k{{font-size:12px;color:{b['muted']};text-transform:uppercase;letter-spacing:.04em}}
   .delta{{font-size:12.5px;font-weight:600;margin-top:3px}}
   .up{{color:{b['good']}}} .down{{color:{b['bad']}}} .flat{{color:{b['muted']}}}
+  .pm{{width:100%;font-size:14px}}
+  .pm td{{border-bottom:1px solid {b['line']};padding:9px 6px;vertical-align:middle}}
+  .pm tr:last-child td{{border-bottom:0}}
+  .pm-l{{color:{b['muted']};font-weight:600;white-space:nowrap}}
+  .pm-v{{white-space:nowrap}} .pm-ar{{color:{b['muted']}}}
+  .pm-s{{width:104px}} .pm-s svg{{display:block}}
+  .pm-d{{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}}
+  .trends{{display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px}}
+  .trend{{border:1px solid {b['line']};border-radius:12px;padding:12px 14px;background:{b['bg']}}}
+  .trend-t{{font-size:11px;font-weight:700;color:{b['muted']};text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}}
+  .trend svg{{width:100%;height:auto;display:block}}
+  .expect{{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 16px}}
+  .expect-t{{font-size:12px;font-weight:800;color:#9a3412;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}}
+  .expect p{{margin:0;font-size:13.5px;color:#7c2d12;line-height:1.5}}
+  .pm-note{{margin:10px 0 0;font-size:12.5px;color:{b['muted']};line-height:1.5;background:{b['bg']};border-left:3px solid {b['accent']};padding:9px 12px;border-radius:0 8px 8px 0}}
   table{{border-collapse:collapse;width:100%;font-size:14px}}
   th,td{{text-align:left;padding:8px 10px;border-bottom:1px solid {b['line']}}}
   th{{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:{b['muted']}}}
