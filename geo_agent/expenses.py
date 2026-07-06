@@ -128,6 +128,53 @@ EXPENSE_ITEMS: list[dict] = [
 ]
 
 
+# ---------------------------------------------------------------------------
+# REAL recurring subscriptions we actually pay each month (for the reimbursement
+# ledger — expense_entries table). These are seeded into a month on demand and
+# then edited to the exact charged amount. Metered lines seed at $0 as a reminder
+# to paste in the real invoice figure. This is the source of truth for what the
+# monthly "Add recurring" button drops in — keep amounts close to reality.
+# ---------------------------------------------------------------------------
+RECURRING_TEMPLATES: list[dict] = [
+    {"key": "digitalocean", "category": "Infrastructure", "vendor": "DigitalOcean",
+     "name": "DigitalOcean droplet (shared)", "amount": 24.0,
+     "note": "~Half of the shared droplet allocated to PracticeRank — set to your real split."},
+    {"key": "google_workspace", "category": "Google", "vendor": "Google",
+     "name": "Google Workspace (Business Standard)", "amount": 0.0,
+     "note": "Business Standard, ~6–7 seats — metered, varies with seat count "
+             "(~$20–50/mo). Auto-paid ~1st for the prior month (Visa …8695). Enter the real charge."},
+    {"key": "google_voice", "category": "Google", "vendor": "Google",
+     "name": "Google Voice (Telecom)", "amount": 0.0,
+     "note": "Voice Starter for practicerank.ai + telecom taxes/surcharges (~$10–14/mo). "
+             "Auto-paid ~1st for the prior month (Visa …8695). Enter the real charge."},
+    {"key": "moz", "category": "SEO & Data APIs", "vendor": "Moz",
+     "name": "Moz Links API (API Starter)", "amount": 20.0,
+     "note": "Flat monthly — covers all customers."},
+
+    # ---- AI / LLM APIs (all metered; pulled live via usage_sync where the
+    #      provider exposes a cost API, otherwise paste the invoice amount) ----
+    {"key": "anthropic", "category": "AI / LLM APIs", "vendor": "Anthropic",
+     "name": "Anthropic (Claude API)", "amount": 0.0,
+     "note": "Metered — Claude content/GEO. Auto-syncs from the Anthropic Cost API (or paste the invoice)."},
+    {"key": "openai", "category": "AI / LLM APIs", "vendor": "OpenAI",
+     "name": "OpenAI (ChatGPT API)", "amount": 0.0,
+     "note": "Metered — ChatGPT AI-visibility checks. Auto-syncs from the OpenAI Costs API (or paste the invoice)."},
+    {"key": "gemini", "category": "AI / LLM APIs", "vendor": "Google",
+     "name": "Google Gemini API", "amount": 0.0,
+     "note": "Metered — Gemini AI-visibility checks. Paste the invoice (Cloud Billing export)."},
+    {"key": "perplexity", "category": "AI / LLM APIs", "vendor": "Perplexity",
+     "name": "Perplexity API", "amount": 0.0,
+     "note": "Metered — Perplexity answer-citation checks. Paste the invoice."},
+    {"key": "xai", "category": "AI / LLM APIs", "vendor": "xAI",
+     "name": "xAI (Grok API)", "amount": 0.0,
+     "note": "Metered — Grok AI-visibility checks. Paste the invoice."},
+
+    {"key": "google_apis", "category": "Google", "vendor": "Google",
+     "name": "Google Maps / Places API", "amount": 0.0,
+     "note": "Usually within the $200 monthly credit — enter any overage."},
+]
+
+
 def compute_expenses(active_customers: int = 1, fatjoe_mtd: float | None = None,
                      fatjoe_total: float | None = None) -> dict:
     """Group line items by category and total them for `active_customers`.

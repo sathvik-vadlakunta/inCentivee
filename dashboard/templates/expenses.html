@@ -30,112 +30,319 @@
   .bill-variable{background:#f1f5f9;color:#475569;} .bill-onetime{background:#fae8ff;color:#86198f;}
   .exp-note{font-size:.72rem;color:var(--muted);margin-top:3px;}
   .exp-charged{font-size:.78rem;}
+
+  /* ---- Real monthly ledger ---- */
+  .led-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1rem;}
+  .led-toolbar select{font-size:.9rem;font-weight:700;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card,#fff);}
+  .led-nav{display:inline-flex;text-decoration:none;font-weight:800;color:var(--muted);border:1px solid var(--border);border-radius:8px;width:32px;height:32px;align-items:center;justify-content:center;}
+  .led-nav:hover{color:#111;background:#f1f5f9;}
+  .split{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 1.1rem;}
+  .split .pill{display:flex;flex-direction:column;gap:1px;border:1px solid var(--border);border-radius:10px;padding:8px 12px;min-width:120px;background:var(--card,#fff);}
+  .split .pill .c{font-size:.64rem;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700;}
+  .split .pill .a{font-size:1.05rem;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums;}
+  .led-row{display:grid;grid-template-columns:1.5fr 1.6fr 118px 62px;gap:10px;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);margin:0;}
+  .led-row:last-child{border-bottom:none;}
+  .led-row input[type=text],.led-row input[type=number],.led-row input[type=date]{width:100%;font-size:.84rem;padding:5px 8px;border:1px solid transparent;border-radius:7px;background:transparent;}
+  .led-row input:hover,.led-row input:focus{border-color:var(--border);background:#fff;outline:none;}
+  .led-row .nm{font-weight:600;font-size:.86rem;}
+  .led-row .vn{font-size:.72rem;color:var(--muted);}
+  .amt-wrap{display:flex;align-items:center;gap:2px;justify-content:flex-end;}
+  .amt-wrap .d{color:var(--muted);font-weight:700;}
+  .amt-wrap input{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
+  .rec-badge{display:inline-block;font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:1px 6px;border-radius:999px;background:#dbeafe;color:#1e40af;margin-left:6px;vertical-align:middle;}
+  .row-actions{display:flex;gap:4px;justify-content:flex-end;}
+  .row-actions button{border:1px solid var(--border);background:#fff;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:.8rem;line-height:1;}
+  .row-actions button.save:hover{background:#dcfce7;border-color:#86efac;}
+  .row-actions button.del:hover{background:#fee2e2;border-color:#fca5a5;}
+  .add-row{background:#f8fafc;border-top:2px dashed var(--border);}
+  .add-row input::placeholder{color:#94a3b8;}
+  .btn-sm{font-size:.8rem;font-weight:700;padding:7px 13px;border-radius:9px;border:1px solid var(--border);background:var(--card,#fff);cursor:pointer;text-decoration:none;color:inherit;display:inline-flex;align-items:center;gap:6px;}
+  .btn-sm.primary{background:#0f1117;color:#fff;border-color:#0f1117;}
+  .btn-sm:hover{filter:brightness(.97);}
 </style>
 
 <div class="exp-head">
   <div>
     <h1 style="margin:0;">Expenses</h1>
     <p style="color:var(--muted);margin:.25rem 0 0;font-size:.88rem;">
-      What it costs to run the platform — every AI/LLM API and service, with monthly cost and when it's charged.
-      Usage lines are estimated against <b>{{ active_customers }}</b> active customer{{ 's' if active_customers != 1 }}{% if not active_customers %} (showing {{ data.active_customers }} for rates){% endif %}.
+      What we <b>actually paid</b> each month — itemized and split by category for reimbursement.
+      Recurring subscriptions are seeded automatically; add one-off charges below.
     </p>
   </div>
 </div>
 
+{# ───────────────────── Month toolbar ───────────────────── #}
+{% set idx = (month[:4]|int) * 12 + (month[5:7]|int - 1) %}
+{% set prev_m = '%04d-%02d'|format((idx - 1)//12, (idx - 1)%12 + 1) %}
+{% set next_m = '%04d-%02d'|format((idx + 1)//12, (idx + 1)%12 + 1) %}
+<div class="led-toolbar">
+  <a class="led-nav" href="{{ url_for('expenses', month=prev_m) }}" title="Previous month">‹</a>
+  <form method="get" action="{{ url_for('expenses') }}" style="margin:0;">
+    <select name="month" onchange="this.form.submit()" aria-label="Select month">
+      {% for m in months %}
+      <option value="{{ m }}" {{ 'selected' if m == month }}>{{ month_labels[m] }}</option>
+      {% endfor %}
+    </select>
+  </form>
+  <a class="led-nav" href="{{ url_for('expenses', month=next_m) }}" title="Next month">›</a>
+  {% if month == cur_month %}<span style="font-size:.72rem;color:var(--muted);">current month</span>{% endif %}
+  <form method="post" action="{{ url_for('expenses_seed') }}" style="margin:0 0 0 auto;">
+    <input type="hidden" name="month" value="{{ month }}">
+    <button class="btn-sm" type="submit" title="Add any missing recurring subscriptions to this month">↻ Add recurring subscriptions</button>
+  </form>
+</div>
+
+{# ───────────────────── Reimbursement summary ───────────────────── #}
 <div class="exp-cards">
-  <div class="exp-card">
-    <div class="k">Fixed subscriptions</div>
-    <div class="v">${{ '%.0f'|format(data.totals.fixed) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
-    <div class="s">Flat monthly + amortized infra</div>
-  </div>
-  <div class="exp-card">
-    <div class="k">Per-customer (AI + tools)</div>
-    <div class="v">${{ '%.0f'|format(data.totals.usage) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
-    <div class="s">${{ '%.2f'|format(data.totals.per_customer_usage) }}/customer × {{ data.active_customers }}</div>
-  </div>
-  <div class="exp-card">
-    <div class="k">Annual (monthlyized)</div>
-    <div class="v">${{ '%.0f'|format(data.totals.annual) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
-    <div class="s">Billed yearly</div>
-  </div>
   <div class="exp-card total">
-    <div class="k">Est. recurring total</div>
-    <div class="v">${{ '%.0f'|format(data.totals.recurring) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
-    <div class="s">Subscriptions + usage + annual (excl. setup)</div>
+    <div class="k">Reimbursement — {{ month_label }}</div>
+    <div class="v">${{ '{:,.2f}'.format(month_total) }}</div>
+    <div class="s">{{ entry_count }} item{{ '' if entry_count == 1 else 's' }} · total to reimburse</div>
+  </div>
+  <div class="exp-card">
+    <div class="k">Recurring</div>
+    <div class="v">${{ '{:,.2f}'.format(recurring_total) }}</div>
+    <div class="s">Subscriptions</div>
+  </div>
+  <div class="exp-card">
+    <div class="k">One-off</div>
+    <div class="v">${{ '{:,.2f}'.format(oneoff_total) }}</div>
+    <div class="s">Metered / one-time charges</div>
+  </div>
+  <div class="exp-card">
+    <div class="k">Categories</div>
+    <div class="v">{{ ledger_groups|length }}</div>
+    <div class="s">Cost buckets this month</div>
   </div>
 </div>
 
-<div class="exp-cards" style="grid-template-columns:repeat(2,1fr);">
-  <div class="exp-card" style="border-left:3px solid #16a34a;">
-    <div class="k">FATJOE COGS — this month (real)</div>
-    <div class="v">${{ '{:,.0f}'.format(data.totals.variable_cogs) }}<span style="font-size:.9rem;font-weight:500;"> MTD</span></div>
-    <div class="s">Logged orders from the <a href="{{ url_for('fatjoe_queue') }}">FATJOE queue</a></div>
+{% if ledger_groups %}
+<div class="split">
+  {% for g in ledger_groups %}
+  <div class="pill">
+    <span class="c">{{ g.category }}</span>
+    <span class="a">${{ '{:,.2f}'.format(g.subtotal) }}</span>
   </div>
-  <div class="exp-card total" style="border-left:3px solid #111827;">
-    <div class="k">All-in monthly (recurring + COGS)</div>
-    <div class="v">${{ '{:,.0f}'.format(data.totals.all_in_monthly) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
-    <div class="s">True monthly spend incl. this month's link-building</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if sync_msg %}
+{% if sync_level == 'ok' %}
+<div style="background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:10px;padding:9px 14px;font-size:.82rem;margin-bottom:1rem;">{{ sync_msg }}</div>
+{% else %}
+<div style="background:#fffbeb;border:1px solid #fcd34d;color:#92400e;border-radius:10px;padding:9px 14px;font-size:.82rem;margin-bottom:1rem;">⚠️ {{ sync_msg }}</div>
+{% endif %}
+{% endif %}
+
+{# ───────────────────── Ledger rows (editable) ───────────────────── #}
+{% for g in ledger_groups %}
+<div class="exp-group">
+  <h3>{{ g.category }}
+    <span style="display:flex;align-items:center;gap:10px;">
+      {% if g.category == 'AI / LLM APIs' %}
+      <form method="post" action="{{ url_for('expenses_sync') }}" style="margin:0;">
+        <input type="hidden" name="month" value="{{ month }}">
+        <button class="btn-sm" type="submit" title="Pull real spend from provider cost APIs (Claude + ChatGPT; Gemini pending Cloud Billing)">↻ Sync live usage</button>
+      </form>
+      {% endif %}
+      <span class="cat-total">${{ '{:,.2f}'.format(g.subtotal) }}</span>
+    </span>
+  </h3>
+  {% for r in g.rows %}
+  {% if r.derived %}
+  <div class="led-row" style="background:#fafafa;">
+    <div>
+      <div class="nm">{{ r.name }}<span class="rec-badge" style="background:#f1f5f9;color:#475569;">auto</span></div>
+      {% if r.vendor %}<div class="vn">{{ r.vendor }}</div>{% endif %}
+    </div>
+    <div class="vn" style="align-self:center;">{{ r.note }} <a href="{{ url_for('fatjoe_queue') }}">View orders →</a></div>
+    <div class="amt-wrap" style="padding-right:8px;"><span class="d">$</span><b style="font-variant-numeric:tabular-nums;">{{ '%.2f'|format(r.amount_usd) }}</b></div>
+    <div></div>
   </div>
+  {% else %}
+  <form class="led-row" method="post" action="{{ url_for('expenses_update', entry_id=r.id) }}">
+    <input type="hidden" name="month" value="{{ month }}">
+    <div>
+      <div class="nm">{{ r.name }}{% if r.recurring %}<span class="rec-badge">recurring</span>{% endif %}</div>
+      {% if r.vendor %}<div class="vn">{{ r.vendor }}</div>{% endif %}
+    </div>
+    <input type="text" name="note" value="{{ r.note }}" placeholder="Note (e.g. invoice #, what it was for)…" title="Note">
+    <div class="amt-wrap"><span class="d">$</span><input type="number" step="0.01" min="0" name="amount" value="{{ '%.2f'|format(r.amount_usd) }}" title="Amount charged"></div>
+    <div class="row-actions">
+      <button class="save" type="submit" title="Save changes">✓</button>
+      <button class="del" type="submit" formaction="{{ url_for('expenses_delete', entry_id=r.id) }}" formnovalidate onclick="return confirm('Remove {{ r.name }}?')" title="Remove">✕</button>
+    </div>
+  </form>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endfor %}
+
+{# ───────────────────── Add one-off ───────────────────── #}
+<div class="exp-group">
+  <h3>Add an expense to {{ month_label }}</h3>
+  <form class="led-row add-row" method="post" action="{{ url_for('expenses_add') }}" style="grid-template-columns:1fr 1fr 0.9fr 118px 62px;">
+    <input type="hidden" name="month" value="{{ month }}">
+    <input type="text" name="name" placeholder="What (e.g. BrightLocal, domain renewal)…" required>
+    <input type="text" name="vendor" placeholder="Vendor (optional)">
+    <input type="text" name="category" list="expcats" placeholder="Category">
+    <div class="amt-wrap"><span class="d">$</span><input type="number" step="0.01" min="0" name="amount" placeholder="0.00" required></div>
+    <div class="row-actions"><button class="save" type="submit" title="Add" style="width:auto;padding:0 12px;font-weight:800;">Add</button></div>
+  </form>
+  <datalist id="expcats">
+    {% for c in cat_choices %}<option value="{{ c }}"></option>{% endfor %}
+  </datalist>
 </div>
 
-<div class="exp-cards" style="grid-template-columns:repeat(2,1fr);">
-  <div class="exp-card" style="border-left:3px solid #5b21b6;">
-    <div class="k">Setup cost / new customer — base</div>
-    <div class="v">${{ '%.0f'|format(data.totals.setup_per_customer_base) }}<span style="font-size:.9rem;font-weight:500;"> one-time</span></div>
-    <div class="s">Optimize / Grow onboarding (citations + audit + migration)</div>
-  </div>
-  <div class="exp-card" style="border-left:3px solid #92400e;">
-    <div class="k">Setup cost / new customer — with redesign</div>
-    <div class="v">${{ '%.0f'|format(data.totals.setup_per_customer) }}<span style="font-size:.9rem;font-weight:500;"> one-time</span></div>
-    <div class="s">Dominate tier (adds the ~$5k pro redesign)</div>
-  </div>
-</div>
+{% if not ledger_groups %}
+<p style="color:var(--muted);font-size:.86rem;text-align:center;padding:1rem;">
+  No expenses logged for {{ month_label }} yet — use <b>Add recurring subscriptions</b> above to seed the monthly bills, then add any one-offs.
+</p>
+{% endif %}
 
-{% set bill_label = {'fixed':'Subscription','per_customer':'Usage','annual':'Annual','free':'Free','variable':'Per order','onetime':'One-time'} %}
-{% set cat_order = ['AI / LLM APIs','SEO & Data APIs','Reviews & Funnel','Publishing & Comms','Infrastructure','Link Building (variable COGS)','Setup / one-time (per customer)'] %}
-{% for cat in cat_order %}
-  {% if cat in data.groups %}
+<p style="color:var(--muted);font-size:.78rem;margin-top:1rem;">
+  Tip: edit any amount (e.g. paste the real Anthropic/OpenAI invoice figure), press <b>✓</b> to save, and
+  hand the <b>{{ month_label }}</b> total above to whoever reimburses you. FATJOE link-building is billed
+  per client and tracked on the <a href="{{ url_for('fatjoe_queue') }}">FATJOE queue</a> — it's not in this
+  personal-reimbursement ledger.
+</p>
+
+{# ─────────── Cost to serve — per customer & per tier (avg of recent months) ─────────── #}
+{% if cogs and cogs.n_served %}
+<div style="margin-top:2.25rem;">
+  <h2 style="margin:0;font-size:1.15rem;">Cost to serve — per customer &amp; per tier</h2>
+  <p style="color:var(--muted);font-size:.82rem;margin:.35rem 0 .9rem;max-width:72ch;">
+    Shared platform costs (AI, infra, SEO, Google) spread <b>evenly</b> across
+    <b>{{ cogs.n_served }}</b> served customer{{ 's' if cogs.n_served != 1 }}, plus each customer's
+    <b>direct FATJOE</b> spend — averaged over the last
+    <b>{{ cogs.n_months }}</b> month{{ 's' if cogs.n_months != 1 }}{% if cogs.months %} ({{ cogs.months|join(', ') }}){% endif %}.
+  </p>
+
+  <div class="split">
+    <div class="pill"><span class="c">Shared pool / mo</span><span class="a">${{ '%.2f'|format(cogs.shared_pool_avg) }}</span></div>
+    <div class="pill"><span class="c">Shared / customer</span><span class="a">${{ '%.2f'|format(cogs.shared_per_customer) }}</span></div>
+    <div class="pill"><span class="c">Served customers</span><span class="a">{{ cogs.n_served }}</span></div>
+    <div class="pill"><span class="c">Total COGS / mo</span><span class="a">${{ '%.2f'|format(cogs.grand_total_month) }}</span></div>
+  </div>
+
   <div class="exp-group">
-    <h3>{{ cat }}
-      {% if data.category_totals.get(cat) is not none %}<span class="cat-total">${{ '%.2f'|format(data.category_totals[cat]) }}{{ ' one-time' if 'Setup' in cat else '/mo' }}</span>{% endif %}
-    </h3>
+    <h3>By tier <span class="cat-total">avg cost-to-serve per customer</span></h3>
     <table class="exp">
       <thead><tr>
-        <th>Service</th><th>What it's for</th><th>Billing</th><th>When charged</th>
-        <th style="text-align:right;">Rate</th><th style="text-align:right;">Monthly</th>
+        <th>Tier</th><th>Customers</th>
+        <th class="exp-amt">Shared / ea</th><th class="exp-amt">Direct FATJOE / ea</th>
+        <th class="exp-amt">Total / customer</th><th class="exp-amt">Tier total / mo</th>
       </tr></thead>
       <tbody>
-      {% for r in data.groups[cat] %}
-      <tr>
-        <td>
-          <div class="exp-name">{{ r.name }}</div>
-          <div class="exp-vendor">{{ r.vendor }}</div>
-        </td>
-        <td>
-          <div class="exp-purpose">{{ r.purpose }}</div>
-          {% if r.note %}<div class="exp-note">{{ r.note }}</div>{% endif %}
-        </td>
-        <td><span class="bill bill-{{ r.billing }}">{{ bill_label.get(r.billing, r.billing) }}</span></td>
-        <td class="exp-charged">{{ r.charged }}</td>
-        <td class="exp-rate">{{ r.display_rate }}</td>
-        <td class="exp-amt">
-          {% if r.monthly_effective is none %}<span style="color:var(--muted);">varies</span>
-          {% elif r.monthly_effective == 0 %}<span style="color:#166534;">$0</span>
-          {% else %}${{ '%.2f'|format(r.monthly_effective) }}{% endif %}
-        </td>
-      </tr>
+      {% for t in cogs.per_tier %}
+        <tr>
+          <td class="exp-name" style="text-transform:capitalize;">{{ t.tier }}</td>
+          <td>{{ t.count }}</td>
+          <td class="exp-amt">${{ '%.2f'|format(t.shared_avg) }}</td>
+          <td class="exp-amt">${{ '%.2f'|format(t.direct_avg) }}</td>
+          <td class="exp-amt">${{ '%.2f'|format(t.total_avg) }}</td>
+          <td class="exp-amt">${{ '%.2f'|format(t.total_month) }}</td>
+        </tr>
       {% endfor %}
       </tbody>
     </table>
   </div>
-  {% endif %}
-{% endfor %}
 
-<p style="color:var(--muted);font-size:.78rem;margin-top:1rem;">
-  Usage and infra figures are best-effort estimates — edit the line items in
-  <code>geo_agent/expenses.py</code> to keep this accurate. FATJOE link-building is pass-through
-  COGS, now totalled live from the orders Dan logs on the <a href="{{ url_for('fatjoe_queue') }}">FATJOE queue</a>
-  (priced from the <a href="{{ url_for('fatjoe_catalog') }}">FATJOE catalog</a>) and shown above as real
-  month-to-date spend + the all-in monthly figure.
-</p>
+  <div class="exp-group">
+    <h3>By customer <span class="cat-total">estimated COGS / mo</span></h3>
+    <table class="exp">
+      <thead><tr>
+        <th>Customer</th><th>Tier</th>
+        <th class="exp-amt">Shared</th><th class="exp-amt">Direct FATJOE</th><th class="exp-amt">Total / mo</th>
+      </tr></thead>
+      <tbody>
+      {% for r in cogs.per_customer %}
+        <tr>
+          <td class="exp-name">{{ r.name }}</td>
+          <td><span style="text-transform:capitalize;font-size:.78rem;color:var(--muted);">{{ r.tier }}</span></td>
+          <td class="exp-amt">${{ '%.2f'|format(r.shared_avg) }}</td>
+          <td class="exp-amt">${{ '%.2f'|format(r.direct_avg) }}</td>
+          <td class="exp-amt">${{ '%.2f'|format(r.total_avg) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p style="color:var(--muted);font-size:.72rem;margin-top:.4rem;">
+    Method: <b>shared</b> = platform ledger ÷ served customers (even split); <b>direct</b> = that
+    customer's FATJOE orders by <code>ordered_at</code>. Averaged over recent months so onboarding
+    citation bursts don't skew the run-rate. Denominator = customers in <code>active</code>/<code>onboarding</code>.
+  </p>
+</div>
+{% endif %}
+
+{# ───────────────────── Reference: per-customer cost model ───────────────────── #}
+<details style="margin-top:2rem;">
+  <summary style="cursor:pointer;font-weight:700;font-size:.9rem;color:var(--muted);">
+    Reference: per-customer cost model (estimates) — what it costs to run the platform
+  </summary>
+  <div style="margin-top:1rem;">
+    <p style="color:var(--muted);margin:.25rem 0 1rem;font-size:.84rem;">
+      Estimated operating cost against <b>{{ active_customers }}</b> active customer{{ 's' if active_customers != 1 }}{% if not active_customers %} (showing {{ data.active_customers }} for rates){% endif %}. Not a reimbursement figure — this models unit economics.
+    </p>
+    <div class="exp-cards">
+      <div class="exp-card">
+        <div class="k">Fixed subscriptions</div>
+        <div class="v">${{ '%.0f'|format(data.totals.fixed) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
+        <div class="s">Flat monthly + amortized infra</div>
+      </div>
+      <div class="exp-card">
+        <div class="k">Per-customer (AI + tools)</div>
+        <div class="v">${{ '%.0f'|format(data.totals.usage) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
+        <div class="s">${{ '%.2f'|format(data.totals.per_customer_usage) }}/customer × {{ data.active_customers }}</div>
+      </div>
+      <div class="exp-card">
+        <div class="k">Annual (monthlyized)</div>
+        <div class="v">${{ '%.0f'|format(data.totals.annual) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
+        <div class="s">Billed yearly</div>
+      </div>
+      <div class="exp-card total">
+        <div class="k">Est. recurring total</div>
+        <div class="v">${{ '%.0f'|format(data.totals.recurring) }}<span style="font-size:.9rem;font-weight:500;">/mo</span></div>
+        <div class="s">Subscriptions + usage + annual (excl. setup)</div>
+      </div>
+    </div>
+
+    {% set bill_label = {'fixed':'Subscription','per_customer':'Usage','annual':'Annual','free':'Free','variable':'Per order','onetime':'One-time'} %}
+    {% set cat_order = ['AI / LLM APIs','SEO & Data APIs','Reviews & Funnel','Publishing & Comms','Infrastructure','Link Building (variable COGS)','Setup / one-time (per customer)'] %}
+    {% for cat in cat_order %}
+      {% if cat in data.groups %}
+      <div class="exp-group">
+        <h3>{{ cat }}
+          {% if data.category_totals.get(cat) is not none %}<span class="cat-total">${{ '%.2f'|format(data.category_totals[cat]) }}{{ ' one-time' if 'Setup' in cat else '/mo' }}</span>{% endif %}
+        </h3>
+        <table class="exp">
+          <thead><tr>
+            <th>Service</th><th>What it's for</th><th>Billing</th><th>When charged</th>
+            <th style="text-align:right;">Rate</th><th style="text-align:right;">Monthly</th>
+          </tr></thead>
+          <tbody>
+          {% for r in data.groups[cat] %}
+          <tr>
+            <td><div class="exp-name">{{ r.name }}</div><div class="exp-vendor">{{ r.vendor }}</div></td>
+            <td><div class="exp-purpose">{{ r.purpose }}</div>{% if r.note %}<div class="exp-note">{{ r.note }}</div>{% endif %}</td>
+            <td><span class="bill bill-{{ r.billing }}">{{ bill_label.get(r.billing, r.billing) }}</span></td>
+            <td class="exp-charged">{{ r.charged }}</td>
+            <td class="exp-rate">{{ r.display_rate }}</td>
+            <td class="exp-amt">
+              {% if r.monthly_effective is none %}<span style="color:var(--muted);">varies</span>
+              {% elif r.monthly_effective == 0 %}<span style="color:#166534;">$0</span>
+              {% else %}${{ '%.2f'|format(r.monthly_effective) }}{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+</details>
 {% endblock %}
