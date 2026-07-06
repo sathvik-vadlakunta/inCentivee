@@ -160,7 +160,12 @@
   .industry-nav-btn:hover { border-color: var(--accent); background: var(--accent-bg); }
   .industry-dropdown { display: none; position: absolute; top: 100%; right: 0; background: var(--bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 0.5rem; min-width: 180px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 200; padding-top: 0.75rem; }
   .industry-nav::after { content: ''; position: absolute; top: 100%; right: 0; width: 100%; height: 10px; }
-  .industry-nav:hover .industry-dropdown { display: block; }
+  /* Hover-to-open only on real pointer devices — on touch, :hover activates on
+     finger-down and clears on lift, which made the menu vanish when you let go.
+     Touch uses the .open tap-toggle below instead. */
+  @media (hover: hover) and (pointer: fine) {
+    .industry-nav:hover .industry-dropdown { display: block; }
+  }
   .industry-nav.open .industry-dropdown { display: block; }
   .industry-dropdown a { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; transition: all 0.15s; }
   .industry-dropdown a:hover { background: var(--accent-bg); color: var(--text); }
@@ -545,10 +550,13 @@
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('pr-theme', next);
   }
-  // Close industry dropdown when clicking outside
+  // Close any open industry dropdown when tapping/clicking outside it. Handles
+  // both the desktop and mobile-menu instances; a tap inside a nav (its button
+  // or a link) leaves that nav alone so it doesn't slam shut on the same tap.
   document.addEventListener('click', function(e) {
-    var nav = document.querySelector('.industry-nav');
-    if (nav && !nav.contains(e.target)) nav.classList.remove('open');
+    document.querySelectorAll('.industry-nav').forEach(function(nav) {
+      if (!nav.contains(e.target)) nav.classList.remove('open');
+    });
   });
   function toggleMobileNav() {
     var d = document.getElementById('mobile-menu');
