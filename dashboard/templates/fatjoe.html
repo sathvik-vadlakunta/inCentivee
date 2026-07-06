@@ -46,6 +46,16 @@
   .ordered{padding:9px 16px;background:#f8fafc;border-top:1px solid var(--border);font-size:.78rem;color:var(--muted);display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
   .ochip{display:inline-flex;gap:.35rem;align-items:center;background:#fff;border:1px solid var(--border);border-radius:999px;padding:3px 9px;}
   .ochip.delivered{background:#dcfce7;border-color:#bbf7d0;color:#166534;}
+  details.ohist{border-top:1px solid var(--border);background:#fbfcfe;}
+  details.ohist summary{cursor:pointer;font-weight:700;font-size:.78rem;padding:9px 16px;color:#475569;list-style:none;}
+  details.ohist summary::-webkit-details-marker{display:none;}
+  details.ohist[open] summary{border-bottom:1px solid var(--border);}
+  .ohist-mo{padding:8px 16px;border-bottom:1px solid var(--border);}
+  .ohist-mo:last-child{border-bottom:none;}
+  .ohist-h{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:4px;}
+  .ohist-row{display:grid;grid-template-columns:84px 1fr auto 128px;gap:.6rem;font-size:.76rem;color:#334155;padding:2px 0;align-items:center;}
+  .ohist-row.cancelled{color:#94a3b8;text-decoration:line-through;}
+  .ohist-row span:nth-child(3){text-align:right;font-weight:700;font-variant-numeric:tabular-nums;}
   details.recipe{margin-top:1rem;background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;padding:0 16px;}
   details.recipe summary{cursor:pointer;font-weight:700;padding:12px 0;}
   details.recipe table{width:100%;border-collapse:collapse;font-size:.82rem;margin-bottom:12px;}
@@ -89,7 +99,7 @@
 <div class="infobar">💲 {{ unverified_count }} line{{ 's' if unverified_count != 1 }} use a <b>seed price</b> not yet confirmed against FATJOE. <a href="{{ url_for('fatjoe_catalog') }}">Verify prices &amp; buy links →</a></div>
 {% endif %}
 <div class="infobar" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;">💵 <b>Every $ amount here is the real FATJOE order price × the quantity due this period</b> — exactly what you'll pay on FATJOE, not amortized or averaged across months. (Prices are GBP→USD approximate; FATJOE bills in GBP.)</div>
-<p class="muted" style="margin:-.25rem 0 1rem;">Buying window: place each month's orders within the first <b>{{ order_by_day }} days</b>. <b>Log every order the moment you place it</b> — an unlogged order keeps showing as due, so you'd re-order and double-pay.</p>
+<p class="muted" style="margin:-.25rem 0 1rem;">Rolling coverage: each order covers a customer for <b>{{ link_window }} days</b> (links) / <b>{{ mention_window }} days</b> (mentions) from when it's placed — a row only re-flags once that window lapses, so a late-month order won't look overdue the next day. <b>Log every order the moment you place it</b> — an unlogged order keeps showing as due, so you'd re-order and double-pay.</p>
 
 {% for r in rows %}
 <div class="fj-cust sev-{{ r.plan.severity }}">
@@ -179,6 +189,25 @@
     </span>
     {% endfor %}
   </div>
+  {% endif %}
+
+  {% if r.order_history %}
+  <details class="ohist">
+    <summary>📆 Order history — {{ r.order_history|length }} month{{ 's' if r.order_history|length != 1 }} logged</summary>
+    {% for m in r.order_history %}
+    <div class="ohist-mo">
+      <div class="ohist-h"><b>{{ m.label }}</b><span class="muted">{{ m.count }} order{{ 's' if m.count != 1 }} · ${{ '%.0f'|format(m.total) }}</span></div>
+      {% for o in m.orders %}
+      <div class="ohist-row {{ 'cancelled' if o.status == 'cancelled' }}">
+        <span>{{ o.ordered_at[:10] }}</span>
+        <span>{{ o.order_type }}{% if o.dr_tier %} DR{{ o.dr_tier }}{% endif %}{% if o.quantity > 1 %} ×{{ o.quantity }}{% endif %}</span>
+        <span>${{ '%.0f'|format(o.cost_usd) }}</span>
+        <span class="muted">{% if o.status == 'cancelled' %}cancelled{% elif o.delivered_at %}✓ delivered{% else %}ordered{% endif %}{% if o.vendor_order_id %} · #{{ o.vendor_order_id }}{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </details>
   {% endif %}
   {% else %}
   <div class="nothing">No orders configured for this tier.</div>

@@ -12,14 +12,14 @@ to its first word: "Optimize" / "Grow" / "Dominate".
 """
 from __future__ import annotations
 
-from calendar import monthrange
 from datetime import datetime, timedelta, timezone
 
-# Each month's link/citation orders should be placed within the first N days of
-# the month. After that the row goes "overdue" (red). Quarterly mentions get the
-# whole quarter. Tune here — it's the single knob for the buying SLA.
-MONTHLY_ORDER_BY_DAY = 10
-DUE_SOON_DAYS = 3  # amber when this many days or fewer remain
+# Rolling coverage windows (days): an order "covers" the customer for this long, so
+# the queue only re-flags a cadence once the window since the LAST qualifying order
+# lapses — not on the calendar 1st (which made a late-month order look overdue the
+# next day). Tune here — the single buying-SLA knob.
+WINDOW_DAYS = {"monthly": 30, "quarterly": 90}
+DUE_SOON_DAYS = 3  # amber when this many days or fewer remain before coverage lapses
 
 # anchor_type / dr_tier guidance lives here so Dan never has to guess.
 TIER_PLANS: dict[str, dict] = {
@@ -126,23 +126,18 @@ def monthly_content_quota(plan_name: str | None, override: str | None = None) ->
     return TIER_PLANS[tier].get("content_quota", DEFAULT_CONTENT_QUOTA)
 
 
-def _period_starts(now: datetime) -> tuple[str, str]:
-    """ISO start-of-month and start-of-quarter for 'ordered this period' checks."""
-    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    q_first_month = ((now.month - 1) // 3) * 3 + 1
-    quarter_start = now.replace(month=q_first_month, day=1, hour=0, minute=0, second=0, microsecond=0)
-    return month_start.strftime("%Y-%m-%dT%H:%M:%SZ"), quarter_start.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _deadline_for(cadence: str, now: datetime) -> datetime:
-    """End-of-day deadline by which an order of this cadence should be placed."""
-    if cadence == "monthly":
-        d = now.replace(day=1) + timedelta(days=MONTHLY_ORDER_BY_DAY - 1)
-    elif cadence == "quarterly":
-        q_last_month = ((now.month - 1) // 3) * 3 + 3
-        last_day = monthrange(now.year, q_last_month)[1]
-        d = now.replace(month=q_last_month, day=last_day)
-    else:  # onboarding — due immediately
+def _coverage_deadline(cadence: str, anchor_iso: str | None, now: datetime) -> datetime:
+    """When the current coverage lapses (the next order becomes due). For a windowed
+    cadence that's (last qualifying order + window); onboarding or a never-ordered
+    row is due now."""
+    window = WINDOW_DAYS.get(cadence)
+    if window and anchor_iso:
+        try:
+            a = datetime.fromisoformat(anchor_iso.replace("Z", "+00:00"))
+        except ValueError:
+            a = now
+        d = a + timedelta(days=window)
+    else:
         d = now
     return d.replace(hour=23, minute=59, second=59, microsecond=0)
 
@@ -229,22 +224,26 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
     if not tier:
         return {"tier": None, "label": plan_name or "—", "items": [], "total_due": 0}
 
-    month_start, quarter_start = _period_starts(now)
     plan = TIER_PLANS[tier]
     items: list[dict] = []
 
-    # Pre-allocate this month's ordered links across the tier's link rows so a
+    def _since(cadence: str) -> str | None:
+        w = WINDOW_DAYS.get(cadence)
+        return None if not w else (now - timedelta(days=w)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Pre-allocate the last 30 days of ordered links across the tier's link rows so a
     # higher-DR order auto-satisfies a lower-DR row (Dan's "order higher DA →
     # mark lower complete"). Links live in the monthly cadence.
     month_link_specs = [s for s in plan.get("monthly", []) if s["type"] == "link"]
     link_done: dict = {}
     if month_link_specs:
         pool: list[int] = []
-        for dr, qty in db.link_dr_quantities_in_period(customer_id, month_start).items():
+        for dr, qty in db.link_dr_quantities_in_period(customer_id, _since("monthly")).items():
             pool.extend([dr] * qty)
         link_done = _allocate_link_done(pool, month_link_specs)
 
-    for cadence, since in (("onboarding", None), ("monthly", month_start), ("quarterly", quarter_start)):
+    for cadence in ("onboarding", "monthly", "quarterly"):
+        since = _since(cadence)
         for spec in plan.get(cadence, []):
             if spec["type"] == "link" and id(spec) in link_done:
                 done = link_done[id(spec)]
@@ -252,7 +251,13 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
                 done = db.count_offsite_orders_in_period(customer_id, spec["type"], since)
             target = 1 if spec["type"] == "citation" else spec["qty"]  # citations: one pack, not 100 orders
             due = max(0, target - done)
-            deadline = _deadline_for(cadence, now)
+            # Anchor the coverage window on the most recent qualifying order (for
+            # links, a higher-DR order counts toward a lower-DR row's coverage).
+            if spec["type"] == "link":
+                anchor = db.last_offsite_order_at(customer_id, "link", min_dr=spec.get("dr_tier") or 0)
+            else:
+                anchor = db.last_offsite_order_at(customer_id, spec["type"])
+            deadline = _coverage_deadline(cadence, anchor, now)
             days_left = (deadline.date() - now.date()).days
             prod = resolve_product(db, spec)
             items.append({
@@ -273,6 +278,7 @@ def due_orders(db, customer_id: str, plan_name: str | None, now: datetime | None
                 "deadline": deadline.strftime("%Y-%m-%d"),
                 "days_left": days_left,
                 "severity": _severity(due, days_left),
+                "window_days": WINDOW_DAYS.get(cadence),
             })
 
     due_items = [i for i in items if i["qty_due"]]

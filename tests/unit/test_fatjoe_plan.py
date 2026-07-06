@@ -95,26 +95,50 @@ def test_unknown_plan_returns_empty(db):
     assert due["items"] == []
 
 
-def test_buying_window_severity_escalates(db):
-    """Monthly orders are 'ok' early in the window, 'soon' near the deadline,
-    'overdue' once past it."""
-    sev = lambda day: fp.due_orders(
-        db, "c1", "Grow", now=datetime(2026, 6, day, tzinfo=timezone.utc)
-    )["severity"]
-    # MONTHLY_ORDER_BY_DAY=10. But onboarding citations are due immediately, so the
-    # plan severity is driven by the soonest item — check the monthly item directly.
-    def link_sev(day):
-        d = fp.due_orders(db, "c1", "Grow", now=datetime(2026, 6, day, tzinfo=timezone.utc))
-        return next(i["severity"] for i in d["items"] if i["cadence"] == "monthly")
-    assert link_sev(2) == "ok"
-    assert link_sev(9) == "soon"
-    assert link_sev(11) == "overdue"
+def test_rolling_window_severity(db):
+    """Monthly links are covered for 30 days from the last order, then re-flag."""
+    from datetime import timedelta
+    now = datetime(2026, 6, 22, tzinfo=timezone.utc)
+
+    def monthly_item(n=now):
+        d = fp.due_orders(db, "c1", "Grow", now=n)
+        return next(i for i in d["items"] if i["cadence"] == "monthly")
+
+    def _order_ago(days):
+        oid = db.add_offsite_order("c1", "link", quantity=2, dr_tier=30, cost_usd=270)
+        db.conn.execute("UPDATE offsite_orders SET ordered_at = ? WHERE id = ?",
+                        ((now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ"), oid))
+        db.conn.commit()
+        return oid
+
+    # Never ordered → due now, flagged (soon), not overdue.
+    it = monthly_item()
+    assert it["qty_due"] == 2 and it["severity"] == "soon"
+
+    # Ordered the 2 links 5 days ago → covered; renews in 25 days.
+    oid = _order_ago(5)
+    it = monthly_item()
+    assert it["qty_due"] == 0 and it["severity"] == "done"
+    assert it["days_left"] == 25    # 30-day window − 5 days elapsed
+
+    # Push that order to 35 days ago → coverage lapsed → due again, overdue.
+    db.conn.execute("UPDATE offsite_orders SET ordered_at = ? WHERE id = ?",
+                    ((now - timedelta(days=35)).strftime("%Y-%m-%dT%H:%M:%SZ"), oid))
+    db.conn.commit()
+    it = monthly_item()
+    assert it["qty_due"] == 2 and it["severity"] == "overdue"
 
 
-def test_deadline_is_first_n_days_of_month(db):
-    d = fp.due_orders(db, "c1", "Optimize", now=datetime(2026, 6, 1, tzinfo=timezone.utc))
+def test_deadline_is_last_order_plus_window(db):
+    """A covered row's deadline is (last order + 30 days), not the calendar 1st."""
+    oid = db.add_offsite_order("c1", "link", quantity=1, dr_tier=20, cost_usd=108)
+    db.conn.execute("UPDATE offsite_orders SET ordered_at = ? WHERE id = ?",
+                    ("2026-06-10T00:00:00Z", oid))
+    db.conn.commit()
+    d = fp.due_orders(db, "c1", "Optimize", now=datetime(2026, 6, 22, tzinfo=timezone.utc))
     monthly = next(i for i in d["items"] if i["cadence"] == "monthly")
-    assert monthly["deadline"] == f"2026-06-{fp.MONTHLY_ORDER_BY_DAY:02d}"
+    assert monthly["qty_due"] == 0            # covered by the June 10 order
+    assert monthly["deadline"] == "2026-07-10"  # order date + 30-day window
 
 
 def test_cancelled_orders_dont_count(db):
