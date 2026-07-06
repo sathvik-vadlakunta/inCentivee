@@ -1,6 +1,5 @@
 ---
 import Base from '@layouts/Base.astro'
-import Hero from '@components/Hero.astro'
 import BlogCard from '@components/BlogCard.astro'
 import practice from '@data/practice.json'
 import { getCollection } from 'astro:content'
@@ -8,31 +7,150 @@ import { getCollection } from 'astro:content'
 const posts = (await getCollection('blog'))
   .filter((p) => !p.data.draft)
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+
+const tags = Array.from(new Set(posts.flatMap((p) => p.data.tags || []).filter(Boolean))).sort()
+const phoneHref = `tel:${practice.phone.replace(/[^+\d]/g, '')}`
+const heroImg = '/images/hero-banner2.webp'
 ---
 
-<Base title="Blog" description={`Dental health tips and news from ${practice.name}.`}>
-  <Hero title="Blog" subtitle="Tips, news, and insights for your dental health" />
-
-  <section class="py-16 sm:py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {posts.length > 0 ? (
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <BlogCard
-              title={post.data.title}
-              description={post.data.description}
-              href={`/blog/${post.slug}`}
-              pubDate={post.data.pubDate}
-              image={post.data.image}
-              tags={post.data.tags}
-            />
-          ))}
-        </div>
-      ) : (
-        <p class="text-center text-gray-500 text-lg">
-          Blog posts coming soon! Check back for dental health tips and practice updates.
-        </p>
-      )}
+<Base title="Blog" description={`Dental health tips, treatment guides, and practice news from ${practice.name} in South Jordan, Utah.`}>
+  {/* ─────────── Hero ─────────── */}
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-cover bg-center" style={`background-image:url('${heroImg}')`}></div>
+    <div class="absolute inset-0" style="background:linear-gradient(115deg, rgba(27,28,29,.86) 0%, rgba(27,28,29,.7) 45%, rgba(60,128,67,.72) 100%)"></div>
+    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28 text-center text-white">
+      <span class="inline-block text-sm font-semibold uppercase tracking-[0.18em]" style="color:var(--color-primary)">SoJo Dental Resources</span>
+      <h1 class="mt-3 font-heading text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">Healthy smiles, <span style="color:var(--color-primary)">explained</span></h1>
+      <p class="mt-5 max-w-2xl mx-auto text-lg text-gray-200">Practical guides on implants, cosmetic care, and comfortable dentistry — straight from your South Jordan dental team.</p>
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        <a href="/contact" class="btn btn-gold">Book an appointment</a>
+        <a href={phoneHref} class="btn btn-ghost">📞 {practice.phone}</a>
+      </div>
     </div>
   </section>
+
+  {posts.length === 0 ? (
+    <div class="max-w-2xl mx-auto px-4 py-24 text-center">
+      <p class="text-gray-500 text-lg">Blog posts are coming soon! In the meantime, we'd love to help — give us a call.</p>
+      <a href={phoneHref} class="btn btn-gold mt-6">📞 {practice.phone}</a>
+    </div>
+  ) : (
+    <section class="py-14 sm:py-20">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* search */}
+        <div class="relative max-w-xl mx-auto mb-5">
+          <svg class="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M21 21l-4.3-4.3M11 19a8 8 0 100-16 8 8 0 000 16z"/></svg>
+          <input id="blSearch" type="search" placeholder="Search articles…  (press / )" autocomplete="off" aria-label="Search articles" class="w-full pl-12 pr-4 py-3.5 rounded-full border border-gray-200 bg-white outline-none text-base transition focus:border-primary focus:ring-4 focus:ring-primary/15" />
+        </div>
+
+        {/* category chips */}
+        <div id="blCats" class="flex flex-wrap justify-center gap-2 mb-4">
+          <button class="chip is-on" data-tag="">All</button>
+          {tags.map((t) => (<button class="chip" data-tag={t.toLowerCase()}>{t}</button>))}
+        </div>
+
+        {/* result count */}
+        <p id="blCount" class="text-center text-sm text-gray-500 mb-8"></p>
+
+        {/* grid */}
+        <div id="blGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts.map((post) => (
+            <div
+              class="bfilter"
+              data-tags={`|${(post.data.tags || []).map((t) => t.toLowerCase()).join('|')}|`}
+              data-t={`${post.data.title} ${post.data.description} ${(post.data.tags || []).join(' ')}`.toLowerCase()}
+            >
+              <BlogCard
+                title={post.data.title}
+                description={post.data.description}
+                href={`/blog/${post.slug}`}
+                pubDate={post.data.pubDate}
+                image={post.data.image}
+                tags={post.data.tags}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* empty state */}
+        <div id="blEmpty" class="text-center py-16" hidden>
+          <p class="text-gray-500 text-lg">No articles match your search.</p>
+          <button id="blReset" class="btn btn-outline mt-5">Clear filters</button>
+        </div>
+
+        {/* conversion band */}
+        <div class="mt-16 rounded-3xl p-8 sm:p-12 text-center text-white" style="background:linear-gradient(120deg,var(--color-secondary),var(--color-primary))">
+          <h2 class="font-heading text-2xl sm:text-3xl font-bold">Have a question about your smile?</h2>
+          <p class="mt-3 text-white/90">Our South Jordan team is happy to help — no pressure, just answers.</p>
+          <div class="mt-6 flex flex-wrap justify-center gap-3">
+            <a href="/contact" class="btn bg-white text-secondary hover:bg-white/90">Book an appointment</a>
+            <a href={phoneHref} class="btn btn-ghost">📞 {practice.phone}</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  )}
 </Base>
+
+<style>
+  .chip { border: 1px solid color-mix(in srgb, var(--color-primary) 45%, #fff); background: #fff; color: var(--color-secondary); font-weight: 600; font-size: 13px; padding: 7px 15px; border-radius: 999px; cursor: pointer; transition: .15s; white-space: nowrap; }
+  .chip:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .chip.is-on { background: var(--color-secondary); color: #fff; border-color: var(--color-secondary); }
+</style>
+
+<script is:inline>
+  function blInit() {
+    const grid = document.getElementById('blGrid')
+    if (!grid || grid.dataset.wired) return
+    grid.dataset.wired = '1'
+    const cards = [].slice.call(grid.querySelectorAll('.bfilter'))
+    const empty = document.getElementById('blEmpty')
+    const search = document.getElementById('blSearch')
+    const catsEl = document.getElementById('blCats')
+    const countEl = document.getElementById('blCount')
+    const reset = document.getElementById('blReset')
+    let q = '', tag = ''
+
+    function setActive() {
+      [].forEach.call(catsEl.children, function (x) { x.classList.toggle('is-on', x.dataset.tag === tag) })
+    }
+    function syncUrl() {
+      try {
+        const u = new URL(location.href)
+        if (tag) u.searchParams.set('tag', tag); else u.searchParams.delete('tag')
+        history.replaceState(null, '', u)
+      } catch (e) {}
+    }
+    function apply() {
+      let shown = 0
+      cards.forEach(function (c) {
+        const ok = (!tag || c.dataset.tags.indexOf('|' + tag + '|') > -1) && (!q || c.dataset.t.indexOf(q) > -1)
+        c.style.display = ok ? '' : 'none'
+        if (ok) shown++
+      })
+      empty.hidden = shown > 0
+      countEl.textContent = shown === cards.length
+        ? 'Showing all ' + cards.length + ' article' + (cards.length === 1 ? '' : 's')
+        : 'Showing ' + shown + ' of ' + cards.length + ' articles'
+    }
+
+    let t
+    search.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { q = search.value.trim().toLowerCase(); apply() }, 130) })
+    catsEl.addEventListener('click', function (e) {
+      const b = e.target.closest('button[data-tag]'); if (!b) return
+      tag = b.dataset.tag; setActive(); syncUrl(); apply()
+    })
+    if (reset) reset.addEventListener('click', function () { q = ''; tag = ''; search.value = ''; setActive(); syncUrl(); apply() })
+    document.addEventListener('keydown', function (e) {
+      if (e.key === '/' && document.activeElement !== search) { e.preventDefault(); search.focus() }
+    })
+
+    try {
+      const u = new URLSearchParams(location.search).get('tag')
+      if (u) { tag = u.toLowerCase(); setActive() }
+    } catch (e) {}
+    apply()
+  }
+  document.addEventListener('astro:page-load', blInit)
+  blInit()
+</script>
