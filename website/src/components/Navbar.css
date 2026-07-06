@@ -50,12 +50,59 @@
 
 /* Desktop CTA */
 .navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-shrink: 0;
 }
 
 .navbar-actions .btn {
   padding: 10px 20px;
   font-size: var(--text-sm);
+}
+
+/* Cents counter */
+.navbar-cents {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px 6px 8px;
+  background: var(--muted);
+  border: var(--border-width) solid var(--foreground);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--text-sm);
+  color: var(--foreground);
+}
+
+.navbar-cents--guest {
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.navbar-cents-coin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--tertiary);
+  color: white;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.75rem;
+  border: var(--border-width) solid var(--foreground);
+  box-shadow: 1px 1px 0 var(--foreground);
+}
+
+.navbar-mobile-bottom {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Hamburger toggle — hidden on desktop */
