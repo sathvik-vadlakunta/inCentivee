@@ -13,11 +13,13 @@ Login credentials are set via environment variables:
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import logging
 import os
 import re
 import secrets
+import socket
 import signal
 import sys
 import threading
@@ -915,6 +917,27 @@ def billing_sync():
     return redirect(url_for("billing"))
 
 
+def _orders_by_month(orders):
+    """Group offsite orders (newest-first) into per-month buckets with a non-cancelled
+    total, so the FATJOE queue can show a clear month-by-month order history."""
+    from collections import OrderedDict
+    groups: "OrderedDict[str, list]" = OrderedDict()
+    for o in orders:  # get_offsite_orders is already ordered newest-first
+        mk = (o.get("ordered_at") or "")[:7] or "—"
+        groups.setdefault(mk, []).append(o)
+    out = []
+    for mk, items in groups.items():
+        total = sum((it.get("cost_usd") or 0) for it in items
+                    if (it.get("status") or "") != "cancelled")
+        try:
+            label = datetime.strptime(mk, "%Y-%m").strftime("%B %Y")
+        except ValueError:
+            label = mk
+        out.append({"month": mk, "label": label, "orders": items,
+                    "total": round(total, 2), "count": len(items)})
+    return out
+
+
 @app.route("/fatjoe")
 @login_required
 def fatjoe_queue():
@@ -927,27 +950,34 @@ def fatjoe_queue():
         rows = []
         unplanned = []
         for cust in db.list_customers():
+            # The FATJOE queue is only for the live paying book — skip archived /
+            # churned / paused clients so Dan isn't buying links for non-payers.
+            # (Status is the practical signal: only 1 client has a linked Stripe sub.)
+            if cust["status"] not in ("active", "onboarding"):
+                continue
             sub = db.get_subscription_for_customer(cust["id"])
-            plan_name = sub["plan_name"] if sub else None
             paid = bool(sub and sub["status"] in _BILLING_OK)
+            plan_name = sub["plan_name"] if sub else None
             override = cust.get("tier_override") or ""
             tier = fp.resolve_tier(plan_name, override)
             if not tier:
-                # Active customers with no linked paid plan — surface so they're not forgotten.
-                if cust["status"] in ("active", "onboarding"):
-                    unplanned.append({"customer": cust, "sub": sub})
+                # Paying but no tier resolves (custom product name, no override) —
+                # surface so a tier gets assigned and orders start flowing.
+                unplanned.append({"customer": cust, "sub": sub})
                 continue
             due = fp.due_orders(db, cust["id"], plan_name, tier_override=override)
             # Ad-hoc margin only: scope COGS to orders that carry a client sell price
             # so subscription/tier link COGS (sell_usd=0) doesn't drag margin negative.
             cogs = db.offsite_spend(cust["id"], adhoc_only=True)
             revenue = db.offsite_revenue(cust["id"])
+            all_orders = db.get_offsite_orders(cust["id"])
             rows.append({
                 "customer": cust,
                 "paid": paid,
                 "status": sub["status"] if sub else "—",
                 "plan": due,
-                "recent_orders": db.get_offsite_orders(cust["id"])[:5],
+                "recent_orders": all_orders[:5],
+                "order_history": _orders_by_month(all_orders),
                 "cogs": cogs,
                 "revenue": revenue,
                 "margin": revenue - cogs,
@@ -968,7 +998,8 @@ def fatjoe_queue():
             unplanned=unplanned,
             tier_plans=fp.TIER_PLANS,
             total_due=sum(r["plan"]["total_due"] for r in rows),
-            order_by_day=fp.MONTHLY_ORDER_BY_DAY,
+            link_window=fp.WINDOW_DAYS["monthly"],
+            mention_window=fp.WINDOW_DAYS["quarterly"],
             unverified_count=unverified,
             mtd_spend=mtd_spend,
             catalog=catalog,
@@ -1630,6 +1661,73 @@ def public_report(token):
         return resp
     finally:
         db.close()
+
+
+# --- Fetch relay (droplet egress) for the public audit Worker ------------------
+# Some prospect sites (self-hosted WordPress/nginx behind bot/datacenter WAFs)
+# block Cloudflare Worker egress IPs, so the free audit on practicerank.ai gets
+# "blocked" even though the site is up. This endpoint lets the Worker fall back
+# to fetching the HTML through the droplet, whose IP those sites don't block.
+# It is a server-side fetch proxy, so it is locked down: shared-secret auth +
+# an SSRF guard that refuses any host resolving to a private/loopback/link-local
+# address. Not a general proxy — it only returns HTML for the audit.
+
+def _relay_host_is_public(host: str) -> bool:
+    """True only if every A/AAAA record for host is a public, routable address."""
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except Exception:
+        return False
+    if not infos:
+        return False
+    for info in infos:
+        try:
+            addr = ipaddress.ip_address(info[4][0])
+        except ValueError:
+            return False
+        if (addr.is_private or addr.is_loopback or addr.is_link_local
+                or addr.is_reserved or addr.is_multicast or addr.is_unspecified):
+            return False
+    return True
+
+
+_RELAY_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+
+
+@app.route("/internal/fetch-relay")
+def internal_fetch_relay():
+    """Fetch a public URL server-side and return its HTML. Auth: X-Relay-Secret
+    must match RELAY_SECRET. Used only by the audit Worker as a blocked-site
+    fallback. Returns {status, finalUrl, html} (html capped at 1.5 MB)."""
+    secret = os.environ.get("RELAY_SECRET", "")
+    provided = request.headers.get("X-Relay-Secret", "")
+    if not secret or not secrets.compare_digest(provided, secret):
+        abort(403)
+
+    target = (request.args.get("url") or "").strip()
+    parsed = urlparse(target)
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return jsonify({"error": "url must be an http(s) URL with a host"}), 400
+    if not _relay_host_is_public(parsed.hostname):
+        return jsonify({"error": "host is not a public address"}), 400
+
+    try:
+        headers = {
+            "User-Agent": _RELAY_UA,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        with httpx.Client(follow_redirects=True, timeout=15.0, headers=headers) as client:
+            r = client.get(target)
+        html = r.text or ""
+        return jsonify({
+            "status": r.status_code,
+            "finalUrl": str(r.url),
+            "html": html[:1_500_000],
+        })
+    except Exception as e:
+        return jsonify({"error": f"fetch failed: {e}"}), 502
 
 
 # --- Customer notes / status ---
@@ -6127,33 +6225,224 @@ def api_board_status():
 
 # --- Audit Logs ---
 
+_EXPENSE_CAT_ORDER = [
+    "AI / LLM APIs", "Google", "SEO & Data APIs", "Infrastructure",
+    "Publishing & Comms", "Reviews & Funnel", "Link Building", "Domains", "Other",
+]
+
+
+def _month_label(m: str) -> str:
+    try:
+        return datetime.strptime(m + "-01", "%Y-%m-%d").strftime("%B %Y")
+    except ValueError:
+        return m
+
+
+def _recent_months(n: int = 12) -> list[str]:
+    now = datetime.now(timezone.utc)
+    out = []
+    for i in range(n):
+        idx = (now.year * 12 + (now.month - 1)) - i
+        out.append(f"{idx // 12:04d}-{idx % 12 + 1:02d}")
+    return out
+
+
 @app.route("/expenses")
 @login_required
 def expenses():
-    """Operating-cost breakdown — every AI/LLM API + service the platform pays
-    for, monthly cost, and when it's charged. Usage lines scale by active
-    customers; see dashboard/expenses.py for the source line items."""
-    from geo_agent.expenses import compute_expenses
+    """Real monthly expense ledger (for reimbursement) + a reference cost model.
+
+    The ledger records what we ACTUALLY pay each month (expense_entries), viewed
+    one month at a time and split by category. Recurring subscriptions are seeded
+    from RECURRING_TEMPLATES; one-offs are logged manually. The old estimated
+    per-customer cost model is kept below as reference (compute_expenses)."""
+    from geo_agent.expenses import compute_expenses, RECURRING_TEMPLATES
+    from geo_agent import cost_allocation
+    cur_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    month = (request.args.get("month") or cur_month).strip()
+    if len(month) != 7 or month[4] != "-":
+        month = cur_month
+
     db = get_db()
     try:
+        # Auto-seed any recent month (current or past, within the ~12-month
+        # selector window) the first time it's opened, so past months aren't
+        # mysteriously blank. Never seed future months. Idempotent.
+        _floor = _recent_months(12)[-1]
+        if _floor <= month <= cur_month and not db.list_expense_entries(month):
+            db.seed_recurring_expenses(month, RECURRING_TEMPLATES)
+
+        entries = db.list_expense_entries(month)
+        # Real FATJOE COGS for this month, pulled live from logged orders and
+        # folded in as a derived (read-only) reimbursement line.
+        fatjoe_cost, fatjoe_n = db.offsite_spend_month(month)
+        if fatjoe_cost > 0:
+            entries.append({
+                "id": None, "month": month, "category": "Link Building",
+                "vendor": "FATJOE",
+                "name": f"FATJOE — {fatjoe_n} logged order{'' if fatjoe_n == 1 else 's'}",
+                "amount_usd": fatjoe_cost, "recurring": 0, "template_key": "",
+                "note": "Real COGS pulled live from the FATJOE queue.", "derived": True,
+            })
+        months = sorted(set(db.expense_months()) | set(_recent_months()) | {month}, reverse=True)
+
+        # Group by category + subtotals for the reimbursement split.
+        by_cat: dict[str, list] = {}
+        for e in entries:
+            by_cat.setdefault(e["category"] or "Other", []).append(e)
+        ordered_cats = [c for c in _EXPENSE_CAT_ORDER if c in by_cat] + \
+                       [c for c in by_cat if c not in _EXPENSE_CAT_ORDER]
+        ledger_groups = [
+            {"category": c, "rows": by_cat[c],
+             "subtotal": round(sum(x["amount_usd"] for x in by_cat[c]), 2)}
+            for c in ordered_cats
+        ]
+        month_total = round(sum(e["amount_usd"] for e in entries), 2)
+        recurring_total = round(sum(e["amount_usd"] for e in entries if e["recurring"]), 2)
+
+        # Reference cost model (unchanged).
         customers = db.list_customers()
         active = sum(1 for c in customers if c.get("status") == "active")
         non_archived = sum(1 for c in customers if c.get("status") != "archived")
-        # Real FATJOE COGS from logged orders — month-to-date + all-time.
-        _month_start = datetime.now(timezone.utc).replace(
+        _mstart = datetime.now(timezone.utc).replace(
             day=1, hour=0, minute=0, second=0, microsecond=0
         ).strftime("%Y-%m-%dT%H:%M:%SZ")
-        fatjoe_mtd = db.offsite_spend(since=_month_start)
+        fatjoe_mtd = db.offsite_spend(since=_mstart)
         fatjoe_total = db.offsite_spend()
+
+        # Per-customer / per-tier average COGS: shared platform costs spread evenly
+        # across served customers + direct FATJOE, averaged over recent ledger months.
+        try:
+            cogs = cost_allocation.compute(db, n_months=3)
+        except Exception as exc:  # noqa: BLE001
+            app.logger.warning("cost_allocation.compute failed: %s", exc)
+            cogs = None
     finally:
         db.close()
-    # Bill against active customers, but never 0 (so per-customer rates show).
+
     data = compute_expenses(active or non_archived or 1,
                             fatjoe_mtd=fatjoe_mtd, fatjoe_total=fatjoe_total)
+    cat_choices = sorted(set(_EXPENSE_CAT_ORDER) | {g["category"] for g in ledger_groups})
     return render_template(
         "expenses.html",
         data=data, active_customers=active, non_archived=non_archived,
+        month=month, month_label=_month_label(month), cur_month=cur_month,
+        months=months, month_labels={m: _month_label(m) for m in months},
+        ledger_groups=ledger_groups, month_total=month_total,
+        recurring_total=recurring_total,
+        oneoff_total=round(month_total - recurring_total, 2),
+        entry_count=len(entries), cat_choices=cat_choices,
+        sync_msg=session.pop("exp_sync", None),
+        sync_level=session.pop("exp_sync_level", None),
+        cogs=cogs,
     )
+
+
+@app.route("/expenses/sync", methods=["POST"])
+@login_required
+def expenses_sync():
+    """Pull real month-to-date AI spend from provider cost APIs onto this
+    month's ledger rows (Anthropic + OpenAI wired; Gemini pending Cloud Billing;
+    Perplexity/Grok manual). Needs admin/billing keys in the droplet .env."""
+    from geo_agent.usage_sync import sync_ai_usage, summarize
+    from geo_agent.expenses import RECURRING_TEMPLATES
+    month = (request.form.get("month") or datetime.now(timezone.utc).strftime("%Y-%m")).strip()
+    db = get_db()
+    try:
+        if not db.list_expense_entries(month):
+            db.seed_recurring_expenses(month, RECURRING_TEMPLATES)
+        results = sync_ai_usage(db, month)
+    finally:
+        db.close()
+    synced = sum(1 for r in results.values() if r.get("status") == "ok")
+    if synced:
+        session["exp_sync"] = f"✅ Synced {synced} provider(s) — {summarize(results)}"
+        session["exp_sync_level"] = "ok"
+    else:
+        session["exp_sync"] = (
+            "Couldn't pull live usage — no billing admin keys are set on the server. "
+            "The keys present are inference keys (used to call the models); provider "
+            "cost APIs need a separate admin key. Add ANTHROPIC_ADMIN_KEY and "
+            "OPENAI_ADMIN_KEY to the droplet .env, run `docker compose up -d dashboard`, "
+            f"then Sync again.  ({summarize(results)})"
+        )
+        session["exp_sync_level"] = "warn"
+    return redirect(url_for("expenses", month=month))
+
+
+@app.route("/expenses/seed", methods=["POST"])
+@login_required
+def expenses_seed():
+    """Drop this month's recurring subscriptions into the ledger (idempotent)."""
+    from geo_agent.expenses import RECURRING_TEMPLATES
+    month = (request.form.get("month") or datetime.now(timezone.utc).strftime("%Y-%m")).strip()
+    db = get_db()
+    try:
+        db.seed_recurring_expenses(month, RECURRING_TEMPLATES)
+    finally:
+        db.close()
+    return redirect(url_for("expenses", month=month))
+
+
+@app.route("/expenses/add", methods=["POST"])
+@login_required
+def expenses_add():
+    """Log a one-off (or manual) expense charge into a month."""
+    f = request.form
+    month = (f.get("month") or datetime.now(timezone.utc).strftime("%Y-%m")).strip()
+    name = (f.get("name") or "").strip()
+    try:
+        amount = float(f.get("amount") or 0)
+    except ValueError:
+        amount = 0.0
+    if name:
+        db = get_db()
+        try:
+            db.add_expense_entry(
+                month=month, name=name, amount_usd=amount,
+                category=(f.get("category") or "Other").strip(),
+                vendor=(f.get("vendor") or "").strip(),
+                incurred_on=(f.get("incurred_on") or None),
+                note=(f.get("note") or "").strip(),
+            )
+        finally:
+            db.close()
+    return redirect(url_for("expenses", month=month))
+
+
+@app.route("/expenses/update/<int:entry_id>", methods=["POST"])
+@login_required
+def expenses_update(entry_id):
+    """Patch an entry's amount/note (inline edit of the real charged figure)."""
+    f = request.form
+    month = (f.get("month") or datetime.now(timezone.utc).strftime("%Y-%m")).strip()
+    fields = {}
+    if f.get("amount") is not None and f.get("amount") != "":
+        try:
+            fields["amount_usd"] = float(f.get("amount"))
+        except ValueError:
+            pass
+    if f.get("note") is not None:
+        fields["note"] = f.get("note").strip()
+    db = get_db()
+    try:
+        if fields:
+            db.update_expense_entry(entry_id, **fields)
+    finally:
+        db.close()
+    return redirect(url_for("expenses", month=month))
+
+
+@app.route("/expenses/delete/<int:entry_id>", methods=["POST"])
+@login_required
+def expenses_delete(entry_id):
+    month = (request.form.get("month") or datetime.now(timezone.utc).strftime("%Y-%m")).strip()
+    db = get_db()
+    try:
+        db.delete_expense_entry(entry_id)
+    finally:
+        db.close()
+    return redirect(url_for("expenses", month=month))
 
 
 @app.route("/audit-logs")

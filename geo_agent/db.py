@@ -989,6 +989,29 @@ class CustomerDB:
                 stripe_subscription_id TEXT,
                 received_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             );
+
+            -- Real operating-expense ledger (what we ACTUALLY pay each month, for
+            -- reimbursement) — distinct from the estimated cost model in
+            -- geo_agent/expenses.py. One row per charge, bucketed to a 'YYYY-MM'
+            -- month. Recurring subscriptions are seeded from RECURRING_TEMPLATES
+            -- (dedup via template_key); one-off charges are added manually.
+            CREATE TABLE IF NOT EXISTS expense_entries (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                month TEXT NOT NULL,                          -- 'YYYY-MM' the charge belongs to
+                incurred_on TEXT,                             -- optional exact date 'YYYY-MM-DD'
+                category TEXT NOT NULL DEFAULT 'Other',
+                vendor TEXT NOT NULL DEFAULT '',
+                name TEXT NOT NULL DEFAULT '',
+                amount_usd REAL NOT NULL DEFAULT 0,
+                recurring INTEGER NOT NULL DEFAULT 0,         -- 1 = seeded from a recurring template
+                template_key TEXT NOT NULL DEFAULT '',        -- links a seeded row to its template (per-month dedupe)
+                note TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_expense_entries_month ON expense_entries(month);
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_expense_entries_seed
+                ON expense_entries(month, template_key) WHERE template_key != '';
         """)
 
         # share_token may be missing on report_snapshots created before it was added.
@@ -3425,6 +3448,130 @@ class CustomerDB:
         "anchor_text", "anchor_type", "cost_usd", "sell_usd", "vendor_order_id", "notes",
     )
 
+    # ------------------------------------------------------------------ #
+    # Real expense ledger (reimbursement) — see expense_entries table.     #
+    # ------------------------------------------------------------------ #
+    _EXPENSE_COLS = ("month", "incurred_on", "category", "vendor", "name",
+                     "amount_usd", "recurring", "template_key", "note")
+
+    def add_expense_entry(self, month: str, name: str, amount_usd: float,
+                          category: str = "Other", vendor: str = "",
+                          incurred_on: str | None = None, recurring: int = 0,
+                          template_key: str = "", note: str = "") -> int:
+        """Log one real expense charge into a month's ledger. Returns row id."""
+        cur = self.conn.execute(
+            "INSERT INTO expense_entries "
+            "(month, incurred_on, category, vendor, name, amount_usd, recurring, template_key, note) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (month, incurred_on, category, vendor, name,
+             round(float(amount_usd or 0), 2), int(recurring), template_key, note),
+        )
+        self.conn.commit()
+        return cur.lastrowid
+
+    def list_expense_entries(self, month: str) -> list[dict]:
+        """All expense rows for a 'YYYY-MM' month, ordered by category then name."""
+        rows = self.conn.execute(
+            "SELECT * FROM expense_entries WHERE month = ? ORDER BY category, name, id",
+            (month,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def update_expense_entry(self, entry_id: int, **fields) -> None:
+        """Patch amount/note/name/vendor/category/incurred_on on one entry."""
+        allowed = {k: v for k, v in fields.items()
+                   if k in ("amount_usd", "note", "name", "vendor", "category", "incurred_on")}
+        if not allowed:
+            return
+        if "amount_usd" in allowed:
+            allowed["amount_usd"] = round(float(allowed["amount_usd"] or 0), 2)
+        allowed["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        sets = ", ".join(f"{k} = ?" for k in allowed)
+        self.conn.execute(
+            f"UPDATE expense_entries SET {sets} WHERE id = ?",
+            list(allowed.values()) + [entry_id],
+        )
+        self.conn.commit()
+
+    def delete_expense_entry(self, entry_id: int) -> None:
+        self.conn.execute("DELETE FROM expense_entries WHERE id = ?", (entry_id,))
+        self.conn.commit()
+
+    def expense_months(self) -> list[str]:
+        """Distinct months that have ledger rows, newest first."""
+        rows = self.conn.execute(
+            "SELECT DISTINCT month FROM expense_entries ORDER BY month DESC"
+        ).fetchall()
+        return [r[0] for r in rows]
+
+    def set_expense_amount_by_template(self, month: str, template_key: str,
+                                       amount: float, note: str | None = None) -> bool:
+        """Set a seeded row's amount (used by the live usage sync). Returns True
+        if a matching (month, template_key) row existed and was updated."""
+        row = self.conn.execute(
+            "SELECT id FROM expense_entries WHERE month = ? AND template_key = ?",
+            (month, template_key),
+        ).fetchone()
+        if not row:
+            return False
+        self.update_expense_entry(row[0], amount_usd=amount, **({"note": note} if note is not None else {}))
+        return True
+
+    def offsite_spend_month(self, month: str) -> tuple[float, int]:
+        """Real FATJOE COGS + order count for a 'YYYY-MM' month (by ordered_at,
+        excluding cancelled). Powers the ledger's auto FATJOE line."""
+        start = f"{month}-01T00:00:00Z"
+        y, m = int(month[:4]), int(month[5:7])
+        ny, nm = (y + 1, 1) if m == 12 else (y, m + 1)
+        end = f"{ny:04d}-{nm:02d}-01T00:00:00Z"
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(cost_usd), 0), COUNT(*) FROM offsite_orders "
+            "WHERE status != 'cancelled' AND ordered_at >= ? AND ordered_at < ?",
+            (start, end),
+        ).fetchone()
+        return round(row[0] or 0.0, 2), row[1] or 0
+
+    def offsite_spend_by_customer(self, month: str) -> dict[str, tuple[float, int]]:
+        """Real FATJOE COGS + order count per customer for a 'YYYY-MM' month
+        (by ordered_at, excluding cancelled). Powers per-customer cost attribution."""
+        start = f"{month}-01T00:00:00Z"
+        y, m = int(month[:4]), int(month[5:7])
+        ny, nm = (y + 1, 1) if m == 12 else (y, m + 1)
+        end = f"{ny:04d}-{nm:02d}-01T00:00:00Z"
+        rows = self.conn.execute(
+            "SELECT customer_id, COALESCE(SUM(cost_usd), 0), COUNT(*) FROM offsite_orders "
+            "WHERE status != 'cancelled' AND ordered_at >= ? AND ordered_at < ? "
+            "GROUP BY customer_id",
+            (start, end),
+        ).fetchall()
+        return {r[0]: (round(r[1] or 0.0, 2), r[2] or 0) for r in rows}
+
+    def seed_recurring_expenses(self, month: str, templates: list[dict]) -> int:
+        """Insert each recurring template into `month` unless a row with the same
+        template_key already exists there (idempotent). Returns rows inserted."""
+        existing = {
+            r[0] for r in self.conn.execute(
+                "SELECT template_key FROM expense_entries WHERE month = ? AND template_key != ''",
+                (month,),
+            ).fetchall()
+        }
+        inserted = 0
+        for t in templates:
+            key = t.get("key", "")
+            if not key or key in existing:
+                continue
+            self.conn.execute(
+                "INSERT INTO expense_entries "
+                "(month, category, vendor, name, amount_usd, recurring, template_key, note) "
+                "VALUES (?, ?, ?, ?, ?, 1, ?, ?)",
+                (month, t.get("category", "Other"), t.get("vendor", ""), t.get("name", ""),
+                 round(float(t.get("amount", 0) or 0), 2), key, t.get("note", "")),
+            )
+            inserted += 1
+        if inserted:
+            self.conn.commit()
+        return inserted
+
     def add_offsite_order(self, customer_id, order_type, **fields):
         """Create an off-site order. Returns the new order id."""
         data = {"order_type": order_type}
@@ -3493,6 +3640,21 @@ class CustomerDB:
                 f"SELECT COALESCE(SUM(quantity), 0) FROM offsite_orders WHERE {where}", args
             ).fetchone()
         return int(row[0] or 0)
+
+    def last_offsite_order_at(self, customer_id, order_type, min_dr: int | None = None) -> str | None:
+        """Most recent non-cancelled order timestamp (ISO) for a type. For links,
+        `min_dr` restricts to orders at/above a DR band (a higher-DR link covers a
+        lower-DR need). Powers the rolling 30/90-day coverage window in the FATJOE
+        queue — the anchor from which the next order becomes due."""
+        where = "customer_id = ? AND order_type = ? AND status != 'cancelled'"
+        args: list = [customer_id, order_type]
+        if min_dr is not None:
+            where += " AND COALESCE(dr_tier, 0) >= ?"
+            args.append(min_dr)
+        row = self.conn.execute(
+            f"SELECT MAX(ordered_at) FROM offsite_orders WHERE {where}", args
+        ).fetchone()
+        return row[0] if row and row[0] else None
 
     def link_dr_quantities_in_period(self, customer_id, since: str | None = None) -> dict:
         """{dr_tier: total_quantity} of non-cancelled LINK orders placed since

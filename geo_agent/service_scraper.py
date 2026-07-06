@@ -43,8 +43,10 @@ def scrape_services(domain: str, name: str = "", business_type: str = "local bus
     )
     try:
         import anthropic
+
+        from geo_agent.llm import MODEL_AUX
         client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        msg = client.messages.create(model="claude-sonnet-4-6", max_tokens=400,
+        msg = client.messages.create(model=MODEL_AUX, max_tokens=400,
                                      messages=[{"role": "user", "content": prompt}])
         raw = "".join(b.text for b in msg.content if b.type == "text").strip()
         raw = re.sub(r"^```(?:json)?|```$", "", raw).strip()

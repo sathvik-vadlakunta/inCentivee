@@ -126,21 +126,23 @@
 
                 <div class="actions-divider"></div>
                 <div class="actions-label">Reports</div>
-                <a class="actions-item" href="{{ url_for('weekly_report_view', customer_id=customer.id) }}" target="_blank">
+                {# Weekly = internal ops (noisy). Monthly = the client-facing progress report. Quarterly = long arc. #}
+                {% for rp in [{'label':'Weekly','period':7,'type':'weekly','hint':'internal'},
+                              {'label':'Monthly','period':30,'type':'monthly','hint':'send to client'},
+                              {'label':'Quarterly','period':90,'type':'quarterly','hint':'long arc'}] %}
+                {% set snap = report_latest_by_type[rp.type] %}
+                <a class="actions-item" href="{{ url_for('weekly_report_view', customer_id=customer.id, period=rp.period, refresh=1) }}" target="_blank">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-                    View Weekly Report
+                    Generate &amp; View {{ rp.label }} Report
                 </a>
-                <a class="actions-item" href="{{ url_for('weekly_report_view', customer_id=customer.id, refresh=1) }}" target="_blank">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                    Regenerate Weekly Report
-                </a>
-                {% if weekly_snapshot and weekly_snapshot.share_token %}
+                {% if snap and snap.share_token %}
                 <button type="button" class="actions-item"
-                    onclick="navigator.clipboard.writeText(window.location.origin + '/r/{{ weekly_snapshot.share_token }}'); this.querySelector('span').textContent='Copied!';">
+                    onclick="navigator.clipboard.writeText(window.location.origin + '/r/{{ snap.share_token }}'); this.querySelector('span').textContent='Copied {{ rp.label }} link!';">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                    <span>Copy Customer Link</span>
+                    <span>Copy {{ rp.label }} Link{% if rp.hint == 'send to client' %} — send to client{% endif %}</span>
                 </button>
                 {% endif %}
+                {% endfor %}
                 <a class="actions-item" href="{{ url_for('customer_case_study', customer_id=customer.id, format='html') }}" target="_blank">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     View Case Study
