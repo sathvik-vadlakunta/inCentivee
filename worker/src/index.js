@@ -269,7 +269,7 @@ export default {
       }
 
       // ── Step 1: Scrape the actual website to get real practice info ──
-      const siteData = await scrapePracticeSite(practiceUrl);
+      const siteData = await scrapePracticeSite(practiceUrl, env);
 
       // ── Step 1a: Check if scraper got blocked ──
       if (!siteData.scraped && !siteData.visibleText) {
@@ -1844,9 +1844,11 @@ function browserHeaders(ua) {
   };
 }
 
-async function scrapePracticeSite(practiceUrl) {
+async function scrapePracticeSite(practiceUrl, env) {
   const domain = practiceUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
-  const urls = [`https://${domain}`, `https://www.${domain}`];
+  const bare = domain.replace(/^www\./, "");
+  const urls = [`https://${domain}`, `https://${bare}`, `https://www.${bare}`]
+    .filter((u, i, a) => a.indexOf(u) === i);
 
   let html = "";
   let finalUrl = "";
@@ -1870,6 +1872,31 @@ async function scrapePracticeSite(practiceUrl) {
             html = body;
             finalUrl = res.url || u;
             break outer;
+          }
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+  }
+
+  // Fallback: some hosts (self-hosted WordPress/nginx behind bot/datacenter
+  // WAFs) block Cloudflare Worker egress IPs — the site is up for normal
+  // visitors but our direct fetch fails. Relay through the droplet, whose IP
+  // those sites don't block, so the audit still succeeds.
+  if (!html && env && env.RELAY_URL && env.RELAY_SECRET) {
+    for (const u of urls) {
+      try {
+        const rr = await fetch(`${env.RELAY_URL}?url=${encodeURIComponent(u)}`, {
+          headers: { "X-Relay-Secret": env.RELAY_SECRET },
+          signal: AbortSignal.timeout(20000),
+        });
+        if (rr.ok) {
+          const j = await rr.json();
+          if (j && j.html && j.html.length > 500) {
+            html = j.html;
+            finalUrl = j.finalUrl || u;
+            break;
           }
         }
       } catch (_) {

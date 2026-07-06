@@ -7,6 +7,9 @@ account_id = "64057faec3376a9cd325386637e90127"
 ALLOWED_ORIGIN = "https://practicerank.ai"
 RESEND_FROM = "PracticeRank <scores@practicerank.ai>"
 LEAD_NOTIFY_EMAILS = "kdoherty@practicerank.ai,jonlucas@lostrelic.com"
+# Blocked-site fallback: relay the scrape through the droplet (whose egress IP
+# these WAF-protected sites don't block). RELAY_SECRET is a wrangler secret.
+RELAY_URL = "https://admin.practicerank.ai/internal/fetch-relay"
 
 [[kv_namespaces]]
 binding = "LEADS"
