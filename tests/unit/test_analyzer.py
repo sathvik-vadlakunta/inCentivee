@@ -73,7 +73,8 @@ class TestAnalyzeAndRecommend:
         analyze_and_recommend(sample_customer, sample_pages)
 
         call_kwargs = mock_client.messages.stream.call_args.kwargs
-        assert call_kwargs["model"] == "claude-opus-4-8"
+        from geo_agent.llm import MODEL_ANALYSIS
+        assert call_kwargs["model"] == MODEL_ANALYSIS  # internal narration → Sonnet tier
         assert call_kwargs["max_tokens"] == 32000
         # Structured outputs: a JSON schema is enforced
         assert call_kwargs["output_config"]["format"]["type"] == "json_schema"

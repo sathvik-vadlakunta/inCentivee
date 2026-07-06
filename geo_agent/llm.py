@@ -8,17 +8,29 @@ never silently accept or "repair" incomplete JSON that could ship to a client.
 from __future__ import annotations
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 # --- Centralized model IDs ---------------------------------------------------
-# Analysis/report generation (internal — scores are deterministic Python).
-MODEL_ANALYSIS = "claude-opus-4-8"
-# Content that gets PUBLISHED to clients' live sites (YMYL: medical/legal) —
-# use the strongest model.
-MODEL_CONTENT = "claude-opus-4-8"
+# Tiered by cost vs. impact. Each is overridable via an env var of the same name
+# (set in the droplet .env), so you can A/B a tier or instantly revert one to
+# Opus without a code change/deploy. Bump the DEFAULTS here, not at call sites.
+#
+#   Opus 4.8  — anything PUBLISHED as client content (highest impact): the
+#               blog/service page body, GBP Q&A, and expert quotes (YMYL).
+#   Sonnet 5  — internal-only work: audit-report narration + service scraping.
+#   Haiku 4.5 — cheap grounding / fact-check pass.
+#
+# Published client content — strongest model (page body, GBP Q&A, quotes).
+MODEL_CONTENT = os.environ.get("MODEL_CONTENT", "claude-opus-4-8")
+# Internal audit-report narration (scores are deterministic Python; the LLM only
+# writes the prose around them). The main Opus→Sonnet cost win — A/B this one.
+MODEL_ANALYSIS = os.environ.get("MODEL_ANALYSIS", "claude-sonnet-5")
+# Internal data extraction (service scraping) — not client-facing.
+MODEL_AUX = os.environ.get("MODEL_AUX", "claude-sonnet-5")
 # Cheap grounding/fact-check pass before publish.
-MODEL_FACTCHECK = "claude-haiku-4-5"
+MODEL_FACTCHECK = os.environ.get("MODEL_FACTCHECK", "claude-haiku-4-5")
 
 
 class TruncatedResponseError(Exception):
