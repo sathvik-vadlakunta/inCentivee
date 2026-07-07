@@ -262,6 +262,20 @@
     </ul>
     <p class="src">Internal pattern: <code>docs/site-conversion-playbook.md</code>, <code>specs/customers/sojo-site-audit.html</code>, <code>geo_agent/directory_profiles.py</code> (<code>VERTICAL_DIRECTORIES["legal"]</code>), <code>SchemaMarkup.astro</code>.</p>
   </div>
+
+  <div class="card">
+    <h2>Domain cutover — record + rollback (done 2026-07-07)</h2>
+    <p>Cut <code>westgalawyer.com</code> from WordPress.com over to the Cloudflare Pages project <code>parian-lawyers</code>. Registrar: <b>eNom</b>. Cloudflare NS: <code>gerald.ns.cloudflare.com</code> / <code>lia.ns.cloudflare.com</code>. Zone ID: <code>ccc5b0eb06fa6df36319900aeb31353c</code>.</p>
+    <p><b>Original WordPress.com DNS (the rollback target — restore these to point back at the old site):</b></p>
+    <ul>
+      <li><code>A  westgalawyer.com  →  192.0.78.204</code> (WordPress.com shared IP)</li>
+      <li><code>A  westgalawyer.com  →  192.0.78.130</code> (WordPress.com shared IP)</li>
+      <li><code>CNAME  www.westgalawyer.com  →  westgalawyer.com</code></li>
+      <li>Old authoritative NS: <code>ns1/ns2/ns3.wordpress.com</code>; SPF <code>v=spf1 include:_spf.wpcloud.com ~all</code></li>
+    </ul>
+    <p><b>Live config now:</b> apex + <code>www</code> are proxied <code>CNAME → parian-lawyers.pages.dev</code>. <b>Email untouched</b> — <code>MX westgalawyer.com → smtp.google.com</code> + SPF/DMARC preserved. Rollback = delete the two CNAMEs, re-add the two A records above + <code>www</code> CNAME.</p>
+    <p class="src">Cutover run via Cloudflare API (Pages custom-domain + DNS swap). Consultation form now delivers via Resend (<code>src/pages/api/contact.ts</code>) to <code>cade@callcadenow.com</code>.</p>
+  </div>
 </div>
 </body>
 </html>
