@@ -1,0 +1,88 @@
+{
+  "name": "Parian Lawyers",
+  "location": "Carrollton, Georgia",
+  "industry": "Personal Injury Law Firm",
+  "competitor": "your top local rivals",
+  "gap_intro": "You've already built a strong local reputation — the opportunity is turning it into search and AI dominance.",
+  "gap_rows": [
+    [
+      "Google reviews",
+      "162  ·  4.9★",
+      "83–148",
+      "You lead"
+    ],
+    [
+      "Domain Authority",
+      "29",
+      "single digits (most)",
+      "You lead"
+    ],
+    [
+      "AI search visibility",
+      "0 of 68 queries",
+      "—",
+      "Biggest gap"
+    ]
+  ],
+  "gap_source": "Google · Moz · AI-visibility scan, June 2026",
+  "comparison_placement": "“Best Injury Lawyer in West Georgia” comparison placements — rank for high-intent searches AND get cited by AI",
+  "da_self": [
+    "Parian Lawyers",
+    29
+  ],
+  "da_rivals": [],
+  "da_source": "Domain Authority — Moz, June 2026",
+  "da_explainer": "Domain Authority (0–100) is a trust score for your website — built mostly from quality backlinks. The higher it climbs, the easier everything else ranks.",
+  "da_insight": "Most local firms sit in the single digits to low teens. You're already at 29 — basically the ~30 sweet spot that beats nearly every local competitor. So authority isn't your gap; AI-search visibility is. We protect this lead and turn it into more rankings and AI recommendations.",
+  "service_areas": "Carrollton · Villa Rica · Bremen · Temple · Douglasville · Newnan · West Georgia",
+  "keyword_examples": [
+    "\"car accident lawyer Carrollton GA\"",
+    "\"personal injury attorney near me\"",
+    "\"truck accident lawyer West Georgia\""
+  ],
+  "target": "Top-3 Map Pack + AI recommendations for your core injury keywords within 6 months",
+  "cover_image": "deck-assets/parian/cover-justice.jpg",
+  "img_backlinks": "deck-assets/parian/law-office.jpg",
+  "img_content": "deck-assets/parian/consult.jpg",
+  "show_tiers": true,
+  "popular_tier": 1,
+  "founding_note": "Pricing tailored to your market.  ·  Month-to-month, no long-term contracts.  ·  Backed by our 90-day guarantee.",
+  "tiers": [
+    [
+      "Optimize",
+      "The Foundation",
+      "1,500",
+      "1,500",
+      [
+        "Local SEO + AI-search foundation",
+        "100 local citations + Google Business Profile",
+        "2 content + 1 backlink / mo",
+        "Review funnel + monthly report"
+      ]
+    ],
+    [
+      "Grow",
+      "The Growth Engine",
+      "2,500",
+      "2,500",
+      [
+        "Everything in Optimize, plus:",
+        "New site on our fast managed platform",
+        "4 content + 2 backlinks / mo",
+        "Practice-area + city pages, keyword tracking"
+      ]
+    ],
+    [
+      "Dominate",
+      "Market Domination",
+      "3,500",
+      "3,500",
+      [
+        "Everything in Grow, plus:",
+        "4 high-authority backlinks / mo",
+        "“Best injury lawyer in West GA” comparison placements",
+        "Aggressive citations + AI authority"
+      ]
+    ]
+  ]
+}

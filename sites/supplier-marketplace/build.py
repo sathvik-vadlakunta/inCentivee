@@ -750,16 +750,61 @@ HOME_SEO_HEAD = """<!-- PracticeRank SEO/AEO -->
 # In-place improvements to the original Webflow landing page (we keep its design,
 # just fix what breaks on a static export).
 HOME_FIXES = """<style id="pr-home-fixes">
-/* Webflow hides every [data-w-id] element at opacity:0 until its IX2 interaction
-   animates it in. On the static export that chunk isn't guaranteed to run, which
-   left the hero headline + sections invisible. Force them visible so nothing is
-   ever stuck hidden (transforms are left intact). */
-html.w-mod-js:not(.w-mod-ie) [data-w-id]{opacity:1 !important}
-/* Remove the "Made in Webflow" badge. */
+/* Webflow hides every [data-w-id] element at opacity:0 until its IX2 engine adds
+   .w-mod-ix and animates it in. That engine doesn't run on the static export, so
+   the hero + sections were stuck invisible. Reveal them so nothing is ever hidden. */
+html.w-mod-js:not(.w-mod-ix) [data-w-id]{opacity:1 !important}
 .w-webflow-badge{display:none !important}
-/* Keep white hero text legible over the busy photo. */
-.section.hero-section,.hero-section{position:relative}
-</style>"""
+/* Our own tasteful scroll-reveal (progressive enhancement: only applied by JS, so
+   content is always visible if JS/IO is unavailable). */
+@media (prefers-reduced-motion:no-preference){
+  .pr-rv{opacity:0 !important;transform:translateY(30px);will-change:opacity,transform;
+    transition:opacity .8s cubic-bezier(.16,.84,.44,1),transform .8s cubic-bezier(.16,.84,.44,1)}
+  .pr-rv.pr-in{opacity:1 !important;transform:none}
+}
+/* Hover micro-interactions on cards. */
+.home-two-service-cards,.home-two-counter-card{transition:transform .25s ease,box-shadow .25s ease}
+.home-two-service-cards:hover{transform:translateY(-6px)}
+</style>
+<script>(function(){
+if(matchMedia('(prefers-reduced-motion:reduce)').matches||!('IntersectionObserver'in window))return;
+function ready(fn){if(document.readyState!=='loading')fn();else document.addEventListener('DOMContentLoaded',fn);}
+ready(function(){
+  // 1) Staggered scroll-reveal on the real content blocks
+  var sels=['.sticky-heading','.home-two-sticky-section .w-layout-vflex',
+    '.home-two-counter-card','.counter-circle','.home-two-service-cards',
+    '.home-two-markting .w-layout-vflex','.cta-two .w-layout-vflex'];
+  sels.forEach(function(s){
+    [].slice.call(document.querySelectorAll(s)).forEach(function(el,i){
+      el.classList.add('pr-rv');el.style.transitionDelay=(Math.min(i,6)*0.09)+'s';});
+  });
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('pr-in');io.unobserve(e.target);}});},
+    {threshold:.15,rootMargin:'0px 0px -6% 0px'});
+  document.querySelectorAll('.pr-rv').forEach(function(el){io.observe(el);});
+
+  // 2) Count-up on the stat numbers (68 / 72 / 70) when the counter enters view
+  var sec=document.querySelector('.service-v3-counter,.home-two-counter');
+  if(sec){
+    var stats=[].slice.call(sec.querySelectorAll('*')).filter(function(el){
+      return el.children.length===0 && /^\\s*\\d{1,3}%?\\s*$/.test(el.textContent);});
+    var run=false;
+    var cio=new IntersectionObserver(function(es){es.forEach(function(e){
+      if(e.isIntersecting&&!run){run=true;
+        stats.forEach(function(el){
+          var m=el.textContent.match(/(\\d{1,3})(%?)/);if(!m)return;
+          var target=+m[1],suf=m[2],start=null,dur=1500;el.textContent='0'+suf;
+          function step(ts){if(!start)start=ts;var p=Math.min((ts-start)/dur,1);
+            el.textContent=Math.round((1-Math.pow(1-p,3))*target)+suf;
+            if(p<1)requestAnimationFrame(step);}
+          requestAnimationFrame(step);
+        });
+        cio.disconnect();
+      }});},{threshold:.4});
+    cio.observe(sec);
+  }
+});
+})();</script>"""
 
 
 def _replace_hflex_navmenu(h, new_inner):

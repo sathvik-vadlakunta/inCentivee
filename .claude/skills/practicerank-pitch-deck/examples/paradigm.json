@@ -1,0 +1,133 @@
+{
+  "name": "Paradigm Experts",
+  "location": "Springfield, Virginia",
+  "industry": "Gold, Silver & Estate Jewelry Buyer",
+  "competitor": "Alexandria Gold & Silver",
+  "gap_rows": [
+    [
+      "Monthly organic visits",
+      "131",
+      "1,281",
+      "9.8x"
+    ],
+    [
+      "“Near me” keywords (top 10)",
+      "2",
+      "49",
+      "24x"
+    ],
+    [
+      "Top-10 ranking keywords",
+      "14",
+      "69",
+      "4.9x"
+    ]
+  ],
+  "gap_source": "Source: competitive organic-search analysis, May 2026",
+  "comparison_placement": "“Best Gold & Silver Buyer in Northern VA” comparison placements — rank for high-intent searches AND get cited by AI",
+  "da_self": [
+    "Paradigm Experts",
+    14
+  ],
+  "da_rivals": [
+    [
+      "CASH FOR GOLD",
+      18
+    ],
+    [
+      "Alexandria Gold & Silver",
+      11
+    ],
+    [
+      "Cash for Gold NOVA",
+      10
+    ]
+  ],
+  "da_source": "Domain Authority — Moz, June 2026",
+  "da_explainer": "Domain Authority (0–100) is a trust score for your website — built mostly from quality backlinks. The higher it climbs, the easier everything else ranks.",
+  "da_insight": "Most local businesses live in the single digits to low teens. You're already at 14 — ahead of most rivals here. The goal isn't 80; it's ~30, which is very achievable for a local business and puts you clearly ahead of nearly every local competitor. Getting there is exactly what our backlink program does.",
+  "service_areas": "Springfield · Arlington · McLean · Fairfax · Alexandria · Lorton · DC",
+  "keyword_examples": [
+    "\"sell gold in Springfield VA\"",
+    "\"estate jewelry buyer near me\"",
+    "\"where to sell silver Northern Virginia\""
+  ],
+  "target": "500+ monthly organic visits within 6 months",
+  "done": [
+    "Deep competitive & keyword-gap analysis vs your top local rival",
+    "Full SEO / AI-search audit + a phased action plan",
+    "Technical foundation: schema markup, llms.txt / llms-full.txt, HTTPS-canonical fixes",
+    "Service & city/location landing pages built for your core markets",
+    "Full Google access connected — Business Profile, Search Console, Analytics & Tag Manager — so we measure and report results from day one",
+    "Live performance tracking in place: Search Console data flowing, Domain Authority & competitor monitoring active"
+  ],
+  "cover_image": "deck-assets/paradigm/cover-gold.jpg",
+  "img_backlinks": "deck-assets/paradigm/storefront.jpg",
+  "img_content": "deck-assets/paradigm/jewelry.jpg",
+  "img_done": "deck-assets/paradigm/consult.jpg",
+  "current_visits": 131,
+  "target_visits": 520,
+  "score_start": 65,
+  "score_start_date": "May 27",
+  "score_now": 79,
+  "score_now_date": "Jun 19",
+  "score_drivers": [
+    [
+      "Technical Health",
+      "0 → 75",
+      "Foundation built: schema, llms.txt & HTTPS-canonical fixes"
+    ],
+    [
+      "Content Velocity",
+      "30 → 80",
+      "Service & location landing pages + fresh content"
+    ],
+    [
+      "Google Reviews",
+      "64 → 95",
+      "+31 real new reviews, holding a strong 4.8★ rating"
+    ]
+  ],
+  "show_tiers": true,
+  "popular_tier": 2,
+  "founding_note": "Founding Client rate — your first-customer pricing.  ·  Onboarding waived  ·  Webflow site improvements billed at our exact cost.",
+  "tiers": [
+    [
+      "Optimize",
+      "The Foundation",
+      "1,500",
+      "1,250",
+      [
+        "Keep your Webflow site — we optimize it",
+        "Local SEO + AI-search foundation",
+        "100 local citations + Google Business Profile",
+        "2 content + 1 backlink / mo",
+        "Review funnel + monthly report"
+      ]
+    ],
+    [
+      "Grow",
+      "The Growth Engine",
+      "2,500",
+      "2,000",
+      [
+        "Everything in Optimize, plus:",
+        "4 content + 2 backlinks / mo",
+        "Citation building + NAP cleanup",
+        "Local landing pages + keyword tracking"
+      ]
+    ],
+    [
+      "Dominate",
+      "Market Domination",
+      "3,500",
+      "2,500",
+      [
+        "Everything in Grow, plus:",
+        "4 high-authority backlinks / mo",
+        "“Best in Northern VA” comparison placements",
+        "Aggressive citations + AI authority building"
+      ]
+    ]
+  ]
+}

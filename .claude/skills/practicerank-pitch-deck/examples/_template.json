@@ -1,0 +1,29 @@
+{
+  "name": "CLIENT NAME",
+  "location": "City, State",
+  "industry": "What they do",
+  "competitor": "Top local competitor",
+  "gap_rows": [
+    ["Metric 1", "you", "competitor", "Nx"],
+    ["Metric 2", "you", "competitor", "Nx"],
+    ["Metric 3", "you", "competitor", "Nx"]
+  ],
+  "gap_source": "Source: ... (real data, dated)",
+  "da_self": ["CLIENT NAME", 0],
+  "da_rivals": [["Rival A", 0], ["Rival B", 0]],
+  "da_explainer": "Domain Authority (0-100) is a trust score for your website, built mostly from quality backlinks.",
+  "da_insight": "Where the client stands and the realistic ~30 goal.",
+  "da_source": "Domain Authority - Moz, MONTH YEAR",
+  "service_areas": "City A · City B · City C",
+  "comparison_placement": "“Best X in Y” comparison placements",
+  "keyword_examples": ["\"buyer-intent keyword 1\"", "\"keyword 2 near me\"", "\"keyword 3\""],
+  "target": "The 6-month outcome",
+  "show_tiers": true,
+  "popular_tier": 2,
+  "founding_note": "Month-to-month, no long-term contracts. Backed by our 90-day guarantee.",
+  "tiers": [
+    ["Optimize", "The Foundation", "1,500", "1,500", ["Local SEO + AI-search foundation", "100 local citations + Google Business Profile", "2 content + 1 backlink / mo", "Review funnel + monthly report"]],
+    ["Grow", "The Growth Engine", "2,500", "2,500", ["Everything in Optimize, plus:", "4 content + 2 backlinks / mo", "Local landing pages + keyword tracking"]],
+    ["Dominate", "Market Domination", "3,500", "3,500", ["Everything in Grow, plus:", "4 high-authority backlinks / mo", "Comparison placements + AI authority building"]]
+  ]
+}
