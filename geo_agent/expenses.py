@@ -78,9 +78,11 @@ EXPENSE_ITEMS: list[dict] = [
 
     # ---- Publishing & comms ----
     {"category": "Publishing & Comms", "name": "Resend (email)", "vendor": "Resend",
-     "purpose": "Transactional email — reports, onboarding, alerts",
-     "billing": "free", "monthly": 0.0, "charged": "Free tier (3k emails/mo)",
-     "note": "Upgrades to ~$20/mo if we pass the free tier."},
+     "purpose": "Transactional email — contact-form leads, reports, onboarding, alerts",
+     "billing": "fixed", "monthly": 20.0, "charged": "Monthly subscription (Transactional Pro)",
+     "note": "Paid plan unlocks multiple verified sending domains, so each customer site "
+             "can send branded email from its own domain (noreply@<customer>). Automated via "
+             "scripts/verify_customer_email_domain.py."},
     {"category": "Publishing & Comms", "name": "Webflow API", "vendor": "Webflow",
      "purpose": "Push content/schema to client Webflow sites",
      "billing": "variable", "monthly": 0.0, "charged": "Per client (their plan)",
