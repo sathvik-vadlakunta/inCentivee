@@ -408,6 +408,12 @@ class CustomerDB:
             # the report can show "+N since baseline". NULL = not yet set.
             self.conn.execute("ALTER TABLE customers ADD COLUMN baseline_score INTEGER")
             self.conn.execute("ALTER TABLE customers ADD COLUMN baseline_date TEXT")
+        if "changes_live_at" not in cols:
+            # Date the on-site SEO/AEO optimizations actually went live (ISO
+            # YYYY-MM-DD). This — NOT customer signup — anchors the report's
+            # "results take 6+ weeks" clock, since effects only start once the
+            # changes ship. NULL = not set (report falls back to neutral copy).
+            self.conn.execute("ALTER TABLE customers ADD COLUMN changes_live_at TEXT")
         if "tier_override" not in cols:
             # Manual tier (optimize/grow/dominate) for customers whose Stripe product
             # name doesn't contain a tier keyword — custom payment links, discounted

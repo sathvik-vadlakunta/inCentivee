@@ -2923,6 +2923,10 @@
                 <label style="font-size:0.8rem;font-weight:600;">Next action</label>
                 <input type="text" name="next_action" maxlength="200" value="{{ customer.next_action or '' }}"
                        placeholder="e.g. Follow up with Adam Fri" style="width:100%;margin:0.2rem 0 0.7rem;padding:0.45rem;">
+                <label style="font-size:0.8rem;font-weight:600;">Optimizations went live</label>
+                <input type="date" name="changes_live_at" value="{{ customer.changes_live_at or '' }}"
+                       style="width:100%;margin:0.2rem 0 0.2rem;padding:0.45rem;">
+                <p style="font-size:0.72rem;color:var(--muted);margin:0 0 0.7rem;">When the on-site SEO/AEO changes shipped. Anchors the report's “results take 6+ weeks” clock — leave blank if not live yet.</p>
                 <button class="btn btn-sm btn-primary" type="submit">Save status</button>
             </form>
         </div>

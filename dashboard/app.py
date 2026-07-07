@@ -1791,6 +1791,11 @@ def update_customer_status(customer_id):
             status_note=status_note.strip() if status_note is not None else None,
             next_action=next_action.strip() if next_action is not None else None,
         )
+        # Date the on-site optimizations went live — anchors the report's
+        # "results take 6+ weeks" clock (empty string clears it back to unset).
+        if "changes_live_at" in request.form:
+            cl = (request.form.get("changes_live_at") or "").strip()
+            db.update_customer(customer_id, changes_live_at=(cl or None))
         # Log the status change to the timeline for history.
         summary = " · ".join(p for p in [
             f"Status: {status_note.strip()}" if status_note else "",

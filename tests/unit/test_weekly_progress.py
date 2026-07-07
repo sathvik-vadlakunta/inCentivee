@@ -86,18 +86,23 @@ def _svg_ok(s: str) -> bool:
     return s.startswith("<svg") and "polyline" in s and s.endswith("</svg>")
 
 
-def test_maturation_note_tenure_aware():
-    # young client (~2 weeks) → "still maturing" framing + AEO 6+ weeks
+def test_maturation_note_anchors_on_changes_live_not_signup():
     from datetime import datetime, timezone, timedelta
-    recent = (datetime.now(timezone.utc) - timedelta(weeks=2)).strftime("%Y-%m-%d")
-    note = wr._maturation_note({"progress": {"start_date": recent}})
-    assert "6+ weeks" in note and ("week" in note)
-    # established client (~6 months) → "past the initial ramp"
-    old = (datetime.now(timezone.utc) - timedelta(weeks=26)).strftime("%Y-%m-%d")
-    note2 = wr._maturation_note({"progress": {"start_date": old}})
-    assert "months" in note2
-    # no data → generic note still mentions AEO + SEO timelines
-    assert "6+ weeks" in wr._maturation_note({})
+    now = datetime.now(timezone.utc)
+    # changes went live ~2 weeks ago → note is anchored on go-live, "weeks ago"
+    recent = (now - timedelta(weeks=2)).strftime("%Y-%m-%d")
+    note = wr._maturation_note({"changes_live_at": recent, "progress": {"start_date": "2020-01-01"}})
+    assert "went live about 2 weeks ago" in note
+    assert "6+ weeks" in note
+    # crucially it must NOT report signup tenure ("7 weeks in" style)
+    assert "weeks in" not in note
+    # established (~6 months live) → "past the initial ramp"
+    old = (now - timedelta(weeks=26)).strftime("%Y-%m-%d")
+    assert "months" in wr._maturation_note({"changes_live_at": old})
+    # no go-live date → neutral copy, no asserted timeline, no "weeks in/ago"
+    neutral = wr._maturation_note({"progress": {"start_date": recent}})
+    assert "6+ weeks" in neutral
+    assert "weeks in" not in neutral and "weeks ago" not in neutral
 
 
 def test_render_includes_expectations(db):

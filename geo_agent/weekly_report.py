@@ -94,6 +94,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     customer = db.get_customer(customer_id)
     if not customer:
         raise ValueError(f"Unknown customer: {customer_id}")
+    changes_live_at = customer.get("changes_live_at")
 
     pd = max(1, int(period_days))
     end = datetime.strptime(period_end, "%Y-%m-%d") if period_end \
@@ -422,6 +423,7 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     data["alerts"] = db.get_alerts(customer_id, active_only=True, limit=10)
 
     data["progress"] = _progress_since_start(db, customer_id)
+    data["changes_live_at"] = changes_live_at
     data["exec_summary"] = _exec_summary(data)
     return data
 
@@ -668,33 +670,39 @@ def _trend_chart_svg(points: list[tuple], *, title: str, color: str = "#16a34a",
 
 def _maturation_note(data: dict) -> str:
     """Set expectations: SEO/AEO changes take time to surface, so short windows
-    under-report real progress. Tailors the message to how long the client has run."""
-    prog = data.get("progress") or {}
-    sd = prog.get("start_date")
+    under-report real progress. Anchored on when the on-site optimizations went
+    LIVE (data['changes_live_at']), not on customer signup — effects only start
+    once the changes ship. Falls back to neutral copy when no go-live date is set."""
+    live = (data.get("changes_live_at") or "").strip()
     weeks = None
-    if sd:
+    if live:
         try:
-            start = datetime.strptime(sd[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-            weeks = max(0, (datetime.now(timezone.utc) - start).days // 7)
+            when = datetime.strptime(live[:10], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            weeks = max(0, (datetime.now(timezone.utc) - when).days // 7)
         except ValueError:
             weeks = None
     if weeks is None:
+        # No go-live date recorded — don't assert a timeline; keep it general.
         return ("SEO and AEO compound over time — AI-search (AEO) changes typically take "
-                "6+ weeks to surface in results, and traditional SEO/ranking gains build over "
-                "3–6 months. Recent work is always maturing behind the current numbers.")
+                "6+ weeks to surface in results after they go live, and traditional SEO/ranking "
+                "gains build over 3–6 months. Recent work is always maturing behind these numbers.")
+    if weeks < 1:
+        return ("Your on-site optimizations just went live. AI engines typically take 6+ weeks "
+                "to reflect changes, and SEO/ranking gains build over 3–6 months — so almost all "
+                "of the impact is still ahead. This report sets the baseline to measure against.")
     if weeks < 6:
-        return (f"You're about {weeks} week{'s' if weeks != 1 else ''} in. Most of the AEO work "
-                f"we've put in place is still maturing — AI engines typically take 6+ weeks to "
-                f"reflect changes, and SEO/ranking gains build over 3–6 months. This period sets "
-                f"the baseline; early signals come first and the larger movement follows.")
+        return (f"Your on-site optimizations went live about {weeks} week{'s' if weeks != 1 else ''} "
+                f"ago — so most of the impact is still ahead of us. AI engines typically take 6+ weeks "
+                f"to reflect changes, and SEO/ranking gains build over 3–6 months. Early signals come "
+                f"first; the larger movement follows.")
     if weeks < 16:
-        return (f"You're about {weeks} weeks in — AEO effects are starting to compound (they "
-                f"usually take 6+ weeks to appear), while SEO/ranking gains keep building for "
-                f"3–6 months after each change. So the numbers here still trail the work behind them.")
+        return (f"Your optimizations went live about {weeks} weeks ago — AEO effects are starting to "
+                f"compound (they usually take 6+ weeks to appear), while SEO/ranking gains keep building "
+                f"for 3–6 months. So the numbers here are still catching up to the work behind them.")
     months = weeks // 4
-    return (f"You're about {months} months in — past the initial ramp, so changes should be "
-            f"materializing steadily. AEO still takes ~6+ weeks per change to surface and SEO "
-            f"compounds over months, so the most recent work is always maturing behind the numbers.")
+    return (f"Your optimizations have been live about {months} months — past the initial ramp, so "
+            f"changes should be materializing steadily. Any newer work still takes ~6+ weeks (AEO) to "
+            f"surface and months for SEO, so the most recent changes always trail the numbers.")
 
 
 def render_html(data: dict) -> str:
