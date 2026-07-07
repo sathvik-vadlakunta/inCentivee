@@ -1,0 +1,79 @@
+# SourceNow Supplier Marketplace — Full Reference
+
+> A global marketplace for temporary staffing suppliers. Companies source pre-vetted, compliance-backed staffing agencies worldwide; staffing suppliers get listed to win new clients. Operated and verified by SourceNow (Distinctive Workforce Solutions). Global coverage — not region-specific.
+
+## Overview
+SourceNow Supplier Marketplace is a two-sided B2B platform that connects companies who need temporary staffing with verified staffing suppliers (agencies). It replaces fragmented, manual supplier sourcing — cold outreach, referrals, and scattered spreadsheets — with a single marketplace where buyers discover, evaluate, and connect with pre-vetted suppliers, and suppliers gain visibility to win new business. It serves the contingent workforce / contingent labor market and offers a lighter alternative to a full vendor management system (VMS) or managed service provider (MSP) program.
+
+## Who it serves
+### Companies / staffing buyers
+Teams that need to source temporary staffing suppliers quickly and confidently. They can:
+- Access a curated network of pre-vetted staffing suppliers backed by SourceNow verification and compliance standards.
+- Filter suppliers by industry, location, capabilities, and performance — no endless emails or manual outreach.
+- Reduce risk with a compliance-backed platform that helps ensure supplier credentials, documentation, and standards are consistently maintained.
+- Manage supplier interactions, activity, and performance in one place, with full visibility and control across the sourcing process.
+- Build a de facto preferred / approved supplier list without the overhead of a full VMS or MSP program.
+- Find suppliers for free.
+
+### Staffing suppliers / agencies
+Agencies that want to grow by reaching new clients. They can:
+- Get listed on the marketplace and be discovered by companies actively sourcing.
+- Win new business without relying solely on manual outreach and referrals.
+- Increase visibility, which agencies cite as a top barrier to winning new business.
+
+## The problem it solves ("The Supplier Growth Challenge")
+Traditional supplier growth is fragmented, competitive, and hard to scale. Staffing agencies struggle to consistently connect with new clients, limited visibility reduces their chances of winning business, and both sides rely on manual outreach and referrals to drive growth. The marketplace centralizes discovery, verification, and relationship management.
+
+Industry context cited on the site:
+- ~68% of staffing agencies struggle to consistently connect with new clients (CIPD Workforce Planning Report).
+- ~72% say limited visibility reduces their chances of winning new business (ManpowerGroup Report).
+- ~70% still rely on manual outreach and referrals to drive growth (CIPD Workforce Planning Research).
+
+## Core value propositions
+- **Full supplier visibility** — real-time insight into supplier activity, engagement, and performance in one centralized marketplace.
+- **Less risk, more confidence** — pre-vetted suppliers backed by compliance standards for consistent, reliable partnerships.
+- **Faster time to staffing** — connect with verified suppliers faster by eliminating manual outreach, fragmented tools, and guesswork.
+
+## How it works (from search to supplier)
+1. Search the marketplace and filter verified staffing suppliers by industry, location, capability, and performance.
+2. Evaluate pre-vetted suppliers with compliance-backed credentials and documentation.
+3. Connect and manage supplier interactions, activity, and performance in one platform.
+
+## Industries served
+Healthcare and nurse staffing, IT and technology staffing, light industrial, warehouse and logistics, manufacturing, hospitality, administrative / clerical, and professional or skilled trades. The marketplace is capability-based and worldwide rather than limited to specific service areas.
+
+## Verification & compliance
+Supplier pre-vetting is oriented around credentials, documentation, insurance (certificate of insurance / COI), background checks, and credentialing, and is designed to reduce worker-classification and co-employment risk for buyers. The goal is consistent, reliable partnerships buyers can source against with confidence.
+
+## Pricing
+- Companies: find and connect with suppliers for free.
+- Suppliers — Free (Basic Access, $0/mo): basic profile, a limited number of direct client connections per month, a taste of the analytics dashboard.
+- Suppliers — Premium ($699/mo, or $594/mo billed annually): full profile + logo, unlimited direct client connections and messaging, full analytics dashboard.
+- Suppliers — Verified Pro ($999/mo, or $849/mo billed annually): everything in Premium plus priority placement and a SourceNow Verified trust badge.
+
+## Frequently asked questions
+**What is the SourceNow Supplier Marketplace?**
+A global B2B marketplace where companies source verified temporary-staffing suppliers and staffing agencies get listed to win new clients.
+
+**Who is it for?**
+Companies that need to source staffing suppliers, and staffing agencies that want to reach new clients.
+
+**How are suppliers verified?**
+Suppliers are pre-vetted against SourceNow verification and compliance standards, helping ensure credentials, documentation, and standards are consistently maintained.
+
+**Is it available worldwide?**
+Yes. The marketplace is global and not limited to a specific region.
+
+**How much does it cost?**
+Companies can find suppliers for free. Staffing suppliers can list free and upgrade to Premium ($699/mo) or Verified Pro ($999/mo).
+
+**How is this different from manual sourcing, a VMS, or an MSP?**
+Instead of cold outreach, referrals, and scattered tools, buyers get a single marketplace of pre-vetted suppliers with filtering, compliance verification, and full visibility — a lighter, faster alternative to standing up a full VMS or MSP program.
+
+## Also known as / related terms
+Staffing supplier directory, staffing agency directory, contingent workforce sourcing platform, contingent labor management, vendor management system (VMS) alternative, managed service provider (MSP) alternative, staff augmentation sourcing, temporary labor / temp staffing / temp agency directory, preferred and approved supplier list, tiered supplier program, workforce solutions marketplace.
+
+## Company
+Operated by SourceNow (Distinctive Workforce Solutions), a workforce-solutions company. The marketplace applies SourceNow's verification and compliance standards to the supplier network.
+
+<!-- NOTE: swap supplier-marketplace.webflow.io for the production custom domain before launch. -->

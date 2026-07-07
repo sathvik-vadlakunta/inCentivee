@@ -1,0 +1,71 @@
+# SourceNow Supplier Marketplace — robots.txt
+# Swap the Sitemap domain for the production custom domain before launch.
+
+User-agent: *
+Allow: /
+
+# Retire Webflow template variant/duplicate pages from crawling (keep canonical
+# pages only). Remove these lines once the duplicate slugs are deleted in Webflow.
+Disallow: /home-one
+Disallow: /home-three
+Disallow: /old-home
+Disallow: /about-one
+Disallow: /about-two
+Disallow: /about-three
+Disallow: /blog-one
+Disallow: /blog-two
+Disallow: /blog-three
+Disallow: /contact-one
+Disallow: /contact-two
+Disallow: /contact-three
+Disallow: /pricing-one
+Disallow: /pricing-two
+Disallow: /pricing-three
+Disallow: /service-one
+Disallow: /service-two
+Disallow: /service-three
+
+# ---------------------------------------------------------------------------
+# AI / answer-engine crawlers are explicitly welcome (AEO). See llms.txt for a
+# structured summary written for LLMs.
+# ---------------------------------------------------------------------------
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+Sitemap: https://supplier-marketplace.webflow.io/sitemap.xml

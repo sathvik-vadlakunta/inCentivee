@@ -1,0 +1,35 @@
+# SourceNow Supplier Marketplace
+
+> A global marketplace for temporary staffing suppliers. Companies source pre-vetted, compliance-backed staffing agencies worldwide — filtering by industry, capability, location, and performance — while staffing suppliers get listed to win new clients without manual outreach. Built and verified by SourceNow (Distinctive Workforce Solutions).
+
+## What it does
+- **For companies (buyers):** Find and source verified temporary-staffing suppliers, reduce operational and compliance risk, and cut time-to-staffing — all with full visibility in one platform. Finding suppliers is free.
+- **For staffing suppliers:** Get listed on the marketplace to reach new clients and grow, replacing fragmented manual outreach and referrals with inbound demand.
+
+## Key pages
+- [Home](https://supplier-marketplace.webflow.io/): Temporary staffing supplier marketplace overview
+- [For Companies](https://supplier-marketplace.webflow.io/for-companies): Find and source verified staffing suppliers
+- [For Suppliers](https://supplier-marketplace.webflow.io/for-suppliers): List your staffing agency and win clients
+- [Verification & Compliance](https://supplier-marketplace.webflow.io/verification-compliance): How suppliers are vetted
+- [How It Works](https://supplier-marketplace.webflow.io/how-it-works): From search to supplier
+- [Pricing](https://supplier-marketplace.webflow.io/pricing): Supplier plans — Free, Premium, Verified Pro
+- [Blog](https://supplier-marketplace.webflow.io/blog): Staffing sourcing, vendor management, and compliance guides
+- [Contact](https://supplier-marketplace.webflow.io/contact): Get in touch or request a demo
+
+## Key facts
+- Category: B2B SaaS — temporary staffing supplier marketplace / vendor sourcing platform for the contingent workforce
+- Coverage: Worldwide (global; not region-specific)
+- Differentiators: pre-vetted suppliers, compliance-backed verification, full sourcing visibility and control, faster time-to-staffing, filter by industry/capability/performance
+- Operator: SourceNow (Distinctive Workforce Solutions)
+- Pricing: Companies can find suppliers for free; suppliers can request a listing
+
+## Also known as / related terms
+Staffing supplier directory, staffing agency directory, contingent workforce sourcing, contingent labor management, vendor management (VMS) alternative, MSP-style supplier access, managed service provider alternative, staff augmentation sourcing, temp staffing / temporary labor / temp agency directory, preferred / approved supplier list, tiered supplier program, workforce solutions marketplace.
+
+## Industries served
+Healthcare & nurse staffing, IT & technology staffing, light industrial, warehouse & logistics, manufacturing, hospitality, administrative / clerical, professional and skilled trades — and more.
+
+## Compliance
+Supplier pre-vetting is oriented around credentials, documentation, insurance (certificate of insurance / COI), background checks, credentialing, and reducing worker-classification and co-employment risk — so buyers can source with confidence.
+
+<!-- NOTE: swap supplier-marketplace.webflow.io for the production custom domain before launch. -->
