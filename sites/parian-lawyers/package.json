@@ -16,7 +16,8 @@
     "@keystatic/astro": "^5.0.0",
     "@keystatic/core": "^0.5.0",
     "astro": "^5.0.0",
-    "marked": "^18.0.5"
+    "marked": "^18.0.5",
+    "resend": "^4.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",

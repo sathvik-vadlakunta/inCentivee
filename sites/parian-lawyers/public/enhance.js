@@ -144,10 +144,19 @@
         }
       });
       m.querySelector('.pr-modal-form').addEventListener('submit',function(e){
-        e.preventDefault(); var fd=new FormData(e.target);
-        var body=encodeURIComponent('Name: '+fd.get('name')+'\nPhone: '+fd.get('phone')+'\nEmail: '+fd.get('email')+'\n\n'+fd.get('message'));
-        var subj=encodeURIComponent('Free Consultation Request — '+fd.get('name'));
-        window.location.href='mailto:cade@westgalawyer.com?subject='+subj+'&body='+body;
+        e.preventDefault();
+        var form=e.target, btn=form.querySelector('.pr-modal-submit'), fd=new FormData(form);
+        var payload={name:fd.get('name'),phone:fd.get('phone'),email:fd.get('email'),message:fd.get('message'),site:'Parian Lawyers (consultation modal)'};
+        var old=btn.textContent; btn.disabled=true; btn.textContent='Sending…';
+        fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+          .then(function(r){ if(!r.ok) throw new Error('fail');
+            form.innerHTML='<p class="pr-modal-fine" style="font-size:15px;color:#1a1e2e">Thank you — we received your request and will reach out shortly. For immediate help, call <a href="tel:+17707275550">(770) 727-5550</a>.</p>';
+          })
+          .catch(function(){ btn.disabled=false; btn.textContent=old;
+            var err=form.querySelector('.pr-modal-err');
+            if(!err){ err=document.createElement('p'); err.className='pr-modal-fine pr-modal-err'; err.style.color='#c0392b'; form.appendChild(err); }
+            err.textContent='Something went wrong — please call (770) 727-5550.';
+          });
       });
     });
 
