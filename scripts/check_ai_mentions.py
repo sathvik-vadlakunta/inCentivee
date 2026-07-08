@@ -37,6 +37,7 @@ def build_benchmark_prompts(
     practice_name: str, city: str, state: str, specialties: list[str],
     business_type: str = "practice", competitors: list[str] | None = None,
     services: list[str] | None = None, service_areas: list[str] | None = None,
+    keywords: list[str] | None = None,
 ) -> list[dict]:
     """Build a fixed set of high-signal prompts for scheduled mention tracking.
 
@@ -56,10 +57,15 @@ def build_benchmark_prompts(
             seen.add(key)
             prompts.append({"prompt": prompt, "category": category})
 
-    # --- Brand (3) — do the AIs know this business? ---
-    add(f"tell me about {practice_name}", "brand")
-    add(f"is {practice_name} good", "brand")
-    add(f"{practice_name} reviews", "brand")
+    # --- Brand — do the AIs know this business by name? For product/B2B, real
+    # DISCOVERY happens via problem/action queries (below), so keep brand minimal
+    # (1 prompt) instead of letting name-in-title prompts dominate. ---
+    if business_type in ("product", "ecommerce"):
+        add(f"{practice_name} reviews", "brand")
+    else:
+        add(f"tell me about {practice_name}", "brand")
+        add(f"is {practice_name} good", "brand")
+        add(f"{practice_name} reviews", "brand")
 
     # Deduplicated services list (services first, then specialties as fallback)
     all_services = []
@@ -207,27 +213,28 @@ def build_benchmark_prompts(
                 add(f"{practice_name} vs {comp}", "comparison")
 
     elif business_type == "product":
-        # Product company (often B2B — sold to professionals, e.g. dentists).
-        # Discovery is CATEGORY buyer-intent driven by the product/service names —
-        # NOT the geo/practice "best {type} in {city}" template (which yields
-        # nonsense like "best product in " for a national product with no city).
-        audience = _product_audience(all_services)
-        # Category buyer-intent (the money prompts) from each product/service.
-        for svc in all_services[:8]:
+        # Product / B2B company (sold to professionals, e.g. dentists). Real
+        # discoverability is the PROBLEM/ACTION query a buyer types WITHOUT knowing the
+        # brand — "how to reduce shot pain at the dentist", "painless dental injection".
+        # Lead with the curated buyer-intent keywords, then category queries. NEVER the
+        # geo/practice "best {type} in {city}" template (nonsense for a national product).
+        audience = _product_audience(all_services + list(keywords or []))
+        # 1) Curated problem/action buyer-intent keywords — the primary discovery signal.
+        for kw in (keywords or [])[:14]:
+            add(kw, "intent")
+        # 2) Category buyer-intent from the products (breadth / fallback when no keywords).
+        for svc in all_services[:6]:
             add(f"best {svc}", "service")
-            if audience:
+            if audience and not keywords:
                 add(f"best {svc} for {audience}", "service")
-        # General category discovery, anchored on the primary product.
+        # 3) Natural recommendation query.
         if all_services:
-            add(f"best {all_services[0]} brands", "general")
-            add(f"top {all_services[0]} products", "general")
             add(f"recommend a {all_services[0]}" + (f" for {audience}" if audience else ""),
                 "recommendation")
-        # Comparison + review-intent (brand-adjacent but real purchase signal).
+        # 4) Competitor comparison (real purchase-consideration signal).
         if competitors:
             for comp in competitors[:2]:
                 add(f"{practice_name} vs {comp}", "comparison")
-        add(f"is {practice_name} good", "reputation")
 
     else:
         # Generic business type — humanize the type token for natural phrasing.

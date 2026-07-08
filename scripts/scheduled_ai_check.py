@@ -95,6 +95,10 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
     services_list = db.get_services(customer_id)
     service_names = [s["name"] for s in services_list]
 
+    # Curated buyer/action-intent keywords — used as discovery prompts (esp. for
+    # product/B2B, where "how to reduce shot pain" beats "best {product}").
+    keyword_list = [k["keyword"] for k in (db.get_tracked_keywords(customer_id) or [])]
+
     prompt_defs = build_benchmark_prompts(
         customer["name"],
         customer.get("city", ""),
@@ -104,6 +108,7 @@ def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:
         competitors=competitor_names,
         services=service_names,
         service_areas=customer.get("service_areas", []),
+        keywords=keyword_list,
     )
 
     # Create initial run record (needed for FK constraint on results)
