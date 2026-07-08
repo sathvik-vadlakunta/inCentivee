@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How can I tell if my silverware is real sterling silver?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Check the backs and undersides for \"STERLING,\" \"925,\" or a series of small stamped hallmarks. Marks like \"EP,\" \"EPNS,\" or a brand name with no purity number usually indicate silver-plate. When you're unsure, a professional test confirms it precisely and non-destructively."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is silver-plate worth anything?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Its melt value is minimal because it contains only a thin silver coating over base metal. Any value is generally decorative or brand-based rather than from silver content. It's still worth having looked at so you know for certain."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How is my sterling tea set's value calculated?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It starts with the weight of genuine sterling multiplied against the current silver spot price, adjusted for any weighted or non-silver components. Maker, completeness, and condition can add collector value on top of melt."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need to polish my silver before bringing it in?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Tarnish doesn't affect the underlying silver content, and over-polishing can sometimes harm collectible surfaces. Bring your pieces as-is."
+      }
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "How to Sell Gold & Silver Coins and Bullion at Market Price Near Springfield, VA",
+  "description": "Selling gold or silver coins near Springfield, VA? Learn how bullion and collectible coins are valued, how to price to live spot, and where to sell fairly.",
+  "keywords": [
+    "sell coins near me",
+    "sell bullion near me",
+    "best way to sell gold coins",
+    "how to sell gold at market price"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "Danny Gouterman"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Paradigm Experts",
+    "telephone": "+1-703-650-5034",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "6310-A Springfield Plaza",
+      "addressLocality": "Springfield",
+      "addressRegion": "VA",
+      "postalCode": "22150",
+      "addressCountry": "US"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://paradigmexperts.com/sell-gold-silver-coins-bullion-springfield-va"
+  },
+  "datePublished": "2026-07-08"
+}

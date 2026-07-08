@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Do I need the original box and papers to sell my watch?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Box and papers help confirm authenticity and can support value, but they aren't required. Many watches are sold without them. Bring whatever documentation you have, and we'll evaluate the watch on its full merits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I get my watch cleaned or repaired before selling?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Generally, no. It's best to let a professional assess the watch in its current state. Amateur polishing or repairs can sometimes affect originality. Bring it as-is."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can you evaluate a pocket watch or a very old timepiece?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. We evaluate antique and vintage pocket watches, including railroad-grade pieces, based on maker, movement, case material, and condition. If you've been searching for local pocket watch buyers, you're welcome to bring it in."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does an evaluation take, and is there any cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Evaluations are free and typically done while you wait. There's no obligation to sell and no pressure — the choice is always yours."
+      }
+    }
+  ]
+}

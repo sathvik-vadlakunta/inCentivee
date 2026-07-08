@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How do I know I'm getting market price for my gold coins?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ask the buyer to base bullion offers on the current live spot price and to show you the weight and purity. A transparent buyer explains exactly how the offer was calculated so nothing is hidden."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What's the best way to sell gold coins if I'm not sure whether they're rare?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Have them assessed for both metal and collectible value. That way, if a coin carries a numismatic premium, it's recognized rather than paid out at melt. When in doubt, get a professional evaluation before selling."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Should I clean my coins before bringing them in?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Cleaning can damage the surface of collectible coins and lower their value. Bring them exactly as they are."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I have to sell if I come in for an evaluation?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. A free evaluation carries no obligation. You're welcome to hear the offer, ask questions, and decide on your own terms."
+      }
+    }
+  ]
+}

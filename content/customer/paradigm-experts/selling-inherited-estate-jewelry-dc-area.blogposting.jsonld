@@ -1,0 +1,34 @@
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Selling Inherited Jewelry in the DC Area: What It's Worth and Where to Sell",
+  "description": "Inherited or estate jewelry in Northern Virginia? Learn how estate pieces are valued and where to sell with a free, no-obligation appraisal in Springfield, VA.",
+  "keywords": [
+    "estate jewelry buyers near me",
+    "antique jewelry buyers near me",
+    "sell estate jewelry",
+    "jewelry appraisals washington dc"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "Danny Gouterman"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Paradigm Experts",
+    "telephone": "+1-703-650-5034",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "6310-A Springfield Plaza",
+      "addressLocality": "Springfield",
+      "addressRegion": "VA",
+      "postalCode": "22150",
+      "addressCountry": "US"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://paradigmexperts.com/selling-inherited-estate-jewelry-dc-area"
+  },
+  "datePublished": "2026-07-08"
+}

@@ -1,0 +1,34 @@
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "How to Tell What Your Sterling Silver Flatware and Tea Set Are Worth (and Where to Sell in Northern Virginia)",
+  "description": "Learn how to tell sterling from silver-plate, what your silver flatware and tea sets are worth, and where to sell silverware near you in NoVA & DC.",
+  "keywords": [
+    "silverware buyers near me",
+    "value of sterling silver flatware",
+    "antique silver tea set value",
+    "sell silverware near me"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "Danny Gouterman"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Paradigm Experts",
+    "telephone": "+1-703-650-5034",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "6310-A Springfield Plaza",
+      "addressLocality": "Springfield",
+      "addressRegion": "VA",
+      "postalCode": "22150",
+      "addressCountry": "US"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://paradigmexperts.com/sterling-silver-flatware-tea-set-value-northern-virginia"
+  },
+  "datePublished": "2026-07-08"
+}

@@ -1,0 +1,34 @@
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Where to Sell Gold and Gold Jewelry in Springfield & Northern Virginia: A Local Seller's Guide",
+  "description": "Wondering where to sell gold jewelry in Springfield, VA? Learn how a trusted local gold buyer values your items and get a free, no-obligation evaluation.",
+  "keywords": [
+    "where to sell gold jewelry",
+    "places that buy gold near me",
+    "springfield gold & silver buyer",
+    "sell gold and silver near me"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "Danny Gouterman"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Paradigm Experts",
+    "telephone": "+1-703-650-5034",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "6310-A Springfield Plaza",
+      "addressLocality": "Springfield",
+      "addressRegion": "VA",
+      "postalCode": "22150",
+      "addressCountry": "US"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://paradigmexperts.com/where-to-sell-gold-jewelry-springfield-northern-virginia"
+  },
+  "datePublished": "2026-07-08"
+}

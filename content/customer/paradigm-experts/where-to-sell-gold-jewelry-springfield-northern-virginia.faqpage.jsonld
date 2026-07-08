@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Do I need an appointment to sell my gold?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Walk-ins are welcome, and evaluations are always free and no-obligation. If you'd prefer a dedicated time, you're welcome to call ahead at (703) 650-5034."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I sell broken or mismatched gold jewelry?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Broken chains, single earrings, bent rings, and other odds and ends are valued by their gold content — karat and weight — so they're worth bringing in even if they can't be worn."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do you decide what to pay for my gold?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Your offer is based on the purity (karat) and weight of your items, applied to the day's live spot price for gold. We walk you through each factor so you understand exactly how we reached the number."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What else do you buy besides gold?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Along with gold jewelry, we buy silver, diamonds, estate jewelry, luxury watches, coins, and bullion. You're welcome to bring in everything you'd like evaluated in a single visit."
+      }
+    }
+  ]
+}

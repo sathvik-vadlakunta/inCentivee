@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How much can I get for my diamond ring?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It depends on the diamond's 4Cs, the setting, current market conditions, and overall condition. The most reliable way to find out is an in-person evaluation, where a specialist can assess your specific ring and explain the offer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need a GIA certificate to sell my diamond ring?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. A certificate can help, but a reputable buyer can evaluate your diamond in person without one and walk you through their assessment."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is getting an evaluation free? Am I obligated to sell?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A free, no-obligation evaluation means exactly that — you learn what your ring is worth with no pressure and no requirement to accept an offer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where can I sell a diamond ring near me in Northern Virginia?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Paradigm Experts serves Springfield, Burke, Fairfax, Lorton, Oakton, Vienna, Tysons, McLean, Falls Church, Arlington, Alexandria, Woodbridge, and Centreville from our Springfield location."
+      }
+    }
+  ]
+}

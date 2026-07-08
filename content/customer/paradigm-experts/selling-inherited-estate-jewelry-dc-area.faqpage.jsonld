@@ -1,0 +1,38 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Do I need an appraisal before selling inherited jewelry?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "It's strongly recommended. A no-obligation evaluation tells you what you have and what it may be worth in today's market, so you can decide with confidence rather than guesswork."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What's the difference between an insurance appraisal and a sale value?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "An insurance appraisal reflects retail replacement cost and is typically higher. A sale value reflects what the item can realistically sell for now. When you're selling, the sale value is the relevant figure."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I sell an entire estate collection at once, even broken or mismatched pieces?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. You can bring the whole lot as-is. Damaged, incomplete, or costume items can be reviewed alongside fine pieces, and precious-metal content often still holds value even when a piece isn't wearable."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is the evaluation really free and private?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. A reputable buyer offers a free, no-obligation, and discreet evaluation. You're never required to sell, and you should feel comfortable taking your time."
+      }
+    }
+  ]
+}
