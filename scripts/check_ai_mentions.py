@@ -206,6 +206,29 @@ def build_benchmark_prompts(
             for comp in competitors[:2]:
                 add(f"{practice_name} vs {comp}", "comparison")
 
+    elif business_type == "product":
+        # Product company (often B2B — sold to professionals, e.g. dentists).
+        # Discovery is CATEGORY buyer-intent driven by the product/service names —
+        # NOT the geo/practice "best {type} in {city}" template (which yields
+        # nonsense like "best product in " for a national product with no city).
+        audience = _product_audience(all_services)
+        # Category buyer-intent (the money prompts) from each product/service.
+        for svc in all_services[:8]:
+            add(f"best {svc}", "service")
+            if audience:
+                add(f"best {svc} for {audience}", "service")
+        # General category discovery, anchored on the primary product.
+        if all_services:
+            add(f"best {all_services[0]} brands", "general")
+            add(f"top {all_services[0]} products", "general")
+            add(f"recommend a {all_services[0]}" + (f" for {audience}" if audience else ""),
+                "recommendation")
+        # Comparison + review-intent (brand-adjacent but real purchase signal).
+        if competitors:
+            for comp in competitors[:2]:
+                add(f"{practice_name} vs {comp}", "comparison")
+        add(f"is {practice_name} good", "reputation")
+
     else:
         # Generic business type — humanize the type token for natural phrasing.
         bt = business_label(business_type)
@@ -225,6 +248,20 @@ def build_benchmark_prompts(
         add(f"{practice_name} reviews", "reputation")
 
     return prompts
+
+
+def _product_audience(services: list[str]) -> str:
+    """Infer the professional buyer for a B2B product from its service/product names
+    so category prompts read naturally ('best topical anesthetic spray for dentists').
+    Empty string when we can't confidently tell — then prompts stay category-only."""
+    joined = " ".join(services).lower()
+    if any(w in joined for w in ("dental", "denture", "dentist", "orthodont", "endodont", "periodont")):
+        return "dentists"
+    if any(w in joined for w in ("surgical", "clinic", "patient", "physician", "medical", "injection", "anesthet")):
+        return "medical practices"
+    if any(w in joined for w in ("veterinary", "vet ", "animal")):
+        return "veterinarians"
+    return ""
 
 
 def build_prompts(practice_name: str, city: str, state: str, specialties: list[str], business_type: str = "practice") -> list[str]:
@@ -452,6 +489,33 @@ def build_comprehensive_prompts(
         if competitors:
             for comp in competitors[:3]:
                 add(f"{practice_name} vs {comp}", "comparison")
+
+    elif business_type == "product":
+        # --- Product company (often B2B) — category buyer-intent from products,
+        # not the geo/practice template (no "best product in {city}" nonsense). ---
+        product_names = []
+        for s in (services or []) + specialties:
+            sl = s.lower()
+            if sl not in product_names:
+                product_names.append(sl)
+        audience = _product_audience(product_names)
+        for svc in product_names[:15]:
+            add(f"best {svc}", "service")
+            add(f"where to buy {svc}", "service")
+            if audience:
+                add(f"best {svc} for {audience}", "service")
+        if product_names:
+            add(f"best {product_names[0]} brands", "general")
+            add(f"top {product_names[0]} products", "general")
+            add(f"{product_names[0]} product comparison", "comparison")
+            add(f"recommend a {product_names[0]}" + (f" for {audience}" if audience else ""),
+                "recommendation")
+        add(f"is {practice_name} good", "reputation")
+        add(f"{practice_name} reviews", "reputation")
+        if competitors:
+            for comp in competitors[:3]:
+                add(f"{practice_name} vs {comp}", "comparison")
+            add(f"best alternatives to {competitors[0]}", "comparison")
 
     else:
         # --- Generic business (consulting, services, etc.) — use a human label ---
