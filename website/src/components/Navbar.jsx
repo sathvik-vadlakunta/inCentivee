@@ -6,10 +6,10 @@ import { useAuth } from '../context/AuthContext'
 import './Navbar.css'
 
 const links = [
-  { label: 'About', href: '/about' },
+  { label: 'Learn', href: '/learn' },
   { label: 'Resources', href: '/resources' },
   { label: 'Presentations', href: '/presentations' },
-  { label: 'Learn', href: '/learn' },
+  { label: 'About', href: '/about' },
 ]
 
 export default function Navbar() {
