@@ -422,7 +422,13 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
     # --- Alerts (REAL) → inform "what's next" ---
     data["alerts"] = db.get_alerts(customer_id, active_only=True, limit=10)
 
-    data["progress"] = _progress_since_start(db, customer_id)
+    # Feed the just-computed live score in as the current point so the headline,
+    # the score circle, the trend chart's endpoint, and the "progress since" row
+    # all agree (the score is otherwise persisted only AFTER this is built, so the
+    # chart used to lag one save behind the headline). Skip for point-in-time
+    # historical rebuilds (live_state=False) so we don't rewrite past charts.
+    live_pt = (ds(end), data["score"].get("score")) if live_state else None
+    data["progress"] = _progress_since_start(db, customer_id, live_point=live_pt)
     data["changes_live_at"] = changes_live_at
     data["exec_summary"] = _exec_summary(data)
     return data
@@ -573,10 +579,14 @@ def _short_num(v) -> str:
     return str(int(v)) if v == int(v) else f"{v:.1f}"
 
 
-def _progress_since_start(db, customer_id: str) -> dict | None:
+def _progress_since_start(db, customer_id: str, live_point: tuple | None = None) -> dict | None:
     """Full-history trend for every tracked metric since the customer started —
     each metric's first value → latest value + the whole series (for sparklines),
-    plus score & traffic series for the headline charts."""
+    plus score & traffic series for the headline charts.
+
+    live_point: (date, live_score) — the freshly-computed score for a live render,
+    appended as the current point so the chart endpoint + "current" match the
+    headline (the score is persisted only after this runs)."""
     metrics: list[dict] = []
     all_start_dates: list[str] = []
 
@@ -596,6 +606,12 @@ def _progress_since_start(db, customer_id: str) -> dict | None:
 
     score_rows = list(reversed(db.get_practicerank_scores(customer_id, limit=60)))
     score_series = [(r["date"], r.get("overall_score")) for r in score_rows]
+    if live_point and live_point[1] is not None:
+        ld, lv = live_point
+        if score_series and score_series[-1][0] == ld:
+            score_series[-1] = (ld, lv)  # today already saved — use the live value
+        else:
+            score_series.append((ld, lv))  # append today's live point as current
     _add("PracticeRank score", "int", True, score_series)
 
     for metric, label, kind, higher in _PROGRESS_METRICS:
@@ -658,14 +674,25 @@ def _trend_chart_svg(points: list[tuple], *, title: str, color: str = "#16a34a",
         gy = Y(gv)
         grid += (f'<line x1="{padL}" y1="{gy}" x2="{w-padR}" y2="{gy}" stroke="#eef1f4" stroke-width="1"/>'
                  f'<text x="{padL-6}" y="{gy+3}" text-anchor="end" font-size="10" fill="#9aa6b2">{_short_num(gv)}</text>')
-    xl = (f'<text x="{padL}" y="{h-5}" font-size="10" fill="#9aa6b2">{html.escape(pts[0][0][:7])}</text>'
-          f'<text x="{w-padR}" y="{h-5}" text-anchor="end" font-size="10" fill="#9aa6b2">{html.escape(pts[-1][0][:7])}</text>')
+    # X-axis: specific start date (left) and report-run date (right).
+    xl = (f'<text x="{padL}" y="{h-5}" font-size="10" fill="#9aa6b2">{html.escape(pts[0][0])}</text>'
+          f'<text x="{w-padR}" y="{h-5}" text-anchor="end" font-size="10" fill="#9aa6b2">{html.escape(pts[-1][0])} · run</text>')
+    # Peak marker + date, when the high point is interior (distinct from start/end).
+    peak_i = max(range(n), key=lambda i: pts[i][1])
+    peak_anno = ""
+    if 0 < peak_i < n - 1:
+        px, py = X(peak_i), Y(pts[peak_i][1])
+        peak_anno = (f'<circle cx="{px}" cy="{py}" r="3" fill="{color}"/>'
+                     f'<text x="{px}" y="{py-6}" text-anchor="middle" font-size="9" fill="#6b7280">'
+                     f'peak {html.escape(pts[peak_i][0])} ({_short_num(pts[peak_i][1])})</text>')
     lx, ly = X(n - 1), Y(pts[-1][1])
+    end_lbl = (f'<text x="{lx}" y="{ly-7}" text-anchor="end" font-size="9" fill="#374151">'
+               f'{_short_num(pts[-1][1])}</text>')
     return (f'<div class="trend"><div class="trend-t">{html.escape(title)}</div>'
             f'<svg viewBox="0 0 {w} {h}" role="img">{grid}'
             f'<polygon points="{area}" fill="{color}" opacity="0.09"/>'
             f'<polyline points="{line}" fill="none" stroke="{color}" stroke-width="2.2" stroke-linejoin="round"/>'
-            f'<circle cx="{lx}" cy="{ly}" r="3.2" fill="{color}"/>{xl}</svg></div>')
+            f'{peak_anno}<circle cx="{lx}" cy="{ly}" r="3.2" fill="{color}"/>{end_lbl}{xl}</svg></div>')
 
 
 def _maturation_note(data: dict) -> str:
