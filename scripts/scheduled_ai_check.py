@@ -63,18 +63,11 @@ ENGINES = [
 
 
 def get_active_customers(db: CustomerDB) -> list[dict]:
-    """Return customers with status 'active', 'live', or 'onboarding'."""
-    customers = []
-    for status in ("active", "live", "onboarding"):
-        customers.extend(db.list_customers(status=status))
-    # Deduplicate by id (in case both statuses overlap somehow)
-    seen = set()
-    unique = []
-    for c in customers:
-        if c["id"] not in seen:
-            seen.add(c["id"])
-            unique.append(c)
-    return unique
+    """Cut-over customers only — the recurring 3x/week check runs solely for the
+    book of customers whose sites are live with our changes. Not-yet-started
+    customers get a one-time baseline via `--customer <id>`, not this bulk run.
+    See specs/active/paying-only-recurring-work.md."""
+    return db.list_recurring_customers()
 
 
 def run_check_for_customer(db: CustomerDB, customer: dict) -> dict:

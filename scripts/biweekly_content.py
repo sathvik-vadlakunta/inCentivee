@@ -46,7 +46,9 @@ def main():
         c = db.get_customer(args.customer)
         targets = [c] if c else []
     elif args.all:
-        targets = [c for c in db.list_customers() if c.get("status") in ("onboarding", "active")]
+        # Cut-over customers only — no recurring content generation for customers
+        # that haven't started (see specs/active/paying-only-recurring-work.md).
+        targets = [c for c in db.list_customers() if c.get("cutover")]
     else:
         ap.error("pass --customer <id> or --all")
         return

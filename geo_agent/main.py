@@ -874,7 +874,10 @@ def main():
                 sys.exit(1)
             customers = [config_customer]
         else:
-            all_customers = customer_db.list_customers(status="active")
+            # Bulk (cron) run: cut-over customers only (sites live with our changes).
+            # Not-yet-started customers get a one-time baseline, not the recurring
+            # pipeline. See specs/active/paying-only-recurring-work.md.
+            all_customers = customer_db.list_recurring_customers()
             customers = []
             for c in all_customers:
                 cc = customer_db.to_config_customer(c["id"])

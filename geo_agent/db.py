@@ -433,6 +433,16 @@ class CustomerDB:
             # Day-1 quick-win pass: timestamp when the first visible result shipped.
             # Onboarding isn't "done" until this is set — kills first-60-day churn.
             self.conn.execute("ALTER TABLE customers ADD COLUMN quick_win_shipped_at TEXT")
+        if "cutover" not in cols:
+            # Operator flag: this customer's site is LIVE with our changes / cut over
+            # in Cloudflare — we're actively managing it. This GATES all recurring
+            # LLM work (3x/week + weekly AI checks, monthly/biweekly content, daily
+            # alerts, the content queue) so we don't pay for LLM runs — or pollute
+            # baselines — on customers that haven't really started. New customers get
+            # only a one-time baseline until cut over. See
+            # specs/active/paying-only-recurring-work.md.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN cutover INTEGER NOT NULL DEFAULT 0")
+            self.conn.execute("ALTER TABLE customers ADD COLUMN cutover_at TEXT")
 
         # Per-customer activity timeline: notes, status changes, and ingested
         # emails. Mirrors prospect_activities so the customer detail page gets the
@@ -1283,6 +1293,43 @@ class CustomerDB:
             (customer_id,),
         ).fetchone()
         return dict(row) if row else None
+
+    # --- Cut-over gate (see specs/active/paying-only-recurring-work.md) ----------
+    # Subscription statuses that count as actively paying (same notion the FATJOE
+    # queue + billing page use). Billing signal only — NOT the recurring-work gate.
+    PAYING_SUB_STATUSES = frozenset({"active", "trialing"})
+
+    def is_paying(self, customer_id: str) -> bool:
+        """True if the customer has an active/trialing subscription. Billing signal
+        (shown in the UI); the recurring-work gate is `is_cutover`, not this."""
+        sub = self.get_subscription_for_customer(customer_id)
+        return bool(sub and sub.get("status") in self.PAYING_SUB_STATUSES)
+
+    def is_cutover(self, customer_id: str) -> bool:
+        """True once the operator marks the customer cut over — site live with our
+        changes / managed in Cloudflare. Gates ALL recurring LLM work (3x/week +
+        weekly AI, monthly/biweekly content, daily alerts, content queue) so we
+        don't pay for LLM runs — or pollute baselines — on customers that haven't
+        really started. New customers get only a one-time baseline until cut over."""
+        c = self.get_customer(customer_id)
+        return bool(c and c.get("cutover"))
+
+    def set_cutover(self, customer_id: str, on: bool, when: str | None = None) -> bool:
+        """Toggle the cut-over flag; stamps `cutover_at` (ISO date) when turning on."""
+        if on:
+            from datetime import datetime, timezone
+            stamp = when or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            return self.update_customer(customer_id, cutover=1, cutover_at=stamp)
+        return self.update_customer(customer_id, cutover=0, cutover_at=None)
+
+    def list_recurring_customers(self) -> list[dict]:
+        """Customers eligible for full recurring service: those marked cut over."""
+        return [c for c in self.list_customers() if c.get("cutover")]
+
+    def _recurring_ids_sql(self) -> tuple[str, tuple]:
+        """(sub-SELECT of cut-over customer_ids, params) for cheap COUNT gating —
+        keeps badge queries to a single statement with no per-customer Python loop."""
+        return ("SELECT id FROM customers WHERE cutover = 1", ())
 
     def list_subscriptions(self) -> list[dict]:
         """All subscriptions joined to customer name (NULL name = unmatched)."""
@@ -2620,10 +2667,14 @@ class CustomerDB:
         return cur.fetchone()[0]
 
     def count_all_pending_content(self) -> int:
-        """Total pending content recommendations across every customer (drives the
-        Content Queue sidebar badge — one cheap query, no per-customer loop)."""
+        """Pending content recommendations across CUT-OVER customers only (drives the
+        Content Queue sidebar badge — one cheap query, no per-customer loop).
+        Not-yet-started customers are excluded until they're cut over."""
+        recurring_sql, params = self._recurring_ids_sql()
         cur = self.conn.execute(
-            "SELECT COUNT(*) FROM content_recommendations WHERE status = 'pending'"
+            f"SELECT COUNT(*) FROM content_recommendations "
+            f"WHERE status = 'pending' AND customer_id IN ({recurring_sql})",
+            params,
         )
         return int(cur.fetchone()[0] or 0)
 
@@ -2856,7 +2907,13 @@ class CustomerDB:
                 (customer_id,),
             )
         else:
-            cur = self.conn.execute("SELECT COUNT(*) FROM alerts WHERE dismissed = 0")
+            # Global badge: count only cut-over customers' alerts (others hidden).
+            recurring_sql, params = self._recurring_ids_sql()
+            cur = self.conn.execute(
+                f"SELECT COUNT(*) FROM alerts WHERE dismissed = 0 "
+                f"AND customer_id IN ({recurring_sql})",
+                params,
+            )
         return cur.fetchone()[0]
 
     # --- Webflow OAuth Tokens ---

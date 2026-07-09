@@ -447,6 +447,10 @@ def reconcile_all(db, dry_run: bool = True) -> list[dict]:
     for c in db.list_customers():
         if c.get("status") not in RECONCILE_STATUSES:
             continue
+        # Cut-over customers only — no recurring reconcile / alerts until the site
+        # is live with our changes (see specs/active/paying-only-recurring-work.md).
+        if not c.get("cutover"):
+            continue
         try:
             out.append(reconcile_customer(db, c["id"], dry_run=dry_run))
         except Exception:

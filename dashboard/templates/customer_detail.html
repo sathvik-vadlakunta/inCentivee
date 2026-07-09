@@ -70,7 +70,22 @@
         <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.2rem;">
             <a href="https://{{ customer.domain }}" target="_blank" style="color:var(--muted);font-size:0.85rem;text-decoration:none;">{{ customer.domain }}</a>
             <span class="badge badge-{{ customer.status }}">{{ customer.status | title }}</span>
+            {% if customer.cutover %}
+            <span class="badge" style="background:#dcfce7;color:#166534;border:1px solid #86efac;" title="Site is live with our changes / managed in Cloudflare. Recurring AI, content &amp; alerts are ON.">🟢 Cut over{% if customer.cutover_at %} · {{ customer.cutover_at }}{% endif %}</span>
+            {% else %}
+            <span class="badge" style="background:#f3f4f6;color:#6b7280;border:1px solid #d1d5db;" title="Not cut over yet — recurring LLM work is paused (one-time baseline only).">⚪ Not cut over</span>
+            {% endif %}
             <span id="run-status" style="font-size:0.8rem;"></span>
+        </div>
+        {% set cutover_msg = 'Clear cut-over? Recurring AI checks, content, and alerts will PAUSE for this customer.' if customer.cutover else 'Mark this customer cut over? Recurring AI checks, content, and alerts will turn ON — LLM spend starts. Do this once the site is live with our changes.' %}
+        <div id="cutover" style="margin-top:0.45rem;display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center;">
+            <form method="post" action="{{ url_for('toggle_cutover', customer_id=customer.id) }}" style="display:inline;" onsubmit="return confirm('{{ cutover_msg }}');">
+                <input type="hidden" name="cutover" value="{{ 0 if customer.cutover else 1 }}">
+                <button type="submit" class="btn btn-sm {{ 'btn-outline' if customer.cutover else 'btn-primary' }}" style="font-size:0.72rem;padding:0.2rem 0.65rem;">
+                    {% if customer.cutover %}Clear cut-over (pause recurring){% else %}Mark cut over (start recurring){% endif %}
+                </button>
+            </form>
+            <span style="font-size:0.72rem;color:var(--muted);">Gates 3×/week + weekly AI, content &amp; alerts. Turn on once the site is live with our changes / cut over in Cloudflare.</span>
         </div>
         {% if customer.status_note or customer.next_action %}
         <div style="margin-top:0.45rem;display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;">

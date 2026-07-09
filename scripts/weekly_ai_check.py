@@ -221,10 +221,10 @@ def main():
                 print(f"Customer not found: {args.customer}")
                 sys.exit(1)
         else:
-            customers = db.list_customers(status="active") + db.list_customers(status="live")
-            # Deduplicate
-            seen = set()
-            customers = [c for c in customers if c["id"] not in seen and not seen.add(c["id"])]
+            # Cut-over customers only — recurring AI runs are for sites live with
+            # our changes; a new customer's baseline uses --customer. See
+            # specs/active/paying-only-recurring-work.md.
+            customers = db.list_recurring_customers()
 
         print(f"Running AI mention check for {len(customers)} customer(s)...")
         _engine_keys = {'Claude': 'ANTHROPIC_API_KEY', 'ChatGPT': 'OPENAI_API_KEY', 'Perplexity': 'PERPLEXITY_API_KEY', 'Gemini': 'GEMINI_API_KEY', 'Grok': 'XAI_API_KEY'}

@@ -307,6 +307,38 @@ def mark_quick_win_shipped(customer_id):
     return redirect(url_for("customer_detail", customer_id=customer_id) + "#quick-win")
 
 
+@app.route("/customer/<customer_id>/cutover", methods=["POST"])
+@login_required
+def toggle_cutover(customer_id):
+    """Mark a customer cut over (site live with our changes / managed in Cloudflare)
+    or revert it. This flag gates ALL recurring LLM work — 3x/week + weekly AI
+    checks, monthly/biweekly content, daily alerts, and the content queue — so we
+    only pay for LLM runs on customers that have really started. New customers get a
+    one-time baseline; recurring work waits for cut-over."""
+    db = get_db()
+    try:
+        on = request.form.get("cutover") == "1"
+        db.set_cutover(customer_id, on)
+        audit_log("cutover_" + ("on" if on else "off"), customer_id=customer_id)
+        try:
+            db.add_customer_activity(
+                customer_id, "status",
+                ("✅ Cut over — site live with our changes; recurring service ON."
+                 if on else "↩️ Cut-over cleared — recurring service paused (baseline only)."),
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        flash(
+            "Cut over — recurring AI checks, content, and alerts are now ON for this customer."
+            if on else
+            "Cut-over cleared — recurring work is paused (one-time baseline only).",
+            "success",
+        )
+    finally:
+        db.close()
+    return redirect(url_for("customer_detail", customer_id=customer_id) + "#cutover")
+
+
 @app.route("/customer/<customer_id>/case-value", methods=["POST"])
 @login_required
 def set_case_value(customer_id):
@@ -7221,6 +7253,10 @@ def alerts():
             active_only=not show_dismissed,
             limit=100,
         )
+        # Cut-over customers only (unless viewing a specific customer) — hide
+        # not-started alerts to match the nav badge. Existing alerts aren't deleted.
+        if not customer_filter:
+            all_alerts = [a for a in all_alerts if db.is_cutover(a["customer_id"])]
 
         # Get customer names for display
         customer_names = {}
@@ -7351,7 +7387,9 @@ def content_queue():
     try:
         groups = []
         total_pending = 0
-        for cust in db.list_customers():
+        # Cut-over customers only — the content queue mirrors the live book
+        # (see specs/active/paying-only-recurring-work.md).
+        for cust in db.list_recurring_customers():
             recs = db.get_content_recommendations(cust["id"], status="pending", limit=200)
             if not recs:
                 continue
