@@ -61,6 +61,40 @@ def test_content_is_live_cms_item_id_counts(monkeypatch):
     assert sc._content_is_live("example.com", rec, {}) is True
 
 
+class _Resp:
+    def __init__(self, status_code=200, text=""):
+        self.status_code = status_code
+        self.text = text
+
+
+def test_detect_area_pages_live_matches_sitemap_slugs(monkeypatch):
+    # Dev-built city pages in the sitemap are credited even though we never
+    # published them. Multi-word cities ('Jersey City' -> /jersey-city-nj) match;
+    # an unlisted city does not.
+    sitemap = ("<urlset><url><loc>https://x.com/newark-nj</loc></url>"
+               "<url><loc>https://x.com/jersey-city-nj/</loc></url>"
+               "<url><loc>https://x.com/about</loc></url></urlset>")
+    monkeypatch.setattr(sc.httpx, "get",
+                        lambda url, **k: _Resp(200, sitemap) if "sitemap.xml" in url else _Resp(404))
+    areas = ["Newark, NJ", "Jersey City, NJ", "Paramus, NJ"]
+    assert sc.detect_area_pages_live("x.com", areas) == ["Newark, NJ", "Jersey City, NJ"]
+
+
+def test_detect_live_status_ticks_sitemap_and_modern_robots(monkeypatch):
+    # robots.txt naming GPTBot (not the legacy ChatGPT-User) still counts, and a
+    # live sitemap.xml now ticks seo_xml_sitemap (previously never probed).
+    def fake_get(url, **k):
+        if url.endswith("/robots.txt"):
+            return _Resp(200, "User-agent: GPTBot\nDisallow:\nSitemap: https://x.com/sitemap.xml")
+        if url.endswith("/sitemap.xml"):
+            return _Resp(200, "<urlset><url><loc>https://x.com/</loc></url></urlset>")
+        return _Resp(404)
+    monkeypatch.setattr(sc.httpx, "get", fake_get)
+    det = sc.detect_live_status("x.com")
+    assert det.get("seo_robots_txt") is True
+    assert det.get("seo_xml_sitemap") is True
+
+
 def test_resolves_fixed_audit_issues(db, monkeypatch):
     _open_issue(db, "c1", "Schema", "Missing FAQ schema")
     _open_issue(db, "c1", "Performance", "Slow LCP")

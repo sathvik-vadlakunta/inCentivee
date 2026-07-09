@@ -27,6 +27,17 @@ from geo_agent.site_auditor import run_site_audit
 
 logger = logging.getLogger(__name__)
 
+# Some hosts (Cloudflare) 403/1010 a default httpx User-Agent. Present as a real
+# browser so live detection isn't silently blocked (see memory: contact-form-email-resend).
+_UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+       "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"}
+
+# robots.txt tokens that indicate deliberate AI-crawler rules (the deliverable).
+# Modern sites name the newer bots — matching only ChatGPT-User/PerplexityBot
+# under-counts every site that uses GPTBot/ClaudeBot/Google-Extended instead.
+_AI_ROBOTS_TOKENS = ("chatgpt-user", "perplexitybot", "gptbot", "google-extended",
+                     "claudebot", "anthropic-ai", "ccbot", "oai-searchbot", "cohere")
+
 # Customers we bother reconciling (active book of business).
 RECONCILE_STATUSES = ("onboarding", "active")
 
@@ -46,7 +57,7 @@ def detect_live_status(domain: str) -> dict[str, bool]:
         return detected
 
     try:
-        resp = httpx.get(f"https://{domain}", timeout=10.0, follow_redirects=True)
+        resp = httpx.get(f"https://{domain}", timeout=10.0, follow_redirects=True, headers=_UA)
         if resp.status_code == 200:
             body = resp.text
             has_schema = "application/ld+json" in body or "practicerank_schema" in body
@@ -82,20 +93,77 @@ def detect_live_status(domain: str) -> dict[str, bool]:
 
     for key, filename in [("seo_llms_txt", "llms.txt"), ("seo_llms_full", "llms-full.txt")]:
         try:
-            r = httpx.get(f"https://{domain}/{filename}", timeout=8.0, follow_redirects=True)
+            r = httpx.get(f"https://{domain}/{filename}", timeout=8.0, follow_redirects=True, headers=_UA)
             if r.status_code == 200 and len(r.text) > 50:
                 detected[key] = True
         except Exception:
             pass
 
     try:
-        r = httpx.get(f"https://{domain}/robots.txt", timeout=8.0, follow_redirects=True)
-        if r.status_code == 200 and ("ChatGPT-User" in r.text or "PerplexityBot" in r.text):
-            detected["seo_robots_txt"] = True
+        r = httpx.get(f"https://{domain}/robots.txt", timeout=8.0, follow_redirects=True, headers=_UA)
+        if r.status_code == 200:
+            low = r.text.lower()
+            # Deliberate AI rules OR a Sitemap directive both count as a real,
+            # maintained robots.txt (the deliverable) — not a default/empty one.
+            if any(tok in low for tok in _AI_ROBOTS_TOKENS) or "sitemap:" in low:
+                detected["seo_robots_txt"] = True
     except Exception:
         pass
 
+    # XML sitemap — a live /sitemap.xml (or sitemap index). Was never probed
+    # before, so seo_xml_sitemap could only be ticked by hand.
+    for name in ("sitemap.xml", "sitemap_index.xml", "sitemap-index.xml"):
+        try:
+            r = httpx.get(f"https://{domain}/{name}", timeout=8.0, follow_redirects=True, headers=_UA)
+            if r.status_code == 200 and ("<urlset" in r.text or "<sitemapindex" in r.text):
+                detected["seo_xml_sitemap"] = True
+                break
+        except Exception:
+            pass
+
     return detected
+
+
+def _city_slug(area: str) -> str:
+    """'Newark, NJ' -> 'newark' (the leading city token, slugified)."""
+    return "-".join(_WORD_RE.findall((area or "").split(",")[0].lower()))
+
+
+def detect_area_pages_live(domain: str, service_areas: list[str]) -> list[str]:
+    """Which configured service-area cities have a live page on the site.
+
+    Scans the XML sitemap URLs and matches each city slug as a path token — so a
+    self-publishing client whose developer built /newark-nj, /jersey-city-nj, …
+    is credited for coverage even though we never published those pages ourselves.
+    Returns the matched original service_areas entries.
+    """
+    if not domain or not service_areas:
+        return []
+    locs: list[str] = []
+    for name in ("sitemap.xml", "sitemap_index.xml", "sitemap-index.xml"):
+        try:
+            r = httpx.get(f"https://{domain}/{name}", timeout=10.0, follow_redirects=True, headers=_UA)
+            if r.status_code == 200 and "<loc>" in r.text:
+                locs = re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", r.text)
+                break
+        except Exception:
+            pass
+    if not locs:
+        return []
+    # Slug-token set for every sitemap URL path (hyphen-delimited).
+    path_tokens: list[set[str]] = []
+    for u in locs:
+        path = re.sub(r"^https?://[^/]+", "", u).lower()
+        path_tokens.append(set(_WORD_RE.findall(path)))
+    covered = []
+    for area in service_areas:
+        slug = _city_slug(area)
+        if not slug:
+            continue
+        parts = slug.split("-")  # e.g. 'jersey-city' -> {'jersey','city'}
+        if any(all(p in toks for p in parts) for toks in path_tokens):
+            covered.append(area)
+    return covered
 
 
 _TAG_RE = re.compile(r"<[^>]+>")
@@ -379,6 +447,16 @@ def reconcile_customer(db, customer_id: str, dry_run: bool = True) -> dict:
             result["todos_ticked"].append(key)
             if not dry_run:
                 db.set_checklist_item(customer_id, key, True)
+
+    # Service-area coverage from the LIVE sitemap (credits dev-built city pages
+    # that never came through our content pipeline). Persisted so the score's
+    # content-coverage pillar reflects reality without re-fetching on every read.
+    areas = customer.get("service_areas") or []
+    if areas:
+        live_areas = detect_area_pages_live(domain, areas)
+        result["area_pages_live"] = live_areas
+        if not dry_run and set(live_areas) != set(customer.get("live_area_pages") or []):
+            db.set_live_area_pages(customer_id, live_areas)
 
     # --- 4. Status / onboarding_step auto-advance ---
     step = customer.get("onboarding_step", "new")

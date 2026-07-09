@@ -439,7 +439,11 @@ def compute_content_velocity(db: CustomerDB, customer_id: str) -> dict | None:
     if areas:
         page_titles = " || ".join((r.get("title") or "").lower()
                                   for r in published if r.get("rec_type") == "new_page")
-        covered = sum(1 for a in areas if a.split(",")[0].strip().lower() in page_titles)
+        # A city counts as covered if WE published a location page for it OR the
+        # reconciler detected a live page for it on the site (dev-built pages).
+        live_areas = {a for a in (customer.get("live_area_pages") or [])}
+        covered = sum(1 for a in areas
+                      if a.split(",")[0].strip().lower() in page_titles or a in live_areas)
         coverage_score = covered / len(areas) * 100
     else:
         covered = 0

@@ -403,6 +403,11 @@ class CustomerDB:
             # Nearby cities (~25 min) the business serves — drives AI-mention
             # geographic coverage to match the location pages we build.
             self.conn.execute("ALTER TABLE customers ADD COLUMN service_areas TEXT NOT NULL DEFAULT '[]'")
+        if "live_area_pages" not in cols:
+            # Service-area cities detected as having a LIVE page on the site (from
+            # the daily reconciler's sitemap scan). Credits dev-built city pages
+            # toward content coverage even when they never came through our pipeline.
+            self.conn.execute("ALTER TABLE customers ADD COLUMN live_area_pages TEXT NOT NULL DEFAULT '[]'")
         if "baseline_score" not in cols:
             # Week-0 PracticeRank Score (locked on the first score, pre-work) so
             # the report can show "+N since baseline". NULL = not yet set.
@@ -1372,6 +1377,7 @@ class CustomerDB:
         d["hosting_info"] = json.loads(d.get("hosting_info", "{}"))
         d["verified_quotes"] = json.loads(d.get("verified_quotes", "[]"))
         d["service_areas"] = json.loads(d.get("service_areas", "[]"))
+        d["live_area_pages"] = json.loads(d.get("live_area_pages", "[]"))
         return d
 
     def to_config_customer(self, customer_id: str) -> Customer | None:
@@ -2136,6 +2142,14 @@ class CustomerDB:
             ON CONFLICT(customer_id, task_key) DO UPDATE SET
                 completed = excluded.completed, completed_at = excluded.completed_at""",
             (customer_id, task_key, int(completed), completed_at),
+        )
+        self.conn.commit()
+
+    def set_live_area_pages(self, customer_id: str, areas: list[str]):
+        """Persist the service-area cities detected as live on the site (JSON)."""
+        self.conn.execute(
+            "UPDATE customers SET live_area_pages = ? WHERE id = ?",
+            (json.dumps(areas or []), customer_id),
         )
         self.conn.commit()
 
