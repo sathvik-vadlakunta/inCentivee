@@ -105,6 +105,13 @@
   gap: 12px;
 }
 
+/* Groups coin counter + hamburger on the right */
+.navbar-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Coin counter shown only on mobile (next to hamburger) */
 .navbar-cents--mobile {
   display: none;

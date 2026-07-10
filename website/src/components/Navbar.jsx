@@ -63,19 +63,20 @@ export default function Navbar() {
           )}
         </div>
 
-        <div className={`navbar-cents navbar-cents--mobile${!currentUser ? ' navbar-cents--guest' : ''}`} title="Your cents" aria-hidden="true">
-          <span className="navbar-cents-coin">¢</span>
-          <span className="navbar-cents-count">{currentUser ? (profile?.xp ?? 0) : 0}</span>
+        <div className="navbar-end">
+          <div className={`navbar-cents navbar-cents--mobile${!currentUser ? ' navbar-cents--guest' : ''}`} title="Your cents" aria-hidden="true">
+            <span className="navbar-cents-coin">¢</span>
+            <span className="navbar-cents-count">{currentUser ? (profile?.xp ?? 0) : 0}</span>
+          </div>
+          <button
+            className="navbar-toggle"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            onClick={() => setOpen(v => !v)}
+          >
+            {open ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
+          </button>
         </div>
-
-        <button
-          className="navbar-toggle"
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-          onClick={() => setOpen(v => !v)}
-        >
-          {open ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
-        </button>
       </nav>
 
       {open && (
