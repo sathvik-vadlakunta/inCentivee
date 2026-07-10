@@ -12,6 +12,7 @@ import PresentationsPage from './pages/Presentations'
 import PresentationViewer from './pages/PresentationViewer'
 import Login from './pages/Login'
 import Learn from './pages/Learn'
+import UnitPage from './pages/UnitPage'
 import './App.css'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="presentations/:code" element={<PresentationViewer />} />
             <Route path="login" element={<Login />} />
             <Route path="learn" element={<Learn />} />
+            <Route path="learn/unit/:unitId" element={<UnitPage />} />
           </Route>
         </Routes>
       </AuthProvider>

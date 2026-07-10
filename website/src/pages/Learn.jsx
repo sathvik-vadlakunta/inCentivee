@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { allUnits } from '../data/levels'
 import { fillBlanks } from '../data/fillBlanks'
-import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy } from 'lucide-react'
+import { getStoredProgress, storeProgress } from '../lib/guestProgress'
+import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw } from 'lucide-react'
 import './Learn.css'
 
 const SECTIONS = [
@@ -30,13 +31,13 @@ const TRAIL_TOP    = 56
 
 // Unique zigzag offsets and vertical spacing per section
 const SECTION_PATHS = {
-  s1:  { zigzag: [0, -55, -82, -55,  0,  55, 82, 55],  interval: 132 }, // smooth S-curve
-  s2:  { zigzag: [72, -72,  72, -72, 72, -72, 72, -72], interval: 120 }, // sharp left-right
-  s3:  { zigzag: [-78, -38, 12, 58, 80, 48, -8, -58],   interval: 138 }, // sweeps right then back
-  s4:  { zigzag: [0, -82, -65, -20, 30, 70, 82, 55],    interval: 126 }, // heavy left lean then right
-  s5:  { zigzag: [60, 82,  55,  10, -38, -72, -80, -50], interval: 136 }, // leans right to left
-  s6:  { zigzag: [-35, 68, -80, 20, -58, 80, -15, 58],   interval: 130 }, // organic irregular
-  cap: { zigzag: [0],                                    interval: 132 }, // single node, centered
+  s1:  { zigzag: [0, -55, -82, -55,  0,  55, 82, 55],  interval: 180 }, // smooth S-curve
+  s2:  { zigzag: [72, -72,  72, -72, 72, -72, 72, -72], interval: 170 }, // sharp left-right
+  s3:  { zigzag: [-78, -38, 12, 58, 80, 48, -8, -58],   interval: 185 }, // sweeps right then back
+  s4:  { zigzag: [0, -82, -65, -20, 30, 70, 82, 55],    interval: 175 }, // heavy left lean then right
+  s5:  { zigzag: [60, 82,  55,  10, -38, -72, -80, -50], interval: 182 }, // leans right to left
+  s6:  { zigzag: [-35, 68, -80, 20, -58, 80, -15, 58],   interval: 178 }, // organic irregular
+  cap: { zigzag: [0],                                    interval: 180 }, // single node, centered
 }
 
 // Flat ordered node IDs including chapter tests and capstone (used for locking)
@@ -60,7 +61,7 @@ const CAPSTONE_NODE = {
 function chapterTestNode(section) {
   return {
     id: `${section.id}-test`, title: 'Chapter Test',
-    centsReward: 50, isChapterTest: true, _sectionId: section.id, questions: [],
+    centsReward: 100, isChapterTest: true, _sectionId: section.id, questions: [],
   }
 }
 
@@ -72,8 +73,8 @@ function calcPositions(count, { zigzag, interval }) {
 }
 
 function NodeConnector({ p1, p2, done, color }) {
-  const y1 = p1.y + NODE_R + 3
-  const y2 = p2.y - NODE_R - 3
+  const y1 = p1.y + NODE_R
+  const y2 = p2.y - NODE_R
   const h  = y2 - y1
   if (h <= 0) return null
   const minX = Math.min(p1.x, p2.x) - 8
@@ -137,9 +138,12 @@ function SparkleEffect({ color }) {
   )
 }
 
+
 export default function Learn() {
   const { currentUser, profile, refreshProfile, bumpXP, setXP } = useAuth()
-  const [completedIds,  setCompletedIds]  = useState(new Set())
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [completedIds,  setCompletedIds]  = useState(() => currentUser ? getStoredProgress() : new Set())
   const [activeUnit,    setActiveUnit]    = useState(null)
   const [shuffledQs,    setShuffledQs]    = useState([])
   const [qIndex,        setQIndex]        = useState(0)
@@ -149,7 +153,7 @@ export default function Learn() {
   const [lessonDone,    setLessonDone]    = useState(false)
   const [centsEarned,   setCentsEarned]   = useState(0)
   const [finalScore,    setFinalScore]    = useState({ correct:0, total:0 })
-  const [sectionIndex,  setSectionIndex]  = useState(0)
+  const [sectionIndex,  setSectionIndex]  = useState(() => location.state?.sectionIndex ?? 0)
   const [sparklingId,   setSparklingId]   = useState(null)
 
   const unitMap = useMemo(() => {
@@ -164,7 +168,9 @@ export default function Learn() {
       .eq('user_id', currentUser.id).eq('completed', true)
       .then(({ data }) => {
         if (!data) return
-        setCompletedIds(new Set(data.map(r => r.lesson_id)))
+        const supabaseIds = new Set(data.map(r => r.lesson_id))
+        setCompletedIds(supabaseIds)
+        storeProgress(supabaseIds)
         // Derive total XP from stored scores — no extra DB column needed
         let total = 0
         data.forEach(r => {
@@ -239,12 +245,20 @@ export default function Learn() {
       const pool = []
       sec.unitIds.forEach(id => {
         const u = unitMap[id]
-        if (u) { pool.push(...u.questions); if (fillBlanks[id]) pool.push(fillBlanks[id]) }
+        if (u) {
+          const qs = u.lessons ? u.lessons.flatMap(l => l.questions ?? []) : (u.questions ?? [])
+          pool.push(...qs)
+          if (fillBlanks[id]) pool.push(fillBlanks[id])
+        }
       })
       questions = shuffleOptions(fisherYates(pool)).slice(0, 10)
     } else if (node.isCapstone) {
       const pool = []
-      allUnits.forEach(u => { pool.push(...u.questions); if (fillBlanks[u.id]) pool.push(fillBlanks[u.id]) })
+      allUnits.forEach(u => {
+        const qs = u.lessons ? u.lessons.flatMap(l => l.questions ?? []) : (u.questions ?? [])
+        pool.push(...qs)
+        if (fillBlanks[u.id]) pool.push(fillBlanks[u.id])
+      })
       questions = shuffleOptions(fisherYates(pool)).slice(0, 40)
     } else {
       const base = [...node.questions]
@@ -261,6 +275,10 @@ export default function Learn() {
 
   function handleNodeClick(node) {
     if (!isUnlocked(node.id) || sparklingId) return
+    if (node.lessons?.length) {
+      navigate(`/learn/unit/${node.id}`, { state: { sectionIndex } })
+      return
+    }
     setSparklingId(node.id)
     setTimeout(() => { setSparklingId(null); startItem(node) }, 550)
   }
@@ -436,6 +454,8 @@ export default function Learn() {
                 const isNextUp   = i === nextUpIndex
                 const isTest     = node.isChapterTest || node.isCapstone
                 const nodeColor  = isTest ? '#F59E0B' : bannerColor
+                const inProgress = !done && node.lessons?.length > 0 &&
+                  node.lessons.some(l => completedIds.has(l.id))
                 return (
                   <div key={node.id} className="trail-stop" style={{left:pos.x, top:pos.y-NODE_R}}>
                     {isNextUp && (
@@ -452,15 +472,17 @@ export default function Learn() {
                     >
                       {sparkling && <SparkleEffect color={nodeColor}/>}
                       {done ? <Check size={28} strokeWidth={3}/>
+                        : inProgress ? <RefreshCw size={26} strokeWidth={3}/>
                         : !unlocked ? <Lock size={22}/>
                         : node.isCapstone ? <Trophy size={24}/>
                         : node.isChapterTest ? <Star size={24}/>
                         : <span className="node-num">{i+1}</span>}
                     </button>
-                    <span className={`node-label${isTest?' node-label--test':''}`}>{node.title}</span>
-                    <span className={`node-cents${isTest?' node-cents--test':''}`}>
-                      {isTest ? `¢${node.centsReward} · Pass ${node.isCapstone?'35/40':'7/10'}` : `¢${node.centsReward}`}
-                    </span>
+                    <div className="node-chip" style={{'--chip-color': nodeColor}}>
+                      <span className="node-chip-name">{node.title}</span>
+                      <span className="node-coin-badge">¢</span>
+                      <span className="node-chip-cents">{node.centsReward}</span>
+                    </div>
                   </div>
                 )
               })}

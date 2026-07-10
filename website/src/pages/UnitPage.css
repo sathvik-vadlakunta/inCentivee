@@ -1,0 +1,66 @@
+/* ===== UNIT PAGE ===== */
+
+/* Smaller node variant for lesson trail */
+.path-node--sm {
+  width: 60px;
+  height: 60px;
+}
+
+/* Lesson trail stop — sizes to button, chip is absolute */
+.unit-trail-stop { }
+
+/* "Lesson X of N" badge inside the quiz header */
+.unit-lesson-badge {
+  font-family: var(--font-heading);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: white;
+  background: var(--badge-color, var(--accent));
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+}
+
+/* Unit not found fallback */
+.unit-not-found {
+  max-width: 400px;
+  margin: 80px auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--font-heading);
+}
+
+/* Cents display on done screen */
+.done-cents {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--tertiary);
+}
+.cents-coin {
+  font-size: var(--text-xl);
+  font-weight: 800;
+}
+
+.done-guest-cta {
+  background: var(--muted);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+  width: 100%;
+}
+.done-guest-cta p {
+  font-size: var(--text-sm);
+  color: var(--muted-foreground);
+  margin: 0;
+}
