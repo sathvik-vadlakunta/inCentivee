@@ -1,7 +1,30 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { allUnits } from '../data/levels'
 
 const AuthContext = createContext(null)
+
+// Build a flat id→centsReward map covering units AND individual lessons
+const rewardMap = {}
+allUnits.forEach(u => {
+  rewardMap[u.id] = u.centsReward ?? 0
+  if (u.lessons) u.lessons.forEach(l => { rewardMap[l.id] = l.centsReward ?? 0 })
+})
+
+function computeXP(rows) {
+  let total = 0
+  rows.forEach(r => {
+    const pct = (r.score ?? 0) / 100
+    if (rewardMap[r.lesson_id] !== undefined) {
+      total += Math.round(rewardMap[r.lesson_id] * pct)
+    } else if (r.lesson_id === 'capstone') {
+      total += Math.round(200 * pct)
+    } else if (r.lesson_id.endsWith('-test')) {
+      total += Math.round(100 * pct)
+    }
+  })
+  return total
+}
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
@@ -9,10 +32,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   async function fetchProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    // Merge with existing state so locally-computed xp isn't overwritten
-    // if the DB profile doesn't have that column
-    setProfile(prev => data ? { xp: 0, ...prev, ...data } : prev)
+    const [{ data: profileData }, { data: progressData }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.from('lesson_progress').select('lesson_id, score').eq('user_id', userId).eq('completed', true),
+    ])
+    const xp = progressData ? computeXP(progressData) : 0
+    setProfile(prev => ({ ...prev, ...(profileData ?? {}), xp }))
   }
 
   useEffect(() => {
@@ -34,11 +59,7 @@ export function AuthProvider({ children }) {
   async function signUp(name, email, password) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
-    if (!data.session) {
-      // Email confirmation is required — inform the user
-      throw new Error('CHECK_EMAIL')
-    }
-    // Upsert so re-signups don't duplicate rows
+    if (!data.session) throw new Error('CHECK_EMAIL')
     await supabase.from('profiles').upsert({ id: data.user.id, name }, { onConflict: 'id' })
     await fetchProfile(data.user.id)
   }
@@ -46,7 +67,6 @@ export function AuthProvider({ children }) {
   async function logIn(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
-    // Create profile if it doesn't exist yet (e.g. confirmed email after signup)
     if (data.user) {
       const { data: existing } = await supabase.from('profiles').select('id').eq('id', data.user.id).single()
       if (!existing) {
@@ -64,18 +84,11 @@ export function AuthProvider({ children }) {
   }
 
   function bumpXP(amount) {
-    const newXP = (profile?.xp ?? 0) + amount
-    setProfile(prev => prev ? { ...prev, xp: newXP } : { xp: newXP })
-    if (currentUser) {
-      supabase.from('profiles').update({ xp: newXP }).eq('id', currentUser.id)
-    }
+    setProfile(prev => prev ? { ...prev, xp: (prev.xp ?? 0) + amount } : { xp: amount })
   }
 
   function setXP(amount) {
     setProfile(prev => prev ? { ...prev, xp: amount } : { xp: amount })
-    if (currentUser) {
-      supabase.from('profiles').update({ xp: amount }).eq('id', currentUser.id)
-    }
   }
 
   return (
