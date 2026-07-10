@@ -140,7 +140,7 @@ function SparkleEffect({ color }) {
 
 
 export default function Learn() {
-  const { currentUser, profile, refreshProfile, bumpXP, setXP } = useAuth()
+  const { currentUser, profile, refreshProfile, bumpXP } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [completedIds,  setCompletedIds]  = useState(() => currentUser ? getStoredProgress() : new Set())
@@ -164,27 +164,13 @@ export default function Learn() {
 
   useEffect(() => {
     if (!currentUser) return
-    supabase.from('lesson_progress').select('lesson_id, score')
+    supabase.from('lesson_progress').select('lesson_id')
       .eq('user_id', currentUser.id).eq('completed', true)
       .then(({ data }) => {
         if (!data) return
         const supabaseIds = new Set(data.map(r => r.lesson_id))
         setCompletedIds(supabaseIds)
         storeProgress(supabaseIds)
-        // Derive total XP from stored scores — no extra DB column needed
-        let total = 0
-        data.forEach(r => {
-          const pct = (r.score ?? 0) / 100
-          const unit = unitMap[r.lesson_id]
-          if (unit) {
-            total += Math.round((unit.centsReward ?? 0) * pct)
-          } else if (r.lesson_id === 'capstone') {
-            total += Math.round(200 * pct)
-          } else if (r.lesson_id.endsWith('-test')) {
-            total += Math.round(50 * pct)
-          }
-        })
-        setXP(total)
       })
   }, [currentUser?.id])
 
