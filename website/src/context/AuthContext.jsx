@@ -72,6 +72,8 @@ export function AuthProvider({ children }) {
       if (!existing) {
         await supabase.from('profiles').insert({ id: data.user.id, name: data.user.email.split('@')[0] })
       }
+      setCurrentUser(data.user)
+      await fetchProfile(data.user.id)
     }
   }
 
