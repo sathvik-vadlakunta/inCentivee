@@ -64,11 +64,18 @@ export function AuthProvider({ children }) {
   }
 
   function bumpXP(amount) {
-    setProfile(prev => prev ? { ...prev, xp: (prev.xp ?? 0) + amount } : { xp: amount })
+    const newXP = (profile?.xp ?? 0) + amount
+    setProfile(prev => prev ? { ...prev, xp: newXP } : { xp: newXP })
+    if (currentUser) {
+      supabase.from('profiles').update({ xp: newXP }).eq('id', currentUser.id)
+    }
   }
 
   function setXP(amount) {
     setProfile(prev => prev ? { ...prev, xp: amount } : { xp: amount })
+    if (currentUser) {
+      supabase.from('profiles').update({ xp: amount }).eq('id', currentUser.id)
+    }
   }
 
   return (
