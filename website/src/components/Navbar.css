@@ -105,6 +105,11 @@
   gap: 12px;
 }
 
+/* Coin counter shown only on mobile (next to hamburger) */
+.navbar-cents--mobile {
+  display: none;
+}
+
 /* Hamburger toggle — hidden on desktop */
 .navbar-toggle {
   display: none;
@@ -131,6 +136,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .navbar-cents--mobile {
+    display: inline-flex;
   }
 
   .navbar-mobile {

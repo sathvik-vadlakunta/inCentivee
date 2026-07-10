@@ -63,6 +63,11 @@ export default function Navbar() {
           )}
         </div>
 
+        <div className={`navbar-cents navbar-cents--mobile${!currentUser ? ' navbar-cents--guest' : ''}`} title="Your cents" aria-hidden="true">
+          <span className="navbar-cents-coin">¢</span>
+          <span className="navbar-cents-count">{currentUser ? (profile?.xp ?? 0) : 0}</span>
+        </div>
+
         <button
           className="navbar-toggle"
           aria-label={open ? 'Close menu' : 'Open menu'}
