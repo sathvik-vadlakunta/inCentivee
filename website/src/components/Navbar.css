@@ -117,6 +117,11 @@
   display: none;
 }
 
+/* Login button shown only on mobile (between coin and hamburger) */
+.navbar-mobile-login {
+  display: none;
+}
+
 /* Hamburger toggle — hidden on desktop */
 .navbar-toggle {
   display: none;
@@ -147,6 +152,22 @@
 
   .navbar-cents--mobile {
     display: inline-flex;
+  }
+
+  .navbar-mobile-login {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--foreground);
+    color: var(--background);
+    border: none;
+    border-radius: var(--radius-full);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: var(--text-xs);
+    cursor: pointer;
+    white-space: nowrap;
   }
 
   .navbar-mobile {
