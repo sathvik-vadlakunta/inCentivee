@@ -119,7 +119,7 @@
 
 /* Login button shown only on mobile (between coin and hamburger) */
 .navbar-mobile-login {
-  display: none;
+  display: none !important;
 }
 
 /* Hamburger toggle — hidden on desktop */
@@ -155,7 +155,7 @@
   }
 
   .navbar-mobile-login {
-    display: inline-flex;
+    display: inline-flex !important;
     padding: 3px 8px;
     font-size: 11px;
   }
