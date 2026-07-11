@@ -156,12 +156,12 @@
 
   .navbar-mobile-login {
     display: inline-flex;
-    padding: 5px 10px;
-    font-size: var(--text-xs);
+    padding: 3px 8px;
+    font-size: 11px;
   }
   .navbar-mobile-login .btn-icon-badge {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .navbar-mobile {
