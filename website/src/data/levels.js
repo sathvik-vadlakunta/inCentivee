@@ -35,13 +35,13 @@ export const levels = [
               {
                 prompt: 'Before coins existed, what did most early civilizations use for trade?',
                 options: [
-                  'Commodity barter - trading physical goods like grain, cattle, or shells',
+                  'Trading physical goods like grain, cattle, or shells',
                   'Verbal handshake agreements with no goods or formal records exchanged',
                   'Written debt tablets where merchants recorded promises to deliver goods later',
                   'Rare precious stones accepted as a universal currency by all trading partners',
                 ],
                 correct: 0,
-                explanation: 'Before coins, people traded physical goods - grains, cattle, shells, or cloth. This barter system was eventually replaced by standardized currency.',
+                explanation: 'Before coins, people traded physical goods: grains, cattle, shells, or cloth. This barter system was eventually replaced by standardized currency.',
               },
               {
                 prompt: 'Paper money was first used in which country?',
@@ -68,10 +68,10 @@ export const levels = [
               {
                 prompt: 'When did the United States officially leave the gold standard?',
                 options: [
-                  '1971 - when President Nixon ended the dollar\'s convertibility to gold entirely',
-                  '1929 - when the Great Depression forced an emergency suspension of gold payments',
-                  '1944 - when the Bretton Woods Agreement fixed global currencies to the dollar',
-                  '1983 - after the Volcker-era interest rate hikes reshaped U.S. monetary policy',
+                  '1971, when President Nixon ended the dollar\'s convertibility to gold entirely',
+                  '1929, when the Great Depression forced an emergency suspension of gold payments',
+                  '1944, when the Bretton Woods Agreement fixed global currencies to the dollar',
+                  '1983, after the Volcker-era interest rate hikes reshaped U.S. monetary policy',
                 ],
                 correct: 0,
                 explanation: 'President Nixon ended the dollar\'s convertibility to gold in 1971, moving the U.S. to a pure fiat system where the dollar\'s value rests on trust, not gold.',
@@ -79,7 +79,7 @@ export const levels = [
               {
                 prompt: 'Why did ancient civilizations develop money in the first place?',
                 options: [
-                  'Barter required both parties to want exactly what the other had - money solved this',
+                  'Barter required both parties to want exactly what the other had, which money solved',
                   'People wanted a way to store food and perishable goods without them spoiling quickly',
                   'Governments needed an efficient system to track population census data and collect taxes',
                   'Armies needed a portable, universally accepted way to pay soldiers their wages in the field',
@@ -97,10 +97,10 @@ export const levels = [
               {
                 prompt: 'What is the main problem with the barter system called?',
                 options: [
-                  'Double coincidence of wants - both parties must have exactly what the other needs',
-                  'Supply and demand mismatch - when goods produced don\'t match what buyers need',
-                  'Trade deficit - when a country imports more goods than it exports to partners',
-                  'Liquidity trap - when people hoard cash instead of spending or investing it',
+                  'The double coincidence of wants, where both parties must have exactly what the other needs',
+                  'A supply and demand mismatch, where goods produced don\'t match what buyers need',
+                  'A trade deficit, where a country imports more goods than it exports to partners',
+                  'A liquidity trap, where people hoard cash instead of spending or investing it',
                 ],
                 correct: 0,
                 explanation: 'Barter requires both parties to have exactly what the other wants. If a baker wants shoes but the cobbler doesn\'t want bread, no trade can happen.',
@@ -108,13 +108,13 @@ export const levels = [
               {
                 prompt: 'You have apples and need a haircut. The barber wants eggs, not apples. This best illustrates:',
                 options: [
-                  'The double coincidence of wants - needing what the other has at the same moment',
-                  'Price fixing - when a seller sets an artificially high price regardless of demand',
-                  'Market failure - when the market produces too much or too little of a good',
-                  'A supply shortage - when producers can\'t make enough goods to meet buyer demand',
+                  'The double coincidence of wants, needing what the other has at the same moment',
+                  'Price fixing, where a seller sets an artificially high price regardless of demand',
+                  'Market failure, where the market produces too much or too little of a good',
+                  'A supply shortage, where producers can\'t make enough goods to meet buyer demand',
                 ],
                 correct: 0,
-                explanation: 'This is the classic barter problem - you can\'t trade because the other party doesn\'t want what you have, even if you both need something.',
+                explanation: 'This is the classic barter problem: you can\'t trade because the other party doesn\'t want what you have, even if you both need something.',
               },
               {
                 prompt: 'In a barter system, what must be true for a trade to happen?',
@@ -136,7 +136,7 @@ export const levels = [
                   'An investor purchases company stock on a trading platform using a credit card payment',
                 ],
                 correct: 0,
-                explanation: 'Successful barter requires both parties to have what the other wants simultaneously - the double coincidence of wants.',
+                explanation: 'Successful barter requires both parties to have what the other wants simultaneously, which is known as the double coincidence of wants.',
               },
               {
                 prompt: 'Why is barter inefficient for making exact change?',
@@ -203,7 +203,7 @@ export const levels = [
               {
                 prompt: 'If a currency experiences hyperinflation, what happens to purchasing power?',
                 options: [
-                  'It collapses - a loaf of bread could cost billions of units',
+                  'It collapses, so a loaf of bread could cost billions of units',
                   'It strengthens because more money in circulation increases consumer confidence and spending',
                   'It stays the same since the government intervenes to fix prices and control costs',
                   'It doubles each year in proportion to the expanding money supply growth rate',
@@ -214,10 +214,10 @@ export const levels = [
               {
                 prompt: 'Which property of money allows you to buy a $1.50 coffee without a problem?',
                 options: [
-                  'Divisibility - money can be broken into small units (cents)',
-                  'Portability - money can be carried and transported easily without being burdensome',
-                  'Durability - money must survive repeated use over time without deteriorating',
-                  'Scarcity - money must be limited in supply so it retains its value over time',
+                  'Divisibility, meaning money can be broken into small units like cents',
+                  'Portability, meaning money can be carried and transported easily without being burdensome',
+                  'Durability, meaning money must survive repeated use over time without deteriorating',
+                  'Scarcity, meaning money must be limited in supply so it retains its value over time',
                 ],
                 correct: 0,
                 explanation: 'Divisibility means currency can be split into smaller denominations. A dollar = 100 cents, so you can make exact change for any price.',
@@ -225,7 +225,7 @@ export const levels = [
               {
                 prompt: 'Why don\'t we use milk jugs as money?',
                 options: [
-                  'Milk spoils quickly - good money must remain durable over long periods',
+                  'Milk spoils quickly, and good money must remain durable over long periods',
                   'Milk is too nutritionally valuable to waste as a payment medium',
                   'No government has approved dairy products as legally recognized tender',
                   'Milk jugs are too bulky and heavy to carry as portable currency',
@@ -243,13 +243,13 @@ export const levels = [
               {
                 prompt: 'What makes a currency "fiat"?',
                 options: [
-                  'It\'s declared legal tender by government - not backed by any commodity',
+                  'It\'s declared legal tender by government and not backed by any commodity',
                   'It earns interest automatically from the central bank just by being held',
                   'It\'s produced by private companies rather than any government or central bank',
                   'It\'s backed by the country\'s oil and commodity reserves held in storage',
                 ],
                 correct: 0,
-                explanation: '"Fiat" is Latin for "let it be done." Fiat currency has value because a government decrees it valid and people trust and accept it - period.',
+                explanation: '"Fiat" is Latin for "let it be done." Fiat currency has value because a government decrees it valid and people trust and accept it, full stop.',
               },
               {
                 prompt: 'Which country experienced inflation of 89.7 sextillion percent in 2008?',
@@ -287,7 +287,7 @@ export const levels = [
               {
                 prompt: 'What does hyperinflation reveal about fiat currency?',
                 options: [
-                  'Its value depends entirely on public trust - if trust collapses, so does its value',
+                  'Its value depends entirely on public trust, so if trust collapses, so does its value',
                   'Fiat money is always doomed to fail over time as governments inevitably print too much',
                   'Only countries that maintain gold reserves can protect their currency from hyperinflation',
                   'Hyperinflation only occurs in small developing countries and cannot happen in major economies',
@@ -298,10 +298,10 @@ export const levels = [
               {
                 prompt: 'The word "fiat" comes from Latin and means:',
                 options: [
-                  '"Let it be done" - meaning government decree alone gives the currency its legal value',
-                  '"Gold-backed" - referring to a currency redeemable for a fixed weight of gold',
-                  '"Safe and stable" - describing a currency protected by law from inflation or loss',
-                  '"Printed and distributed" - describing the process by which central banks issue new bills',
+                  '"Let it be done," meaning government decree alone gives the currency its legal value',
+                  '"Gold-backed," referring to a currency redeemable for a fixed weight of gold',
+                  '"Safe and stable," describing a currency protected by law from inflation or loss',
+                  '"Printed and distributed," describing the process by which central banks issue new bills',
                 ],
                 correct: 0,
                 explanation: 'The Latin root perfectly captures fiat money: its value exists because the government declares it so, not because the bills themselves are worth anything.',
@@ -322,7 +322,7 @@ export const levels = [
                   'Commodity money can be printed at will',
                 ],
                 correct: 0,
-                explanation: 'Gold coins are worth something even if no longer used as money. Fiat money (paper bills) has no intrinsic value - it\'s just paper.',
+                explanation: 'Gold coins are worth something even if no longer used as money. Fiat money (paper bills) has no intrinsic value; it\'s just paper.',
               },
               {
                 prompt: 'Which of these was used as commodity money in colonial America?',
@@ -333,18 +333,18 @@ export const levels = [
                   'Lumber, which New England settlers used to pay debts at trading posts',
                 ],
                 correct: 0,
-                explanation: 'Tobacco was so widely accepted in colonial Virginia that it served as commodity money - you could pay taxes and debts with it because it had real value as a crop.',
+                explanation: 'Tobacco was so widely accepted in colonial Virginia that it served as commodity money, allowing people to pay taxes and debts with it because it had real value as a crop.',
               },
               {
                 prompt: 'Gold and silver became popular as commodity money primarily because they are:',
                 options: [
-                  'Durable, divisible, portable, and scarce - ideal properties for a reliable currency',
+                  'Durable, divisible, portable, and scarce, which are ideal properties for a reliable currency',
                   'The heaviest metals available, which made them harder to counterfeit than lighter alloys',
                   'Controlled entirely by governments, who minted and distributed them to control supply',
                   'Found only in powerful countries, giving those nations a natural economic advantage',
                 ],
                 correct: 0,
-                explanation: 'Gold and silver don\'t rust or spoil, can be divided into coins, are easy to carry, and are rare enough to maintain value - ideal properties for money.',
+                explanation: 'Gold and silver don\'t rust or spoil, can be divided into coins, are easy to carry, and are rare enough to maintain value: ideal properties for money.',
               },
               {
                 prompt: 'What is a major downside of commodity money?',
@@ -355,7 +355,7 @@ export const levels = [
                   'Governments can produce unlimited quantities without any natural supply constraints',
                 ],
                 correct: 0,
-                explanation: 'If an economy grows but gold supply stays fixed, there isn\'t enough money to support all transactions - this can cause deflation and slow growth.',
+                explanation: 'If an economy grows but gold supply stays fixed, there isn\'t enough money to support all transactions, which can cause deflation and slow growth.',
               },
               {
                 prompt: 'Under the gold standard, every paper bill:',
@@ -371,7 +371,7 @@ export const levels = [
               {
                 prompt: 'The main reason countries moved away from commodity money was:',
                 options: [
-                  'It limited economic flexibility - money supply couldn\'t grow faster than gold supply',
+                  'It limited economic flexibility because money supply couldn\'t grow faster than gold supply',
                   'Gold coins were too easy to counterfeit by plating cheaper metals with a thin layer',
                   'People simply preferred carrying lightweight paper bills over heavy gold and silver coins',
                   'Commodity money was too bulky and heavy to transport efficiently across international borders',
@@ -395,7 +395,7 @@ export const levels = [
                   'Only decentralized cryptocurrency like Bitcoin or Ethereum, not bank deposits',
                 ],
                 correct: 0,
-                explanation: 'Digital money includes your bank account balance, credit card payments, and PayPal - all representations of value that exist electronically, not as physical cash.',
+                explanation: 'Digital money includes your bank account balance, credit card payments, and PayPal: all representations of value that exist electronically, not as physical cash.',
               },
               {
                 prompt: 'Which of these is digital money that is NOT a cryptocurrency?',
@@ -406,7 +406,7 @@ export const levels = [
                   'Solana',
                 ],
                 correct: 0,
-                explanation: 'Bank account balances are digital - they\'re numbers in a database, not physical bills. Transferring $500 moves numbers between databases, no paper needed.',
+                explanation: 'Bank account balances are digital: they\'re numbers in a database, not physical bills. Transferring $500 moves numbers between databases, no paper needed.',
               },
               {
                 prompt: 'What distinguishes most digital money from cryptocurrency?',
@@ -417,7 +417,7 @@ export const levels = [
                   'Digital money consistently earns higher interest returns than any cryptocurrency investment',
                 ],
                 correct: 0,
-                explanation: 'When you send $100 via Venmo, a bank verifies the transaction. Crypto uses blockchain - a decentralized network with no single authority.',
+                explanation: 'When you send $100 via Venmo, a bank verifies the transaction. Crypto uses blockchain, a decentralized network with no single authority.',
               },
               {
                 prompt: 'A key advantage of digital money over physical cash is:',
@@ -439,7 +439,7 @@ export const levels = [
                   'Bitcoin that has been officially approved and regulated by a national government',
                 ],
                 correct: 0,
-                explanation: 'A CBDC (like a digital dollar) would be government-issued digital money - similar to cash, but electronic. China\'s digital yuan is one real-world example.',
+                explanation: 'A CBDC (like a digital dollar) would be government-issued digital money, similar to cash but electronic. China\'s digital yuan is one real-world example.',
               },
               {
                 prompt: 'What is a real risk of storing money digitally?',
@@ -462,10 +462,10 @@ export const levels = [
               {
                 prompt: 'What technology powers most cryptocurrencies?',
                 options: [
-                  'Blockchain - a decentralized, distributed ledger of transactions',
-                  'Artificial intelligence - algorithms that autonomously generate and validate digital coins',
-                  'Government-owned servers - a secure national network that processes and records transfers',
-                  'Traditional banking infrastructure - existing SWIFT and ACH rails adapted for digital coins',
+                  'A decentralized, distributed ledger that records all transactions',
+                  'Artificial intelligence algorithms that autonomously generate and validate digital coins',
+                  'Government-owned servers forming a secure national network that processes and records transfers',
+                  'Traditional banking infrastructure like SWIFT and ACH rails adapted for digital coins',
                 ],
                 correct: 0,
                 explanation: 'A blockchain is a chain of blocks, each containing transaction data, secured by cryptography and stored across thousands of computers simultaneously.',
@@ -473,7 +473,7 @@ export const levels = [
               {
                 prompt: 'Bitcoin was created in 2009 by:',
                 options: [
-                  'Satoshi Nakamoto - a pseudonymous creator whose real identity has never been confirmed',
+                  'Satoshi Nakamoto, a pseudonymous creator whose real identity has never been confirmed',
                   'Elon Musk, who promoted digital currencies and funded early peer-to-peer payment research',
                   'The U.S. Federal Reserve, as part of a classified project to digitize the dollar',
                   'A team at Google, who built it as an internal payments experiment before going public',
@@ -490,7 +490,7 @@ export const levels = [
                   'Only one licensed company per country can legally create and issue new coins',
                 ],
                 correct: 0,
-                explanation: 'Bitcoin transactions are verified by thousands of independent computers worldwide. There\'s no CEO of Bitcoin - the rules are enforced by the protocol itself.',
+                explanation: 'Bitcoin transactions are verified by thousands of independent computers worldwide. There\'s no CEO of Bitcoin; the rules are enforced by the protocol itself.',
               },
               {
                 prompt: 'Crypto "mining" refers to:',
@@ -512,7 +512,7 @@ export const levels = [
                   'There is no cap',
                 ],
                 correct: 0,
-                explanation: 'Bitcoin\'s code limits the total supply to 21 million coins. This scarcity is intentional - it\'s designed to make Bitcoin deflationary, unlike fiat currencies.',
+                explanation: 'Bitcoin\'s code limits the total supply to 21 million coins. This scarcity is intentional, designed to make Bitcoin deflationary unlike fiat currencies.',
               },
               {
                 prompt: 'Which is a valid concern about cryptocurrency as everyday money?',
@@ -546,7 +546,7 @@ export const levels = [
               {
                 prompt: 'Inflation is 4% but your salary only grows 2%. What happens?',
                 options: [
-                  'Your real purchasing power decreases - your raise doesn\'t keep up with prices',
+                  'Your real purchasing power decreases because your raise doesn\'t keep up with prices',
                   'You effectively received a 6% total raise because the two percentages add together',
                   'Nothing changes financially because the stable dollar always cancels out any inflation effect',
                   'Your employer legally owes you the missing 2% as a cost-of-living adjustment',
@@ -563,7 +563,7 @@ export const levels = [
                   'The White House, whose executive orders on trade and tariffs affect consumer prices',
                 ],
                 correct: 0,
-                explanation: 'The Fed controls monetary policy - adjusting interest rates to cool or stimulate the economy. Higher rates reduce spending and slow inflation; lower rates stimulate growth.',
+                explanation: 'The Fed controls monetary policy by adjusting interest rates to cool or stimulate the economy. Higher rates reduce spending and slow inflation; lower rates stimulate growth.',
               },
               {
                 prompt: 'Deflation is the opposite of inflation. Why can falling prices be bad?',
@@ -574,7 +574,7 @@ export const levels = [
                   'People earn more than they spend, creating a savings surplus that strains businesses',
                 ],
                 correct: 0,
-                explanation: 'Deflation seems good but causes people to hold off purchases, businesses lose revenue, layoffs follow - it can spiral into a serious recession.',
+                explanation: 'Deflation seems good but causes people to hold off purchases, businesses lose revenue, and layoffs follow, potentially spiraling into a serious recession.',
               },
               {
                 prompt: 'What commonly causes "demand-pull" inflation?',
@@ -596,7 +596,7 @@ export const levels = [
                   'You lost your full $1,000 in savings because runaway inflation caused the dollar to crash',
                 ],
                 correct: 0,
-                explanation: 'Nominal gain = 1% → $10. But inflation of 3% means everything costs 3% more. You\'re behind in real terms - your money bought less purchasing power.',
+                explanation: 'Nominal gain = 1% → $10. But inflation of 3% means everything costs 3% more. In real terms, your money buys less than it did before.',
               },
             ],
           },
@@ -612,12 +612,12 @@ export const levels = [
           {
             id: 'u1-2-l1', title: 'What Income Is', centsReward: 10,
             questions: [
-              { prompt: 'Income is best defined as:', options: ['Money received for work, services, or investments', 'The balance in your bank account', 'All money you have ever earned', 'Your credit card limit'], correct: 0, explanation: 'Income is any money flowing in - wages, business profit, dividends, rent, or other payments received.' },
-              { prompt: 'Which of these is NOT a source of income?', options: ['Withdrawing savings from your own bank account', 'Dividends from stocks you own', 'Rent collected from a tenant', 'Tips earned while waitressing'], correct: 0, explanation: 'A bank withdrawal is moving your existing money - it is not new income.' },
+              { prompt: 'Income is best defined as:', options: ['Money received for work, services, or investments', 'The balance in your bank account', 'All money you have ever earned', 'Your credit card limit'], correct: 0, explanation: 'Income is any money flowing in: wages, business profit, dividends, rent, and other payments received.' },
+              { prompt: 'Which of these is NOT a source of income?', options: ['Withdrawing savings from your own bank account', 'Dividends from stocks you own', 'Rent collected from a tenant', 'Tips earned while waitressing'], correct: 0, explanation: 'A bank withdrawal is moving your existing money; it is not new income.' },
               { prompt: 'Total earnings before any deductions are taken out is called:', options: ['Gross income', 'Net income', 'Take-home pay', 'Disposable income'], correct: 0, explanation: 'Gross income is the starting figure before taxes, insurance, or retirement contributions are removed.' },
-              { prompt: 'Income earned with little to no active work is called:', options: ['Passive income', 'Active income', 'Earned income', 'Gross income'], correct: 0, explanation: 'Passive income - rent, dividends, royalties - keeps flowing even when you are not actively working.' },
-              { prompt: 'Which is an example of active income?', options: ['Hourly wages from a part-time retail job', 'Monthly dividend check from an index fund', 'Rental income from an apartment you own', 'Royalty payments from a book you wrote years ago'], correct: 0, explanation: 'Active income requires your ongoing time and effort - you stop working, the income stops.' },
-              { prompt: 'Why is knowing your income the first step in financial planning?', options: ['You cannot build a budget or set goals without knowing how much money comes in', 'Banks require income verification before opening any account', 'Income determines your credit score directly', 'Knowing income is only important when applying for loans'], correct: 0, explanation: 'Every financial plan starts with income - it defines how much you have to allocate to spending, saving, and investing.' },
+              { prompt: 'Income earned with little to no active work is called:', options: ['Passive income', 'Active income', 'Earned income', 'Gross income'], correct: 0, explanation: 'Passive income like rent, dividends, and royalties keeps flowing even when you are not actively working.' },
+              { prompt: 'Which is an example of active income?', options: ['Hourly wages from a part-time retail job', 'Monthly dividend check from an index fund', 'Rental income from an apartment you own', 'Royalty payments from a book you wrote years ago'], correct: 0, explanation: 'Active income requires your ongoing time and effort. Stop working, and the income stops.' },
+              { prompt: 'Why is knowing your income the first step in financial planning?', options: ['You cannot build a budget or set goals without knowing how much money comes in', 'Banks require income verification before opening any account', 'Income determines your credit score directly', 'Knowing income is only important when applying for loans'], correct: 0, explanation: 'Every financial plan starts with income, which defines how much you have to allocate to spending, saving, and investing.' },
             ],
           },
           {
@@ -628,28 +628,28 @@ export const levels = [
               { prompt: 'Which items are typically deducted from gross pay to get net pay?', options: ['Federal/state taxes, Social Security, Medicare, and benefit premiums', 'Only federal income tax', 'Only health insurance premiums', 'Mortgage payments and rent'], correct: 0, explanation: 'Multiple deductions come out before your check: income taxes, FICA (SS + Medicare), and any voluntary benefits you elected.' },
               { prompt: 'Why does your W-2 show a larger number than your total bank deposits for the year?', options: ['Taxes and benefit premiums are withheld before you receive the money', 'Your employer keeps some pay as a fee', 'Banks deduct a service charge from each deposit', 'Investment losses reduce your deposited amount'], correct: 0, explanation: 'The W-2 shows gross wages; your bank deposits reflect net pay after all withholdings.' },
               { prompt: 'Gross salary $80,000, effective tax + deduction rate 28%. Annual net income is approximately:', options: ['$57,600', '$80,000', '$22,400', '$102,400'], correct: 0, explanation: '$80,000 × (1 − 0.28) = $80,000 × 0.72 = $57,600 net.' },
-              { prompt: 'Understanding gross vs net income is most important when:', options: ['Creating a monthly budget based on actual spendable money', 'Calculating your employer\'s payroll costs', 'Deciding how many hours to work per week', 'Comparing two job offers with identical salaries'], correct: 0, explanation: 'Budgeting from gross income leads to overspending - you must plan based on your net (after-tax) income.' },
+              { prompt: 'Understanding gross vs net income is most important when:', options: ['Creating a monthly budget based on actual spendable money', 'Calculating your employer\'s payroll costs', 'Deciding how many hours to work per week', 'Comparing two job offers with identical salaries'], correct: 0, explanation: 'Budgeting from gross income leads to overspending; you must plan based on your net (after-tax) income.' },
             ],
           },
           {
             id: 'u1-2-l3', title: 'Salary', centsReward: 10,
             questions: [
-              { prompt: 'A salary means you earn:', options: ['A fixed annual amount paid in regular installments', 'Pay that varies each week based on hours worked', 'Commission on every sale you make', 'Only year-end bonuses with no base pay'], correct: 0, explanation: 'A salary is predetermined annual pay divided into equal pay periods - weekly, biweekly, or monthly.' },
+              { prompt: 'A salary means you earn:', options: ['A fixed annual amount paid in regular installments', 'Pay that varies each week based on hours worked', 'Commission on every sale you make', 'Only year-end bonuses with no base pay'], correct: 0, explanation: 'A salary is predetermined annual pay divided into equal pay periods: weekly, biweekly, or monthly.' },
               { prompt: 'A $60,000 annual salary paid biweekly (26 pay periods) gives a gross paycheck of:', options: ['~$2,308', '$5,000', '$1,154', '$3,000'], correct: 0, explanation: '$60,000 ÷ 26 = $2,307.69 per paycheck.' },
-              { prompt: 'Salaried workers classified as "exempt" typically:', options: ['Do not receive overtime pay under FLSA rules', 'Earn more than $200,000 per year', 'Work exactly 40 hours per week by law', 'Cannot receive bonuses on top of their salary'], correct: 0, explanation: 'Exempt salaried employees are excluded from overtime requirements - they get the same pay regardless of hours worked.' },
-              { prompt: 'Which is a key advantage of a salary over hourly pay?', options: ['Income is predictable and stable each pay period', 'Salaried workers always earn more than hourly workers', 'Salary income is tax-free up to $50,000', 'Salaried workers never have to work more than 8 hours per day'], correct: 0, explanation: 'Predictability is the main benefit - you can plan your budget knowing exactly what each paycheck will be.' },
+              { prompt: 'Salaried workers classified as "exempt" typically:', options: ['Do not receive overtime pay under FLSA rules', 'Earn more than $200,000 per year', 'Work exactly 40 hours per week by law', 'Cannot receive bonuses on top of their salary'], correct: 0, explanation: 'Exempt salaried employees are excluded from overtime requirements and get the same pay regardless of hours worked.' },
+              { prompt: 'Which is a key advantage of a salary over hourly pay?', options: ['Income is predictable and stable each pay period', 'Salaried workers always earn more than hourly workers', 'Salary income is tax-free up to $50,000', 'Salaried workers never have to work more than 8 hours per day'], correct: 0, explanation: 'Predictability is the main benefit: you can plan your budget knowing exactly what each paycheck will be.' },
               { prompt: '$52,000 annual salary ÷ 12 monthly pay periods = gross monthly pay of:', options: ['~$4,333', '$52,000', '$2,000', '$1,000'], correct: 0, explanation: '$52,000 ÷ 12 = $4,333.33 per month.' },
-              { prompt: 'Salary negotiation is most impactful because:', options: ['Your starting salary sets the baseline for all future percentage raises at that job', 'Negotiating guarantees a bonus in the first year', 'Salaries are locked for exactly 5 years after negotiation', 'Higher salaries automatically reduce your tax rate'], correct: 0, explanation: 'A 3% annual raise on $50k vs $55k diverges massively over a career - the starting number compounds over time.' },
+              { prompt: 'Salary negotiation is most impactful because:', options: ['Your starting salary sets the baseline for all future percentage raises at that job', 'Negotiating guarantees a bonus in the first year', 'Salaries are locked for exactly 5 years after negotiation', 'Higher salaries automatically reduce your tax rate'], correct: 0, explanation: 'A 3% annual raise on $50k vs $55k diverges massively over a career because the starting number compounds over time.' },
             ],
           },
           {
             id: 'u1-2-l4', title: 'Hourly Wage', centsReward: 10,
             questions: [
-              { prompt: 'An hourly worker earns:', options: ['A set dollar amount for each hour actually worked', 'The same amount every pay period regardless of hours', 'A percentage of each sale they complete', 'A fixed annual salary divided into months'], correct: 0, explanation: 'Hourly pay is directly tied to time worked - more hours means more pay, fewer hours means less.' },
+              { prompt: 'An hourly worker earns:', options: ['A set dollar amount for each hour actually worked', 'The same amount every pay period regardless of hours', 'A percentage of each sale they complete', 'A fixed annual salary divided into months'], correct: 0, explanation: 'Hourly pay is directly tied to time worked: more hours means more pay, fewer hours means less.' },
               { prompt: 'You earn $17/hr and work 38 hours this week. Your gross pay is:', options: ['$646', '$680', '$720', '$578'], correct: 0, explanation: '$17 × 38 = $646.' },
-              { prompt: 'Compared to salaried workers, hourly workers typically:', options: ['Have variable paychecks since pay depends on hours actually worked', 'Earn higher annual incomes on average', 'Never qualify for employer benefits like health insurance', 'Are classified as exempt from FLSA rules'], correct: 0, explanation: 'If a hourly worker\'s hours get cut, their paycheck shrinks - there is no guaranteed fixed amount each period.' },
-              { prompt: 'A "non-exempt" employee is entitled to:', options: ['Overtime pay for hours worked beyond 40 per week', 'Guaranteed minimum hours each week', 'Benefits regardless of employment status', 'Pay increases every six months by law'], correct: 0, explanation: 'Non-exempt status means the FLSA\'s overtime rules apply - you must be paid 1.5× for hours over 40.' },
-              { prompt: 'The federal minimum wage in the U.S. is:', options: ['$7.25/hour, though many states set higher minimums', '$15/hour nationwide since 2020', '$10/hour as set by Congress in 2019', '$12/hour for all states'], correct: 0, explanation: 'The federal floor is $7.25/hr. States and cities can (and many do) set higher minimum wages - California\'s is $16+.' },
+              { prompt: 'Compared to salaried workers, hourly workers typically:', options: ['Have variable paychecks since pay depends on hours actually worked', 'Earn higher annual incomes on average', 'Never qualify for employer benefits like health insurance', 'Are classified as exempt from FLSA rules'], correct: 0, explanation: 'If an hourly worker\'s hours get cut, their paycheck shrinks because there is no guaranteed fixed amount each period.' },
+              { prompt: 'A "non-exempt" employee is entitled to:', options: ['Overtime pay for hours worked beyond 40 per week', 'Guaranteed minimum hours each week', 'Benefits regardless of employment status', 'Pay increases every six months by law'], correct: 0, explanation: 'Non-exempt status means the FLSA\'s overtime rules apply, requiring 1.5× pay for all hours over 40 per week.' },
+              { prompt: 'The federal minimum wage in the U.S. is:', options: ['$7.25/hour, though many states set higher minimums', '$15/hour nationwide since 2020', '$10/hour as set by Congress in 2019', '$12/hour for all states'], correct: 0, explanation: 'The federal floor is $7.25/hr. States and cities can, and many do, set higher minimum wages; California\'s is $16+.' },
               { prompt: 'Hourly pay is most common in:', options: ['Retail, food service, manufacturing, and construction', 'Law, medicine, and corporate finance', 'Government policy positions and senior management', 'Professional sports and entertainment'], correct: 0, explanation: 'Jobs where output can be measured hourly (serving customers, building products) typically pay by the hour.' },
             ],
           },
@@ -659,7 +659,7 @@ export const levels = [
               { prompt: 'Under U.S. federal law, the overtime rate is:', options: ['1.5× the regular hourly rate for hours beyond 40 per week', '2× the regular rate for any hour above 40 per week', '1.25× the regular rate starting at 41 hours per week', '2× the rate on weekends regardless of total weekly hours'], correct: 0, explanation: 'The FLSA requires "time and a half" (1.5×) for all hours over 40 in a single workweek for non-exempt employees.' },
               { prompt: 'You earn $20/hr. This week you worked 47 hours. Overtime earnings for the 7 extra hours:', options: ['$210 (7 × $30)', '$140 (7 × $20)', '$280 (7 × $40)', '$105 (7 × $15)'], correct: 0, explanation: 'OT rate = $20 × 1.5 = $30. 7 hours × $30 = $210.' },
               { prompt: 'The law governing overtime requirements for most U.S. workers is:', options: ['The Fair Labor Standards Act (FLSA)', 'The Equal Pay Act', 'The Americans with Disabilities Act', 'The National Labor Relations Act'], correct: 0, explanation: 'The FLSA (1938) established minimum wage, overtime, and child labor standards that still govern most U.S. employment.' },
-              { prompt: 'Which employee is typically NOT entitled to overtime?', options: ['A salaried manager earning above the FLSA salary threshold classified as exempt', 'A full-time retail cashier earning $12/hr', 'A part-time warehouse associate working 35 hours/week', 'A temporary employee placed through a staffing agency'], correct: 0, explanation: 'Salaried exempt employees - managers, professionals, and administrators above a salary threshold - are excluded from overtime.' },
+              { prompt: 'Which employee is typically NOT entitled to overtime?', options: ['A salaried manager earning above the FLSA salary threshold classified as exempt', 'A full-time retail cashier earning $12/hr', 'A part-time warehouse associate working 35 hours/week', 'A temporary employee placed through a staffing agency'], correct: 0, explanation: 'Salaried exempt employees such as managers, professionals, and administrators above a salary threshold are excluded from overtime.' },
               { prompt: '40 hours at $18/hr plus 5 overtime hours. Total gross pay:', options: ['$855 ($720 + $135)', '$810 ($18 × 45)', '$900 ($20 × 45)', '$720 ($18 × 40)'], correct: 0, explanation: 'Regular: 40 × $18 = $720. Overtime: 5 × $27 = $135. Total: $720 + $135 = $855.' },
               { prompt: 'Why do some employers limit workers to exactly 40 hours per week?', options: ['To avoid the 1.5× overtime cost, controlling labor expenses', 'Because the FLSA prohibits workers from exceeding 40 hours', 'Workers\' productivity drops to zero after 40 hours per week', 'Insurance policies require a 40-hour maximum for coverage'], correct: 0, explanation: 'The 50% overtime premium is a direct cost incentive for employers to cap hours or hire additional part-time workers instead.' },
             ],
@@ -667,34 +667,34 @@ export const levels = [
           {
             id: 'u1-2-l6', title: 'Commission', centsReward: 10,
             questions: [
-              { prompt: 'Commission-based pay means you earn:', options: ['A percentage of each sale you complete', 'A flat fee for each hour of work regardless of sales', 'A guaranteed minimum whether or not you sell anything', 'A bonus paid quarterly by your employer'], correct: 0, explanation: 'Commission links pay directly to performance - you earn a cut of every deal you close.' },
+              { prompt: 'Commission-based pay means you earn:', options: ['A percentage of each sale you complete', 'A flat fee for each hour of work regardless of sales', 'A guaranteed minimum whether or not you sell anything', 'A bonus paid quarterly by your employer'], correct: 0, explanation: 'Commission links pay directly to performance: you earn a cut of every deal you close.' },
               { prompt: 'A salesperson earns 6% commission. Selling $25,000 worth of products earns:', options: ['$1,500', '$250', '$6,000', '$150'], correct: 0, explanation: '$25,000 × 0.06 = $1,500.' },
-              { prompt: 'Which job most commonly uses commission pay?', options: ['Real estate agent', 'Elementary school teacher', 'Police officer', 'Registered nurse'], correct: 0, explanation: 'Real estate agents typically earn 2-3% of each property sale - their income is entirely tied to closing deals.' },
-              { prompt: 'A "base salary + commission" structure provides:', options: ['A guaranteed minimum plus extra pay tied to sales results', 'Only commissions - no guaranteed income', 'A salary that increases when commissions are low', 'Equal pay regardless of individual sales performance'], correct: 0, explanation: 'Base + commission gives security (you can pay bills even in a slow month) while still rewarding high performance.' },
-              { prompt: 'The main financial risk of pure commission income is:', options: ['Income is unpredictable - a bad sales month means dramatically less pay', 'You pay a higher tax rate than salaried workers', 'Commission income cannot be deposited in a bank account', 'Employers can reduce commission rates without notice at any time'], correct: 0, explanation: 'Without a base salary, slow periods or market downturns can leave commission workers with near-zero income.' },
-              { prompt: 'Commission income tax planning matters because:', options: ['Variable income can cause you to underpay estimated taxes and owe penalties', 'Commission is taxed at double the normal income rate', 'The IRS excludes commission income from standard deductions', 'Commission income is not reportable until it exceeds $10,000'], correct: 0, explanation: 'If taxes are not withheld from each commission check, you may owe a large lump sum at tax time - plus underpayment penalties.' },
+              { prompt: 'Which job most commonly uses commission pay?', options: ['Real estate agent', 'Elementary school teacher', 'Police officer', 'Registered nurse'], correct: 0, explanation: 'Real estate agents typically earn 2-3% of each property sale, so their income is entirely tied to closing deals.' },
+              { prompt: 'A "base salary + commission" structure provides:', options: ['A guaranteed minimum plus extra pay tied to sales results', 'Only commissions with no guaranteed income', 'A salary that increases when commissions are low', 'Equal pay regardless of individual sales performance'], correct: 0, explanation: 'Base + commission gives security (you can pay bills even in a slow month) while still rewarding high performance.' },
+              { prompt: 'The main financial risk of pure commission income is:', options: ['Income is unpredictable, and a bad sales month can mean dramatically less pay', 'You pay a higher tax rate than salaried workers', 'Commission income cannot be deposited in a bank account', 'Employers can reduce commission rates without notice at any time'], correct: 0, explanation: 'Without a base salary, slow periods or market downturns can leave commission workers with near-zero income.' },
+              { prompt: 'Commission income tax planning matters because:', options: ['Variable income can cause you to underpay estimated taxes and owe penalties', 'Commission is taxed at double the normal income rate', 'The IRS excludes commission income from standard deductions', 'Commission income is not reportable until it exceeds $10,000'], correct: 0, explanation: 'If taxes are not withheld from each commission check, you may owe a large lump sum at tax time plus underpayment penalties.' },
             ],
           },
           {
             id: 'u1-2-l7', title: 'Bonuses & Tips', centsReward: 10,
             questions: [
-              { prompt: 'An employee bonus is typically:', options: ['Extra pay given for hitting targets, company performance, or special occasions', 'Mandatory pay required by labor law for all employees', 'A tax-free benefit that does not count as income', 'Pay that replaces your salary in months when business is slow'], correct: 0, explanation: 'Bonuses are discretionary extra pay - they can reward individual performance, company profits, or be given as year-end gifts.' },
-              { prompt: 'Tips earned while working at a restaurant are:', options: ['Taxable income that must be reported to the IRS', 'Tax-free since customers, not employers, pay them', 'Only taxable if they exceed $600 in a year', 'Excluded from income if paid in cash'], correct: 0, explanation: 'All tips - cash or credit card - are legally taxable income and must be reported, regardless of amount.' },
-              { prompt: 'A $5,000 year-end bonus is taxed as:', options: ['Ordinary income at your marginal tax rate', 'Long-term capital gains at a lower rate', 'Not taxed - bonuses are considered gifts', 'At a flat 10% federal rate set by the IRS'], correct: 0, explanation: 'Bonuses are supplemental wages subject to the same tax rates as your regular salary.' },
-              { prompt: 'A profit-sharing bonus is tied to:', options: ['How well the company performs overall', 'How many hours you worked during the year', 'Your individual sales numbers only', 'Automatic annual increases set in your employment contract'], correct: 0, explanation: 'Profit sharing distributes a portion of company profits to employees - everyone benefits when the business does well.' },
+              { prompt: 'An employee bonus is typically:', options: ['Extra pay given for hitting targets, company performance, or special occasions', 'Mandatory pay required by labor law for all employees', 'A tax-free benefit that does not count as income', 'Pay that replaces your salary in months when business is slow'], correct: 0, explanation: 'Bonuses are discretionary extra pay that can reward individual performance, company profits, or be given as year-end gifts.' },
+              { prompt: 'Tips earned while working at a restaurant are:', options: ['Taxable income that must be reported to the IRS', 'Tax-free since customers, not employers, pay them', 'Only taxable if they exceed $600 in a year', 'Excluded from income if paid in cash'], correct: 0, explanation: 'All tips, whether cash or credit card, are legally taxable income and must be reported regardless of amount.' },
+              { prompt: 'A $5,000 year-end bonus is taxed as:', options: ['Ordinary income at your marginal tax rate', 'Long-term capital gains at a lower rate', 'Not taxed, since bonuses are considered gifts', 'At a flat 10% federal rate set by the IRS'], correct: 0, explanation: 'Bonuses are supplemental wages subject to the same tax rates as your regular salary.' },
+              { prompt: 'A profit-sharing bonus is tied to:', options: ['How well the company performs overall', 'How many hours you worked during the year', 'Your individual sales numbers only', 'Automatic annual increases set in your employment contract'], correct: 0, explanation: 'Profit sharing distributes a portion of company profits to employees so everyone benefits when the business does well.' },
               { prompt: 'Why might a large bonus push you into a higher tax bracket?', options: ['It adds to your total annual income, which is taxed progressively', 'The IRS charges a bonus penalty for receiving extra pay', 'Bonuses are taxed before your regular income each year', 'Employers are required to withhold 50% of all bonuses'], correct: 0, explanation: 'If your bonus pushes your total income into a higher bracket, only the portion above the threshold is taxed at the higher rate.' },
-              { prompt: 'Credit card tips differ from cash tips for a server because:', options: ['Credit card tips are tracked electronically, making them easier for the IRS to verify', 'Credit card tips are tax-exempt under payment processing rules', 'Cash tips do not need to be reported to your employer', 'Credit card tips are subject to a 30% withholding by card companies'], correct: 0, explanation: 'Both are taxable, but credit card tips appear in payroll records automatically - cash tips require honest self-reporting.' },
+              { prompt: 'Credit card tips differ from cash tips for a server because:', options: ['Credit card tips are tracked electronically, making them easier for the IRS to verify', 'Credit card tips are tax-exempt under payment processing rules', 'Cash tips do not need to be reported to your employer', 'Credit card tips are subject to a 30% withholding by card companies'], correct: 0, explanation: 'Both are taxable, but credit card tips appear in payroll records automatically while cash tips require honest self-reporting.' },
             ],
           },
           {
             id: 'u1-2-l8', title: 'Multiple Income Streams', centsReward: 10,
             questions: [
-              { prompt: 'Having multiple income streams means:', options: ['Earning money from more than one source at the same time', 'Having multiple bank accounts for different purposes', 'Working two full-time jobs simultaneously', 'Receiving pay from one employer through multiple methods'], correct: 0, explanation: 'Income diversification means your money comes from several independent sources - a job, investments, a side business, etc.' },
-              { prompt: 'The primary financial advantage of multiple income streams is:', options: ['Losing one source does not eliminate all your income', 'You automatically pay less in taxes with multiple streams', 'Multiple streams always add up to twice the income of one job', 'Banks offer better interest rates to people with diverse income'], correct: 0, explanation: 'Diversification reduces income risk - a layoff hurts less when you have rental income or a side business to fall back on.' },
-              { prompt: 'Which is an example of a passive second income stream?', options: ['Dividend payments from a stock portfolio', 'Waiting tables on weekends', 'Driving for a rideshare app after work', 'Freelancing as a consultant on projects'], correct: 0, explanation: 'Dividends arrive without active work - once invested, the income flows in while you sleep.' },
-              { prompt: 'A "side hustle" refers to:', options: ['Income-generating work done outside your main job', 'Overtime hours worked at your primary employer', 'Any job that pays cash instead of a formal paycheck', 'A small business that has been legally registered as an LLC'], correct: 0, explanation: 'Side hustles are flexible secondary income sources - freelancing, tutoring, selling handmade goods, etc.' },
-              { prompt: 'Which is an example of building an active second income stream?', options: ['Selling handmade crafts on an online marketplace evenings and weekends', 'Collecting rent from a property managed by a property management company', 'Receiving quarterly dividends from index funds', 'Earning royalties from a book published five years ago'], correct: 0, explanation: 'Active second income requires your ongoing time - selling crafts requires listing, shipping, and customer service.' },
-              { prompt: 'The best first step toward a second income stream is:', options: ['Identifying skills you already have that others would pay for', 'Immediately taking out a business loan to start a company', 'Quitting your job to focus 100% on the new income source', 'Opening a separate bank account for the new income'], correct: 0, explanation: 'Start with existing skills - tutoring, consulting, crafting, coding - since there is no learning curve and startup cost is low.' },
+              { prompt: 'Having multiple income streams means:', options: ['Earning money from more than one source at the same time', 'Having multiple bank accounts for different purposes', 'Working two full-time jobs simultaneously', 'Receiving pay from one employer through multiple methods'], correct: 0, explanation: 'Income diversification means your money comes from several independent sources such as a job, investments, and a side business.' },
+              { prompt: 'The primary financial advantage of multiple income streams is:', options: ['Losing one source does not eliminate all your income', 'You automatically pay less in taxes with multiple streams', 'Multiple streams always add up to twice the income of one job', 'Banks offer better interest rates to people with diverse income'], correct: 0, explanation: 'Diversification reduces income risk; a layoff hurts less when you have rental income or a side business to fall back on.' },
+              { prompt: 'Which is an example of a passive second income stream?', options: ['Dividend payments from a stock portfolio', 'Waiting tables on weekends', 'Driving for a rideshare app after work', 'Freelancing as a consultant on projects'], correct: 0, explanation: 'Dividends arrive without active work. Once invested, the income flows in while you sleep.' },
+              { prompt: 'A "side hustle" refers to:', options: ['Income-generating work done outside your main job', 'Overtime hours worked at your primary employer', 'Any job that pays cash instead of a formal paycheck', 'A small business that has been legally registered as an LLC'], correct: 0, explanation: 'Side hustles are flexible secondary income sources such as freelancing, tutoring, and selling handmade goods.' },
+              { prompt: 'Which is an example of building an active second income stream?', options: ['Selling handmade crafts on an online marketplace evenings and weekends', 'Collecting rent from a property managed by a property management company', 'Receiving quarterly dividends from index funds', 'Earning royalties from a book published five years ago'], correct: 0, explanation: 'Active second income requires your ongoing time; selling crafts requires listing, shipping, and customer service.' },
+              { prompt: 'The best first step toward a second income stream is:', options: ['Identifying skills you already have that others would pay for', 'Immediately taking out a business loan to start a company', 'Quitting your job to focus 100% on the new income source', 'Opening a separate bank account for the new income'], correct: 0, explanation: 'Start with existing skills like tutoring, consulting, crafting, or coding since there is no learning curve and startup cost is low.' },
             ],
           },
         ],
@@ -710,88 +710,88 @@ export const levels = [
             id: 'u1-3-l1', title: 'Needs vs Wants', centsReward: 10,
             questions: [
               { prompt: 'A "need" in personal finance is best defined as:', options: ['Something required for basic survival and functioning', 'Anything you purchase at least once a week', 'Items that cost more than $100', 'Products recommended by financial advisors'], correct: 0, explanation: 'Needs are essentials: food, shelter, basic clothing, healthcare, and transportation to work.' },
-              { prompt: 'Which of the following is a WANT, not a need?', options: ['A new video game console', 'Groceries for the week', 'Rent payment for your apartment', 'Prescription medication'], correct: 0, explanation: 'A video game console enhances life but is not required for survival or functioning - classic want.' },
-              { prompt: 'Why is the needs vs. wants distinction important in budgeting?', options: ['Needs should always be funded first before any spending on wants', 'Wants cost more than needs on average', 'The government taxes wants at a higher rate than needs', 'Banks will only lend money for needs, not wants'], correct: 0, explanation: 'Prioritizing needs ensures basic expenses are covered before discretionary spending - critical when money is tight.' },
-              { prompt: 'A smartphone is a "need" for someone who:', options: ['Requires it to receive work schedules and communicate with employers', 'Wants to use social media and stream entertainment', 'Has had a phone for the last 10 years', 'Prefers texting to making phone calls'], correct: 0, explanation: 'Context matters - for many jobs, a phone is necessary for communication, making it a functional need rather than a want.' },
-              { prompt: 'Which purchase would most financial advisors classify as a borderline need/want?', options: ['A gym membership when exercise helps manage a chronic health condition', 'Designer sunglasses with a luxury brand logo', 'A second vacation in the same year', 'Upgrading from a Honda Civic to a BMW'], correct: 0, explanation: 'Some purchases serve genuine needs (health) through what might look like a want - context determines classification.' },
+              { prompt: 'Which of the following is a WANT, not a need?', options: ['A new video game console', 'Groceries for the week', 'Rent payment for your apartment', 'Prescription medication'], correct: 0, explanation: 'A video game console enhances life but is not required for survival or functioning, making it a classic want.' },
+              { prompt: 'Why is the needs vs. wants distinction important in budgeting?', options: ['Needs should always be funded first before any spending on wants', 'Wants cost more than needs on average', 'The government taxes wants at a higher rate than needs', 'Banks will only lend money for needs, not wants'], correct: 0, explanation: 'Prioritizing needs ensures basic expenses are covered before discretionary spending, which is critical when money is tight.' },
+              { prompt: 'A smartphone is a "need" for someone who:', options: ['Requires it to receive work schedules and communicate with employers', 'Wants to use social media and stream entertainment', 'Has had a phone for the last 10 years', 'Prefers texting to making phone calls'], correct: 0, explanation: 'Context matters: for many jobs, a phone is necessary for communication, making it a functional need rather than a want.' },
+              { prompt: 'Which purchase would most financial advisors classify as a borderline need/want?', options: ['A gym membership when exercise helps manage a chronic health condition', 'Designer sunglasses with a luxury brand logo', 'A second vacation in the same year', 'Upgrading from a Honda Civic to a BMW'], correct: 0, explanation: 'Some purchases serve genuine needs such as health through what might look like a want; context determines the classification.' },
               { prompt: 'The 50/30/20 rule suggests allocating what percentage to wants?', options: ['30% of after-tax income', '50% of after-tax income', '20% of after-tax income', '10% of after-tax income'], correct: 0, explanation: 'The 50/30/20 rule: 50% needs, 30% wants, 20% savings and debt repayment.' },
             ],
           },
           {
             id: 'u1-3-l2', title: 'Opportunity Cost', centsReward: 10,
             questions: [
-              { prompt: 'Opportunity cost means:', options: ['The value of the next best option you gave up when making a choice', 'The total price of a purchase including taxes and fees', 'The chance of losing money on an investment', 'A discount offered for buying in bulk'], correct: 0, explanation: 'Every choice has a hidden cost - the value of the best alternative you did not choose.' },
-              { prompt: 'You spend $500 on a new TV instead of adding it to your retirement account. The opportunity cost is:', options: ['The investment growth that $500 could have earned over time', 'The sales tax you paid on the TV', 'The cost of delivery and setup', 'The price difference between this TV and a cheaper model'], correct: 0, explanation: 'That $500 invested at 8% for 30 years becomes ~$5,000 - the true opportunity cost of the TV is that future value.' },
-              { prompt: 'Which scenario best illustrates opportunity cost?', options: ['Choosing to go to college means giving up 4 years of full-time work income', 'Buying groceries costs more when food prices rise', 'Your credit score drops after missing a payment', 'Interest accrues on an unpaid credit card balance'], correct: 0, explanation: 'College tuition is the explicit cost; the 4 years of forgone wages is the opportunity cost - real but invisible on any invoice.' },
-              { prompt: 'Time is an opportunity cost because:', options: ['Hours spent on one activity cannot be used for something else', 'Time spent working is taxed by the government', 'You lose money for every hour you are not working', 'Time payments are due on purchases made on credit'], correct: 0, explanation: 'Time is finite - spending Saturday watching TV has an opportunity cost of everything else you could have done.' },
-              { prompt: 'Which is NOT an example of opportunity cost?', options: ['The sticker price you pay for a new car at the dealership', 'College degree vs entering the workforce at 18', 'Investing in stocks vs paying off debt', 'Taking a lower salary at a job you love vs a higher salary at a job you hate'], correct: 0, explanation: 'The sticker price is the explicit, direct cost - not an opportunity cost. Opportunity cost is what you give up, not what you pay.' },
+              { prompt: 'Opportunity cost means:', options: ['The value of the next best option you gave up when making a choice', 'The total price of a purchase including taxes and fees', 'The chance of losing money on an investment', 'A discount offered for buying in bulk'], correct: 0, explanation: 'Every choice has a hidden cost: the value of the best alternative you did not choose.' },
+              { prompt: 'You spend $500 on a new TV instead of adding it to your retirement account. The opportunity cost is:', options: ['The investment growth that $500 could have earned over time', 'The sales tax you paid on the TV', 'The cost of delivery and setup', 'The price difference between this TV and a cheaper model'], correct: 0, explanation: 'That $500 invested at 8% for 30 years becomes ~$5,000, which is the true opportunity cost of the TV.' },
+              { prompt: 'Which scenario best illustrates opportunity cost?', options: ['Choosing to go to college means giving up 4 years of full-time work income', 'Buying groceries costs more when food prices rise', 'Your credit score drops after missing a payment', 'Interest accrues on an unpaid credit card balance'], correct: 0, explanation: 'College tuition is the explicit cost; the 4 years of forgone wages is the opportunity cost, real but invisible on any invoice.' },
+              { prompt: 'Time is an opportunity cost because:', options: ['Hours spent on one activity cannot be used for something else', 'Time spent working is taxed by the government', 'You lose money for every hour you are not working', 'Time payments are due on purchases made on credit'], correct: 0, explanation: 'Time is finite; spending Saturday watching TV carries the opportunity cost of everything else you could have done.' },
+              { prompt: 'Which is NOT an example of opportunity cost?', options: ['The sticker price you pay for a new car at the dealership', 'College degree vs entering the workforce at 18', 'Investing in stocks vs paying off debt', 'Taking a lower salary at a job you love vs a higher salary at a job you hate'], correct: 0, explanation: 'The sticker price is the explicit, direct cost, not an opportunity cost. Opportunity cost is what you give up, not what you pay.' },
               { prompt: 'Opportunity cost helps you make better financial decisions by:', options: ['Forcing you to consider all alternatives before committing money or time', 'Ensuring you always choose the cheapest option available', 'Eliminating emotional decision-making from purchases', 'Guaranteeing a positive return on every dollar spent'], correct: 0, explanation: 'Framing every purchase as "what else could this money do?" leads to more deliberate, higher-quality financial choices.' },
             ],
           },
           {
             id: 'u1-3-l3', title: 'Fixed Expenses', centsReward: 10,
             questions: [
-              { prompt: 'A fixed expense is one that:', options: ['Stays the same amount every month', 'Changes based on how much you use', 'Is paid only once and never recurs', 'Varies unpredictably from month to month'], correct: 0, explanation: 'Fixed expenses are consistent and predictable - the same amount hits your account every period.' },
-              { prompt: 'Which of the following is a fixed expense?', options: ['Monthly rent of $1,200', 'Electricity bill that changes seasonally', 'Weekly grocery shopping', 'Gasoline purchased when needed'], correct: 0, explanation: 'Rent is a fixed expense - the same amount is due each month regardless of how many nights you actually spend at home.' },
+              { prompt: 'A fixed expense is one that:', options: ['Stays the same amount every month', 'Changes based on how much you use', 'Is paid only once and never recurs', 'Varies unpredictably from month to month'], correct: 0, explanation: 'Fixed expenses are consistent and predictable: the same amount hits your account every period.' },
+              { prompt: 'Which of the following is a fixed expense?', options: ['Monthly rent of $1,200', 'Electricity bill that changes seasonally', 'Weekly grocery shopping', 'Gasoline purchased when needed'], correct: 0, explanation: 'Rent is a fixed expense: the same amount is due each month regardless of how many nights you actually spend at home.' },
               { prompt: 'Fixed expenses are useful for budgeting because:', options: ['They are predictable and can be planned for with certainty', 'They always cost less than variable expenses', 'You only pay fixed expenses once per year', 'The government caps fixed expense amounts to protect consumers'], correct: 0, explanation: 'Knowing your fixed expenses lets you calculate the minimum income needed to cover obligations before spending on anything else.' },
-              { prompt: 'Which of these is NOT a fixed expense?', options: ['Restaurant meals throughout the month', 'Car insurance premium paid monthly', 'Netflix subscription at $15.99/month', 'Student loan payment of $350/month'], correct: 0, explanation: 'Restaurant spending varies by how often you dine out - it is a variable expense, not fixed.' },
-              { prompt: 'When income drops unexpectedly, fixed expenses are most dangerous because:', options: ['They must be paid regardless of your financial situation', 'They increase automatically when your income decreases', 'Banks charge extra fees when you pay fixed bills late', 'Fixed expenses are never eligible for negotiation or reduction'], correct: 0, explanation: 'If your rent is $1,500, you owe $1,500 whether you earned $3,000 or $0 that month - fixed obligations do not flex.' },
-              { prompt: 'Which is a strategy to reduce fixed expenses?', options: ['Negotiate rent at lease renewal or move to a cheaper apartment', 'Stop paying fixed bills during low-income months', 'Convert fixed expenses to variable by paying when convenient', 'Ask your employer to pay your fixed expenses directly'], correct: 0, explanation: 'Fixed expenses can sometimes be renegotiated or reduced - refinancing a loan, switching insurance plans, or downsizing housing.' },
+              { prompt: 'Which of these is NOT a fixed expense?', options: ['Restaurant meals throughout the month', 'Car insurance premium paid monthly', 'Netflix subscription at $15.99/month', 'Student loan payment of $350/month'], correct: 0, explanation: 'Restaurant spending varies by how often you dine out; it is a variable expense, not fixed.' },
+              { prompt: 'When income drops unexpectedly, fixed expenses are most dangerous because:', options: ['They must be paid regardless of your financial situation', 'They increase automatically when your income decreases', 'Banks charge extra fees when you pay fixed bills late', 'Fixed expenses are never eligible for negotiation or reduction'], correct: 0, explanation: 'If your rent is $1,500, you owe $1,500 whether you earned $3,000 or $0 that month because fixed obligations do not flex.' },
+              { prompt: 'Which is a strategy to reduce fixed expenses?', options: ['Negotiate rent at lease renewal or move to a cheaper apartment', 'Stop paying fixed bills during low-income months', 'Convert fixed expenses to variable by paying when convenient', 'Ask your employer to pay your fixed expenses directly'], correct: 0, explanation: 'Fixed expenses can sometimes be renegotiated or reduced through refinancing a loan, switching insurance plans, or downsizing housing.' },
             ],
           },
           {
             id: 'u1-3-l4', title: 'Variable Expenses', centsReward: 10,
             questions: [
-              { prompt: 'A variable expense is one that:', options: ['Changes in amount from month to month', 'Stays exactly the same every pay period', 'Occurs only once and never repeats', 'Is set by a contract you signed'], correct: 0, explanation: 'Variable expenses fluctuate - they depend on your habits, usage, and choices.' },
-              { prompt: 'Which of the following is a variable expense?', options: ['Monthly grocery spending', 'Car loan payment', 'Rent payment', 'Monthly gym membership fee'], correct: 0, explanation: 'Grocery spending varies - you might spend $200 one week and $350 the next depending on meals planned and prices.' },
-              { prompt: 'Variable expenses are easier to cut than fixed expenses because:', options: ['You can reduce them by changing your habits and choices', 'Variable expenses are always smaller than fixed expenses', 'Companies are legally required to allow variable expense reductions', 'Banks automatically reduce variable expenses during hard times'], correct: 0, explanation: 'You can choose to eat out less, drive less, or shop less - these behavioral changes directly reduce variable costs.' },
-              { prompt: 'Which example shows a variable expense being well-managed?', options: ['Reducing dining out from $600/month to $200/month by meal prepping', 'Canceling your car insurance to save money', 'Missing a rent payment to have more spending money', 'Asking your employer to reduce your salary to lower your tax burden'], correct: 0, explanation: 'Meal prepping is a behavioral change that directly cuts a discretionary variable expense - a high-leverage money move.' },
-              { prompt: 'Electricity bills are variable because:', options: ['Usage - and therefore cost - changes seasonally with heating and cooling', 'The electric company changes rates every month without notice', 'You can choose not to pay them in months when you want to save', 'They are optional and can be turned off during tight months'], correct: 0, explanation: 'Air conditioning in summer and heating in winter cause electricity bills to spike - usage-based costs vary naturally.' },
-              { prompt: 'In a tight budget month, which spending category is easiest to cut?', options: ['Variable discretionary spending like entertainment and dining out', 'Fixed expenses like rent and loan payments', 'Annual insurance premiums already paid', 'Monthly subscription services on annual plans'], correct: 0, explanation: 'Discretionary variable expenses are the first lever - you control them directly through daily choices.' },
+              { prompt: 'A variable expense is one that:', options: ['Changes in amount from month to month', 'Stays exactly the same every pay period', 'Occurs only once and never repeats', 'Is set by a contract you signed'], correct: 0, explanation: 'Variable expenses fluctuate because they depend on your habits, usage, and choices.' },
+              { prompt: 'Which of the following is a variable expense?', options: ['Monthly grocery spending', 'Car loan payment', 'Rent payment', 'Monthly gym membership fee'], correct: 0, explanation: 'Grocery spending varies; you might spend $200 one week and $350 the next depending on meals planned and prices.' },
+              { prompt: 'Variable expenses are easier to cut than fixed expenses because:', options: ['You can reduce them by changing your habits and choices', 'Variable expenses are always smaller than fixed expenses', 'Companies are legally required to allow variable expense reductions', 'Banks automatically reduce variable expenses during hard times'], correct: 0, explanation: 'You can choose to eat out less, drive less, or shop less; these behavioral changes directly reduce variable costs.' },
+              { prompt: 'Which example shows a variable expense being well-managed?', options: ['Reducing dining out from $600/month to $200/month by meal prepping', 'Canceling your car insurance to save money', 'Missing a rent payment to have more spending money', 'Asking your employer to reduce your salary to lower your tax burden'], correct: 0, explanation: 'Meal prepping is a behavioral change that directly cuts a discretionary variable expense, making it a high-leverage money move.' },
+              { prompt: 'Electricity bills are variable because:', options: ['Usage and therefore cost change seasonally with heating and cooling', 'The electric company changes rates every month without notice', 'You can choose not to pay them in months when you want to save', 'They are optional and can be turned off during tight months'], correct: 0, explanation: 'Air conditioning in summer and heating in winter cause electricity bills to spike; usage-based costs vary naturally.' },
+              { prompt: 'In a tight budget month, which spending category is easiest to cut?', options: ['Variable discretionary spending like entertainment and dining out', 'Fixed expenses like rent and loan payments', 'Annual insurance premiums already paid', 'Monthly subscription services on annual plans'], correct: 0, explanation: 'Discretionary variable expenses are the first lever because you control them directly through daily choices.' },
             ],
           },
           {
             id: 'u1-3-l5', title: 'Recurring vs One-Time Expenses', centsReward: 10,
             questions: [
-              { prompt: 'A recurring expense is:', options: ['A cost that repeats on a regular schedule', 'A large, unexpected expense that hits once', 'Any purchase made with a credit card', 'An expense that increases by a set amount each year'], correct: 0, explanation: 'Recurring expenses recur - monthly rent, weekly gas, annual insurance premiums, daily coffee.' },
-              { prompt: 'A one-time expense is best described as:', options: ['A purchase that happens once and does not repeat', 'A subscription that costs more in the first month only', 'Any expense over $1,000', 'A bill paid annually instead of monthly'], correct: 0, explanation: 'One-time expenses are non-recurring - buying a couch, paying a moving company, or purchasing concert tickets.' },
+              { prompt: 'A recurring expense is:', options: ['A cost that repeats on a regular schedule', 'A large, unexpected expense that hits once', 'Any purchase made with a credit card', 'An expense that increases by a set amount each year'], correct: 0, explanation: 'Recurring expenses repeat on a predictable schedule: monthly rent, weekly gas, annual insurance premiums, and daily coffee.' },
+              { prompt: 'A one-time expense is best described as:', options: ['A purchase that happens once and does not repeat', 'A subscription that costs more in the first month only', 'Any expense over $1,000', 'A bill paid annually instead of monthly'], correct: 0, explanation: 'One-time expenses are non-recurring, like buying a couch, paying a moving company, or purchasing concert tickets.' },
               { prompt: 'Why should one-time expenses be planned for in your budget?', options: ['Large one-time costs can blow a budget if you are not prepared with savings', 'One-time expenses are tax deductible for most workers', 'Credit card companies charge extra fees for one-time purchases', 'Banks require advance notice for all one-time expenses over $500'], correct: 0, explanation: 'A car registration renewal or annual insurance premium can derail a monthly budget if you have not set aside money in advance.' },
               { prompt: 'An annual subscription (like Amazon Prime) is best treated in your monthly budget as:', options: ['Saving 1/12 of the annual cost each month so you are ready when it hits', 'A one-time expense that comes out of your entertainment fund in the month it renews', 'A fixed monthly expense equal to the full annual price', 'An optional expense that you pay only if you have money left over'], correct: 0, explanation: 'Dividing annual costs by 12 and setting aside that amount monthly prevents the "surprise" when renewal hits.' },
-              { prompt: 'Which of the following is a recurring expense?', options: ['Monthly cell phone bill', 'Buying a new laptop after yours breaks', 'Emergency vet bill for a sick pet', 'Wedding gift for a friend'], correct: 0, explanation: 'Your cell phone bill arrives every month on a predictable schedule - a classic recurring expense.' },
-              { prompt: 'A "sinking fund" is a savings strategy designed for:', options: ['Planned one-time or irregular expenses so money is ready when needed', 'Emergency expenses that cannot be predicted in advance', 'Investing spare money in low-risk bonds', 'Reducing monthly fixed expenses by prepaying them'], correct: 0, explanation: 'A sinking fund accumulates money over time for a known future expense - car registration, holiday gifts, vacation.' },
+              { prompt: 'Which of the following is a recurring expense?', options: ['Monthly cell phone bill', 'Buying a new laptop after yours breaks', 'Emergency vet bill for a sick pet', 'Wedding gift for a friend'], correct: 0, explanation: 'Your cell phone bill arrives every month on a predictable schedule, making it a classic recurring expense.' },
+              { prompt: 'A "sinking fund" is a savings strategy designed for:', options: ['Planned one-time or irregular expenses so money is ready when needed', 'Emergency expenses that cannot be predicted in advance', 'Investing spare money in low-risk bonds', 'Reducing monthly fixed expenses by prepaying them'], correct: 0, explanation: 'A sinking fund accumulates money over time for a known future expense, such as car registration, holiday gifts, or vacation.' },
             ],
           },
           {
             id: 'u1-3-l6', title: 'Impulse Buying', centsReward: 10,
             questions: [
               { prompt: 'Impulse buying is:', options: ['Making an unplanned purchase driven by emotion or in-the-moment desire', 'Buying items in bulk to save money over time', 'Purchasing something before it sells out at a special price', 'Any purchase not included in your monthly budget'], correct: 0, explanation: 'Impulse purchases are triggered by emotion (excitement, boredom, FOMO) rather than genuine need or prior planning.' },
-              { prompt: 'Which tactic do retailers use to encourage impulse buying?', options: ['Placing inexpensive items near checkout counters where you wait in line', 'Offering free returns on all purchases', 'Mailing paper catalogs instead of advertising online', 'Reducing prices on all items throughout the store'], correct: 0, explanation: 'Checkout displays exploit the minutes you stand in line - small, seemingly affordable items are perfectly positioned for impulse grabs.' },
-              { prompt: 'The "24-hour rule" for avoiding impulse purchases means:', options: ['Waiting a full day before buying anything unplanned to see if you still want it', 'Only buying items that have been in your cart for 24 hours', 'Shopping only between 12am and midnight', 'Returning any impulse purchase within 24 hours for a refund'], correct: 0, explanation: 'A 24-hour waiting period lets the initial emotional rush pass - if you still want the item the next day, it is probably not pure impulse.' },
-              { prompt: 'Online shopping has increased impulse buying because:', options: ['One-click purchasing and 24/7 availability reduce friction to buying', 'Online stores legally allow impulse returns for any reason', 'Digital wallets make money feel less real, reducing psychological spending resistance', 'Only online - in-store shopping has no impulse purchase problem'], correct: 0, explanation: 'Both the first and third options are real factors - frictionless purchasing and the "abstract" feel of digital payments both increase impulse spending.' },
-              { prompt: 'Emotional triggers that drive impulse buying include:', options: ['Stress, boredom, loneliness, and excitement', 'Hunger, sleep deprivation, and physical pain only', 'Rational evaluation of price and utility', 'Only social media advertising exposure'], correct: 0, explanation: 'Retail therapy is real - negative emotions (stress, sadness) and positive emotions (excitement from a sale) both trigger unplanned purchases.' },
+              { prompt: 'Which tactic do retailers use to encourage impulse buying?', options: ['Placing inexpensive items near checkout counters where you wait in line', 'Offering free returns on all purchases', 'Mailing paper catalogs instead of advertising online', 'Reducing prices on all items throughout the store'], correct: 0, explanation: 'Checkout displays exploit the minutes you stand in line, placing small, seemingly affordable items perfectly for impulse grabs.' },
+              { prompt: 'The "24-hour rule" for avoiding impulse purchases means:', options: ['Waiting a full day before buying anything unplanned to see if you still want it', 'Only buying items that have been in your cart for 24 hours', 'Shopping only between 12am and midnight', 'Returning any impulse purchase within 24 hours for a refund'], correct: 0, explanation: 'A 24-hour waiting period lets the initial emotional rush pass, so if you still want the item the next day, it is probably not pure impulse.' },
+              { prompt: 'Online shopping has increased impulse buying because:', options: ['One-click purchasing and 24/7 availability reduce friction to buying', 'Online stores legally allow impulse returns for any reason', 'Digital wallets make money feel less real, reducing psychological spending resistance', 'Online only, since in-store shopping has no impulse purchase problem'], correct: 0, explanation: 'Both the first and third options are real factors: frictionless purchasing and the "abstract" feel of digital payments both increase impulse spending.' },
+              { prompt: 'Emotional triggers that drive impulse buying include:', options: ['Stress, boredom, loneliness, and excitement', 'Hunger, sleep deprivation, and physical pain only', 'Rational evaluation of price and utility', 'Only social media advertising exposure'], correct: 0, explanation: 'Retail therapy is real: negative emotions (stress, sadness) and positive emotions (excitement from a sale) both trigger unplanned purchases.' },
               { prompt: 'The most effective long-term strategy to reduce impulse buying is:', options: ['Remove yourself from tempting environments and unsubscribe from promotional emails', 'Never carry a credit card or cash when leaving the house', 'Shop only at stores with strict no-return policies to make you think twice', 'Limit all purchases to a single monthly shopping trip'], correct: 0, explanation: 'Reducing exposure to marketing triggers and retail environments is more effective than relying on in-the-moment willpower.' },
             ],
           },
           {
             id: 'u1-3-l7', title: 'Lifestyle Inflation', centsReward: 10,
             questions: [
-              { prompt: 'Lifestyle inflation happens when:', options: ['Spending increases as income increases, preventing savings from growing', 'Rising prices force people to spend more even on the same goods', 'You upgrade your home every time you receive a raise', 'Credit card limits automatically increase with income'], correct: 0, explanation: 'Lifestyle creep is the tendency to inflate your standard of living every time income rises - keeping savings stuck.' },
-              { prompt: 'You get a $10,000 raise. Lifestyle inflation occurs if you:', options: ['Upgrade to a more expensive apartment and buy a nicer car, spending the full raise', 'Save half the raise and invest the other half', 'Put the entire raise into your retirement account', 'Use the raise to pay off high-interest debt'], correct: 0, explanation: 'The raise vanishes into an upgraded lifestyle instead of wealth-building - more income, same net worth trajectory.' },
-              { prompt: 'Why is lifestyle inflation financially dangerous even for high earners?', options: ['It keeps the gap between income and savings narrow regardless of how much you earn', 'High earners pay more taxes automatically when they spend more', 'Lifestyle inflation reduces your credit score over time', 'Banks charge higher fees to customers who upgrade their spending levels'], correct: 0, explanation: 'Someone earning $200k but spending $195k builds wealth no faster than someone earning $50k spending $45k - the savings rate is what matters.' },
-              { prompt: 'Another name for lifestyle inflation is:', options: ['Lifestyle creep', 'Income slippage', 'Wage drift', 'Spending spiral'], correct: 0, explanation: '"Lifestyle creep" is the common term - expenses quietly creep upward alongside income until savings never seem to grow.' },
+              { prompt: 'Lifestyle inflation happens when:', options: ['Spending increases as income increases, preventing savings from growing', 'Rising prices force people to spend more even on the same goods', 'You upgrade your home every time you receive a raise', 'Credit card limits automatically increase with income'], correct: 0, explanation: 'Lifestyle creep is the tendency to inflate your standard of living every time income rises, keeping savings stuck.' },
+              { prompt: 'You get a $10,000 raise. Lifestyle inflation occurs if you:', options: ['Upgrade to a more expensive apartment and buy a nicer car, spending the full raise', 'Save half the raise and invest the other half', 'Put the entire raise into your retirement account', 'Use the raise to pay off high-interest debt'], correct: 0, explanation: 'The raise vanishes into an upgraded lifestyle instead of wealth-building, leaving more income but the same net worth trajectory.' },
+              { prompt: 'Why is lifestyle inflation financially dangerous even for high earners?', options: ['It keeps the gap between income and savings narrow regardless of how much you earn', 'High earners pay more taxes automatically when they spend more', 'Lifestyle inflation reduces your credit score over time', 'Banks charge higher fees to customers who upgrade their spending levels'], correct: 0, explanation: 'Someone earning $200k but spending $195k builds wealth no faster than someone earning $50k spending $45k, because the savings rate is what matters.' },
+              { prompt: 'Another name for lifestyle inflation is:', options: ['Lifestyle creep', 'Income slippage', 'Wage drift', 'Spending spiral'], correct: 0, explanation: '"Lifestyle creep" is the common term, as expenses quietly creep upward alongside income until savings never seem to grow.' },
               { prompt: 'Which habit most directly fights lifestyle inflation?', options: ['Automatically directing a fixed percentage of every raise to savings before you can spend it', 'Tracking expenses in a spreadsheet every week', 'Switching to a cash-only budget', 'Canceling all subscriptions whenever income increases'], correct: 0, explanation: 'Automating savings before you can adjust to the new income level prevents the lifestyle adjustment from happening at all.' },
-              { prompt: 'Lifestyle inflation is most likely to occur after:', options: ['A significant pay raise, job promotion, or windfall', 'A period of high inflation in the economy', 'Getting married and combining two incomes', 'Moving to a lower-cost-of-living city'], correct: 0, explanation: 'Income jumps create a psychological permission slip to upgrade - the key is resisting the urge to spend every new dollar.' },
+              { prompt: 'Lifestyle inflation is most likely to occur after:', options: ['A significant pay raise, job promotion, or windfall', 'A period of high inflation in the economy', 'Getting married and combining two incomes', 'Moving to a lower-cost-of-living city'], correct: 0, explanation: 'Income jumps create a psychological permission slip to upgrade, so the key is resisting the urge to spend every new dollar.' },
             ],
           },
           {
             id: 'u1-3-l8', title: 'Delayed Gratification', centsReward: 10,
             questions: [
-              { prompt: 'Delayed gratification in personal finance means:', options: ['Choosing to save or invest now instead of spending for immediate pleasure', 'Waiting for prices to drop before making a purchase', 'Paying for purchases on credit and settling the bill later', 'Deferring taxes by contributing to a retirement account'], correct: 0, explanation: 'Delayed gratification is the choice to sacrifice immediate consumption so your future self benefits more - the foundation of wealth building.' },
+              { prompt: 'Delayed gratification in personal finance means:', options: ['Choosing to save or invest now instead of spending for immediate pleasure', 'Waiting for prices to drop before making a purchase', 'Paying for purchases on credit and settling the bill later', 'Deferring taxes by contributing to a retirement account'], correct: 0, explanation: 'Delayed gratification is the choice to sacrifice immediate consumption so your future self benefits more, forming the foundation of wealth building.' },
               { prompt: 'The famous "marshmallow test" showed that children who could delay gratification:', options: ['Tended to have better life outcomes including higher incomes and savings rates', 'Were more likely to become investors in adulthood', 'Ate fewer calories on average throughout their lives', 'Never spent money on impulse purchases as adults'], correct: 0, explanation: 'Stanford\'s marshmallow study (1960s-70s) found that preschoolers who waited for a second marshmallow had better SAT scores, lower BMI, and greater financial success decades later.' },
-              { prompt: 'Investing $200/month starting at age 22 instead of spending it demonstrates:', options: ['Delayed gratification - sacrificing now for exponentially more later', 'Fixed expense management since the amount never changes', 'A passive income strategy that requires no active effort', 'The opportunity cost of working full-time instead of retiring early'], correct: 0, explanation: '$200/month from 22 to 65 at 8% = over $800,000. Delayed gratification at its most powerful.' },
-              { prompt: 'Which psychological concept is the opposite of delayed gratification?', options: ['Present bias - giving disproportionate weight to immediate rewards over future ones', 'Loss aversion - feeling losses more strongly than equivalent gains', 'Anchoring - relying too heavily on the first price seen', 'Herding - following what other people are doing financially'], correct: 0, explanation: 'Present bias makes the immediate pleasure feel more real and valuable than the abstract future benefit - the core enemy of saving.' },
-              { prompt: 'Which strategy helps practice delayed gratification?', options: ['Automating savings so you never see or have access to money earmarked for the future', 'Spending each paycheck completely so you are motivated to earn more', 'Writing down your spending goals and reviewing them weekly', 'Waiting until you have $10,000 before starting to invest'], correct: 0, explanation: 'Automation removes the temptation decision entirely - the money moves to savings before you can choose to spend it.' },
-              { prompt: 'The compound interest benefit of delayed gratification means:', options: ['Money saved early grows exponentially, so small sacrifices now create large future rewards', 'You receive a guaranteed 8% return for every month you delay a purchase', 'Banks pay higher interest to customers who maintain accounts for over 10 years', 'Delaying taxes on investments doubles the money\'s growth rate'], correct: 0, explanation: 'Compound growth means time is your most powerful variable - every dollar invested early becomes many more dollars in the future.' },
+              { prompt: 'Investing $200/month starting at age 22 instead of spending it demonstrates:', options: ['Delayed gratification, meaning sacrificing now for exponentially more later', 'Fixed expense management since the amount never changes', 'A passive income strategy that requires no active effort', 'The opportunity cost of working full-time instead of retiring early'], correct: 0, explanation: '$200/month from 22 to 65 at 8% = over $800,000. Delayed gratification at its most powerful.' },
+              { prompt: 'Which psychological concept is the opposite of delayed gratification?', options: ['Present bias, which gives disproportionate weight to immediate rewards over future ones', 'Loss aversion, where you feel losses more strongly than equivalent gains', 'Anchoring, which means relying too heavily on the first price seen', 'Herding, which means following what other people are doing financially'], correct: 0, explanation: 'Present bias makes the immediate pleasure feel more real and valuable than the abstract future benefit, making it the core enemy of saving.' },
+              { prompt: 'Which strategy helps practice delayed gratification?', options: ['Automating savings so you never see or have access to money earmarked for the future', 'Spending each paycheck completely so you are motivated to earn more', 'Writing down your spending goals and reviewing them weekly', 'Waiting until you have $10,000 before starting to invest'], correct: 0, explanation: 'Automation removes the temptation decision entirely, so the money moves to savings before you can choose to spend it.' },
+              { prompt: 'The compound interest benefit of delayed gratification means:', options: ['Money saved early grows exponentially, so small sacrifices now create large future rewards', 'You receive a guaranteed 8% return for every month you delay a purchase', 'Banks pay higher interest to customers who maintain accounts for over 10 years', 'Delaying taxes on investments doubles the money\'s growth rate'], correct: 0, explanation: 'Compound growth means time is your most powerful variable, since every dollar invested early becomes many more dollars in the future.' },
             ],
           },
         ],
@@ -806,64 +806,64 @@ export const levels = [
           {
             id: 'u1-4-l1', title: 'Why Save', centsReward: 10,
             questions: [
-              { prompt: 'The primary reason to save money is:', options: ['To build a financial cushion that provides security and future options', 'Because banks require a minimum balance in all accounts', 'To avoid paying taxes on income', 'Because spending cash is illegal without proper documentation'], correct: 0, explanation: 'Savings give you options - to handle emergencies, reach goals, and eventually stop depending entirely on a paycheck.' },
-              { prompt: 'Which analogy best describes the purpose of saving?', options: ['A financial seatbelt - you hope not to need it but you want it there', 'A lottery ticket - small chance of a big payoff', 'A tax strategy - reduce what you owe by saving more', 'A loan - borrow from your future self and pay back later'], correct: 0, explanation: 'Savings protect you from life\'s unexpected bumps - just like a seatbelt, you don\'t use it daily but it is essential when you need it.' },
-              { prompt: 'Not saving enough money creates which financial risk?', options: ['You are one unexpected expense away from going into debt', 'Your credit score drops below 600 within a year', 'Banks charge you a penalty for low savings balances', 'The government reduces your social security benefits'], correct: 0, explanation: 'Without savings, a single car repair or medical bill forces you to borrow - often at high interest rates - creating a debt spiral.' },
+              { prompt: 'The primary reason to save money is:', options: ['To build a financial cushion that provides security and future options', 'Because banks require a minimum balance in all accounts', 'To avoid paying taxes on income', 'Because spending cash is illegal without proper documentation'], correct: 0, explanation: 'Savings give you options: to handle emergencies, reach goals, and eventually stop depending entirely on a paycheck.' },
+              { prompt: 'Which analogy best describes the purpose of saving?', options: ['A financial seatbelt that you hope not to need but want there anyway', 'A lottery ticket with a small chance of a big payoff', 'A tax strategy to reduce what you owe by saving more', 'A loan where you borrow from your future self and pay back later'], correct: 0, explanation: 'Savings protect you from life\'s unexpected bumps, just like a seatbelt you do not use daily but that is essential when you need it.' },
+              { prompt: 'Not saving enough money creates which financial risk?', options: ['You are one unexpected expense away from going into debt', 'Your credit score drops below 600 within a year', 'Banks charge you a penalty for low savings balances', 'The government reduces your social security benefits'], correct: 0, explanation: 'Without savings, a single car repair or medical bill forces you to borrow at high interest rates, creating a debt spiral.' },
               { prompt: 'Most financial experts recommend saving at least ___ % of your income:', options: ['20%', '5%', '50%', '35%'], correct: 0, explanation: 'The classic 20% rule (from the 50/30/20 framework) is the widely recommended minimum for building real financial security.' },
-              { prompt: 'Saving money is most critical at which life stage?', options: ['As early as possible - time multiplies the impact of every dollar saved', 'Only after paying off all debt completely', 'In your 50s when retirement is approaching', 'When you receive an inheritance or windfall'], correct: 0, explanation: 'Compound growth means starting at 22 vs 32 can double your retirement wealth from the same monthly contributions.' },
-              { prompt: 'Which statement about saving is TRUE?', options: ['Saving even small amounts consistently builds meaningful wealth over time', 'You must earn over $50,000 to make saving worthwhile', 'Saving is less important when inflation is high', 'You should wait until all debt is paid before saving a single dollar'], correct: 0, explanation: 'Even $50/month invested at 7% for 40 years grows to over $130,000 - small consistent amounts are transformative over time.' },
+              { prompt: 'Saving money is most critical at which life stage?', options: ['As early as possible, since time multiplies the impact of every dollar saved', 'Only after paying off all debt completely', 'In your 50s when retirement is approaching', 'When you receive an inheritance or windfall'], correct: 0, explanation: 'Compound growth means starting at 22 vs 32 can double your retirement wealth from the same monthly contributions.' },
+              { prompt: 'Which statement about saving is TRUE?', options: ['Saving even small amounts consistently builds meaningful wealth over time', 'You must earn over $50,000 to make saving worthwhile', 'Saving is less important when inflation is high', 'You should wait until all debt is paid before saving a single dollar'], correct: 0, explanation: 'Even $50/month invested at 7% for 40 years grows to over $130,000, showing that small consistent amounts are transformative over time.' },
             ],
           },
           {
             id: 'u1-4-l2', title: 'Emergency Funds', centsReward: 10,
             questions: [
-              { prompt: 'The recommended size of an emergency fund is:', options: ['3–6 months of living expenses', 'Exactly one month of salary', 'At least two full years of expenses', '$1,000 regardless of income'], correct: 0, explanation: '3–6 months of expenses covers most emergencies - job loss, medical bills, car repairs - without touching investments or credit cards.' },
-              { prompt: 'Where should you keep your emergency fund?', options: ['A high-yield savings account - accessible but separate from daily spending', 'Invested in the stock market for maximum growth', 'Under your mattress in cash for immediate access', 'In a CD that matures in 5 years'], correct: 0, explanation: 'Emergency funds need to be liquid (accessible immediately) but not so convenient you dip into them for non-emergencies.' },
+              { prompt: 'The recommended size of an emergency fund is:', options: ['3–6 months of living expenses', 'Exactly one month of salary', 'At least two full years of expenses', '$1,000 regardless of income'], correct: 0, explanation: '3–6 months of expenses covers most emergencies such as job loss, medical bills, and car repairs, without touching investments or credit cards.' },
+              { prompt: 'Where should you keep your emergency fund?', options: ['A high-yield savings account that is accessible but separate from daily spending', 'Invested in the stock market for maximum growth', 'Under your mattress in cash for immediate access', 'In a CD that matures in 5 years'], correct: 0, explanation: 'Emergency funds need to be liquid (accessible immediately) but not so convenient you dip into them for non-emergencies.' },
               { prompt: 'You have $2,500/month in living expenses. A fully funded emergency fund should be:', options: ['$7,500–$15,000', '$2,500', '$25,000', '$1,000'], correct: 0, explanation: '$2,500 × 3 months = $7,500 (minimum). $2,500 × 6 months = $15,000 (full). Build toward the higher end for job-security concerns.' },
-              { prompt: 'Which situation is the emergency fund designed to handle?', options: ['Job loss that requires covering expenses while searching for new work', 'A vacation you forgot to budget for', 'Buying a new smartphone after your old one works fine', 'Taking advantage of a limited-time sale on electronics'], correct: 0, explanation: 'Emergency funds are for genuine emergencies - events that are unexpected, necessary, and urgent. Vacations and sales are not emergencies.' },
-              { prompt: 'Why should the emergency fund be separate from your regular checking account?', options: ['To avoid accidentally spending it on everyday purchases', 'Because banks charge fees to transfer between savings and checking', 'To earn a higher interest rate that is only available in separate accounts', 'The IRS requires emergency funds to be in dedicated accounts'], correct: 0, explanation: 'Keeping it separate creates a psychological barrier - you are less likely to raid it for non-emergencies if it is out of sight.' },
-              { prompt: 'After using your emergency fund, the right next step is:', options: ['Immediately rebuild it before increasing investment contributions', 'Close the account and rely on a credit card going forward', 'Wait for a windfall to naturally replenish it', 'Reduce your emergency fund target to a smaller amount'], correct: 0, explanation: 'An emergency fund is only useful if it is there when needed - rebuilding it should become a financial priority immediately after use.' },
+              { prompt: 'Which situation is the emergency fund designed to handle?', options: ['Job loss that requires covering expenses while searching for new work', 'A vacation you forgot to budget for', 'Buying a new smartphone after your old one works fine', 'Taking advantage of a limited-time sale on electronics'], correct: 0, explanation: 'Emergency funds are for genuine emergencies: events that are unexpected, necessary, and urgent. Vacations and sales are not emergencies.' },
+              { prompt: 'Why should the emergency fund be separate from your regular checking account?', options: ['To avoid accidentally spending it on everyday purchases', 'Because banks charge fees to transfer between savings and checking', 'To earn a higher interest rate that is only available in separate accounts', 'The IRS requires emergency funds to be in dedicated accounts'], correct: 0, explanation: 'Keeping it separate creates a psychological barrier, so you are less likely to raid it for non-emergencies if it is out of sight.' },
+              { prompt: 'After using your emergency fund, the right next step is:', options: ['Immediately rebuild it before increasing investment contributions', 'Close the account and rely on a credit card going forward', 'Wait for a windfall to naturally replenish it', 'Reduce your emergency fund target to a smaller amount'], correct: 0, explanation: 'An emergency fund is only useful if it is there when needed, so rebuilding it should become a financial priority immediately after use.' },
             ],
           },
           {
             id: 'u1-4-l3', title: 'Savings Accounts', centsReward: 10,
             questions: [
-              { prompt: 'A savings account differs from a checking account primarily because:', options: ['Savings accounts earn interest and are designed for storing money, not daily spending', 'Savings accounts have higher fees and no FDIC insurance', 'Checking accounts earn more interest since money flows through them', 'You need a minimum $10,000 to open any savings account'], correct: 0, explanation: 'Savings accounts pay you interest to hold your money - they are designed for money you are not actively spending.' },
+              { prompt: 'A savings account differs from a checking account primarily because:', options: ['Savings accounts earn interest and are designed for storing money, not daily spending', 'Savings accounts have higher fees and no FDIC insurance', 'Checking accounts earn more interest since money flows through them', 'You need a minimum $10,000 to open any savings account'], correct: 0, explanation: 'Savings accounts pay you interest to hold your money, as they are designed for money you are not actively spending.' },
               { prompt: 'A high-yield savings account (HYSA) differs from a traditional savings account because:', options: ['It pays significantly higher interest rates, often 10–20× more than traditional banks', 'It is only available to customers with excellent credit scores', 'It invests your savings in the stock market for higher returns', 'Only online banks are legally allowed to offer HYSAs'], correct: 0, explanation: 'Online banks offer HYSAs with 4–5% APY (as of recent years) vs. the 0.01–0.06% at most big traditional banks.' },
               { prompt: 'What federal rule historically limited savings account withdrawals to 6 per month?', options: ['Regulation D, which was suspended in 2020 but some banks still apply limits', 'The FDIC savings protection act of 1934', 'The Federal Reserve\'s Savings Control Act', 'The Dodd-Frank financial reform act'], correct: 0, explanation: 'Reg D limited "convenient" withdrawals to 6/month per account. The Fed suspended this in 2020, but many banks still restrict withdrawals.' },
-              { prompt: 'The Annual Percentage Yield (APY) on a savings account represents:', options: ['Your total annual return including the effect of compounding', 'The rate before compounding - the simpler annual rate', 'The fee charged by the bank on your balance annually', 'The maximum interest rate the government allows banks to pay'], correct: 0, explanation: 'APY accounts for compounding - it is the number you should compare between savings accounts to find the best deal.' },
+              { prompt: 'The Annual Percentage Yield (APY) on a savings account represents:', options: ['Your total annual return including the effect of compounding', 'The rate before compounding, which is the simpler annual rate', 'The fee charged by the bank on your balance annually', 'The maximum interest rate the government allows banks to pay'], correct: 0, explanation: 'APY accounts for compounding and is the number you should compare between savings accounts to find the best deal.' },
               { prompt: 'Your savings account has $5,000 at 4.5% APY. After one year you have approximately:', options: ['$5,225', '$5,450', '$5,000', '$5,045'], correct: 0, explanation: '$5,000 × 1.045 = $5,225. The account grows by $225 in interest over the year.' },
-              { prompt: 'Savings accounts are best used for:', options: ['Emergency funds and short-term goals (1–3 years away)', 'Long-term retirement savings over 20–30 years', 'Daily spending and bill payment', 'Investing in diversified stock portfolios'], correct: 0, explanation: 'For money needed within a few years, a savings account is ideal - safe, liquid, and earning some return. For long-term goals, invest instead.' },
+              { prompt: 'Savings accounts are best used for:', options: ['Emergency funds and short-term goals (1–3 years away)', 'Long-term retirement savings over 20–30 years', 'Daily spending and bill payment', 'Investing in diversified stock portfolios'], correct: 0, explanation: 'For money needed within a few years, a savings account is ideal: safe, liquid, and earning some return. For long-term goals, invest instead.' },
             ],
           },
           {
             id: 'u1-4-l4', title: 'Simple Interest', centsReward: 10,
             questions: [
-              { prompt: 'Simple interest is calculated using the formula:', options: ['Interest = Principal × Rate × Time', 'Interest = Principal × (1 + Rate)^Time', 'Interest = Rate × Time only', 'Interest = Principal ÷ Rate × Time'], correct: 0, explanation: 'Simple interest is straightforward - multiply the original principal by the annual rate and the number of years.' },
+              { prompt: 'Simple interest is calculated using the formula:', options: ['Interest = Principal × Rate × Time', 'Interest = Principal × (1 + Rate)^Time', 'Interest = Rate × Time only', 'Interest = Principal ÷ Rate × Time'], correct: 0, explanation: 'Simple interest is straightforward: multiply the original principal by the annual rate and the number of years.' },
               { prompt: '$1,000 at 5% simple interest for 3 years earns:', options: ['$150', '$157.63', '$50', '$300'], correct: 0, explanation: '$1,000 × 0.05 × 3 = $150. Total balance = $1,150.' },
-              { prompt: 'Simple interest differs from compound interest because:', options: ['It is calculated only on the original principal, not on accumulated interest', 'It earns more money over time than compound interest', 'Banks are required by law to use simple interest only on savings accounts', 'Simple interest rates are always higher than compound rates'], correct: 0, explanation: 'With simple interest, interest never earns interest - the calculation always uses the original principal amount.' },
+              { prompt: 'Simple interest differs from compound interest because:', options: ['It is calculated only on the original principal, not on accumulated interest', 'It earns more money over time than compound interest', 'Banks are required by law to use simple interest only on savings accounts', 'Simple interest rates are always higher than compound rates'], correct: 0, explanation: 'With simple interest, interest never earns interest, as the calculation always uses the original principal amount.' },
               { prompt: '$2,000 at 6% simple interest for 5 years. Total interest earned:', options: ['$600', '$676.45', '$300', '$1,200'], correct: 0, explanation: '$2,000 × 0.06 × 5 = $600. Simple interest over 5 years is exactly 5 times the first year\'s interest.' },
-              { prompt: 'Simple interest is most commonly used for:', options: ['Short-term loans and auto loans', 'Long-term retirement investments', 'Savings accounts and CDs', 'Mortgage calculations'], correct: 0, explanation: 'Many auto loans and personal loans use simple interest - your monthly payment reduces principal, and interest is calculated on the remaining balance.' },
-              { prompt: 'Which situation earns MORE total interest: simple or compound, over a long period?', options: ['Compound interest earns more because interest earns interest on itself over time', 'Simple interest earns more since the rate is applied to the full original amount always', 'They always produce identical results over any time period', 'Simple interest earns more in the first year; compound earns more after year 10'], correct: 0, explanation: 'Compound interest snowballs - the longer the time period, the larger the gap between compound and simple interest earnings.' },
+              { prompt: 'Simple interest is most commonly used for:', options: ['Short-term loans and auto loans', 'Long-term retirement investments', 'Savings accounts and CDs', 'Mortgage calculations'], correct: 0, explanation: 'Many auto loans and personal loans use simple interest, where your monthly payment reduces principal and interest is calculated on the remaining balance.' },
+              { prompt: 'Which situation earns MORE total interest: simple or compound, over a long period?', options: ['Compound interest earns more because interest earns interest on itself over time', 'Simple interest earns more since the rate is applied to the full original amount always', 'They always produce identical results over any time period', 'Simple interest earns more in the first year; compound earns more after year 10'], correct: 0, explanation: 'Compound interest snowballs: the longer the time period, the larger the gap between compound and simple interest earnings.' },
             ],
           },
           {
             id: 'u1-4-l5', title: 'Compound Interest', centsReward: 10,
             questions: [
-              { prompt: 'Compound interest means:', options: ['You earn interest on both your original principal AND previously earned interest', 'Interest is added to your account only once at the end of the year', 'The interest rate changes (compounds) higher over time', 'You pay interest on every individual purchase made with credit'], correct: 0, explanation: 'Compounding is the snowball effect - interest earns interest, which earns more interest, accelerating growth exponentially.' },
+              { prompt: 'Compound interest means:', options: ['You earn interest on both your original principal AND previously earned interest', 'Interest is added to your account only once at the end of the year', 'The interest rate changes (compounds) higher over time', 'You pay interest on every individual purchase made with credit'], correct: 0, explanation: 'Compounding is the snowball effect: interest earns interest, which earns more interest, accelerating growth exponentially.' },
               { prompt: '$1,000 at 7% compounded annually for 10 years grows to approximately:', options: ['$1,967', '$1,700', '$1,000', '$2,500'], correct: 0, explanation: '$1,000 × 1.07^10 = $1,967. The Rule of 72 predicts this: 72 ÷ 7 = ~10 years to double.' },
               { prompt: 'The "Rule of 72" tells you:', options: ['How many years it takes to double your money: divide 72 by the annual return', 'The maximum safe withdrawal rate in retirement', 'The percentage of income that should go to savings', 'The minimum credit score needed for a mortgage'], correct: 0, explanation: '72 ÷ interest rate = years to double. At 8%: 72 ÷ 8 = 9 years to double your investment.' },
-              { prompt: 'Why does starting to invest at 22 vs. 32 make such a dramatic difference?', options: ['10 extra years of compounding can more than double the final amount', 'Tax advantages only apply to investors under 30', 'Investment returns are guaranteed to be higher for younger investors', 'Brokerages charge lower fees to younger account holders'], correct: 0, explanation: 'Compound interest is exponential - the last few years of a long investment horizon produce enormous growth. Starting 10 years earlier adds those biggest-growth final years.' },
-              { prompt: 'Compound interest works AGAINST you when:', options: ['You carry a balance on a high-interest credit card', 'Your savings account has a high APY', 'You invest in dividend-reinvesting index funds', 'Your employer matches 401(k) contributions'], correct: 0, explanation: 'Credit card interest compounds - typically daily - turning $1,000 in debt at 24% APR into a snowballing problem if unpaid.' },
+              { prompt: 'Why does starting to invest at 22 vs. 32 make such a dramatic difference?', options: ['10 extra years of compounding can more than double the final amount', 'Tax advantages only apply to investors under 30', 'Investment returns are guaranteed to be higher for younger investors', 'Brokerages charge lower fees to younger account holders'], correct: 0, explanation: 'Compound interest is exponential, and the last few years of a long investment horizon produce enormous growth. Starting 10 years earlier adds those biggest-growth final years.' },
+              { prompt: 'Compound interest works AGAINST you when:', options: ['You carry a balance on a high-interest credit card', 'Your savings account has a high APY', 'You invest in dividend-reinvesting index funds', 'Your employer matches 401(k) contributions'], correct: 0, explanation: 'Credit card interest compounds, typically daily, turning $1,000 in debt at 24% APR into a snowballing problem if unpaid.' },
               { prompt: 'The frequency of compounding affects growth. Which compounds the most?', options: ['Daily compounding', 'Monthly compounding', 'Quarterly compounding', 'Annual compounding'], correct: 0, explanation: 'More frequent compounding = more interest earned on interest. Daily > monthly > quarterly > annually, though the difference is small at modest rates.' },
             ],
           },
           {
             id: 'u1-4-l6', title: 'Saving Goals', centsReward: 10,
             questions: [
-              { prompt: 'A specific saving goal is better than a vague one because:', options: ['A concrete target with a deadline lets you calculate exactly how much to save monthly', 'Banks offer higher interest rates to customers with named savings goals', 'Vague goals are taxed at a higher rate than specific ones', 'Financial advisors charge less when you have defined goals'], correct: 0, explanation: '"Save for retirement" is vague. "Save $500,000 by age 65 - I need $1,040/month invested at 7%" is actionable.' },
-              { prompt: 'You want to save $3,600 for a vacation in 12 months. How much must you save per month?', options: ['$300/month', '$360/month', '$3,600/month', '$150/month'], correct: 0, explanation: '$3,600 ÷ 12 months = $300/month - straightforward goal-to-monthly savings conversion.' },
-              { prompt: 'Which is the best account type for a 2-year saving goal like a car down payment?', options: ['A high-yield savings account', 'A 401(k) retirement account', 'An investment account with 100% stock allocation', 'A checking account for easy access'], correct: 0, explanation: '2 years is too short to take investment risk - a HYSA earns solid interest while keeping your money safe and accessible.' },
+              { prompt: 'A specific saving goal is better than a vague one because:', options: ['A concrete target with a deadline lets you calculate exactly how much to save monthly', 'Banks offer higher interest rates to customers with named savings goals', 'Vague goals are taxed at a higher rate than specific ones', 'Financial advisors charge less when you have defined goals'], correct: 0, explanation: '"Save for retirement" is vague. "Save $500,000 by age 65, meaning I need $1,040/month invested at 7%" is actionable.' },
+              { prompt: 'You want to save $3,600 for a vacation in 12 months. How much must you save per month?', options: ['$300/month', '$360/month', '$3,600/month', '$150/month'], correct: 0, explanation: '$3,600 ÷ 12 months = $300/month, a straightforward goal-to-monthly savings conversion.' },
+              { prompt: 'Which is the best account type for a 2-year saving goal like a car down payment?', options: ['A high-yield savings account', 'A 401(k) retirement account', 'An investment account with 100% stock allocation', 'A checking account for easy access'], correct: 0, explanation: '2 years is too short to take investment risk, and a HYSA earns solid interest while keeping your money safe and accessible.' },
               { prompt: 'SMART saving goals should be:', options: ['Specific, Measurable, Achievable, Relevant, and Time-bound', 'Simple, Monthly, Averaged, Reviewed, and Tracked', 'Safe, Managed, Annual, Reported, and Transparent', 'Steady, Managed, Automatic, Reasonable, and Timely'], correct: 0, explanation: 'SMART goals are specific enough to track, achievable with current income, and tied to a deadline.' },
               { prompt: 'Which saving goal is written BEST as a SMART goal?', options: ['Save $10,000 for a house down payment within 24 months by setting aside $417/month', 'Save more money this year than last year', 'Eventually have a large savings account', 'Try to spend less and save more whenever possible'], correct: 0, explanation: 'The first option has all SMART elements: specific amount ($10k), measurement ($417/month), time-bound (24 months), and a clear purpose.' },
               { prompt: 'Having separate savings accounts for different goals (emergency, vacation, car) helps because:', options: ['You can track progress toward each goal without mixing funds', 'Each account earns a different guaranteed interest rate by law', 'Banks waive fees when you have multiple savings accounts', 'It reduces your taxable income by distributing savings across accounts'], correct: 0, explanation: 'Separate "buckets" for each goal prevent you from accidentally using vacation savings for car repairs and vice versa.' },
@@ -872,23 +872,23 @@ export const levels = [
           {
             id: 'u1-4-l7', title: 'Pay Yourself First', centsReward: 10,
             questions: [
-              { prompt: '"Pay yourself first" means:', options: ['Saving a portion of each paycheck before spending on anything else', 'Receiving your paycheck before your employer pays other bills', 'Spending on personal enjoyment before paying bills', 'Earning income from your own business before spending on employees'], correct: 0, explanation: 'The strategy: automatically save a portion immediately when you are paid - before rent, food, or entertainment.' },
-              { prompt: 'Why is paying yourself first more effective than saving what is left over at month-end?', options: ['Most people spend everything available and have nothing left to save at month-end', 'Savings transferred first earn a special bonus interest rate', 'The government offers a tax credit only for first-payment savings', 'Banks process first-payment savings faster than end-of-month transfers'], correct: 0, explanation: 'Lifestyle naturally expands to fill available money - if you wait to save what is left, there is rarely anything left.' },
-              { prompt: 'The best way to implement "pay yourself first" is to:', options: ['Automate a savings transfer on the same day your paycheck arrives', 'Manually move money to savings whenever you remember during the month', 'Set a savings goal and review it every quarter', 'Save only during months when you earn more than you planned to spend'], correct: 0, explanation: 'Automation removes the willpower requirement - the money moves before you can decide to spend it.' },
-              { prompt: 'Your take-home pay is $3,000/month. Using pay-yourself-first at 20%, you immediately save:', options: ['$600, then budget the remaining $2,400', '$600, plus whatever is left at month end', 'All $3,000 and only spend from last month\'s savings', '$300, keeping the rest of the 20% for investments later'], correct: 0, explanation: '$3,000 × 20% = $600 moved to savings immediately - you then live on and budget with $2,400.' },
-              { prompt: 'The best destination for pay-yourself-first savings depends on:', options: ['What the money is for - emergency fund, retirement, or a goal', 'How old you are only', 'The day of the week your paycheck arrives', 'Your credit score at the time of transfer'], correct: 0, explanation: 'Emergency fund savings go to a HYSA. Retirement savings go to an IRA or 401(k). Goal savings go to a dedicated savings account.' },
-              { prompt: 'David earns $4,000/month and saves $0 at month end. Maria earns $4,000 and auto-transfers $800 to savings on payday. After 1 year:', options: ['Maria has $9,600 saved; David has $0', 'Both have the same - income determines savings, not timing', 'Maria has $800 saved; David has much more since he spent more freely', 'David saves more since he reviews spending each month consciously'], correct: 0, explanation: '12 months × $800 = $9,600. David\'s good intentions never translate to actual savings - automation wins every time.' },
+              { prompt: '"Pay yourself first" means:', options: ['Saving a portion of each paycheck before spending on anything else', 'Receiving your paycheck before your employer pays other bills', 'Spending on personal enjoyment before paying bills', 'Earning income from your own business before spending on employees'], correct: 0, explanation: 'The strategy: automatically save a portion immediately when you are paid, before rent, food, or entertainment.' },
+              { prompt: 'Why is paying yourself first more effective than saving what is left over at month-end?', options: ['Most people spend everything available and have nothing left to save at month-end', 'Savings transferred first earn a special bonus interest rate', 'The government offers a tax credit only for first-payment savings', 'Banks process first-payment savings faster than end-of-month transfers'], correct: 0, explanation: 'Lifestyle naturally expands to fill available money, so if you wait to save what is left, there is rarely anything left.' },
+              { prompt: 'The best way to implement "pay yourself first" is to:', options: ['Automate a savings transfer on the same day your paycheck arrives', 'Manually move money to savings whenever you remember during the month', 'Set a savings goal and review it every quarter', 'Save only during months when you earn more than you planned to spend'], correct: 0, explanation: 'Automation removes the willpower requirement, since the money moves before you can decide to spend it.' },
+              { prompt: 'Your take-home pay is $3,000/month. Using pay-yourself-first at 20%, you immediately save:', options: ['$600, then budget the remaining $2,400', '$600, plus whatever is left at month end', 'All $3,000 and only spend from last month\'s savings', '$300, keeping the rest of the 20% for investments later'], correct: 0, explanation: '$3,000 × 20% = $600 moved to savings immediately, and you then live on and budget with $2,400.' },
+              { prompt: 'The best destination for pay-yourself-first savings depends on:', options: ['What the money is for: emergency fund, retirement, or a goal', 'How old you are only', 'The day of the week your paycheck arrives', 'Your credit score at the time of transfer'], correct: 0, explanation: 'Emergency fund savings go to a HYSA. Retirement savings go to an IRA or 401(k). Goal savings go to a dedicated savings account.' },
+              { prompt: 'David earns $4,000/month and saves $0 at month end. Maria earns $4,000 and auto-transfers $800 to savings on payday. After 1 year:', options: ['Maria has $9,600 saved; David has $0', 'Both have the same amount, since income determines savings not timing', 'Maria has $800 saved; David has much more since he spent more freely', 'David saves more since he reviews spending each month consciously'], correct: 0, explanation: '12 months × $800 = $9,600. David\'s good intentions never translate to actual savings, so automation wins every time.' },
             ],
           },
           {
             id: 'u1-4-l8', title: 'Inflation vs Savings', centsReward: 10,
             questions: [
-              { prompt: 'If inflation is 3% and your savings account earns 1% APY, your real return is:', options: ['Negative 2% - purchasing power is declining', 'Positive 1% - any interest beats nothing', 'Zero - they cancel each other out', 'Positive 4% - you add both rates'], correct: 0, explanation: 'Real return = nominal return − inflation rate. 1% − 3% = −2%. You have more dollars but they buy less.' },
+              { prompt: 'If inflation is 3% and your savings account earns 1% APY, your real return is:', options: ['Negative 2%, meaning purchasing power is declining', 'Positive 1%, since any interest beats nothing', 'Zero, since they cancel each other out', 'Positive 4%, since you add both rates'], correct: 0, explanation: 'Real return = nominal return − inflation rate. 1% − 3% = −2%. You have more dollars but they buy less.' },
               { prompt: 'Inflation erodes the value of savings because:', options: ['Prices rise over time, so the same dollar amount buys fewer goods and services', 'Banks reduce interest rates automatically when inflation rises', 'The government taxes savings at a higher rate during inflationary periods', 'High inflation causes banks to close savings accounts'], correct: 0, explanation: 'A dollar saved today that earns no interest has less real purchasing power in 10 years if prices have risen 30%.' },
-              { prompt: 'The best defense against inflation eroding your savings is:', options: ['Investing in assets that historically grow faster than inflation (stocks, real estate)', 'Keeping all money in cash to avoid bank fees', 'Moving all savings to checking accounts during inflationary periods', 'Spending savings faster before inflation can erode them'], correct: 0, explanation: 'The S&P 500 has historically returned ~10% annually - well above the 3% long-term inflation average - making investing crucial for long-term purchasing power.' },
-              { prompt: '$10,000 kept in cash for 10 years with 3% annual inflation has real purchasing power of approximately:', options: ['~$7,400 - it lost about 26% of its value in real terms', '$10,000 - cash always retains its face value', '$13,000 - inflation adds value to cash holdings', '$5,000 - inflation halves cash every decade'], correct: 0, explanation: '$10,000 ÷ 1.03^10 ≈ $7,441. The same dollar amount buys roughly 26% less after 10 years of 3% inflation.' },
-              { prompt: 'Which savings vehicle best protects against inflation over a 20-year horizon?', options: ['A diversified investment portfolio with stocks and bonds', 'A traditional savings account at a big bank earning 0.01%', 'A 2-year CD locked in before rates rise', 'Keeping the money in a fireproof safe at home'], correct: 0, explanation: 'Stocks have consistently outpaced inflation over 20+ year periods - they are the primary tool for preserving and growing real purchasing power.' },
-              { prompt: 'I-Bonds (Inflation-Protected U.S. Savings Bonds) are unique because:', options: ['Their interest rate adjusts with inflation, guaranteeing real return above zero', 'They are guaranteed to double in value every 3 years regardless of inflation', 'They are the only investment that earns 10% annually in retirement accounts', 'Banks pay a bonus for holding I-Bonds longer than 5 years'], correct: 0, explanation: 'I-Bonds earn a composite rate: a fixed rate + inflation adjustment. When inflation is high, I-Bond rates rise - perfect for emergency fund money.' },
+              { prompt: 'The best defense against inflation eroding your savings is:', options: ['Investing in assets that historically grow faster than inflation (stocks, real estate)', 'Keeping all money in cash to avoid bank fees', 'Moving all savings to checking accounts during inflationary periods', 'Spending savings faster before inflation can erode them'], correct: 0, explanation: 'The S&P 500 has historically returned ~10% annually, well above the 3% long-term inflation average, making investing crucial for long-term purchasing power.' },
+              { prompt: '$10,000 kept in cash for 10 years with 3% annual inflation has real purchasing power of approximately:', options: ['~$7,400, having lost about 26% of its value in real terms', '$10,000, since cash always retains its face value', '$13,000, since inflation adds value to cash holdings', '$5,000, since inflation halves cash every decade'], correct: 0, explanation: '$10,000 ÷ 1.03^10 ≈ $7,441. The same dollar amount buys roughly 26% less after 10 years of 3% inflation.' },
+              { prompt: 'Which savings vehicle best protects against inflation over a 20-year horizon?', options: ['A diversified investment portfolio with stocks and bonds', 'A traditional savings account at a big bank earning 0.01%', 'A 2-year CD locked in before rates rise', 'Keeping the money in a fireproof safe at home'], correct: 0, explanation: 'Stocks have consistently outpaced inflation over 20+ year periods and are the primary tool for preserving and growing real purchasing power.' },
+              { prompt: 'I-Bonds (Inflation-Protected U.S. Savings Bonds) are unique because:', options: ['Their interest rate adjusts with inflation, guaranteeing real return above zero', 'They are guaranteed to double in value every 3 years regardless of inflation', 'They are the only investment that earns 10% annually in retirement accounts', 'Banks pay a bonus for holding I-Bonds longer than 5 years'], correct: 0, explanation: 'I-Bonds earn a composite rate: a fixed rate + inflation adjustment. When inflation is high, I-Bond rates rise, making them perfect for emergency fund money.' },
             ],
           },
         ],
@@ -914,89 +914,89 @@ export const levels = [
           {
             id: 'u2-1-l1', title: 'Checking Accounts', centsReward: 10,
             questions: [
-              { prompt: 'A checking account is primarily designed for:', options: ['Everyday spending - frequent deposits and withdrawals', 'Maximizing interest earnings on long-term savings', 'Investing in mutual funds and ETFs through your bank', 'Storing money for at least 6 months without touching it'], correct: 0, explanation: 'Checking accounts are transactional - debit card purchases, bill pay, and direct deposits flow through them daily.' },
+              { prompt: 'A checking account is primarily designed for:', options: ['Everyday spending with frequent deposits and withdrawals', 'Maximizing interest earnings on long-term savings', 'Investing in mutual funds and ETFs through your bank', 'Storing money for at least 6 months without touching it'], correct: 0, explanation: 'Checking accounts are transactional: debit card purchases, bill pay, and direct deposits flow through them daily.' },
               { prompt: 'Which feature do checking accounts typically offer that savings accounts do not?', options: ['A debit card linked directly to the account', 'Federal deposit insurance (FDIC coverage)', 'Interest earnings on the balance', 'Online and mobile banking access'], correct: 0, explanation: 'Debit cards tied to checking accounts let you spend directly from your account anywhere cards are accepted.' },
-              { prompt: 'An overdraft occurs when:', options: ['You spend more than the current balance in your checking account', 'Your savings account earns less interest than expected', 'Your bank closes your account without notice', 'You deposit a check that bounces from someone else\'s bank'], correct: 0, explanation: 'Overdrafts happen when withdrawals exceed your available balance - banks may cover the transaction but charge a $25–$35 fee.' },
-              { prompt: 'Overdraft protection works by:', options: ['Automatically transferring from savings or a linked account to cover a negative balance', 'Permanently increasing your checking account limit each year', 'Waiving all fees whenever you go below $0', 'The government covering the difference if you run out of money'], correct: 0, explanation: 'Overdraft protection prevents declined transactions but may charge a transfer fee - better than a $35 overdraft fee per incident.' },
-              { prompt: 'What is a monthly maintenance fee on a checking account?', options: ['A recurring charge from the bank that can usually be waived with a minimum balance or direct deposit', 'A government fee for regulating the banking system', 'A fee charged every time you use a debit card', 'A penalty for depositing cash at a bank branch'], correct: 0, explanation: 'Many banks waive maintenance fees if you maintain a minimum balance or set up direct deposit - read the account terms carefully.' },
+              { prompt: 'An overdraft occurs when:', options: ['You spend more than the current balance in your checking account', 'Your savings account earns less interest than expected', 'Your bank closes your account without notice', 'You deposit a check that bounces from someone else\'s bank'], correct: 0, explanation: 'Overdrafts happen when withdrawals exceed your available balance; banks may cover the transaction but charge a $25–$35 fee.' },
+              { prompt: 'Overdraft protection works by:', options: ['Automatically transferring from savings or a linked account to cover a negative balance', 'Permanently increasing your checking account limit each year', 'Waiving all fees whenever you go below $0', 'The government covering the difference if you run out of money'], correct: 0, explanation: 'Overdraft protection prevents declined transactions but may charge a transfer fee, which is still better than a $35 overdraft fee per incident.' },
+              { prompt: 'What is a monthly maintenance fee on a checking account?', options: ['A recurring charge from the bank that can usually be waived with a minimum balance or direct deposit', 'A government fee for regulating the banking system', 'A fee charged every time you use a debit card', 'A penalty for depositing cash at a bank branch'], correct: 0, explanation: 'Many banks waive maintenance fees if you maintain a minimum balance or set up direct deposit; read the account terms carefully.' },
               { prompt: 'Which type of checking account is best for someone who wants to avoid all fees?', options: ['A free online checking account with no minimum balance requirement', 'A premium account at a large national bank', 'A business checking account with high transaction limits', 'A joint checking account with a family member'], correct: 0, explanation: 'Many online banks and credit unions offer truly free checking with no monthly fees, no minimums, and reimbursed ATM fees.' },
             ],
           },
           {
             id: 'u2-1-l2', title: 'Savings Accounts at Banks', centsReward: 10,
             questions: [
-              { prompt: 'A bank savings account differs from checking by:', options: ['Paying interest on your balance and being designed for money storage', 'Having higher fees and stricter withdrawal rules with no benefits', 'Allowing unlimited daily transactions without any restrictions', 'Requiring a minimum $5,000 deposit at all major banks'], correct: 0, explanation: 'Savings accounts earn interest on your balance - they reward you for not spending the money.' },
+              { prompt: 'A bank savings account differs from checking by:', options: ['Paying interest on your balance and being designed for money storage', 'Having higher fees and stricter withdrawal rules with no benefits', 'Allowing unlimited daily transactions without any restrictions', 'Requiring a minimum $5,000 deposit at all major banks'], correct: 0, explanation: 'Savings accounts earn interest on your balance and reward you for not spending the money.' },
               { prompt: 'Which savings account typically pays the highest interest rate?', options: ['A high-yield savings account (HYSA) at an online bank', 'A traditional savings account at a big national bank branch', 'A money market account at a credit union', 'A basic passbook savings account at a local community bank'], correct: 0, explanation: 'Online banks have lower overhead, allowing them to offer HYSAs with rates 10–20× higher than traditional banks.' },
               { prompt: 'The primary trade-off of a high-yield savings account vs. a checking account is:', options: ['Higher interest but potential withdrawal limits and no debit card', 'Lower fees but no FDIC insurance protection', 'Better customer service but restricted to online transactions only', 'Higher interest AND lower fees with no restrictions at all'], correct: 0, explanation: 'HYSAs offer superior returns but are designed for money you do not need instant debit card access to daily.' },
               { prompt: 'Which federal regulation historically limited savings account withdrawals to 6 per month?', options: ['Regulation D (suspended in 2020)', 'The FDIC Savings Control Act of 1981', 'Dodd-Frank financial reform', 'The Federal Reserve Savings Act'], correct: 0, explanation: 'Reg D imposed the 6-transaction limit. Though the Fed suspended the rule in 2020, many banks still limit withdrawals as a policy.' },
               { prompt: 'You deposit $3,000 into a savings account with 4% APY. After one year, your balance is approximately:', options: ['$3,120', '$3,400', '$3,000', '$3,012'], correct: 0, explanation: '$3,000 × 1.04 = $3,120. The account earns $120 in interest over 12 months.' },
-              { prompt: 'When is it better to use an investment account over a savings account?', options: ['For money you will not need for 5+ years and can afford to see fluctuate in value', 'For next month\'s rent payment', 'For emergency fund money you may need immediately', 'For money earmarked for a large purchase within 1 year'], correct: 0, explanation: 'Short-term money should stay safe in savings. Only invest money you can leave untouched for years - market downturns can temporarily reduce value.' },
+              { prompt: 'When is it better to use an investment account over a savings account?', options: ['For money you will not need for 5+ years and can afford to see fluctuate in value', 'For next month\'s rent payment', 'For emergency fund money you may need immediately', 'For money earmarked for a large purchase within 1 year'], correct: 0, explanation: 'Short-term money should stay safe in savings. Only invest money you can leave untouched for years, since market downturns can temporarily reduce value.' },
             ],
           },
           {
             id: 'u2-1-l3', title: 'Credit Unions', centsReward: 10,
             questions: [
               { prompt: 'The key structural difference between a credit union and a bank is:', options: ['Credit unions are member-owned nonprofits; banks are for-profit corporations', 'Credit unions are larger and more financially stable than banks', 'Banks pay higher interest on savings; credit unions offer lower rates', 'Credit unions only serve business clients; banks serve individuals'], correct: 0, explanation: 'When you join a credit union, you become a part-owner. Profits benefit members through lower rates and higher yields, not shareholders.' },
-              { prompt: 'Credit unions typically offer compared to big banks:', options: ['Lower loan rates, higher savings yields, and fewer fees', 'More branch locations and ATM machines nationally', 'Higher loan rates due to smaller size and less competition', 'Less deposit insurance and weaker regulatory oversight'], correct: 0, explanation: 'Being nonprofit allows credit unions to return profits to members - the financial products are often superior to for-profit bank equivalents.' },
-              { prompt: 'Credit union deposits are insured by:', options: ['NCUA (National Credit Union Administration) up to $250,000', 'FDIC, same as traditional banks', 'State governments up to $100,000 per account', 'Private insurance companies contracted by each credit union'], correct: 0, explanation: 'NCUA insurance is the credit union equivalent of FDIC - both protect deposits up to $250,000 per member per institution.' },
-              { prompt: 'To join a credit union, you typically need to:', options: ['Meet a membership requirement (employer, community, or association membership)', 'Have a credit score above 700', 'Deposit at least $10,000 to open your first account', 'Live within 1 mile of a branch location'], correct: 0, explanation: 'Credit unions serve defined communities - employees of a company, members of a union, residents of a geographic area, etc.' },
-              { prompt: 'For which financial product do credit unions typically offer the biggest advantage?', options: ['Auto loans - often 1–2% lower APR than commercial banks', 'Investment brokerage accounts with zero commissions', 'Premium credit cards with the highest rewards programs', 'International wire transfers with zero fees'], correct: 0, explanation: 'Credit union auto loan rates are consistently lower than bank rates - a 2% lower APR on a $25,000 loan saves over $1,300 in interest.' },
-              { prompt: 'A potential disadvantage of credit unions compared to big banks is:', options: ['Fewer ATMs, branch locations, and technology features', 'Higher loan interest rates due to nonprofit restrictions', 'No government deposit insurance for savings accounts', 'Mandatory annual fees for all member accounts'], correct: 0, explanation: 'Credit unions are smaller - fewer branches and sometimes less sophisticated mobile apps. Many have joined ATM networks to compensate.' },
+              { prompt: 'Credit unions typically offer compared to big banks:', options: ['Lower loan rates, higher savings yields, and fewer fees', 'More branch locations and ATM machines nationally', 'Higher loan rates due to smaller size and less competition', 'Less deposit insurance and weaker regulatory oversight'], correct: 0, explanation: 'Being nonprofit allows credit unions to return profits to members, so the financial products are often superior to for-profit bank equivalents.' },
+              { prompt: 'Credit union deposits are insured by:', options: ['NCUA (National Credit Union Administration) up to $250,000', 'FDIC, same as traditional banks', 'State governments up to $100,000 per account', 'Private insurance companies contracted by each credit union'], correct: 0, explanation: 'NCUA insurance is the credit union equivalent of FDIC, protecting deposits up to $250,000 per member per institution.' },
+              { prompt: 'To join a credit union, you typically need to:', options: ['Meet a membership requirement (employer, community, or association membership)', 'Have a credit score above 700', 'Deposit at least $10,000 to open your first account', 'Live within 1 mile of a branch location'], correct: 0, explanation: 'Credit unions serve defined communities such as employees of a company, members of a union, or residents of a geographic area.' },
+              { prompt: 'For which financial product do credit unions typically offer the biggest advantage?', options: ['Auto loans, often with 1–2% lower APR than commercial banks', 'Investment brokerage accounts with zero commissions', 'Premium credit cards with the highest rewards programs', 'International wire transfers with zero fees'], correct: 0, explanation: 'Credit union auto loan rates are consistently lower than bank rates - a 2% lower APR on a $25,000 loan saves over $1,300 in interest.' },
+              { prompt: 'A potential disadvantage of credit unions compared to big banks is:', options: ['Fewer ATMs, branch locations, and technology features', 'Higher loan interest rates due to nonprofit restrictions', 'No government deposit insurance for savings accounts', 'Mandatory annual fees for all member accounts'], correct: 0, explanation: 'Credit unions are smaller, with fewer branches and sometimes less sophisticated mobile apps. Many have joined ATM networks to compensate.' },
             ],
           },
           {
             id: 'u2-1-l4', title: 'Online Banks', centsReward: 10,
             questions: [
               { prompt: 'Online banks can offer higher savings rates than traditional banks primarily because:', options: ['They have no physical branch overhead, reducing operating costs significantly', 'They are not regulated by the FDIC and can take more financial risks', 'Online banks operate internationally and earn more on foreign investments', 'They charge customers extra fees that fund the higher savings rates'], correct: 0, explanation: 'No branches = no rent, utilities, or branch tellers. Online banks pass those savings to customers as higher APY and lower fees.' },
-              { prompt: 'Are deposits at FDIC-insured online banks safe?', options: ['Yes - FDIC coverage up to $250,000 per depositor applies regardless of whether the bank has branches', 'No - only physical bank branches qualify for FDIC insurance', 'Partially - online banks are insured up to $50,000 only', 'Only if you have held the account for at least 12 months'], correct: 0, explanation: 'FDIC insurance covers any FDIC-member bank regardless of online-only or physical presence. Check for the FDIC logo before depositing.' },
-              { prompt: 'Which is a real limitation of banking exclusively online?', options: ['Depositing cash requires mail or a partner ATM network since there are no tellers', 'Online banks charge monthly fees that traditional banks do not', 'Money at online banks is not accessible during a power outage', 'Online banks can only serve customers in large cities'], correct: 0, explanation: 'Cash deposits are the main inconvenience - most online banks solve this via partner ATM networks or mobile check deposit.' },
-              { prompt: 'For someone who regularly deposits cash from a tip-based job, which is better?', options: ['A traditional bank or credit union with physical branch access', 'An online-only bank for the higher interest rate', 'A prepaid debit card account', 'A brokerage account with sweep features'], correct: 0, explanation: 'Cash depositors need physical locations - online banks cannot accept cash deposits directly, making traditional banking necessary for cash-heavy earners.' },
+              { prompt: 'Are deposits at FDIC-insured online banks safe?', options: ['Yes, FDIC coverage up to $250,000 per depositor applies regardless of whether the bank has branches', 'No, only physical bank branches qualify for FDIC insurance', 'Partially, since online banks are insured up to $50,000 only', 'Only if you have held the account for at least 12 months'], correct: 0, explanation: 'FDIC insurance covers any FDIC-member bank regardless of online-only or physical presence. Check for the FDIC logo before depositing.' },
+              { prompt: 'Which is a real limitation of banking exclusively online?', options: ['Depositing cash requires mail or a partner ATM network because there are no tellers', 'Online banks charge monthly fees that traditional banks do not', 'Money at online banks is not accessible during a power outage', 'Online banks can only serve customers in large cities'], correct: 0, explanation: 'Cash deposits are the main inconvenience; most online banks solve this via partner ATM networks or mobile check deposit.' },
+              { prompt: 'For someone who regularly deposits cash from a tip-based job, which is better?', options: ['A traditional bank or credit union with physical branch access', 'An online-only bank for the higher interest rate', 'A prepaid debit card account', 'A brokerage account with sweep features'], correct: 0, explanation: 'Cash depositors need physical locations; online banks cannot accept cash deposits directly, making traditional banking necessary for cash-heavy earners.' },
               { prompt: 'The typical savings APY at an online bank (as of 2024–2025) compared to a big traditional bank is:', options: ['4–5% online vs. 0.01–0.06% at big traditional banks - a 100× difference', 'About the same - federal law requires equal rates', 'Online banks pay 0.5% more than traditional banks on average', 'Traditional banks pay more since they have more deposits to lend'], correct: 0, explanation: 'The rate difference between online and traditional banks is one of the largest, most exploitable inefficiencies in personal finance.' },
-              { prompt: 'What feature makes online banking most convenient for everyday banking?', options: ['24/7 mobile app access, instant transfers, and mobile check deposit', 'In-person relationship managers available at all hours', 'Physical debit cards that can only be used in-network', 'Monthly paper statements mailed to your home address'], correct: 0, explanation: 'Mobile banking apps let you deposit checks, transfer money, pay bills, and monitor accounts from anywhere - true 24/7 banking.' },
+              { prompt: 'What feature makes online banking most convenient for everyday banking?', options: ['24/7 mobile app access, instant transfers, and mobile check deposit', 'In-person relationship managers available at all hours', 'Physical debit cards that can only be used in-network', 'Monthly paper statements mailed to your home address'], correct: 0, explanation: 'Mobile banking apps let you deposit checks, transfer money, pay bills, and monitor accounts from anywhere, enabling true 24/7 banking.' },
             ],
           },
           {
             id: 'u2-1-l5', title: 'How Banks Make Money', centsReward: 10,
             questions: [
-              { prompt: 'Banks primarily make money by:', options: ['Charging borrowers more interest than they pay depositors - the "interest rate spread"', 'Investing 100% of deposits in stock market index funds', 'Collecting overdraft fees as their primary revenue source', 'Selling customer financial data to marketing companies legally'], correct: 0, explanation: 'The spread model: borrow from depositors at 2%, lend to borrowers at 7%, pocket the 5% difference - scaled to billions of dollars.' },
-              { prompt: 'When you deposit $1,000 in a bank, the bank:', options: ['Lends most of it out and keeps a small reserve - called fractional reserve banking', 'Stores your exact $1,000 in a vault until you withdraw it', 'Invests it in Treasury bonds exclusively', 'Holds it in a separate account legally reserved only for you'], correct: 0, explanation: 'Banks operate on fractional reserve banking - keeping a small reserve (8-10%) and lending the rest out to earn interest.' },
-              { prompt: 'A bank pays depositors 1.5% APY and charges borrowers 6.5% on auto loans. The spread is:', options: ['5% - the bank\'s core profit margin on that product pairing', '8% - combining both rates', '3.25% - averaging the two rates', '1% - just the difference minus operational costs'], correct: 0, explanation: 'The spread = lending rate − deposit rate = 6.5% − 1.5% = 5%. On $100 million in loans, this generates $5 million in net interest income.' },
-              { prompt: 'Which is a fee-based revenue source banks use in addition to interest income?', options: ['Monthly maintenance fees, overdraft fees, wire transfer fees, and ATM fees', 'Sales tax collected on all purchase transactions', 'Income taxes paid directly to the government by customers', 'Insurance premiums on deposit accounts above $100,000'], correct: 0, explanation: 'Fee income supplements interest income - overdraft fees alone generate billions annually for major U.S. banks.' },
-              { prompt: 'Why do banks offer lower savings rates during low interest rate environments?', options: ['When the Fed funds rate is low, banks can borrow cheaply, reducing competition for deposits', 'Low rates mean the economy is weak and banks are legally barred from paying more', 'Customer deposits are worth less to banks when real estate values are declining', 'Banks pass their operating cost increases to depositors through lower rates'], correct: 0, explanation: 'When the Fed funds rate is near zero, banks can access cheap funding from the Fed directly - they do not need to compete aggressively for deposits.' },
-              { prompt: 'Too-big-to-fail banks receive an implicit government subsidy because:', options: ['Markets assume the government will bail them out, allowing them to borrow at lower rates', 'The government directly pays $10 billion annually to the largest 10 banks', 'Large banks pay zero federal income tax under current law', 'Their savings rates are guaranteed by the Treasury Department'], correct: 0, explanation: 'After 2008, markets priced in a government backstop for systemically important banks - lowering their borrowing costs compared to smaller competitors.' },
+              { prompt: 'Banks primarily make money by:', options: ['Charging borrowers more interest than they pay depositors, known as the "interest rate spread"', 'Investing 100% of deposits in stock market index funds', 'Collecting overdraft fees as their primary revenue source', 'Selling customer financial data to marketing companies legally'], correct: 0, explanation: 'The spread model: borrow from depositors at 2%, lend to borrowers at 7%, pocket the 5% difference, scaled to billions of dollars.' },
+              { prompt: 'When you deposit $1,000 in a bank, the bank:', options: ['Lends most of it out and keeps a small reserve, a practice called fractional reserve banking', 'Stores your exact $1,000 in a vault until you withdraw it', 'Invests it in Treasury bonds exclusively', 'Holds it in a separate account legally reserved only for you'], correct: 0, explanation: 'Banks operate on fractional reserve banking, keeping a small reserve (8-10%) and lending the rest out to earn interest.' },
+              { prompt: 'A bank pays depositors 1.5% APY and charges borrowers 6.5% on auto loans. The spread is:', options: ['5%, which is the bank\'s core profit margin on that product pairing', '8%, by combining both rates', '3.25%, averaging the two rates', '1%, representing just the difference minus operational costs'], correct: 0, explanation: 'The spread = lending rate − deposit rate = 6.5% − 1.5% = 5%. On $100 million in loans, this generates $5 million in net interest income.' },
+              { prompt: 'Which is a fee-based revenue source banks use in addition to interest income?', options: ['Monthly maintenance fees, overdraft fees, wire transfer fees, and ATM fees', 'Sales tax collected on all purchase transactions', 'Income taxes paid directly to the government by customers', 'Insurance premiums on deposit accounts above $100,000'], correct: 0, explanation: 'Fee income supplements interest income, and overdraft fees alone generate billions annually for major U.S. banks.' },
+              { prompt: 'Why do banks offer lower savings rates during low interest rate environments?', options: ['When the Fed funds rate is low, banks can borrow cheaply, reducing competition for deposits', 'Low rates mean the economy is weak and banks are legally barred from paying more', 'Customer deposits are worth less to banks when real estate values are declining', 'Banks pass their operating cost increases to depositors through lower rates'], correct: 0, explanation: 'When the Fed funds rate is near zero, banks can access cheap funding from the Fed directly, so they do not need to compete aggressively for deposits.' },
+              { prompt: 'Too-big-to-fail banks receive an implicit government subsidy because:', options: ['Markets assume the government will bail them out, allowing them to borrow at lower rates', 'The government directly pays $10 billion annually to the largest 10 banks', 'Large banks pay zero federal income tax under current law', 'Their savings rates are guaranteed by the Treasury Department'], correct: 0, explanation: 'After 2008, markets priced in a government backstop for systemically important banks, lowering their borrowing costs compared to smaller competitors.' },
             ],
           },
           {
             id: 'u2-1-l6', title: 'FDIC Insurance', centsReward: 10,
             questions: [
-              { prompt: 'FDIC insurance protects:', options: ['Bank deposits up to $250,000 per depositor per bank if the bank fails', 'All investment accounts including stocks and bonds at any financial institution', 'Credit card balances in case of fraud or bank closure', 'Cash stolen from your home or car'], correct: 0, explanation: 'FDIC covers deposit accounts (checking, savings, CDs, money market accounts) at member banks - not investments.' },
-              { prompt: 'Which account type is NOT covered by FDIC insurance?', options: ['A brokerage account holding stocks and ETFs', 'A basic checking account', 'A 12-month certificate of deposit (CD)', 'A high-yield savings account at an FDIC-insured online bank'], correct: 0, explanation: 'FDIC does not cover investment products - stocks, bonds, mutual funds, and ETFs can lose value and are not deposit accounts.' },
-              { prompt: 'If you have $400,000 at one FDIC-insured bank in your name only, how much is insured?', options: ['$250,000 - the $150,000 excess is uninsured', '$400,000 - the full amount is always covered', '$500,000 - joint accounts get double coverage', '$0 - large deposits over $100,000 are not insured'], correct: 0, explanation: 'The $250,000 limit is per depositor per bank per account ownership category. The excess $150,000 is at risk.' },
-              { prompt: 'How can you insure more than $250,000 at a single institution?', options: ['Use different ownership categories - individual accounts, joint accounts, and retirement accounts each get $250,000 coverage', 'Open multiple checking accounts under different account numbers', 'Request a special "large depositor" FDIC policy for an additional fee', 'Depositing above $250,000 automatically qualifies for unlimited FDIC coverage'], correct: 0, explanation: 'Joint accounts, individual accounts, and retirement accounts (IRAs) are separate ownership categories - each gets $250,000 in coverage.' },
-              { prompt: 'If a bank fails, FDIC-insured depositors typically receive their money:', options: ['Within days - the FDIC has a strong track record of rapid payment', 'After a 6–12 month review process', 'In 5 annual installments over 5 years', 'Only after FDIC sues the failed bank\'s executives to recover funds'], correct: 0, explanation: 'The FDIC has resolved every bank failure since 1933 without any insured depositor losing a penny - often funding access within 1–2 business days.' },
-              { prompt: 'Which is the credit union equivalent of FDIC insurance?', options: ['NCUA (National Credit Union Administration) - same $250,000 coverage limit', 'SIPC (Securities Investor Protection Corporation)', 'The Federal Reserve\'s credit union backstop program', 'State-level insurance varying by state'], correct: 0, explanation: 'NCUA provides the same federal deposit guarantee for credit union members that FDIC provides for bank depositors.' },
+              { prompt: 'FDIC insurance protects:', options: ['Bank deposits up to $250,000 per depositor per bank if the bank fails', 'All investment accounts including stocks and bonds at any financial institution', 'Credit card balances in case of fraud or bank closure', 'Cash stolen from your home or car'], correct: 0, explanation: 'FDIC covers deposit accounts (checking, savings, CDs, money market accounts) at member banks, not investment accounts.' },
+              { prompt: 'Which account type is NOT covered by FDIC insurance?', options: ['A brokerage account holding stocks and ETFs', 'A basic checking account', 'A 12-month certificate of deposit (CD)', 'A high-yield savings account at an FDIC-insured online bank'], correct: 0, explanation: 'FDIC does not cover investment products; stocks, bonds, mutual funds, and ETFs can lose value and are not deposit accounts.' },
+              { prompt: 'If you have $400,000 at one FDIC-insured bank in your name only, how much is insured?', options: ['$250,000, since the $150,000 excess is uninsured', '$400,000, since the full amount is always covered', '$500,000, since joint accounts get double coverage', '$0, since large deposits over $100,000 are not insured'], correct: 0, explanation: 'The $250,000 limit is per depositor per bank per account ownership category. The excess $150,000 is at risk.' },
+              { prompt: 'How can you insure more than $250,000 at a single institution?', options: ['Use different ownership categories: individual accounts, joint accounts, and retirement accounts each get $250,000 coverage', 'Open multiple checking accounts under different account numbers', 'Request a special "large depositor" FDIC policy for an additional fee', 'Depositing above $250,000 automatically qualifies for unlimited FDIC coverage'], correct: 0, explanation: 'Joint accounts, individual accounts, and retirement accounts (IRAs) are separate ownership categories, each getting $250,000 in coverage.' },
+              { prompt: 'If a bank fails, FDIC-insured depositors typically receive their money:', options: ['Within days, as the FDIC has a strong track record of rapid payment', 'After a 6–12 month review process', 'In 5 annual installments over 5 years', 'Only after FDIC sues the failed bank\'s executives to recover funds'], correct: 0, explanation: 'The FDIC has resolved every bank failure since 1933 without any insured depositor losing a penny - often funding access within 1–2 business days.' },
+              { prompt: 'Which is the credit union equivalent of FDIC insurance?', options: ['NCUA (National Credit Union Administration) with the same $250,000 coverage limit', 'SIPC (Securities Investor Protection Corporation)', 'The Federal Reserve\'s credit union backstop program', 'State-level insurance varying by state'], correct: 0, explanation: 'NCUA provides the same federal deposit guarantee for credit union members that FDIC provides for bank depositors.' },
             ],
           },
           {
             id: 'u2-1-l7', title: 'Reading Bank Statements', centsReward: 10,
             questions: [
               { prompt: 'A bank statement shows:', options: ['All transactions, beginning and ending balances, and fees for a given period', 'Your credit score and debt-to-income ratio', 'Future projected balances based on spending habits', 'Only deposits made during the statement period'], correct: 0, explanation: 'Monthly bank statements are your official record of every debit, credit, transfer, and fee that occurred in your account.' },
-              { prompt: 'Which line on a bank statement shows money coming into your account?', options: ['Credits or deposits - positive amounts added to your balance', 'Debits - negative amounts removed from your balance', 'The "available balance" line at the account summary', 'The "interest earned" line at the bottom of the statement'], correct: 0, explanation: 'Credits increase your balance (deposits, refunds, interest). Debits decrease it (purchases, ATM withdrawals, fees).' },
-              { prompt: 'Why should you review your bank statement every month?', options: ['To catch unauthorized charges, errors, or unexpected fees before they compound', 'Because the law requires you to sign and return it each month', 'To qualify for your bank\'s best interest rates on savings', 'Banks freeze accounts if you do not log in within 30 days'], correct: 0, explanation: 'Fraud, billing errors, and forgotten subscriptions only come to light when you actually read your statement - monthly review is essential.' },
+              { prompt: 'Which line on a bank statement shows money coming into your account?', options: ['Credits or deposits, which are positive amounts added to your balance', 'Debits, which are negative amounts removed from your balance', 'The "available balance" line at the account summary', 'The "interest earned" line at the bottom of the statement'], correct: 0, explanation: 'Credits increase your balance (deposits, refunds, interest). Debits decrease it (purchases, ATM withdrawals, fees).' },
+              { prompt: 'Why should you review your bank statement every month?', options: ['To catch unauthorized charges, errors, or unexpected fees before they compound', 'Because the law requires you to sign and return it each month', 'To qualify for your bank\'s best interest rates on savings', 'Banks freeze accounts if you do not log in within 30 days'], correct: 0, explanation: 'Fraud, billing errors, and forgotten subscriptions only come to light when you actually read your statement, making monthly review essential.' },
               { prompt: 'The "available balance" on a bank statement differs from "ledger balance" because:', options: ['Available balance reflects funds accessible now after pending transactions; ledger is the official booked balance', 'Ledger balance includes future transactions that have been scheduled', 'Available balance is always $0 until statements are generated', 'They are identical figures displayed two different ways'], correct: 0, explanation: 'If you deposited a $500 check that has not cleared, ledger balance shows $500 but available balance may show $0 until the hold releases.' },
-              { prompt: 'Which red flag on a bank statement should immediately prompt a call to your bank?', options: ['A charge from a company you do not recognize that you did not authorize', 'A monthly maintenance fee you expected based on your account type', 'A $0.02 interest credit from the bank', 'A direct deposit from your employer that matches your expected pay amount'], correct: 0, explanation: 'Unauthorized charges are the signature of account fraud or unauthorized subscription charges - immediate action protects your money.' },
-              { prompt: 'Reconciling your bank statement means:', options: ['Comparing your personal records against the bank statement to verify every transaction matches', 'Calling the bank to confirm your balance over the phone', 'Transferring funds to ensure your balance matches a budget target', 'Signing and returning the statement to your bank for official records'], correct: 0, explanation: 'Reconciliation catches discrepancies - if your records show a different balance than the bank\'s, there may be an error or fraud.' },
+              { prompt: 'Which red flag on a bank statement should immediately prompt a call to your bank?', options: ['A charge from a company you do not recognize that you did not authorize', 'A monthly maintenance fee you expected based on your account type', 'A $0.02 interest credit from the bank', 'A direct deposit from your employer that matches your expected pay amount'], correct: 0, explanation: 'Unauthorized charges are the signature of account fraud or unauthorized subscription charges; immediate action protects your money.' },
+              { prompt: 'Reconciling your bank statement means:', options: ['Comparing your personal records against the bank statement to verify every transaction matches', 'Calling the bank to confirm your balance over the phone', 'Transferring funds to ensure your balance matches a budget target', 'Signing and returning the statement to your bank for official records'], correct: 0, explanation: 'Reconciliation catches discrepancies: if your records show a different balance than the bank\'s, there may be an error or fraud.' },
             ],
           },
           {
             id: 'u2-1-l8', title: 'Mobile Banking', centsReward: 10,
             questions: [
-              { prompt: 'Mobile banking allows you to:', options: ['Manage your account, transfer funds, deposit checks, and pay bills from your smartphone', 'Physically withdraw cash from ATMs using only your phone without a card', 'Open new bank accounts with zero identity verification', 'Access other people\'s bank accounts for shared expense management'], correct: 0, explanation: 'Mobile banking apps bring full account management to your phone - most everyday banking needs can be handled without visiting a branch.' },
+              { prompt: 'Mobile banking allows you to:', options: ['Manage your account, transfer funds, deposit checks, and pay bills from your smartphone', 'Physically withdraw cash from ATMs using only your phone without a card', 'Open new bank accounts with zero identity verification', 'Access other people\'s bank accounts for shared expense management'], correct: 0, explanation: 'Mobile banking apps bring full account management to your phone, and most everyday banking needs can be handled without visiting a branch.' },
               { prompt: 'Mobile check deposit works by:', options: ['Taking a photo of the front and back of a check, which the bank processes electronically', 'Mailing your physical check to the bank\'s scanning center', 'Typing in the check amount and account number which auto-deposits', 'Scanning the MICR line at an ATM connected to your mobile account'], correct: 0, explanation: 'The bank uses image recognition to process your check photo - typically available within 1–2 business days.' },
               { prompt: 'Which security practice is most important for mobile banking?', options: ['Using a unique, strong password and enabling two-factor authentication', 'Only banking on public Wi-Fi at coffee shops for network redundancy', 'Sharing your login details with trusted family members for backup access', 'Never logging out so your session stays active and responsive'], correct: 0, explanation: 'Two-factor authentication (2FA) means even if your password is stolen, attackers cannot access your account without the second verification.' },
-              { prompt: 'Mobile banking alerts are most useful for:', options: ['Getting notified of every transaction so you can catch fraud immediately', 'Checking your credit score from the bank\'s app', 'Automatically blocking suspicious charges before they post', 'Connecting your account to investment apps without sharing credentials'], correct: 0, explanation: 'Real-time transaction alerts mean you see fraudulent charges within seconds - catching fraud before it escalates.' },
-              { prompt: 'Which is a legitimate concern about using mobile banking on public Wi-Fi?', options: ['Hackers can potentially intercept data transmitted on unsecured networks', 'Banks automatically block mobile access from public locations', 'Public Wi-Fi is blocked by all major bank security systems', 'Mobile banking is only secure when connected to cellular data, not any Wi-Fi'], correct: 0, explanation: 'Use a VPN or your cellular connection for banking - unsecured public Wi-Fi exposes data to man-in-the-middle attacks.' },
-              { prompt: 'Peer-to-peer payments via banking apps (like Zelle) are best used for:', options: ['Splitting bills with people you personally know and trust', 'Purchasing goods from strangers online (like Facebook Marketplace)', 'Paying for services from contractors you have never met', 'Sending money internationally to accounts outside the U.S.'], correct: 0, explanation: 'Bank-linked P2P transfers (especially Zelle) are typically instant and irreversible - only use them with people you personally know.' },
+              { prompt: 'Mobile banking alerts are most useful for:', options: ['Getting notified of every transaction so you can catch fraud immediately', 'Checking your credit score from the bank\'s app', 'Automatically blocking suspicious charges before they post', 'Connecting your account to investment apps without sharing credentials'], correct: 0, explanation: 'Real-time transaction alerts mean you see fraudulent charges within seconds, catching fraud before it escalates.' },
+              { prompt: 'Which is a legitimate concern about using mobile banking on public Wi-Fi?', options: ['Hackers can potentially intercept data transmitted on unsecured networks', 'Banks automatically block mobile access from public locations', 'Public Wi-Fi is blocked by all major bank security systems', 'Mobile banking is only secure when connected to cellular data, not any Wi-Fi'], correct: 0, explanation: 'Use a VPN or your cellular connection for banking; unsecured public Wi-Fi exposes data to man-in-the-middle attacks.' },
+              { prompt: 'Peer-to-peer payments via banking apps (like Zelle) are best used for:', options: ['Splitting bills with people you personally know and trust', 'Purchasing goods from strangers online (like Facebook Marketplace)', 'Paying for services from contractors you have never met', 'Sending money internationally to accounts outside the U.S.'], correct: 0, explanation: 'Bank-linked P2P transfers (especially Zelle) are typically instant and irreversible, so only use them with people you personally know.' },
             ],
           },
         ],
@@ -1011,44 +1011,44 @@ export const levels = [
           {
             id: 'u2-2-l1', title: 'Debit Cards', centsReward: 10,
             questions: [
-              { prompt: 'A debit card is linked directly to your:', options: ['Checking account - each purchase withdraws real money immediately', 'Credit line extended by your bank', 'Prepaid balance loaded separately from your bank account', 'Investment brokerage account'], correct: 0, explanation: 'Debit purchases hit your checking balance instantly - there is no billing cycle or interest, just your actual money.' },
-              { prompt: 'The biggest risk of using a debit card versus a credit card for purchases:', options: ['Fraud drains real money from your bank account immediately', 'Debit cards charge higher merchant fees than credit cards', 'Debit cards offer no rewards programs of any kind', 'You cannot dispute debit card charges under any circumstances'], correct: 0, explanation: 'Credit card fraud does not touch your cash until you dispute it. Debit card fraud requires you to recover your own money - sometimes slowly.' },
-              { prompt: 'Under federal law, your liability for unauthorized debit card charges depends on:', options: ['How quickly you report the fraud - 2 days = $50 max, 60 days = $500 max, after 60 days = unlimited', 'A flat $0 liability cap like credit cards', 'Your bank\'s discretion - federal law sets no debit card limits', 'Whether the card was stolen physically vs. card number stolen digitally'], correct: 0, explanation: 'The Electronic Fund Transfer Act gives debit card holders less protection than credit cards - speed of reporting dramatically changes your liability.' },
-              { prompt: 'A PIN debit transaction differs from a signature debit transaction because:', options: ['PIN debit processes instantly and is more secure; signature processes like a credit card with a delay', 'Signature debit withdraws money faster than PIN debit', 'PIN debit allows you to get cash back at the register; signature does not', 'They are processed through identical networks with no functional differences'], correct: 0, explanation: 'PIN transactions go through debit networks (Interlink, Star) directly to your bank. Signature routes through Visa/MC networks - same money, different path.' },
-              { prompt: 'Which situation makes a debit card preferable to a credit card?', options: ['When you want to stick to a strict budget and avoid the risk of overspending on credit', 'When traveling internationally where fraud is more common', 'When making large online purchases that need maximum fraud protection', 'When you want to build your credit history through spending'], correct: 0, explanation: 'Debit forces you to spend only what you have - no risk of racking up credit card debt you cannot pay off.' },
-              { prompt: 'Debit card cash back at a retailer checkout means:', options: ['The cashier gives you cash and your account is debited for the purchase PLUS the cash amount', 'You earn reward points that convert to cash back each month', 'The store pays you interest for using your debit card', 'Your bank refunds a percentage of your purchase to your account next month'], correct: 0, explanation: 'Cash back at checkout is essentially a free mini-ATM withdrawal combined with your purchase - convenient for avoiding ATM fees.' },
+              { prompt: 'A debit card is linked directly to your:', options: ['Checking account, where each purchase withdraws real money immediately', 'Credit line extended by your bank', 'Prepaid balance loaded separately from your bank account', 'Investment brokerage account'], correct: 0, explanation: 'Debit purchases hit your checking balance instantly: there is no billing cycle or interest, just your actual money.' },
+              { prompt: 'The biggest risk of using a debit card versus a credit card for purchases:', options: ['Fraud drains real money from your bank account immediately', 'Debit cards charge higher merchant fees than credit cards', 'Debit cards offer no rewards programs of any kind', 'You cannot dispute debit card charges under any circumstances'], correct: 0, explanation: 'Credit card fraud does not touch your cash until you dispute it. Debit card fraud requires you to recover your own money, sometimes slowly.' },
+              { prompt: 'Under federal law, your liability for unauthorized debit card charges depends on:', options: ['How quickly you report the fraud: 2 days = $50 max, 60 days = $500 max, after 60 days = unlimited', 'A flat $0 liability cap like credit cards', 'Your bank\'s discretion, since federal law sets no debit card limits', 'Whether the card was stolen physically or the card number was stolen digitally'], correct: 0, explanation: 'The Electronic Fund Transfer Act gives debit card holders less protection than credit cards, and speed of reporting dramatically changes your liability.' },
+              { prompt: 'A PIN debit transaction differs from a signature debit transaction because:', options: ['PIN debit processes instantly and is more secure, while signature processes like a credit card with a delay', 'Signature debit withdraws money faster than PIN debit', 'PIN debit allows you to get cash back at the register; signature does not', 'They are processed through identical networks with no functional differences'], correct: 0, explanation: 'PIN transactions go through debit networks (Interlink, Star) directly to your bank. Signature routes through Visa/MC networks: same money, different path.' },
+              { prompt: 'Which situation makes a debit card preferable to a credit card?', options: ['When you want to stick to a strict budget and avoid the risk of overspending on credit', 'When traveling internationally where fraud is more common', 'When making large online purchases that need maximum fraud protection', 'When you want to build your credit history through spending'], correct: 0, explanation: 'Debit forces you to spend only what you have, with no risk of racking up credit card debt you cannot pay off.' },
+              { prompt: 'Debit card cash back at a retailer checkout means:', options: ['The cashier gives you cash and your account is debited for the purchase PLUS the cash amount', 'You earn reward points that convert to cash back each month', 'The store pays you interest for using your debit card', 'Your bank refunds a percentage of your purchase to your account next month'], correct: 0, explanation: 'Cash back at checkout is essentially a free mini-ATM withdrawal combined with your purchase, convenient for avoiding ATM fees.' },
             ],
           },
           {
             id: 'u2-2-l2', title: 'Credit Cards as Payment', centsReward: 10,
             questions: [
-              { prompt: 'When you pay with a credit card, you are:', options: ['Borrowing money from the card issuer that you promise to repay', 'Spending from a prepaid balance you loaded onto the card', 'Drawing directly from your checking account with a delay', 'Using a government-issued voucher redeemed at merchants'], correct: 0, explanation: 'Credit cards create a temporary loan - the issuer pays the merchant, then you repay the issuer by your due date.' },
-              { prompt: 'Credit cards offer stronger fraud protection than debit cards because:', options: ['You dispute fraudulent charges before paying - your own money is never directly at risk', 'Credit card issuers have better fraud detection technology by law', 'Federal law limits your liability to $500 on debit but $0 on credit', 'Credit card networks scan every transaction for fraud automatically'], correct: 0, explanation: 'Under the Fair Credit Billing Act, you have zero liability for unauthorized credit card charges - and your own cash is never temporarily taken.' },
+              { prompt: 'When you pay with a credit card, you are:', options: ['Borrowing money from the card issuer that you promise to repay', 'Spending from a prepaid balance you loaded onto the card', 'Drawing directly from your checking account with a delay', 'Using a government-issued voucher redeemed at merchants'], correct: 0, explanation: 'Credit cards create a temporary loan; the issuer pays the merchant, then you repay the issuer by your due date.' },
+              { prompt: 'Credit cards offer stronger fraud protection than debit cards because:', options: ['You dispute fraudulent charges before paying, so your own money is never directly at risk', 'Credit card issuers have better fraud detection technology by law', 'Federal law limits your liability to $500 on debit but $0 on credit', 'Credit card networks scan every transaction for fraud automatically'], correct: 0, explanation: 'Under the Fair Credit Billing Act, you have zero liability for unauthorized credit card charges, and your own cash is never temporarily taken.' },
               { prompt: 'Paying your credit card balance in FULL each month means:', options: ['You pay no interest - the card is essentially free money for 21–25 days', 'You receive a cash bonus from the issuer for on-time payment', 'Your credit score automatically increases by 10 points per month', 'The balance carries over but at a lower promotional interest rate'], correct: 0, explanation: 'The grace period (21–25 days after statement close) gives you interest-free float - use the rewards and pay the full balance by due date.' },
-              { prompt: 'Which is the #1 reason people get into credit card debt trouble?', options: ['Carrying a balance and paying only the minimum, allowing interest to compound', 'Signing up for too many rewards programs at once', 'Using credit cards for everyday purchases instead of cash', 'Missing the annual fee payment date'], correct: 0, explanation: 'Minimum payments are designed to keep you in debt - paying $25 on a $1,000 balance at 24% means decades of debt and hundreds in interest.' },
-              { prompt: 'Zero percent APR introductory offers on credit cards are best used for:', options: ['Financing a necessary large purchase that you can fully pay off before the promo period ends', 'Making purchases you cannot afford with the intent to carry the balance indefinitely', 'Earning maximum rewards since there is no interest cost during the promo period', 'Transferring your mortgage balance to eliminate home loan interest'], correct: 0, explanation: '0% APR periods can be valuable tools IF - and only if - you have a concrete plan to pay the full balance before the rate resets to 20%+.' },
-              { prompt: 'A credit card\'s minimum payment is set to:', options: ['Keep you in debt longer - it is the lowest legal amount the issuer can collect', 'Pay off the balance in exactly 12 months', 'Cover only the interest charges with no principal reduction', 'Match your monthly income divided by outstanding credit lines'], correct: 0, explanation: 'Minimum payments are typically 1–2% of the balance - paying only minimums means it takes years to clear debt and costs dramatically more in interest.' },
+              { prompt: 'Which is the #1 reason people get into credit card debt trouble?', options: ['Carrying a balance and paying only the minimum, allowing interest to compound', 'Signing up for too many rewards programs at once', 'Using credit cards for everyday purchases instead of cash', 'Missing the annual fee payment date'], correct: 0, explanation: 'Minimum payments are designed to keep you in debt; paying $25 on a $1,000 balance at 24% means decades of debt and hundreds in interest.' },
+              { prompt: 'Zero percent APR introductory offers on credit cards are best used for:', options: ['Financing a necessary large purchase that you can fully pay off before the promo period ends', 'Making purchases you cannot afford with the intent to carry the balance indefinitely', 'Earning maximum rewards since there is no interest cost during the promo period', 'Transferring your mortgage balance to eliminate home loan interest'], correct: 0, explanation: '0% APR periods can be valuable tools, but only if you have a concrete plan to pay the full balance before the rate resets to 20%+.' },
+              { prompt: 'A credit card\'s minimum payment is set to:', options: ['Keep you in debt longer, as it is the lowest legal amount the issuer can collect', 'Pay off the balance in exactly 12 months', 'Cover only the interest charges with no principal reduction', 'Match your monthly income divided by outstanding credit lines'], correct: 0, explanation: 'Minimum payments are typically 1–2% of the balance - paying only minimums means it takes years to clear debt and costs dramatically more in interest.' },
             ],
           },
           {
             id: 'u2-2-l3', title: 'Cash & Checks', centsReward: 10,
             questions: [
-              { prompt: 'Cash is unique as a payment method because:', options: ['It is the only payment that is instantly final with no dispute or reversal possible', 'It earns interest when stored in a wallet', 'The government tracks all cash transactions over $1', 'Retailers must accept cash by federal law'], correct: 0, explanation: 'Cash is king for finality - once given, it cannot be reversed, disputed, or charged back, unlike card payments.' },
+              { prompt: 'Cash is unique as a payment method because:', options: ['It is the only payment that is instantly final with no dispute or reversal possible', 'It earns interest when stored in a wallet', 'The government tracks all cash transactions over $1', 'Retailers must accept cash by federal law'], correct: 0, explanation: 'Cash is final: once given, it cannot be reversed, disputed, or charged back, unlike card payments.' },
               { prompt: 'The main financial risk of carrying large amounts of cash is:', options: ['It can be lost or stolen with no way to recover it', 'The government automatically taxes cash over $500', 'Large cash balances earn negative interest rates', 'Retailers charge a fee for cash payments over $100'], correct: 0, explanation: 'Unlike bank accounts (FDIC-insured) or credit cards (fraud protection), physical cash is gone forever if lost or stolen.' },
-              { prompt: 'A personal check works by:', options: ['Authorizing your bank to pay a specific amount from your checking account to the payee', 'Drawing from a prepaid pool of funds managed by the check printing company', 'Transferring funds instantly the moment the check is written', 'Guaranteeing payment to the recipient regardless of your account balance'], correct: 0, explanation: 'A check is a written instruction to your bank - it can bounce (NSF) if your account lacks sufficient funds when the payee deposits it.' },
-              { prompt: 'A "certified check" or "cashier\'s check" differs from a personal check because:', options: ['The bank guarantees payment - funds are verified and reserved before the check is issued', 'It can be written for any amount without a corresponding bank account', 'Certified checks are immune to bank failures or fraud', 'They are only issued by the Federal Reserve for large transactions'], correct: 0, explanation: 'Certified checks are used for large, guaranteed transactions (home purchases, car sales) where the payee needs certainty the funds exist.' },
-              { prompt: 'Why might a landlord prefer a certified check over a personal check for a security deposit?', options: ['It cannot bounce - the bank has already verified and set aside the funds', 'Certified checks arrive faster due to special banking channels', 'The IRS requires certified checks for real estate transactions', 'Personal checks charge a 2% fee that certified checks avoid'], correct: 0, explanation: 'A bounced personal check for a security deposit is a serious problem - certified checks eliminate that risk for the landlord.' },
-              { prompt: 'The safest way to write a personal check to avoid fraud is:', options: ['Write the amount in both numbers and words, never leave blank spaces, and use ink', 'Use pencil so corrections can be made if numbers are wrong', 'Leave the payee line blank and fill it in after signing for flexibility', 'Use a digital printing service to produce professional-looking checks'], correct: 0, explanation: 'Fraudsters can alter checks with blank spaces - fill every line completely and use permanent ink to prevent check washing.' },
+              { prompt: 'A personal check works by:', options: ['Authorizing your bank to pay a specific amount from your checking account to the payee', 'Drawing from a prepaid pool of funds managed by the check printing company', 'Transferring funds instantly the moment the check is written', 'Guaranteeing payment to the recipient regardless of your account balance'], correct: 0, explanation: 'A check is a written instruction to your bank; it can bounce (NSF) if your account lacks sufficient funds when the payee deposits it.' },
+              { prompt: 'A "certified check" or "cashier\'s check" differs from a personal check because:', options: ['The bank guarantees payment, with funds verified and reserved before the check is issued', 'It can be written for any amount without a corresponding bank account', 'Certified checks are immune to bank failures or fraud', 'They are only issued by the Federal Reserve for large transactions'], correct: 0, explanation: 'Certified checks are used for large, guaranteed transactions (home purchases, car sales) where the payee needs certainty the funds exist.' },
+              { prompt: 'Why might a landlord prefer a certified check over a personal check for a security deposit?', options: ['It cannot bounce, since the bank has already verified and set aside the funds', 'Certified checks arrive faster due to special banking channels', 'The IRS requires certified checks for real estate transactions', 'Personal checks charge a 2% fee that certified checks avoid'], correct: 0, explanation: 'A bounced personal check for a security deposit is a serious problem; certified checks eliminate that risk for the landlord.' },
+              { prompt: 'The safest way to write a personal check to avoid fraud is:', options: ['Write the amount in both numbers and words, never leave blank spaces, and use ink', 'Use pencil so corrections can be made if numbers are wrong', 'Leave the payee line blank and fill it in after signing for flexibility', 'Use a digital printing service to produce professional-looking checks'], correct: 0, explanation: 'Fraudsters can alter checks with blank spaces; fill every line completely and use permanent ink to prevent check washing.' },
             ],
           },
           {
             id: 'u2-2-l4', title: 'Wire Transfers & ACH', centsReward: 10,
             questions: [
               { prompt: 'A wire transfer differs from ACH because:', options: ['Wires are typically same-day and guaranteed; ACH takes 1–3 business days and is batched', 'ACH is faster and ACH wires are slower', 'Wire transfers are free; ACH charges $25 per transaction', 'ACH is used for international transfers; wires are domestic only'], correct: 0, explanation: 'Wire = fast (same day), certain, expensive ($15–$35). ACH = slower (1–3 days), batched, usually free. Choose based on urgency.' },
-              { prompt: 'ACH stands for:', options: ['Automated Clearing House - the U.S. electronic bank-to-bank payment network', 'Advanced Cash Handling - the ATM management system', 'Authorized Credit Handling - the credit bureau data network', 'Automatic Check Holding - the check clearing delay system'], correct: 0, explanation: 'ACH is the backbone of U.S. electronic payments - direct deposit, bill pay, and most bank transfers use the ACH network.' },
+              { prompt: 'ACH stands for:', options: ['Automated Clearing House, the U.S. electronic bank-to-bank payment network', 'Advanced Cash Handling, the ATM management system', 'Authorized Credit Handling, the credit bureau data network', 'Automatic Check Holding, the check clearing delay system'], correct: 0, explanation: 'ACH is the backbone of U.S. electronic payments; direct deposit, bill pay, and most bank transfers use the ACH network.' },
               { prompt: 'Which everyday financial activity uses the ACH network?', options: ['Direct deposit of your paycheck into your bank account', 'Swiping your Visa debit card at a grocery store', 'Withdrawing cash from an ATM', 'Making a contactless payment with Apple Pay'], correct: 0, explanation: 'Direct deposit, automatic bill payments, and most bank account transfers travel through the ACH network.' },
               { prompt: 'Wire transfers are most appropriate for:', options: ['Time-sensitive large transactions like real estate closing or down payments', 'Daily bill payments to utility companies', 'Splitting a dinner bill among friends', 'Monthly rent payments to a private landlord'], correct: 0, explanation: 'The speed and certainty of wires justify the fee for large, time-critical transactions where delays could cost more than the wire fee.' },
-              { prompt: 'A common wire transfer scam involves:', options: ['Urgently requesting a wire for a fake emergency that cannot be reversed once sent', 'Charging excessive fees above the $25 industry standard', 'Delaying the wire to manipulate foreign exchange rates', 'Automatically recurring the wire without explicit authorization'], correct: 0, explanation: 'Wire fraud is the most common financial scam because wires are irreversible - once sent, the money is essentially gone.' },
+              { prompt: 'A common wire transfer scam involves:', options: ['Urgently requesting a wire for a fake emergency that cannot be reversed once sent', 'Charging excessive fees above the $25 industry standard', 'Delaying the wire to manipulate foreign exchange rates', 'Automatically recurring the wire without explicit authorization'], correct: 0, explanation: 'Wire fraud is the most common financial scam because wires are irreversible: once sent, the money is essentially gone.' },
               { prompt: 'Same-day ACH has become available for:', options: ['Eligible transactions processed before certain daily cutoff times at an extra cost', 'All ACH transactions since 2018 at no additional charge', 'International transfers between U.S. and European banks only', 'Payroll direct deposits of over $10,000 only'], correct: 0, explanation: 'Same-day ACH exists but is not universal or free - standard ACH is still 1–3 days for most transactions.' },
             ],
           },
@@ -1056,44 +1056,44 @@ export const levels = [
             id: 'u2-2-l5', title: 'Venmo, Cash App & Zelle', centsReward: 10,
             questions: [
               { prompt: 'Venmo, Cash App, and Zelle are best described as:', options: ['Peer-to-peer payment apps that let individuals send money directly to each other', 'Bank accounts that replace traditional checking and savings', 'Cryptocurrency exchanges for digital asset trading', 'Government-backed digital payment systems requiring ID verification'], correct: 0, explanation: 'P2P apps make splitting bills, paying rent, or reimbursing friends as simple as sending a text.' },
-              { prompt: 'Zelle differs from Venmo and Cash App primarily because:', options: ['Zelle transfers go directly between bank accounts with no app balance; it is built into most bank apps', 'Zelle holds funds in an app wallet before you cash them out', 'Zelle charges a 3% fee on all transfers', 'Zelle can only be used for business payments, not personal transfers'], correct: 0, explanation: 'Zelle money moves bank-to-bank instantly - no Zelle wallet. Venmo and Cash App hold balances in the app until you cash out.' },
-              { prompt: 'The biggest risk of sending money via Zelle is:', options: ['Transfers are instant and irreversible - if you send to the wrong person, the money is gone', 'Zelle charges a hidden fee that arrives as a separate transaction', 'Zelle can only send up to $5 per transaction', 'The recipient must approve the transfer within 24 hours or it is returned'], correct: 0, explanation: 'Zelle transfers are final - banks are not required to reimburse you for payments you authorized, even if you were scammed.' },
-              { prompt: 'Venmo\'s social feed (where transactions appear publicly by default) creates a risk because:', options: ['It reveals your payment patterns and relationships to anyone who can see your profile', 'Venmo sells this data directly to advertisers without user consent', 'Public transactions are subject to additional IRS reporting requirements', 'The social feed allows strangers to request money from your account directly'], correct: 0, explanation: 'Venmo\'s default public setting exposes your financial activity - set transactions to "Private" or "Friends" immediately after creating your account.' },
+              { prompt: 'Zelle differs from Venmo and Cash App primarily because:', options: ['Zelle transfers go directly between bank accounts with no app balance; it is built into most bank apps', 'Zelle holds funds in an app wallet before you cash them out', 'Zelle charges a 3% fee on all transfers', 'Zelle can only be used for business payments, not personal transfers'], correct: 0, explanation: 'Zelle money moves bank-to-bank instantly with no Zelle wallet. Venmo and Cash App hold balances in the app until you cash out.' },
+              { prompt: 'The biggest risk of sending money via Zelle is:', options: ['Transfers are instant and irreversible, so if you send to the wrong person, the money is gone', 'Zelle charges a hidden fee that arrives as a separate transaction', 'Zelle can only send up to $5 per transaction', 'The recipient must approve the transfer within 24 hours or it is returned'], correct: 0, explanation: 'Zelle transfers are final; banks are not required to reimburse you for payments you authorized, even if you were scammed.' },
+              { prompt: 'Venmo\'s social feed (where transactions appear publicly by default) creates a risk because:', options: ['It reveals your payment patterns and relationships to anyone who can see your profile', 'Venmo sells this data directly to advertisers without user consent', 'Public transactions are subject to additional IRS reporting requirements', 'The social feed allows strangers to request money from your account directly'], correct: 0, explanation: 'Venmo\'s default public setting exposes your financial activity; set transactions to "Private" or "Friends" immediately after creating your account.' },
               { prompt: 'Cash App differs from Venmo because:', options: ['Cash App offers a debit card (Cash Card), investing, and Bitcoin buying within the same app', 'Venmo charges no fees while Cash App charges 5% on all transfers', 'Cash App deposits go directly to your bank; Venmo holds funds in-app forever', 'Cash App is owned by PayPal; Venmo is owned by Square'], correct: 0, explanation: 'Cash App has evolved into a broader financial platform with a debit card, stock investing, Bitcoin, and direct deposit features.' },
-              { prompt: 'When is it safest to use P2P apps like Venmo or Zelle?', options: ['Sending money to people you personally know and trust', 'Paying a stranger on Craigslist or Facebook Marketplace for goods', 'Paying contractors you have never met for home renovation work', 'Sending your first month\'s rent to a landlord you found online'], correct: 0, explanation: 'P2P apps are built for trusted contacts - using them with strangers is extremely high risk since payments are typically irreversible.' },
+              { prompt: 'When is it safest to use P2P apps like Venmo or Zelle?', options: ['Sending money to people you personally know and trust', 'Paying a stranger on Craigslist or Facebook Marketplace for goods', 'Paying contractors you have never met for home renovation work', 'Sending your first month\'s rent to a landlord you found online'], correct: 0, explanation: 'P2P apps are built for trusted contacts; using them with strangers is extremely high risk since payments are typically irreversible.' },
             ],
           },
           {
             id: 'u2-2-l6', title: 'Apple Pay, Google Pay & Contactless', centsReward: 10,
             questions: [
-              { prompt: 'Apple Pay and Google Pay work by:', options: ['Storing encrypted card information on your device and transmitting a one-time token to pay', 'Transferring funds directly from a digital wallet balance separate from any bank account', 'Connecting to your credit score to approve or decline transactions in real time', 'Creating a new credit line specifically for mobile payments'], correct: 0, explanation: 'These apps use tokenization - your real card number is never transmitted to merchants, making payments more secure than swiping your physical card.' },
-              { prompt: 'A benefit of using Apple Pay instead of your physical credit card is:', options: ['Merchants receive a token instead of your real card number, reducing fraud exposure', 'You earn double rewards on all Apple Pay purchases automatically', 'Purchases are tax-free when made through digital wallets', 'Apple Pay does not require authentication for purchases under $50'], correct: 0, explanation: 'Tokenization means that even if a merchant\'s system is hacked, attackers get a useless one-time token - not your real card number.' },
+              { prompt: 'Apple Pay and Google Pay work by:', options: ['Storing encrypted card information on your device and transmitting a one-time token to pay', 'Transferring funds directly from a digital wallet balance separate from any bank account', 'Connecting to your credit score to approve or decline transactions in real time', 'Creating a new credit line specifically for mobile payments'], correct: 0, explanation: 'These apps use tokenization: your real card number is never transmitted to merchants, making payments more secure than swiping your physical card.' },
+              { prompt: 'A benefit of using Apple Pay instead of your physical credit card is:', options: ['Merchants receive a token instead of your real card number, reducing fraud exposure', 'You earn double rewards on all Apple Pay purchases automatically', 'Purchases are tax-free when made through digital wallets', 'Apple Pay does not require authentication for purchases under $50'], correct: 0, explanation: 'Tokenization means that even if a merchant\'s system is hacked, attackers get a useless one-time token rather than your real card number.' },
               { prompt: 'NFC (Near Field Communication) is the technology that enables:', options: ['Tap-to-pay contactless payments at checkout terminals', 'Remote mobile check deposit through smartphone cameras', 'ATM withdrawals using only your smartphone', 'Real-time credit score monitoring in banking apps'], correct: 0, explanation: 'NFC lets your phone communicate with payment terminals by holding them within about 1–2 inches of each other.' },
-              { prompt: 'Which authentication method does Apple Pay require before completing a payment?', options: ['Face ID, Touch ID, or device passcode - without these, the payment cannot proceed', 'Only your Apple ID password entered manually', 'No authentication - it works automatically when near a terminal', 'Your bank\'s one-time passcode sent via SMS for each purchase'], correct: 0, explanation: 'Biometric authentication (Face/Touch ID) is a key security layer - it means a thief cannot use Apple Pay even with your unlocked phone unless they bypass biometrics.' },
+              { prompt: 'Which authentication method does Apple Pay require before completing a payment?', options: ['Face ID, Touch ID, or device passcode; without these, the payment cannot proceed', 'Only your Apple ID password entered manually', 'No authentication; it works automatically when near a terminal', 'Your bank\'s one-time passcode sent via SMS for each purchase'], correct: 0, explanation: 'Biometric authentication (Face/Touch ID) is a key security layer: a thief cannot use Apple Pay even with your unlocked phone unless they bypass biometrics.' },
               { prompt: 'Contactless payments are generally considered:', options: ['More secure than swiping or inserting a physical card due to tokenization', 'Less secure because the NFC signal can be intercepted from 20 feet away', 'Identical in security to chip-and-PIN transactions', 'Only secure at major retailers - small businesses lack proper NFC encryption'], correct: 0, explanation: 'NFC has a very short range (1–2 inches), real card numbers are never shared, and biometrics are required - a more secure payment method overall.' },
-              { prompt: 'A limitation of Apple Pay and Google Pay at retail stores is:', options: ['Not all merchants have contactless-capable terminals - some only accept swipe or chip', 'Transactions cost 5% more than swiping due to digital wallet processing fees', 'They can only be used at large national chain stores, not small businesses', 'You must have Wi-Fi or cellular signal for every contactless transaction to complete'], correct: 0, explanation: 'Contactless terminal adoption is widespread but not universal - you should always carry your physical card as a backup.' },
+              { prompt: 'A limitation of Apple Pay and Google Pay at retail stores is:', options: ['Not all merchants have contactless-capable terminals; some only accept swipe or chip', 'Transactions cost 5% more than swiping due to digital wallet processing fees', 'They can only be used at large national chain stores, not small businesses', 'You must have Wi-Fi or cellular signal for every contactless transaction to complete'], correct: 0, explanation: 'Contactless terminal adoption is widespread but not universal; you should always carry your physical card as a backup.' },
             ],
           },
           {
             id: 'u2-2-l7', title: 'Direct Deposit', centsReward: 10,
             questions: [
-              { prompt: 'Direct deposit is:', options: ['An electronic payment from your employer sent straight to your bank account on payday', 'A cash payment deposited at a bank branch by your employer on your behalf', 'A government benefit payment exclusive to Social Security recipients', 'A transfer from your brokerage account to your checking account after investments are sold'], correct: 0, explanation: 'Direct deposit uses the ACH network to send your paycheck electronically - no paper check, no trip to the bank.' },
+              { prompt: 'Direct deposit is:', options: ['An electronic payment from your employer sent straight to your bank account on payday', 'A cash payment deposited at a bank branch by your employer on your behalf', 'A government benefit payment exclusive to Social Security recipients', 'A transfer from your brokerage account to your checking account after investments are sold'], correct: 0, explanation: 'Direct deposit uses the ACH network to send your paycheck electronically with no paper check and no trip to the bank.' },
               { prompt: 'Compared to receiving a paper check, direct deposit is better because:', options: ['Money is available on payday with no check-clearing delay, and there is no risk of a lost check', 'Direct deposit earns a higher interest rate than check deposits', 'The IRS does not tax directly deposited income the same year', 'Employers pay employees more when they choose direct deposit'], correct: 0, explanation: 'Paper checks take 1–5 days to clear. Direct deposit funds are typically available immediately on payday morning.' },
               { prompt: 'To set up direct deposit, you typically need to provide your employer with:', options: ['Your bank\'s routing number and your account number', 'Your Social Security number and a photo ID', 'Your bank\'s physical address and branch code', 'A certified check made out to your employer as verification'], correct: 0, explanation: 'Routing number (identifies your bank) + account number (identifies your specific account) = all your employer needs to send funds via ACH.' },
-              { prompt: 'Many banks waive monthly fees or offer perks if you set up direct deposit because:', options: ['Direct deposit customers are more profitable - they use more banking services and keep higher balances', 'Direct deposit is required by the FDIC for all primary account holders', 'The government subsidizes banks that accept direct deposits from employers', 'Direct deposits cost the bank nothing, so they can waive fees easily'], correct: 0, explanation: 'Customers with direct deposit tend to make the bank their primary institution - using debit cards, getting loans, and keeping higher balances.' },
-              { prompt: 'Can you split a direct deposit between multiple accounts?', options: ['Yes - most employers allow you to allocate percentages or fixed amounts to multiple accounts', 'No - direct deposits can only go to one account per employee', 'Only if both accounts are at the same bank', 'Only for amounts over $5,000 per paycheck'], correct: 0, explanation: 'Many employers let you split direct deposit - e.g., automatically send $400 to savings and the rest to checking on every payday.' },
+              { prompt: 'Many banks waive monthly fees or offer perks if you set up direct deposit because:', options: ['Direct deposit customers are more profitable; they use more banking services and keep higher balances', 'Direct deposit is required by the FDIC for all primary account holders', 'The government subsidizes banks that accept direct deposits from employers', 'Direct deposits cost the bank nothing, so they can waive fees easily'], correct: 0, explanation: 'Customers with direct deposit tend to make the bank their primary institution, using debit cards, getting loans, and keeping higher balances.' },
+              { prompt: 'Can you split a direct deposit between multiple accounts?', options: ['Yes, most employers allow you to allocate percentages or fixed amounts to multiple accounts', 'No; direct deposits can only go to one account per employee', 'Only if both accounts are at the same bank', 'Only for amounts over $5,000 per paycheck'], correct: 0, explanation: 'Many employers let you split direct deposit, for example automatically sending $400 to savings and the rest to checking on every payday.' },
               { prompt: 'The IRS uses direct deposit for tax refunds because:', options: ['It is faster (3–5 days vs. 6–8 weeks for a check) and eliminates mail theft risk', 'Paper refund checks are taxable; direct deposit refunds are not', 'Direct deposit allows the IRS to automatically correct refund amounts before you receive them', 'It is a legal requirement for all refunds over $1,000 since 2015'], correct: 0, explanation: 'Choosing direct deposit for your tax refund is the single easiest way to get your money back weeks faster than waiting for a paper check.' },
             ],
           },
           {
             id: 'u2-2-l8', title: 'Choosing the Right Payment Method', centsReward: 10,
             questions: [
-              { prompt: 'For an online purchase from a store you have never used before, the safest payment method is:', options: ['A credit card - maximum fraud protection with zero liability for unauthorized charges', 'Debit card - money comes directly from your bank for simpler tracking', 'Wire transfer - fast and immediate with guaranteed delivery', 'Zelle - instant peer-to-peer transfer directly to the merchant'], correct: 0, explanation: 'Credit cards offer the strongest consumer protection for online purchases - disputed charges never affect your bank balance directly.' },
-              { prompt: 'Paying a friend back for dinner, the most convenient payment is:', options: ['A P2P app like Venmo, Zelle, or Cash App', 'A certified bank check for guaranteed acceptance', 'A wire transfer to their routing and account numbers', 'A credit card with zero cashback to avoid over-complexity'], correct: 0, explanation: 'P2P apps are purpose-built for person-to-person small transfers between trusted contacts - fast, free, and convenient.' },
-              { prompt: 'For a $250,000 real estate closing, the seller requires:', options: ['A wire transfer or certified cashier\'s check - personal checks are not accepted for large guaranteed transactions', 'Cash in a secure briefcase delivered on closing day', 'A Venmo transfer split into multiple $5,000 payments', 'A personal check with your employer\'s signature as co-signer'], correct: 0, explanation: 'Large real estate transactions require guaranteed funds - certified checks or wires where the bank has verified the money exists before payment.' },
-              { prompt: 'You are buying something from a stranger at a flea market. Best payment method:', options: ['Cash - irreversible like wire but portable, and sellers almost always accept it', 'Zelle - instant transfer that protects you if something goes wrong', 'Credit card - for fraud protection on the in-person purchase', 'Check - so you have a paper record of the transaction'], correct: 0, explanation: 'Cash is king for in-person transactions with strangers - it is universally accepted, simple, and appropriate for small amounts.' },
-              { prompt: 'Recurring monthly bill payments (electric, internet, subscription) are best automated using:', options: ['ACH autopay directly from your checking account or credit card', 'Manual wire transfers for each bill as they come due', 'Cash dropped off at each company\'s local office monthly', 'P2P payment apps sent to the utility company\'s personal account'], correct: 0, explanation: 'ACH autopay ensures bills are paid on time automatically - no late fees, no manually initiated transfers each month.' },
-              { prompt: 'The payment method with the highest risk of being used in scams is:', options: ['Wire transfers and Zelle - both are essentially irreversible once sent', 'Credit cards - easy to charge back, which scammers exploit', 'Cash - physically traceable and requires in-person handoff', 'Certified checks - bank guarantee makes them immune to fraud'], correct: 0, explanation: 'Irreversible payments (wires, Zelle) are the preferred tool of scammers precisely because the money cannot be recovered after a fraudulent transfer.' },
+              { prompt: 'For an online purchase from a store you have never used before, the safest payment method is:', options: ['A credit card, which offers maximum fraud protection with zero liability for unauthorized charges', 'Debit card, since money comes directly from your bank for simpler tracking', 'Wire transfer, which is fast and immediate with guaranteed delivery', 'Zelle, an instant peer-to-peer transfer directly to the merchant'], correct: 0, explanation: 'Credit cards offer the strongest consumer protection for online purchases; disputed charges never affect your bank balance directly.' },
+              { prompt: 'Paying a friend back for dinner, the most convenient payment is:', options: ['A P2P app like Venmo, Zelle, or Cash App', 'A certified bank check for guaranteed acceptance', 'A wire transfer to their routing and account numbers', 'A credit card with zero cashback to avoid over-complexity'], correct: 0, explanation: 'P2P apps are purpose-built for person-to-person small transfers between trusted contacts: fast, free, and convenient.' },
+              { prompt: 'For a $250,000 real estate closing, the seller requires:', options: ['A wire transfer or certified cashier\'s check, since personal checks are not accepted for large guaranteed transactions', 'Cash in a secure briefcase delivered on closing day', 'A Venmo transfer split into multiple $5,000 payments', 'A personal check with your employer\'s signature as co-signer'], correct: 0, explanation: 'Large real estate transactions require guaranteed funds such as certified checks or wires where the bank has verified the money exists before payment.' },
+              { prompt: 'You are buying something from a stranger at a flea market. Best payment method:', options: ['Cash, which is irreversible like a wire but portable, and sellers almost always accept it', 'Zelle, an instant transfer that supposedly protects you if something goes wrong', 'Credit card, for fraud protection on the in-person purchase', 'Check, so you have a paper record of the transaction'], correct: 0, explanation: 'Cash is ideal for in-person transactions with strangers: it is universally accepted, simple, and appropriate for small amounts.' },
+              { prompt: 'Recurring monthly bill payments (electric, internet, subscription) are best automated using:', options: ['ACH autopay directly from your checking account or credit card', 'Manual wire transfers for each bill as they come due', 'Cash dropped off at each company\'s local office monthly', 'P2P payment apps sent to the utility company\'s personal account'], correct: 0, explanation: 'ACH autopay ensures bills are paid on time automatically with no late fees and no manually initiated transfers each month.' },
+              { prompt: 'The payment method with the highest risk of being used in scams is:', options: ['Wire transfers and Zelle, both of which are essentially irreversible once sent', 'Credit cards, easy to charge back, which scammers exploit', 'Cash, physically traceable and requiring an in-person handoff', 'Certified checks - bank guarantee makes them immune to fraud'], correct: 0, explanation: 'Irreversible payments such as wires and Zelle are the preferred tool of scammers precisely because the money cannot be recovered after a fraudulent transfer.' },
             ],
           },
         ],
@@ -1108,78 +1108,78 @@ export const levels = [
           {
             id: 'u2-3-l1', title: 'APR', centsReward: 10,
             questions: [
-              { prompt: 'APR stands for:', options: ['Annual Percentage Rate - the yearly cost of borrowing money', 'Applied Principal Rate - the base amount charged on loans', 'Averaged Payment Rate - the blended rate across multiple loans', 'Annual Profit Ratio - the bank\'s return on your account'], correct: 0, explanation: 'APR is the standardized annual cost of a loan including interest and most fees - making different loan offers comparable.' },
-              { prompt: 'APR is most useful when:', options: ['Comparing the true cost of different loan offers side by side', 'Determining how much your savings account earns each month', 'Calculating the return on investment in a stock portfolio', 'Measuring how quickly a credit card balance can be paid off'], correct: 0, explanation: 'APR levels the playing field - a loan advertising "1.5% per month" is 18% APR, which you can now directly compare to a "15% APR" loan.' },
-              { prompt: 'A credit card with 24% APR charges approximately ___ per day on unpaid balances:', options: ['0.066% per day (24% ÷ 365)', '2% per day (24% ÷ 12)', '0.5% per day (24% ÷ 48)', '8% per day (24% ÷ 3)'], correct: 0, explanation: '24% ÷ 365 = 0.066% daily. On a $1,000 balance, that\'s $0.66 per day - small, but it compounds to $266 of interest over a year.' },
-              { prompt: 'A lower APR on a loan is always better because:', options: ['Lower APR means you pay less in total interest over the life of the loan', 'Lenders offer lower APRs to customers with poor credit as a reward', 'Lower APR reduces your monthly principal payments', 'Banks are required to charge lower APRs during recessions by law'], correct: 0, explanation: 'APR is your cost of borrowing - minimizing it directly reduces the total you repay above the principal amount.' },
+              { prompt: 'APR stands for:', options: ['Annual Percentage Rate, the yearly cost of borrowing money', 'Applied Principal Rate, the base amount charged on loans', 'Averaged Payment Rate, the blended rate across multiple loans', 'Annual Profit Ratio, the bank\'s return on your account'], correct: 0, explanation: 'APR is the standardized annual cost of a loan including interest and most fees, making different loan offers comparable.' },
+              { prompt: 'APR is most useful when:', options: ['Comparing the true cost of different loan offers side by side', 'Determining how much your savings account earns each month', 'Calculating the return on investment in a stock portfolio', 'Measuring how quickly a credit card balance can be paid off'], correct: 0, explanation: 'APR levels the playing field: a loan advertising "1.5% per month" is 18% APR, which you can directly compare to a "15% APR" loan.' },
+              { prompt: 'A credit card with 24% APR charges approximately ___ per day on unpaid balances:', options: ['0.066% per day (24% ÷ 365)', '2% per day (24% ÷ 12)', '0.5% per day (24% ÷ 48)', '8% per day (24% ÷ 3)'], correct: 0, explanation: '24% ÷ 365 = 0.066% daily. On a $1,000 balance, that\'s $0.66 per day, which seems small but compounds to $266 of interest over a year.' },
+              { prompt: 'A lower APR on a loan is always better because:', options: ['Lower APR means you pay less in total interest over the life of the loan', 'Lenders offer lower APRs to customers with poor credit as a reward', 'Lower APR reduces your monthly principal payments', 'Banks are required to charge lower APRs during recessions by law'], correct: 0, explanation: 'APR is your cost of borrowing; minimizing it directly reduces the total you repay above the principal amount.' },
               { prompt: '$10,000 personal loan at 8% APR for 2 years vs 12% APR for 2 years. The 8% loan saves approximately:', options: ['~$400 in total interest over the life of the loan', '~$4,000 in total interest', '~$40 in total interest', '~$800 per month in payments'], correct: 0, explanation: 'Rough calculation: 8% × $10k × 2 = $1,600 vs 12% × $10k × 2 = $2,400 (simple interest approximation). Savings = ~$800, though exact figures vary by amortization.' },
-              { prompt: 'The Truth in Lending Act (TILA) requires lenders to:', options: ['Clearly disclose the APR before you sign any loan or credit agreement', 'Offer the same APR to all borrowers regardless of credit score', 'Cap APR at 36% for all consumer loans', 'Calculate APR the same way across all countries'], correct: 0, explanation: 'TILA gives consumers the right to know the true cost of borrowing upfront - allowing comparison shopping before commitment.' },
+              { prompt: 'The Truth in Lending Act (TILA) requires lenders to:', options: ['Clearly disclose the APR before you sign any loan or credit agreement', 'Offer the same APR to all borrowers regardless of credit score', 'Cap APR at 36% for all consumer loans', 'Calculate APR the same way across all countries'], correct: 0, explanation: 'TILA gives consumers the right to know the true cost of borrowing upfront, allowing comparison shopping before commitment.' },
             ],
           },
           {
             id: 'u2-3-l2', title: 'APY', centsReward: 10,
             questions: [
-              { prompt: 'APY stands for:', options: ['Annual Percentage Yield - the actual return earned on savings including compounding', 'Applicable Principal Yield - the interest on the original deposit only', 'Adjusted Percentage Yield - the rate after inflation adjustments', 'Average Payment Yield - the return averaged across multiple accounts'], correct: 0, explanation: 'APY is the number to check on savings accounts - it reflects how your money actually grows when interest compounds.' },
-              { prompt: 'APY is higher than APR for the same nominal rate because:', options: ['APY includes the effect of compounding - interest earns interest throughout the year', 'APY is calculated on a longer time period than APR', 'Federal regulations require APY to be 10% higher than APR', 'APY factors in inflation while APR does not'], correct: 0, explanation: 'A 4% nominal rate compounded monthly produces an APY of 4.07% - the difference grows with higher rates and more frequent compounding.' },
-              { prompt: 'When comparing savings accounts, you should always compare:', options: ['APY - it shows the true annual earnings after compounding', 'APR - it is always the more conservative and accurate measure', 'The monthly interest rate times 12 from the account disclosure', 'The advertised promotional rate that applies in the first month'], correct: 0, explanation: 'APY is the apples-to-apples comparison for savings products - a 4% APY at Bank A and a 4% APY at Bank B earn the same.' },
+              { prompt: 'APY stands for:', options: ['Annual Percentage Yield, the actual return earned on savings including compounding', 'Applicable Principal Yield, the interest on the original deposit only', 'Adjusted Percentage Yield, the rate after inflation adjustments', 'Average Payment Yield, the return averaged across multiple accounts'], correct: 0, explanation: 'APY is the number to check on savings accounts; it reflects how your money actually grows when interest compounds.' },
+              { prompt: 'APY is higher than APR for the same nominal rate because:', options: ['APY includes the effect of compounding, meaning interest earns interest throughout the year', 'APY is calculated on a longer time period than APR', 'Federal regulations require APY to be 10% higher than APR', 'APY factors in inflation while APR does not'], correct: 0, explanation: 'A 4% nominal rate compounded monthly produces an APY of 4.07%; the difference grows with higher rates and more frequent compounding.' },
+              { prompt: 'When comparing savings accounts, you should always compare:', options: ['APY, which shows the true annual earnings after compounding', 'APR, which is always the more conservative and accurate measure', 'The monthly interest rate times 12 from the account disclosure', 'The advertised promotional rate that applies in the first month'], correct: 0, explanation: 'APY is the apples-to-apples comparison for savings products: a 4% APY at Bank A and a 4% APY at Bank B earn the same.' },
               { prompt: '$5,000 in a savings account at 4% APY. After one year, you earn:', options: ['$200 (and your balance becomes $5,200)', '$20 (APY is monthly, not annual)', '$400 (APY compounds quarterly to 8%)', '$50 (after taxes at 25%)'], correct: 0, explanation: '$5,000 × 4% = $200 in interest after one year. APY is already the annual figure.' },
-              { prompt: 'APY matters more than APR when evaluating:', options: ['A savings account or CD you are depositing money into', 'A personal loan you are borrowing from a bank', 'Your credit card balance and monthly interest charges', 'A mortgage on a home purchase'], correct: 0, explanation: 'APY is a savings concept - it shows what you EARN. APR is a borrowing concept - it shows what you PAY. Never confuse the two.' },
-              { prompt: 'A CD advertises "4% APR, compounded monthly." The actual APY is:', options: ['~4.07% - slightly higher due to monthly compounding', 'Exactly 4.00% - APR and APY are the same for CDs', '~3.93% - lower because fees reduce the effective yield', '~4.80% - APR multiplied by the 12 compounding periods'], correct: 0, explanation: '4% APR compounded monthly: APY = (1 + 0.04/12)^12 − 1 ≈ 0.0407 = 4.07%. Compounding always pushes APY above APR.' },
+              { prompt: 'APY matters more than APR when evaluating:', options: ['A savings account or CD you are depositing money into', 'A personal loan you are borrowing from a bank', 'Your credit card balance and monthly interest charges', 'A mortgage on a home purchase'], correct: 0, explanation: 'APY is a savings concept showing what you EARN. APR is a borrowing concept showing what you PAY. Never confuse the two.' },
+              { prompt: 'A CD advertises "4% APR, compounded monthly." The actual APY is:', options: ['~4.07%, slightly higher due to monthly compounding', 'Exactly 4.00%, since APR and APY are the same for CDs', '~3.93%, lower because fees reduce the effective yield', '~4.80%, APR multiplied by the 12 compounding periods'], correct: 0, explanation: '4% APR compounded monthly: APY = (1 + 0.04/12)^12 − 1 ≈ 0.0407 = 4.07%. Compounding always pushes APY above APR.' },
             ],
           },
           {
             id: 'u2-3-l3', title: 'Compound Interest', centsReward: 10,
             questions: [
-              { prompt: 'Compound interest is powerful because:', options: ['Interest earns interest - your growth accelerates over time', 'The rate increases automatically each year as your balance grows', 'Banks pay bonuses on accounts that have compounded for over 5 years', 'Compounding eliminates all tax obligations on earned interest'], correct: 0, explanation: 'Compound interest is the snowball effect: a bigger balance earns more interest, which makes the balance bigger, which earns even more.' },
-              { prompt: 'Daily compounding vs. annual compounding on $10,000 at 5% after 10 years produces:', options: ['Daily: ~$16,487 vs Annual: ~$16,289 - daily is marginally better', 'Daily: $50,000 vs Annual: $5,000 - a huge difference', 'They produce identical results since the annual rate is the same', 'Annual compounding always produces more since it accumulates longer before applying'], correct: 0, explanation: 'More frequent compounding is better, but the difference between daily and annual is smaller than most people think at modest rates.' },
+              { prompt: 'Compound interest is powerful because:', options: ['Interest earns interest, so your growth accelerates over time', 'The rate increases automatically each year as your balance grows', 'Banks pay bonuses on accounts that have compounded for over 5 years', 'Compounding eliminates all tax obligations on earned interest'], correct: 0, explanation: 'Compound interest is the snowball effect: a bigger balance earns more interest, which makes the balance bigger, which earns even more.' },
+              { prompt: 'Daily compounding vs. annual compounding on $10,000 at 5% after 10 years produces:', options: ['Daily: ~$16,487 vs Annual: ~$16,289; daily compounding is marginally better', 'Daily: $50,000 vs Annual: $5,000, a huge difference', 'They produce identical results since the annual rate is the same', 'Annual compounding always produces more since it accumulates longer before applying'], correct: 0, explanation: 'More frequent compounding is better, but the difference between daily and annual is smaller than most people think at modest rates.' },
               { prompt: 'The Rule of 72 tells you that money doubles in approximately:', options: ['72 ÷ interest rate years (e.g., 72 ÷ 6% = 12 years)', 'Rate × 72 years (e.g., 6% × 72 = 432 years)', '72 ÷ (rate × compounding frequency) years', '72 × rate years (e.g., 72 × 6% = 4.32 years)'], correct: 0, explanation: 'At 6%: $1,000 doubles to $2,000 in roughly 12 years. At 9%: only 8 years. Simple, powerful rule for quick mental math.' },
-              { prompt: 'Compounding works AGAINST you on:', options: ['Credit card debt - the balance you owe grows faster the longer you carry it', 'A 401(k) account growing tax-deferred for 30 years', 'A high-yield savings account earning 5% APY', 'U.S. Treasury bonds held to maturity'], correct: 0, explanation: 'Compound interest on debt snowballs just like on savings - but in the wrong direction. A $5,000 card balance at 24% APR becomes nearly $8,000 after 5 years of minimum payments.' },
-              { prompt: 'Reinvesting dividends in a stock portfolio demonstrates:', options: ['Compounding in action - dividends buy more shares, which pay more dividends', 'A high-risk strategy that only benefits experienced investors', 'A way to avoid paying taxes on dividend income', 'The dividend yield increasing over time as the company grows'], correct: 0, explanation: 'Dividend reinvestment (DRIP) is compounding applied to stocks - each dividend buys more shares that generate their own future dividends.' },
-              { prompt: 'Einstein reportedly called compound interest the "eighth wonder of the world." This refers to:', options: ['Its exponential nature - small differences in rate or time create enormous differences in outcome', 'The literal eighth mathematical theorem in classical physics', 'A compound interest formula printed on the wall of the World Bank', 'Its discovery in the 18th century, making it the 8th major mathematical discovery'], correct: 0, explanation: 'The quote captures compound interest\'s surprising power - most people drastically underestimate how exponential growth transforms small amounts into large sums over decades.' },
+              { prompt: 'Compounding works AGAINST you on:', options: ['Credit card debt, since the balance you owe grows faster the longer you carry it', 'A 401(k) account growing tax-deferred for 30 years', 'A high-yield savings account earning 5% APY', 'U.S. Treasury bonds held to maturity'], correct: 0, explanation: 'Compound interest on debt snowballs just like on savings but in the wrong direction. A $5,000 card balance at 24% APR becomes nearly $8,000 after 5 years of minimum payments.' },
+              { prompt: 'Reinvesting dividends in a stock portfolio demonstrates:', options: ['Compounding in action: dividends buy more shares, which pay more dividends', 'A high-risk strategy that only benefits experienced investors', 'A way to avoid paying taxes on dividend income', 'The dividend yield increasing over time as the company grows'], correct: 0, explanation: 'Dividend reinvestment (DRIP) is compounding applied to stocks; each dividend buys more shares that generate their own future dividends.' },
+              { prompt: 'Einstein reportedly called compound interest the "eighth wonder of the world." This refers to:', options: ['Its exponential nature: small differences in rate or time create enormous differences in outcome', 'The literal eighth mathematical theorem in classical physics', 'A compound interest formula printed on the wall of the World Bank', 'Its discovery in the 18th century, making it the 8th major mathematical discovery'], correct: 0, explanation: 'The quote captures compound interest\'s surprising power; most people drastically underestimate how exponential growth transforms small amounts into large sums over decades.' },
             ],
           },
           {
             id: 'u2-3-l4', title: 'Loan Interest', centsReward: 10,
             questions: [
-              { prompt: 'When you take out a loan, interest represents:', options: ['The cost of borrowing money - the lender\'s profit for taking on the risk', 'A government fee paid directly to the Treasury', 'A penalty charged only if you miss a payment', 'A refundable deposit returned when you pay off the loan'], correct: 0, explanation: 'Interest is the rental fee for money - you borrow, use the funds, and pay back more than you borrowed as compensation to the lender.' },
-              { prompt: 'A lower interest rate on a loan primarily means:', options: ['Less total money paid over the life of the loan', 'A shorter repayment term', 'Lower monthly principal payments but unchanged interest costs', 'A fixed rate that cannot rise even if market rates do'], correct: 0, explanation: 'Lower rate = less total interest paid = less total cost of the loan. This is why credit score matters - higher scores unlock lower rates.' },
-              { prompt: 'On a fully amortized loan, early payments go mostly toward:', options: ['Interest - later payments shift toward principal', 'Principal - interest is collected at the end of the loan', 'Fees and origination costs from when the loan was issued', 'An escrow account held by the lender'], correct: 0, explanation: 'Early amortization is interest-heavy by design. Making extra principal payments early in a loan\'s life saves disproportionate amounts of total interest.' },
+              { prompt: 'When you take out a loan, interest represents:', options: ['The cost of borrowing money, representing the lender\'s profit for taking on the risk', 'A government fee paid directly to the Treasury', 'A penalty charged only if you miss a payment', 'A refundable deposit returned when you pay off the loan'], correct: 0, explanation: 'Interest is the rental fee for money: you borrow, use the funds, and pay back more than you borrowed as compensation to the lender.' },
+              { prompt: 'A lower interest rate on a loan primarily means:', options: ['Less total money paid over the life of the loan', 'A shorter repayment term', 'Lower monthly principal payments but unchanged interest costs', 'A fixed rate that cannot rise even if market rates do'], correct: 0, explanation: 'Lower rate = less total interest paid = less total cost of the loan. This is why credit score matters; higher scores unlock lower rates.' },
+              { prompt: 'On a fully amortized loan, early payments go mostly toward:', options: ['Interest, with later payments shifting toward principal', 'Principal, with interest collected at the end of the loan', 'Fees and origination costs from when the loan was issued', 'An escrow account held by the lender'], correct: 0, explanation: 'Early amortization is interest-heavy by design. Making extra principal payments early in a loan\'s life saves disproportionate amounts of total interest.' },
               { prompt: '$15,000 car loan at 6% for 5 years. Total interest paid over the life of the loan is approximately:', options: ['~$2,400', '~$900', '~$15,000', '~$6,000'], correct: 0, explanation: 'A 5-year $15k loan at 6% has monthly payments of ~$290 × 60 payments = $17,400 total. Total interest = $17,400 − $15,000 = $2,400.' },
-              { prompt: 'Making extra principal payments on a loan reduces total interest because:', options: ['The remaining balance is smaller, so each future interest calculation is lower', 'Extra payments are applied directly to reduce the interest rate', 'Lenders refund a portion of prepaid interest when you pay early', 'Extra payments extend the loan term, distributing interest over more years'], correct: 0, explanation: 'Interest accrues on the outstanding principal balance - shrinking that balance faster directly reduces all future interest charges.' },
+              { prompt: 'Making extra principal payments on a loan reduces total interest because:', options: ['The remaining balance is smaller, so each future interest calculation is lower', 'Extra payments are applied directly to reduce the interest rate', 'Lenders refund a portion of prepaid interest when you pay early', 'Extra payments extend the loan term, distributing interest over more years'], correct: 0, explanation: 'Interest accrues on the outstanding principal balance; shrinking that balance faster directly reduces all future interest charges.' },
               { prompt: 'Which loan type typically has the highest interest rate?', options: ['Payday loans - APRs of 300–400% are common', 'Home mortgages', '30-year U.S. Treasury bonds', 'Federal student loans'], correct: 0, explanation: 'Payday loans are the most expensive form of borrowing available - short-term $15 fees on $100 amount to ~390% APR when annualized.' },
             ],
           },
           {
             id: 'u2-3-l5', title: 'Mortgage Interest', centsReward: 10,
             questions: [
-              { prompt: 'A mortgage is a loan used to:', options: ['Purchase real estate, with the property itself as collateral', 'Fund general living expenses when income is low', 'Refinance existing credit card debt at a lower rate', 'Purchase a vehicle using the car as collateral'], correct: 0, explanation: 'Mortgages are secured by the property - if you default, the lender can foreclose and sell the house to recover the loan.' },
-              { prompt: 'A $250,000 mortgage at 7% for 30 years means you pay approximately ___ in total interest:', options: ['~$348,000 - nearly 1.4× the original loan amount again', '~$25,000 - about 10% of the loan value', '~$175,000 - exactly 70% of the loan value', '~$0 - interest is only charged if you miss payments'], correct: 0, explanation: 'At 7%/30yr, monthly payment ≈ $1,663. Total paid ≈ $598,680 − $250,000 principal = $348,680 in interest. This is why rates matter enormously.' },
+              { prompt: 'A mortgage is a loan used to:', options: ['Purchase real estate, with the property itself as collateral', 'Fund general living expenses when income is low', 'Refinance existing credit card debt at a lower rate', 'Purchase a vehicle using the car as collateral'], correct: 0, explanation: 'Mortgages are secured by the property; if you default, the lender can foreclose and sell the house to recover the loan.' },
+              { prompt: 'A $250,000 mortgage at 7% for 30 years means you pay approximately ___ in total interest:', options: ['~$348,000, nearly 1.4× the original loan amount again', '~$25,000, about 10% of the loan value', '~$175,000, exactly 70% of the loan value', '~$0, since interest is only charged if you miss payments'], correct: 0, explanation: 'At 7%/30yr, monthly payment ≈ $1,663. Total paid ≈ $598,680 − $250,000 principal = $348,680 in interest. This is why rates matter enormously.' },
               { prompt: 'The difference between a 6.5% and a 7.5% mortgage rate on a $300,000 loan over 30 years is approximately:', options: ['~$65,000 in total extra interest at the higher rate', '~$6,500 in total extra interest', '~$650 in total extra interest', '~$650,000 in total extra interest'], correct: 0, explanation: 'Each 0.5% in rate adds roughly $30,000+ in interest on a large mortgage over 30 years. Shopping rates is one of the highest-value financial decisions a homebuyer makes.' },
-              { prompt: 'Mortgage interest is tax-deductible for many homeowners because:', options: ['The IRS allows itemizing mortgage interest paid as an itemized deduction on Schedule A', 'All housing costs are excluded from taxable income under the tax code', 'The government subsidizes homeownership by crediting mortgage payments', 'Interest paid on any loan reduces your taxable income dollar for dollar'], correct: 0, explanation: 'You can deduct mortgage interest if you itemize deductions - valuable for high-rate mortgages or in your early years when interest is a large portion of payment.' },
-              { prompt: 'A fixed-rate mortgage vs. an adjustable-rate mortgage (ARM) - the tradeoff is:', options: ['Fixed = predictable payments but potentially higher initial rate; ARM = lower starting rate but future rate uncertainty', 'Fixed = always cheaper; ARM = always more expensive', 'Fixed = 15-year term only; ARM = 30-year term only', 'Fixed rates adjust down automatically; ARMs stay fixed for 10 years then adjust'], correct: 0, explanation: 'ARMs offer lower initial rates (sometimes 0.5–1% lower) but carry rate risk - if rates rise, so does your payment. Fixed rates provide certainty.' },
+              { prompt: 'Mortgage interest is tax-deductible for many homeowners because:', options: ['The IRS allows itemizing mortgage interest paid as an itemized deduction on Schedule A', 'All housing costs are excluded from taxable income under the tax code', 'The government subsidizes homeownership by crediting mortgage payments', 'Interest paid on any loan reduces your taxable income dollar for dollar'], correct: 0, explanation: 'You can deduct mortgage interest if you itemize deductions, which is valuable for high-rate mortgages or in your early years when interest is a large portion of payment.' },
+              { prompt: 'A fixed-rate mortgage vs. an adjustable-rate mortgage (ARM) - the tradeoff is:', options: ['Fixed rate means predictable payments but potentially a higher initial rate; ARM offers a lower starting rate but future rate uncertainty', 'Fixed = always cheaper; ARM = always more expensive', 'Fixed = 15-year term only; ARM = 30-year term only', 'Fixed rates adjust down automatically; ARMs stay fixed for 10 years then adjust'], correct: 0, explanation: 'ARMs offer lower initial rates (sometimes 0.5–1% lower) but carry rate risk - if rates rise, so does your payment. Fixed rates provide certainty.' },
               { prompt: 'Making one extra mortgage principal payment per year reduces:', options: ['The total loan term by several years and saves tens of thousands in interest', 'Only your monthly payment amount with no effect on total interest', 'Your property tax assessment based on loan balance', 'The lender\'s required escrow contribution each year'], correct: 0, explanation: 'One extra principal payment per year on a 30-year mortgage can shorten the term by 4–5 years and save $30,000–$50,000 in interest on a typical loan.' },
             ],
           },
           {
             id: 'u2-3-l6', title: 'Student Loan Interest', centsReward: 10,
             questions: [
-              { prompt: 'Unsubsidized student loans begin accruing interest:', options: ['Immediately when the loan is disbursed - even while you are in school', 'Only after a 6-month grace period following graduation', 'When you begin earning income above $30,000 per year', 'Only if you miss your first scheduled payment after graduation'], correct: 0, explanation: 'Unsubsidized loans accrue interest from day one. If you borrow $20,000 freshman year, by graduation you may owe $22,000+ before making one payment.' },
-              { prompt: 'Subsidized federal student loans differ because:', options: ['The government pays the interest while you are enrolled at least half-time', 'They are interest-free for the life of the loan if you work in public service', 'They carry higher interest rates to offset the repayment delay', 'They convert to grants automatically if you graduate with a 3.5 GPA or higher'], correct: 0, explanation: 'Subsidized loans are the best form of federal student aid - the government absorbs interest costs during school, reducing the total you repay.' },
-              { prompt: 'Interest capitalization on student loans means:', options: ['Unpaid interest is added to the principal, and you then owe interest on the larger balance', 'Your interest rate decreases as you make on-time payments', 'Capitalized loans qualify for a lower tax deduction than regular loans', 'The lender charges a one-time capitalization fee at loan origination'], correct: 0, explanation: 'Capitalization is a debt trap - if $5,000 of interest is added to a $30,000 balance, you are now paying interest on $35,000.' },
-              { prompt: 'The student loan interest deduction allows you to deduct up to ___ in interest paid per year:', options: ['$2,500 from your taxable income', '$5,000 as a tax credit directly off your tax bill', '$10,000 if your income is below $75,000', 'Unlimited if you are enrolled in an income-driven repayment plan'], correct: 0, explanation: 'The IRS allows up to $2,500 deduction for qualified student loan interest - subject to income limits and phase-outs for higher earners.' },
+              { prompt: 'Unsubsidized student loans begin accruing interest:', options: ['Immediately when the loan is disbursed, even while you are in school', 'Only after a 6-month grace period following graduation', 'When you begin earning income above $30,000 per year', 'Only if you miss your first scheduled payment after graduation'], correct: 0, explanation: 'Unsubsidized loans accrue interest from day one. If you borrow $20,000 freshman year, by graduation you may owe $22,000+ before making one payment.' },
+              { prompt: 'Subsidized federal student loans differ because:', options: ['The government pays the interest while you are enrolled at least half-time', 'They are interest-free for the life of the loan if you work in public service', 'They carry higher interest rates to offset the repayment delay', 'They convert to grants automatically if you graduate with a 3.5 GPA or higher'], correct: 0, explanation: 'Subsidized loans are the best form of federal student aid, as the government absorbs interest costs during school, reducing the total you repay.' },
+              { prompt: 'Interest capitalization on student loans means:', options: ['Unpaid interest is added to the principal, and you then owe interest on the larger balance', 'Your interest rate decreases as you make on-time payments', 'Capitalized loans qualify for a lower tax deduction than regular loans', 'The lender charges a one-time capitalization fee at loan origination'], correct: 0, explanation: 'Capitalization is a debt trap: if $5,000 of interest is added to a $30,000 balance, you are now paying interest on $35,000.' },
+              { prompt: 'The student loan interest deduction allows you to deduct up to ___ in interest paid per year:', options: ['$2,500 from your taxable income', '$5,000 as a tax credit directly off your tax bill', '$10,000 if your income is below $75,000', 'Unlimited if you are enrolled in an income-driven repayment plan'], correct: 0, explanation: 'The IRS allows up to $2,500 deduction for qualified student loan interest, subject to income limits and phase-outs for higher earners.' },
               { prompt: 'Income-driven repayment (IDR) plans for federal student loans tie monthly payments to:', options: ['A percentage of your discretionary income, with potential forgiveness after 20–25 years', 'The minimum amount required to prevent default only', 'Your total loan balance divided by a fixed 10-year term', 'Your employer\'s matching contribution to your retirement account'], correct: 0, explanation: 'IDR plans (PAYE, SAVE, IBR) cap payments at 5–10% of discretionary income - essential for borrowers with high debt relative to income.' },
-              { prompt: 'Making extra payments on student loans during a grace period is smart because:', options: ['Reducing principal before capitalization means less interest is added to the balance', 'Grace period payments earn double interest credit toward forgiveness programs', 'The government matches extra payments made during grace periods', 'Extra grace period payments permanently lower your interest rate'], correct: 0, explanation: 'Paying interest during school or grace period prevents it from capitalizing - every dollar paid pre-capitalization saves more than a dollar later.' },
+              { prompt: 'Making extra payments on student loans during a grace period is smart because:', options: ['Reducing principal before capitalization means less interest is added to the balance', 'Grace period payments earn double interest credit toward forgiveness programs', 'The government matches extra payments made during grace periods', 'Extra grace period payments permanently lower your interest rate'], correct: 0, explanation: 'Paying interest during school or grace period prevents it from capitalizing; every dollar paid pre-capitalization saves more than a dollar later.' },
             ],
           },
           {
             id: 'u2-3-l7', title: 'Credit Card Interest', centsReward: 10,
             questions: [
               { prompt: 'Credit card interest is especially costly because:', options: ['It compounds daily on your unpaid balance, so even small balances grow quickly', 'Federal law requires credit cards to charge at least 20% APR', 'Credit card interest is applied to new purchases before existing balances', 'Credit card companies can change your rate at any time for any reason'], correct: 0, explanation: 'Daily compounding at 24% APR means ~0.066% per day on your balance. Small daily charges compound into significant annual interest charges.' },
-              { prompt: 'If you have a $2,000 credit card balance at 22% APR and make only minimum payments, you will:', options: ['Take many years to pay it off and pay far more than $2,000 in total interest', 'Pay it off within 12 months since interest barely accumulates', 'Have the balance automatically forgiven after 7 years under consumer protection law', 'Pay a flat 22% of $2,000 ($440) in interest and be done'], correct: 0, explanation: 'Minimum payment math is brutal - $2,000 at 22% with ~$40 minimum payments could take 20+ years and cost $3,000+ in interest.' },
+              { prompt: 'If you have a $2,000 credit card balance at 22% APR and make only minimum payments, you will:', options: ['Take many years to pay it off and pay far more than $2,000 in total interest', 'Pay it off within 12 months since interest barely accumulates', 'Have the balance automatically forgiven after 7 years under consumer protection law', 'Pay a flat 22% of $2,000 ($440) in interest and be done'], correct: 0, explanation: 'Minimum payment math is brutal: $2,000 at 22% with ~$40 minimum payments could take 20+ years and cost $3,000+ in interest.' },
               { prompt: 'The best strategy to avoid all credit card interest is:', options: ['Pay the full statement balance by the due date every month', 'Pay the minimum payment consistently and never miss a payment', 'Keep your credit card balance below 50% utilization at all times', 'Only use a credit card once per month for a single purchase'], correct: 0, explanation: 'Full balance payment by the due date = zero interest. The grace period (21–25 days after statement close) gives you free float.' },
-              { prompt: 'A credit card\'s "grace period" means:', options: ['If you pay the full balance by the due date, no interest accrues on that period\'s purchases', 'You have 30 days after a late payment before your rate increases', 'You can return any credit card purchase within 21 days for a full refund', 'New cardholders pay no interest for the first 3 months'], correct: 0, explanation: 'The grace period is the key to using credit cards for free - it only applies to purchase balances, not cash advances or balance transfers.' },
-              { prompt: 'Carrying a $5,000 credit card balance at 20% APR for one full year costs approximately:', options: ['~$1,000 in interest (assuming no payments reduce the principal)', '~$100 in interest - the rate applies only to new purchases', '~$5,000 in interest - the balance doubles each year at that rate', '~$250 in interest - the rate is per quarter, not per year'], correct: 0, explanation: '$5,000 × 20% = $1,000 in annual interest on a balance that never decreases. In practice, minimum payments would reduce principal slowly.' },
-              { prompt: 'A balance transfer to a 0% intro APR card can save money IF:', options: ['You pay the full transferred balance before the promo period ends - otherwise you pay the high reset rate', 'You continue making minimum payments since 0% means truly no interest ever', 'The transfer fee is exactly equal to one month of interest on the original card', 'Your original card\'s APR was higher than 5%'], correct: 0, explanation: '0% promo periods end - often with a rate jump to 25%+ on any remaining balance. The plan must include paying off the full amount within the promo window.' },
+              { prompt: 'A credit card\'s "grace period" means:', options: ['If you pay the full balance by the due date, no interest accrues on that period\'s purchases', 'You have 30 days after a late payment before your rate increases', 'You can return any credit card purchase within 21 days for a full refund', 'New cardholders pay no interest for the first 3 months'], correct: 0, explanation: 'The grace period is the key to using credit cards for free; it only applies to purchase balances, not cash advances or balance transfers.' },
+              { prompt: 'Carrying a $5,000 credit card balance at 20% APR for one full year costs approximately:', options: ['~$1,000 in interest, assuming no payments reduce the principal', '~$100 in interest, since the rate applies only to new purchases', '~$5,000 in interest, since the balance doubles each year at that rate', '~$250 in interest, since the rate is per quarter, not per year'], correct: 0, explanation: '$5,000 × 20% = $1,000 in annual interest on a balance that never decreases. In practice, minimum payments would reduce principal slowly.' },
+              { prompt: 'A balance transfer to a 0% intro APR card can save money IF:', options: ['You pay the full transferred balance before the promo period ends; otherwise you pay the high reset rate', 'You continue making minimum payments since 0% means truly no interest ever', 'The transfer fee is exactly equal to one month of interest on the original card', 'Your original card\'s APR was higher than 5%'], correct: 0, explanation: '0% promo periods end, often with a rate jump to 25%+ on any remaining balance. The plan must include paying off the full amount within the promo window.' },
             ],
           },
         ],
@@ -1205,45 +1205,45 @@ export const levels = [
           {
             id: 'u3-1-l1', title: 'Income & Expenses', centsReward: 10,
             questions: [
-              { prompt: 'A budget is most accurately described as:', options: ['A plan for how you will spend, save, and allocate your income', 'A record of how you spent money in the past month', 'A loan document outlining your monthly debt payments', 'A government form required for tax filing purposes'], correct: 0, explanation: 'A budget is forward-looking - it is a deliberate plan for your money before the month begins, not just a spending record.' },
-              { prompt: 'Why must a budget start with your NET income (not gross)?', options: ['You can only spend money you actually receive - taxes and deductions come out first', 'Net income is higher than gross, giving you more room in the budget', 'The IRS requires budget calculations based on net income only', 'Budgeting with gross income is illegal under consumer finance regulations'], correct: 0, explanation: 'Budgeting from gross income is a common mistake that leads to planned overspending - base your budget on what actually arrives in your account.' },
-              { prompt: 'Which step comes FIRST when building a budget from scratch?', options: ['Calculate your total monthly net income from all sources', 'List all your monthly expenses from largest to smallest', 'Determine your savings goal for the month', 'Review your last 3 months of bank statements for spending patterns'], correct: 0, explanation: 'You cannot allocate money you do not know you have - income calculation is always the starting point of any budget.' },
+              { prompt: 'A budget is most accurately described as:', options: ['A plan for how you will spend, save, and allocate your income', 'A record of how you spent money in the past month', 'A loan document outlining your monthly debt payments', 'A government form required for tax filing purposes'], correct: 0, explanation: 'A budget is forward-looking: it is a deliberate plan for your money before the month begins, not just a spending record.' },
+              { prompt: 'Why must a budget start with your NET income (not gross)?', options: ['You can only spend money you actually receive, since taxes and deductions come out first', 'Net income is higher than gross, giving you more room in the budget', 'The IRS requires budget calculations based on net income only', 'Budgeting with gross income is illegal under consumer finance regulations'], correct: 0, explanation: 'Budgeting from gross income is a common mistake that leads to planned overspending; base your budget on what actually arrives in your account.' },
+              { prompt: 'Which step comes FIRST when building a budget from scratch?', options: ['Calculate your total monthly net income from all sources', 'List all your monthly expenses from largest to smallest', 'Determine your savings goal for the month', 'Review your last 3 months of bank statements for spending patterns'], correct: 0, explanation: 'You cannot allocate money you do not know you have; income calculation is always the starting point of any budget.' },
               { prompt: 'The goal of aligning expenses with income in a budget is:', options: ['To ensure you spend no more than you earn and direct the surplus intentionally', 'To match your spending habits to the national average for your income level', 'To spend all income each month so nothing goes to waste', 'To ensure your employer increases your income to match your desired lifestyle'], correct: 0, explanation: 'Income − Expenses = Surplus (for saving/investing) or Deficit (overspending). The budget is where you decide which one it will be.' },
-              { prompt: 'Which type of expenses are hardest to predict when building a budget?', options: ['Irregular expenses like car repairs, medical bills, or annual subscriptions', 'Fixed monthly bills like rent and car insurance', 'Weekly grocery spending that stays roughly consistent', 'Payroll taxes withheld from your paycheck automatically'], correct: 0, explanation: 'Irregular expenses are the budget-busters - solve this by creating a monthly sinking fund contribution for known annual or irregular costs.' },
-              { prompt: 'A budget that accounts for every dollar of income is called:', options: ['A zero-based budget', 'A surplus budget', 'A deficit reduction plan', 'A fixed-ratio budget'], correct: 0, explanation: 'Zero-based budgeting assigns every dollar a job - income minus all allocations (including savings) equals zero at month end.' },
+              { prompt: 'Which type of expenses are hardest to predict when building a budget?', options: ['Irregular expenses like car repairs, medical bills, or annual subscriptions', 'Fixed monthly bills like rent and car insurance', 'Weekly grocery spending that stays roughly consistent', 'Payroll taxes withheld from your paycheck automatically'], correct: 0, explanation: 'Irregular expenses are the budget-busters; solve this by creating a monthly sinking fund contribution for known annual or irregular costs.' },
+              { prompt: 'A budget that accounts for every dollar of income is called:', options: ['A zero-based budget', 'A surplus budget', 'A deficit reduction plan', 'A fixed-ratio budget'], correct: 0, explanation: 'Zero-based budgeting assigns every dollar a job: income minus all allocations (including savings) equals zero at month end.' },
             ],
           },
           {
             id: 'u3-1-l2', title: 'Cash Flow', centsReward: 10,
             questions: [
-              { prompt: 'Cash flow is defined as:', options: ['Money coming in minus money going out over a given period', 'The balance in your checking account at month-end', 'Total assets minus total liabilities', 'The rate at which investments grow over time'], correct: 0, explanation: 'Cash flow is the net movement of money - positive when income exceeds expenses, negative when expenses exceed income.' },
-              { prompt: 'Positive cash flow means:', options: ['You have money left over after covering all expenses - available to save or invest', 'Your income increased compared to last month', 'Your credit score is moving in a positive direction', 'Your bank account balance is greater than $1,000'], correct: 0, explanation: 'Positive cash flow is the foundation of wealth building - you cannot save what you do not have left over.' },
-              { prompt: 'Negative monthly cash flow is dangerous because:', options: ['You are spending more than you earn, which means accumulating debt over time', 'Banks charge fees for customers with negative cash flow each month', 'The IRS penalizes households that report negative cash flow', 'It prevents you from receiving a credit card or any form of credit'], correct: 0, explanation: 'Persistent negative cash flow means debt is growing - eventually this leads to financial crisis if not corrected.' },
-              { prompt: 'If your monthly income is $3,500 and your expenses total $3,800, your cash flow is:', options: ['Negative $300 - you are overspending by $300/month', 'Positive $3,500 - income always counts as positive', 'Neutral - income and expenses are close enough to balance', 'Positive $300 - expenses under $4,000 create positive flow'], correct: 0, explanation: '$3,500 − $3,800 = −$300. You are spending $300 more than you earn every month - this must be corrected immediately.' },
-              { prompt: 'Which action directly improves your monthly cash flow?', options: ['Canceling a $50/month streaming service you rarely use', 'Applying for a credit card with a higher spending limit', 'Moving your emergency fund to a higher-yield account', 'Filing taxes as "married filing jointly" instead of "single"'], correct: 0, explanation: 'Cutting $50/month in expenses improves your cash flow by exactly $50 - the simplest, most direct way to improve the equation.' },
+              { prompt: 'Cash flow is defined as:', options: ['Money coming in minus money going out over a given period', 'The balance in your checking account at month-end', 'Total assets minus total liabilities', 'The rate at which investments grow over time'], correct: 0, explanation: 'Cash flow is the net movement of money: positive when income exceeds expenses, negative when expenses exceed income.' },
+              { prompt: 'Positive cash flow means:', options: ['You have money left over after covering all expenses, available to save or invest', 'Your income increased compared to last month', 'Your credit score is moving in a positive direction', 'Your bank account balance is greater than $1,000'], correct: 0, explanation: 'Positive cash flow is the foundation of wealth building; you cannot save what you do not have left over.' },
+              { prompt: 'Negative monthly cash flow is dangerous because:', options: ['You are spending more than you earn, which means accumulating debt over time', 'Banks charge fees for customers with negative cash flow each month', 'The IRS penalizes households that report negative cash flow', 'It prevents you from receiving a credit card or any form of credit'], correct: 0, explanation: 'Persistent negative cash flow means debt is growing, and eventually this leads to financial crisis if not corrected.' },
+              { prompt: 'If your monthly income is $3,500 and your expenses total $3,800, your cash flow is:', options: ['Negative $300, meaning you are overspending by $300/month', 'Positive $3,500, since income always counts as positive', 'Neutral; income and expenses are close enough to balance', 'Positive $300, since expenses under $4,000 create positive flow'], correct: 0, explanation: '$3,500 − $3,800 = −$300. You are spending $300 more than you earn every month; this must be corrected immediately.' },
+              { prompt: 'Which action directly improves your monthly cash flow?', options: ['Canceling a $50/month streaming service you rarely use', 'Applying for a credit card with a higher spending limit', 'Moving your emergency fund to a higher-yield account', 'Filing taxes as "married filing jointly" instead of "single"'], correct: 0, explanation: 'Cutting $50/month in expenses improves your cash flow by exactly $50, the simplest and most direct way to improve the equation.' },
               { prompt: 'Cash flow differs from net worth because:', options: ['Cash flow measures money movement over a period; net worth is a snapshot of assets minus liabilities', 'Net worth is always larger than cash flow since it includes all lifetime earnings', 'Cash flow includes investment returns; net worth does not', 'They are identical financial concepts expressed in different units'], correct: 0, explanation: 'Cash flow is a flow (like water through a pipe over time). Net worth is a snapshot (like how much water is in the tank right now).' },
             ],
           },
           {
             id: 'u3-1-l3', title: 'Budget Categories', centsReward: 10,
             questions: [
-              { prompt: 'Organizing expenses into budget categories helps because:', options: ['You can see exactly where money is going and identify areas to cut or reallocate', 'Categories are required by the IRS for tax deduction eligibility', 'Categorized expenses earn higher interest in designated savings accounts', 'Banks offer lower fees to customers who track their spending in categories'], correct: 0, explanation: 'Categories make spending visible - you can\'t control what you can\'t see. Tracking by category reveals surprising patterns.' },
+              { prompt: 'Organizing expenses into budget categories helps because:', options: ['You can see exactly where money is going and identify areas to cut or reallocate', 'Categories are required by the IRS for tax deduction eligibility', 'Categorized expenses earn higher interest in designated savings accounts', 'Banks offer lower fees to customers who track their spending in categories'], correct: 0, explanation: 'Categories make spending visible; you can\'t control what you can\'t see. Tracking by category reveals surprising patterns.' },
               { prompt: 'Which of the following is a standard budget category for most households?', options: ['Housing (rent/mortgage), food, transportation, and utilities', 'Brand equity, market capitalization, and working capital', 'Revenue, cost of goods sold, and gross margin', 'Principal, interest, taxes, and insurance (only for businesses)'], correct: 0, explanation: 'Housing, food, transportation, utilities, healthcare, and savings are the core categories for most personal budgets.' },
-              { prompt: 'The 50/30/20 rule suggests your budget should allocate:', options: ['50% to needs, 30% to wants, 20% to savings and debt repayment', '50% to savings, 30% to needs, 20% to wants', '50% to housing, 30% to food, 20% to everything else', '50% to debt, 30% to spending, 20% to taxes'], correct: 0, explanation: '50/30/20 is a simple, flexible framework - half for essentials, a third for lifestyle, and a fifth for future security.' },
-              { prompt: 'If housing costs consume 40% of your take-home income, which financial advice would most experts give?', options: ['Try to reduce housing costs - the 28% guideline suggests keeping housing under 28% of gross income', 'This is fine as long as your other categories adjust accordingly', 'Pay off your mortgage early to bring the percentage down in the long run', 'Housing above 35% automatically triggers a government housing assistance review'], correct: 0, explanation: 'Housing-to-income ratio matters: above 30% is "cost-burdened" (HUD definition). High housing costs crowd out savings and everything else.' },
+              { prompt: 'The 50/30/20 rule suggests your budget should allocate:', options: ['50% to needs, 30% to wants, 20% to savings and debt repayment', '50% to savings, 30% to needs, 20% to wants', '50% to housing, 30% to food, 20% to everything else', '50% to debt, 30% to spending, 20% to taxes'], correct: 0, explanation: '50/30/20 is a simple, flexible framework: half for essentials, a third for lifestyle, and a fifth for future security.' },
+              { prompt: 'If housing costs consume 40% of your take-home income, which financial advice would most experts give?', options: ['Try to reduce housing costs; the 28% guideline suggests keeping housing under 28% of gross income', 'This is fine as long as your other categories adjust accordingly', 'Pay off your mortgage early to bring the percentage down in the long run', 'Housing above 35% automatically triggers a government housing assistance review'], correct: 0, explanation: 'Housing-to-income ratio matters: above 30% is "cost-burdened" per HUD definition. High housing costs crowd out savings and everything else.' },
               { prompt: 'Which is the most common budget category that people underestimate?', options: ['Food and dining - many spend 2–3× what they think on restaurants and groceries', 'Housing - most people know their exact rent or mortgage to the dollar', 'Utilities - typically a fixed small percentage of income for most households', 'Transportation - car payments are fixed and easy to predict'], correct: 0, explanation: 'Food spending is the #1 underestimated category - small daily purchases (coffee, lunch, snacks) add up to thousands annually.' },
-              { prompt: 'A "miscellaneous" or "buffer" category in your budget is useful for:', options: ['Absorbing small unexpected expenses without blowing other categories', 'Hiding spending you are embarrassed about from budget review', 'Recording bank fees and penalties that occur throughout the month', 'Any expense the government has not officially categorized'], correct: 0, explanation: 'Life is imperfect - a small buffer category (5% of income) prevents the need to rob other categories when random expenses arise.' },
+              { prompt: 'A "miscellaneous" or "buffer" category in your budget is useful for:', options: ['Absorbing small unexpected expenses without blowing other categories', 'Hiding spending you are embarrassed about from budget review', 'Recording bank fees and penalties that occur throughout the month', 'Any expense the government has not officially categorized'], correct: 0, explanation: 'Life is imperfect; a small buffer category (5% of income) prevents the need to rob other categories when random expenses arise.' },
             ],
           },
           {
             id: 'u3-1-l4', title: 'Zero-Based Budgeting', centsReward: 10,
             questions: [
-              { prompt: 'In zero-based budgeting, "zero" means:', options: ['Income minus all expense and savings allocations equals zero - every dollar has a job', 'You aim to spend nothing on discretionary categories', 'Your checking account balance reaches zero before each payday', 'You eliminate all fixed expenses by the end of the budget period'], correct: 0, explanation: 'Zero-based means fully allocated - income is distributed completely among expenses, savings, debt payoff, and investments. Not a penny is unassigned.' },
-              { prompt: 'You earn $4,000/month. In zero-based budgeting, your allocations must:', options: ['Add up to exactly $4,000 - including savings, which is treated as an expense', 'Total less than $4,000 so you always have money left unaccounted for', 'Include at least 40 separate line items for proper granularity', 'Match last month\'s actual spending in each category precisely'], correct: 0, explanation: 'Every dollar is deliberately placed - $1,500 rent + $400 groceries + $200 savings + ... until all $4,000 is assigned.' },
-              { prompt: 'The main advantage of zero-based budgeting is:', options: ['Maximum intentionality - you actively decide how every dollar is used rather than letting it vanish', 'It automatically reduces taxes by tracking all deductions', 'It is the simplest budgeting method requiring the least effort each month', 'Banks offer premium account status to customers using zero-based budgets'], correct: 0, explanation: 'Zero-based budgeting eliminates the "I don\'t know where my money went" problem - every dollar is tracked from the start.' },
-              { prompt: 'A common challenge with zero-based budgeting is:', options: ['It requires time and discipline to reassign every dollar each month, especially with variable income', 'It is illegal in some states to track personal spending this granularly', 'The method only works for people earning exactly the same amount each month', 'Most budgeting apps do not support zero-based functionality'], correct: 0, explanation: 'Monthly re-budgeting from zero takes effort - irregular earners may find it especially tedious, though the control it provides is unmatched.' },
-              { prompt: 'In zero-based budgeting, savings is treated as:', options: ['An expense - you "spend" money into a savings account just like paying a bill', 'A bonus category added only if money is left over after all other expenses', 'An automatic deduction handled by your employer before you even see the money', 'An optional allocation that can be skipped in tight months'], correct: 0, explanation: '"Pay yourself first" within zero-based budgeting means savings is allocated before lifestyle spending - not what is left after everything else.' },
-              { prompt: 'Which person would benefit MOST from switching to zero-based budgeting?', options: ['Someone who often ends the month wondering where all their money went', 'Someone who already saves 30% of income consistently each month', 'A person with only one fixed monthly expense and no variable costs', 'Someone who uses exclusively cash for all purchases'], correct: 0, explanation: 'Zero-based budgeting is most transformative for people who lack intentionality - it makes every spending decision deliberate.' },
+              { prompt: 'In zero-based budgeting, "zero" means:', options: ['Income minus all expense and savings allocations equals zero, meaning every dollar has a job', 'You aim to spend nothing on discretionary categories', 'Your checking account balance reaches zero before each payday', 'You eliminate all fixed expenses by the end of the budget period'], correct: 0, explanation: 'Zero-based means fully allocated: income is distributed completely among expenses, savings, debt payoff, and investments. Not a penny is unassigned.' },
+              { prompt: 'You earn $4,000/month. In zero-based budgeting, your allocations must:', options: ['Add up to exactly $4,000, including savings, which is treated as an expense', 'Total less than $4,000 so you always have money left unaccounted for', 'Include at least 40 separate line items for proper granularity', 'Match last month\'s actual spending in each category precisely'], correct: 0, explanation: 'Every dollar is deliberately placed: $1,500 rent + $400 groceries + $200 savings + ... until all $4,000 is assigned.' },
+              { prompt: 'The main advantage of zero-based budgeting is:', options: ['Maximum intentionality: you actively decide how every dollar is used rather than letting it vanish', 'It automatically reduces taxes by tracking all deductions', 'It is the simplest budgeting method requiring the least effort each month', 'Banks offer premium account status to customers using zero-based budgets'], correct: 0, explanation: 'Zero-based budgeting eliminates the "I don\'t know where my money went" problem, since every dollar is tracked from the start.' },
+              { prompt: 'A common challenge with zero-based budgeting is:', options: ['It requires time and discipline to reassign every dollar each month, especially with variable income', 'It is illegal in some states to track personal spending this granularly', 'The method only works for people earning exactly the same amount each month', 'Most budgeting apps do not support zero-based functionality'], correct: 0, explanation: 'Monthly re-budgeting from zero takes effort; irregular earners may find it especially tedious, though the control it provides is unmatched.' },
+              { prompt: 'In zero-based budgeting, savings is treated as:', options: ['An expense: you "spend" money into a savings account just like paying a bill', 'A bonus category added only if money is left over after all other expenses', 'An automatic deduction handled by your employer before you even see the money', 'An optional allocation that can be skipped in tight months'], correct: 0, explanation: '"Pay yourself first" within zero-based budgeting means savings is allocated before lifestyle spending, not what is left after everything else.' },
+              { prompt: 'Which person would benefit MOST from switching to zero-based budgeting?', options: ['Someone who often ends the month wondering where all their money went', 'Someone who already saves 30% of income consistently each month', 'A person with only one fixed monthly expense and no variable costs', 'Someone who uses exclusively cash for all purchases'], correct: 0, explanation: 'Zero-based budgeting is most transformative for people who lack intentionality; it makes every spending decision deliberate.' },
             ],
           },
           {
@@ -1252,42 +1252,42 @@ export const levels = [
               { prompt: 'The 50/30/20 rule was popularized by:', options: ['Senator Elizabeth Warren in her book "All Your Worth"', 'Warren Buffett in his annual Berkshire letter', 'The Federal Reserve as an official savings guideline', 'Dave Ramsey as part of his Baby Steps system'], correct: 0, explanation: 'Elizabeth Warren and her daughter Amelia Warren Tyagi developed the 50/30/20 framework in "All Your Worth" (2005).' },
               { prompt: 'Under 50/30/20, your "needs" category should consume no more than:', options: ['50% of after-tax income', '30% of after-tax income', '20% of gross income', '50% of gross income'], correct: 0, explanation: '50% of take-home pay for needs: rent, utilities, groceries, insurance, minimum loan payments, and basic transportation.' },
               { prompt: 'Your take-home pay is $3,000/month. Under 50/30/20, your wants budget is:', options: ['$900 (30% of $3,000)', '$1,500 (50% of $3,000)', '$600 (20% of $3,000)', '$1,200 (40% of $3,000)'], correct: 0, explanation: '$3,000 × 30% = $900 for dining out, entertainment, subscriptions, travel, and other lifestyle spending.' },
-              { prompt: 'The 20% savings and debt repayment category should prioritize:', options: ['High-interest debt first, then savings and investments', 'Savings only - debt payments are already counted in the 50% needs', 'Paying the minimum on all debts and investing the remaining 20%', 'Saving toward a vacation since that is the most motivating short-term goal'], correct: 0, explanation: 'The 20% goes to building financial security: emergency fund, retirement contributions, extra debt payments, and goal savings.' },
-              { prompt: 'A limitation of the 50/30/20 rule is:', options: ['It may not work for low earners in high-cost areas where needs consume far more than 50%', 'It requires tracking spending across hundreds of subcategories', 'It was designed only for people earning over $75,000 per year', 'The savings rate of 20% is dangerously high and could hurt spending in the economy'], correct: 0, explanation: 'In cities like San Francisco or NYC, rent alone might consume 50% - the framework needs adjustment for high-cost-of-living realities.' },
-              { prompt: 'The 50/30/20 rule is best described as a:', options: ['Flexible guideline - a starting point you adjust based on your situation', 'Strict rule that must be followed exactly to achieve financial success', 'Government regulation for household budgeting compliance', 'Minimum savings requirement enforced by most employers\' financial wellness programs'], correct: 0, explanation: '50/30/20 is a framework, not a law - it gives you a reasonable starting point that you personalize based on your income, goals, and location.' },
+              { prompt: 'The 20% savings and debt repayment category should prioritize:', options: ['High-interest debt first, then savings and investments', 'Savings only, since debt payments are already counted in the 50% needs', 'Paying the minimum on all debts and investing the remaining 20%', 'Saving toward a vacation since that is the most motivating short-term goal'], correct: 0, explanation: 'The 20% goes to building financial security, covering emergency fund, retirement contributions, extra debt payments, and goal savings.' },
+              { prompt: 'A limitation of the 50/30/20 rule is:', options: ['It may not work for low earners in high-cost areas where needs consume far more than 50%', 'It requires tracking spending across hundreds of subcategories', 'It was designed only for people earning over $75,000 per year', 'The savings rate of 20% is dangerously high and could hurt spending in the economy'], correct: 0, explanation: 'In cities like San Francisco or NYC, rent alone might consume 50%, so the framework needs adjustment for high-cost-of-living realities.' },
+              { prompt: 'The 50/30/20 rule is best described as a:', options: ['Flexible guideline: a starting point you adjust based on your situation', 'Strict rule that must be followed exactly to achieve financial success', 'Government regulation for household budgeting compliance', 'Minimum savings requirement enforced by most employers\' financial wellness programs'], correct: 0, explanation: '50/30/20 is a framework, not a law; it gives you a reasonable starting point that you personalize based on your income, goals, and location.' },
             ],
           },
           {
             id: 'u3-1-l6', title: 'Envelope System', centsReward: 10,
             questions: [
-              { prompt: 'The envelope budgeting system works by:', options: ['Placing a set amount of cash in a labeled envelope for each spending category - when it\'s gone, spending stops', 'Mailing your receipts to a financial advisor in envelopes for review', 'Transferring money into separate bank accounts labeled for each category', 'Using credit cards with dedicated category spending limits'], correct: 0, explanation: 'Physical cash in labeled envelopes creates a hard spending boundary - an empty food envelope means no more restaurant visits until next month.' },
-              { prompt: 'The primary psychological benefit of the envelope system is:', options: ['Physical cash feels more "real" - you feel each dollar leaving, slowing impulsive spending', 'It earns interest since cash is stored in envelopes rather than a bank', 'Envelopes are easier to track than digital transactions', 'It prevents identity theft since no bank account numbers are used'], correct: 0, explanation: 'Research shows people spend less with cash than cards - the physical act of handing over bills creates friction and emotional awareness.' },
-              { prompt: 'If your "entertainment" envelope runs out two weeks into the month, you should:', options: ['Stop entertainment spending for the rest of the month - the system is working as designed', 'Borrow from the rent envelope temporarily and repay it next month', 'Increase the entertainment envelope next month without cutting anywhere else', 'Switch to a credit card for entertainment until the next paycheck arrives'], correct: 0, explanation: 'Running out of an envelope is a feature, not a bug - it forces you to either stop spending in that category or make a conscious decision to reallocate from elsewhere.' },
-              { prompt: 'A digital version of the envelope system can be implemented with:', options: ['Separate savings accounts or budget apps like YNAB that replicate virtual envelopes', 'A spreadsheet that tracks spending against one combined total', 'Your credit card\'s built-in category tracking feature', 'The IRS\'s free envelope budgeting tool available at irs.gov'], correct: 0, explanation: 'Apps like YNAB (You Need A Budget) and Goodbudget replicate the envelope system digitally - no physical cash required.' },
-              { prompt: 'The envelope system is especially effective for:', options: ['Variable, discretionary categories like groceries, dining, and entertainment', 'Fixed expenses like rent, car payments, and insurance premiums', 'Savings contributions that should be automated and consistent', 'Investment allocations that change based on market conditions'], correct: 0, explanation: 'Fixed expenses are automatically limited - envelopes add the most value for discretionary categories where overspending typically happens.' },
-              { prompt: 'Which drawback does the physical cash envelope system have in modern life?', options: ['Many transactions are digital (bills, online shopping, subscriptions) where cash cannot be used', 'Physical envelopes are not permitted as a budgeting method by most employers', 'The IRS requires income to be received in digital format, not cash', 'Cash envelopes cannot be used to pay for any purchases over $10 under federal law'], correct: 0, explanation: 'In an increasingly cashless world, the physical envelope system requires workarounds for digital payments - digital apps solve this problem.' },
+              { prompt: 'The envelope budgeting system works by:', options: ['Placing a set amount of cash in a labeled envelope for each spending category; when it\'s gone, spending stops', 'Mailing your receipts to a financial advisor in envelopes for review', 'Transferring money into separate bank accounts labeled for each category', 'Using credit cards with dedicated category spending limits'], correct: 0, explanation: 'Physical cash in labeled envelopes creates a hard spending boundary: an empty food envelope means no more restaurant visits until next month.' },
+              { prompt: 'The primary psychological benefit of the envelope system is:', options: ['Physical cash feels more "real"; you feel each dollar leaving, slowing impulsive spending', 'It earns interest since cash is stored in envelopes rather than a bank', 'Envelopes are easier to track than digital transactions', 'It prevents identity theft since no bank account numbers are used'], correct: 0, explanation: 'Research shows people spend less with cash than cards; the physical act of handing over bills creates friction and emotional awareness.' },
+              { prompt: 'If your "entertainment" envelope runs out two weeks into the month, you should:', options: ['Stop entertainment spending for the rest of the month; the system is working as designed', 'Borrow from the rent envelope temporarily and repay it next month', 'Increase the entertainment envelope next month without cutting anywhere else', 'Switch to a credit card for entertainment until the next paycheck arrives'], correct: 0, explanation: 'Running out of an envelope is a feature, not a bug; it forces you to either stop spending in that category or make a conscious decision to reallocate from elsewhere.' },
+              { prompt: 'A digital version of the envelope system can be implemented with:', options: ['Separate savings accounts or budget apps like YNAB that replicate virtual envelopes', 'A spreadsheet that tracks spending against one combined total', 'Your credit card\'s built-in category tracking feature', 'The IRS\'s free envelope budgeting tool available at irs.gov'], correct: 0, explanation: 'Apps like YNAB (You Need A Budget) and Goodbudget replicate the envelope system digitally with no physical cash required.' },
+              { prompt: 'The envelope system is especially effective for:', options: ['Variable, discretionary categories like groceries, dining, and entertainment', 'Fixed expenses like rent, car payments, and insurance premiums', 'Savings contributions that should be automated and consistent', 'Investment allocations that change based on market conditions'], correct: 0, explanation: 'Fixed expenses are automatically limited; envelopes add the most value for discretionary categories where overspending typically happens.' },
+              { prompt: 'Which drawback does the physical cash envelope system have in modern life?', options: ['Many transactions are digital (bills, online shopping, subscriptions) where cash cannot be used', 'Physical envelopes are not permitted as a budgeting method by most employers', 'The IRS requires income to be received in digital format, not cash', 'Cash envelopes cannot be used to pay for any purchases over $10 under federal law'], correct: 0, explanation: 'In an increasingly cashless world, the physical envelope system requires workarounds for digital payments; digital apps solve this problem.' },
             ],
           },
           {
             id: 'u3-1-l7', title: 'Pay-Yourself-First Budgeting', centsReward: 10,
             questions: [
-              { prompt: 'In pay-yourself-first budgeting, the first allocation is always:', options: ['Savings - money is set aside before any bills or lifestyle spending is paid', 'Rent or mortgage - housing security comes before anything else', 'Minimum debt payments - avoiding default is the top priority', 'Investment contributions - maximizing long-term growth leads the budget'], correct: 0, explanation: 'PYF reverses conventional budgeting - instead of saving what is left after spending, you save first and live on what remains.' },
-              { prompt: 'Pay-yourself-first budgeting works best when paired with:', options: ['Automatic savings transfers that happen on the same day your paycheck arrives', 'Monthly manual reviews to determine how much to save that cycle', 'A detailed expense tracking spreadsheet completed daily', 'A financial advisor who manually moves funds between your accounts'], correct: 0, explanation: 'Automation is the enforcement mechanism - without it, the "pay yourself first" intention collapses into "save what is left" in practice.' },
-              { prompt: 'The pay-yourself-first method is most likely to work for someone who:', options: ['Struggles to consistently save money after paying bills and spending throughout the month', 'Already saves 30%+ of income without any system in place', 'Has identical income and expenses every month with no variation', 'Prefers maximum flexibility in how they allocate money each month'], correct: 0, explanation: 'PYF removes the decision point - it is designed for people whose spending fills available money and leaves nothing for savings.' },
-              { prompt: 'What makes PYF different from zero-based budgeting?', options: ['PYF requires less monthly planning - just automate savings and spend the rest within reason', 'Zero-based requires saving first; PYF requires spending everything each month', 'PYF is only for retirement savings; zero-based covers all financial goals', 'They are identical methods with different names used in different countries'], correct: 0, explanation: 'PYF is simpler - automate savings, then spend the rest (even if not perfectly tracked). Zero-based requires fully allocating every dollar.' },
+              { prompt: 'In pay-yourself-first budgeting, the first allocation is always:', options: ['Savings, meaning money is set aside before any bills or lifestyle spending is paid', 'Rent or mortgage, since housing security comes before anything else', 'Minimum debt payments, since avoiding default is the top priority', 'Investment contributions, since maximizing long-term growth leads the budget'], correct: 0, explanation: 'PYF reverses conventional budgeting: instead of saving what is left after spending, you save first and live on what remains.' },
+              { prompt: 'Pay-yourself-first budgeting works best when paired with:', options: ['Automatic savings transfers that happen on the same day your paycheck arrives', 'Monthly manual reviews to determine how much to save that cycle', 'A detailed expense tracking spreadsheet completed daily', 'A financial advisor who manually moves funds between your accounts'], correct: 0, explanation: 'Automation is the enforcement mechanism; without it, the "pay yourself first" intention collapses into "save what is left" in practice.' },
+              { prompt: 'The pay-yourself-first method is most likely to work for someone who:', options: ['Struggles to consistently save money after paying bills and spending throughout the month', 'Already saves 30%+ of income without any system in place', 'Has identical income and expenses every month with no variation', 'Prefers maximum flexibility in how they allocate money each month'], correct: 0, explanation: 'PYF removes the decision point; it is designed for people whose spending fills available money and leaves nothing for savings.' },
+              { prompt: 'What makes PYF different from zero-based budgeting?', options: ['PYF requires less monthly planning; just automate savings and spend the rest within reason', 'Zero-based requires saving first; PYF requires spending everything each month', 'PYF is only for retirement savings; zero-based covers all financial goals', 'They are identical methods with different names used in different countries'], correct: 0, explanation: 'PYF is simpler: automate savings, then spend the rest (even if not perfectly tracked). Zero-based requires fully allocating every dollar.' },
               { prompt: 'A household with $5,000/month income using PYF at 20% would first transfer ___ to savings, then budget the rest:', options: ['$1,000 to savings, $4,000 remaining for expenses and lifestyle', '$5,000 to savings in January only, then spend freely all year', '$500 to savings, $4,500 for expenses and lifestyle', '$1,000 to savings only after rent and all bills are paid first'], correct: 0, explanation: '$5,000 × 20% = $1,000 moved immediately to savings on payday. The remaining $4,000 covers all expenses.' },
-              { prompt: 'A criticism of pay-yourself-first budgeting is:', options: ['It does not help identify wasteful spending patterns since the rest of spending is uncategorized', 'It saves too much money and reduces quality of life unnecessarily', 'Most banks do not support automatic savings transfers', 'It only works for people with incomes above the national median'], correct: 0, explanation: 'PYF ensures you save but does not tell you if the remaining spending is wise - combining it with expense tracking creates a complete picture.' },
+              { prompt: 'A criticism of pay-yourself-first budgeting is:', options: ['It does not help identify wasteful spending patterns since the rest of spending is uncategorized', 'It saves too much money and reduces quality of life unnecessarily', 'Most banks do not support automatic savings transfers', 'It only works for people with incomes above the national median'], correct: 0, explanation: 'PYF ensures you save but does not tell you if the remaining spending is wise; combining it with expense tracking creates a complete picture.' },
             ],
           },
           {
             id: 'u3-1-l8', title: 'Flexible Budgeting', centsReward: 10,
             questions: [
-              { prompt: 'Flexible budgeting adjusts category amounts based on:', options: ['Your actual income for the month - allocations change proportionally as income varies', 'Inflation data published monthly by the Bureau of Labor Statistics', 'Your mood and financial priorities on the first day of each month', 'Stock market performance during the previous quarter'], correct: 0, explanation: 'Flexible budgets scale with income - a freelancer earning $4,000 one month and $6,000 the next needs a budget that adjusts accordingly.' },
-              { prompt: 'Flexible budgeting is most useful for:', options: ['Self-employed people, freelancers, and anyone with variable monthly income', 'Salaried employees with the same income every pay period', 'Retirees living on fixed Social Security and pension income', 'People with very simple finances and only one or two expense categories'], correct: 0, explanation: 'When income swings month-to-month, rigid fixed budgets fail - flexible budgets accommodate the reality of variable earnings.' },
-              { prompt: 'A flexible budget for a month with higher-than-expected income should:', options: ['Allocate the extra income deliberately - increased savings or debt payoff, not automatic lifestyle inflation', 'Allow proportionally more spending on wants in all categories equally', 'Be suspended and replaced with a stricter fixed budget for that month', 'Immediately be donated to charity to prevent lifestyle inflation'], correct: 0, explanation: 'Without intentional allocation of extra income, lifestyle creep automatically absorbs it - a flexible budget keeps you in control even in good months.' },
-              { prompt: 'Which category in a flexible budget remains fixed regardless of income changes?', options: ['Essential fixed expenses - rent, loan payments, and insurance premiums stay the same', 'Grocery spending - food costs adjust proportionally with income', 'Entertainment spending - it scales with income by design', 'Savings contributions - these always remain exactly $200/month regardless of earnings'], correct: 0, explanation: 'Fixed obligations (rent, car payment) do not change with income - flexible budgeting adjusts the discretionary and savings portions, not the contractual ones.' },
-              { prompt: 'A common mistake when using flexible budgeting is:', options: ['Using a "good income month" as justification to increase all spending permanently', 'Setting savings percentages too high during low-income months', 'Failing to track variable expenses at all during high-income months', 'Applying the same savings percentage to every income level regardless of expenses'], correct: 0, explanation: 'One high-income month can set dangerous precedents - a flexible budget adjusts for the month but should not permanently ratchet up your baseline lifestyle.' },
-              { prompt: 'In a month where income is $2,000 below normal, a flexible budget would most likely:', options: ['Temporarily reduce discretionary spending categories to close the gap', 'Require you to take out a personal loan to maintain the normal budget', 'Automatically cancel your subscriptions and savings contributions', 'Double your income category allocation to account for the expected shortfall'], correct: 0, explanation: 'Flexibility means the budget adapts to real conditions - a low-income month requires tightening wants (dining, entertainment) while protecting needs and savings.' },
+              { prompt: 'Flexible budgeting adjusts category amounts based on:', options: ['Your actual income for the month, with allocations changing proportionally as income varies', 'Inflation data published monthly by the Bureau of Labor Statistics', 'Your mood and financial priorities on the first day of each month', 'Stock market performance during the previous quarter'], correct: 0, explanation: 'Flexible budgets scale with income: a freelancer earning $4,000 one month and $6,000 the next needs a budget that adjusts accordingly.' },
+              { prompt: 'Flexible budgeting is most useful for:', options: ['Self-employed people, freelancers, and anyone with variable monthly income', 'Salaried employees with the same income every pay period', 'Retirees living on fixed Social Security and pension income', 'People with very simple finances and only one or two expense categories'], correct: 0, explanation: 'When income swings month-to-month, rigid fixed budgets fail; flexible budgets accommodate the reality of variable earnings.' },
+              { prompt: 'A flexible budget for a month with higher-than-expected income should:', options: ['Allocate the extra income deliberately toward increased savings or debt payoff, not automatic lifestyle inflation', 'Allow proportionally more spending on wants in all categories equally', 'Be suspended and replaced with a stricter fixed budget for that month', 'Immediately be donated to charity to prevent lifestyle inflation'], correct: 0, explanation: 'Without intentional allocation of extra income, lifestyle creep automatically absorbs it; a flexible budget keeps you in control even in good months.' },
+              { prompt: 'Which category in a flexible budget remains fixed regardless of income changes?', options: ['Essential fixed expenses: rent, loan payments, and insurance premiums stay the same', 'Grocery spending, since food costs adjust proportionally with income', 'Entertainment spending, since it scales with income by design', 'Savings contributions, which always remain exactly $200/month regardless of earnings'], correct: 0, explanation: 'Fixed obligations (rent, car payment) do not change with income; flexible budgeting adjusts the discretionary and savings portions, not the contractual ones.' },
+              { prompt: 'A common mistake when using flexible budgeting is:', options: ['Using a "good income month" as justification to increase all spending permanently', 'Setting savings percentages too high during low-income months', 'Failing to track variable expenses at all during high-income months', 'Applying the same savings percentage to every income level regardless of expenses'], correct: 0, explanation: 'One high-income month can set dangerous precedents; a flexible budget adjusts for the month but should not permanently ratchet up your baseline lifestyle.' },
+              { prompt: 'In a month where income is $2,000 below normal, a flexible budget would most likely:', options: ['Temporarily reduce discretionary spending categories to close the gap', 'Require you to take out a personal loan to maintain the normal budget', 'Automatically cancel your subscriptions and savings contributions', 'Double your income category allocation to account for the expected shortfall'], correct: 0, explanation: 'Flexibility means the budget adapts to real conditions: a low-income month requires tightening wants (dining, entertainment) while protecting needs and savings.' },
             ],
           },
         ],
@@ -1302,77 +1302,77 @@ export const levels = [
           {
             id: 'u3-2-l1', title: 'Budget Apps', centsReward: 10,
             questions: [
-              { prompt: 'The main advantage of a budget app over a spreadsheet is:', options: ['Automatic bank transaction import saves time and reduces manual entry errors', 'Apps are legally required for anyone with a bank account', 'Spreadsheets cannot track savings goals', 'Apps automatically negotiate lower prices on subscriptions'], correct: 0, explanation: 'Budget apps connect to your accounts and auto-import transactions - what takes 30 minutes of manual spreadsheet entry happens instantly.' },
-              { prompt: 'Which budget app is known for its zero-based budgeting approach?', options: ['YNAB (You Need A Budget)', 'Mint', 'Personal Capital', 'Acorns'], correct: 0, explanation: 'YNAB centers on zero-based budgeting - it helps you give every dollar a job before the month begins.' },
-              { prompt: 'A potential concern with using budget apps that connect to your bank is:', options: ['You share your bank login credentials with a third-party - understand the security implications', 'Apps automatically transfer money between your accounts without permission', 'Budget apps report your spending data directly to the IRS monthly', 'Using an app instead of a bank automatically voids your FDIC insurance'], correct: 0, explanation: 'Most reputable apps use read-only access and bank-level encryption, but understanding how they access your data is important.' },
-              { prompt: 'Which is a feature you should look for in a budget app?', options: ['Ability to set spending limits by category and receive alerts when approaching the limit', 'Guaranteed investment returns built into the savings tracker', 'Automatic legal advice when spending exceeds your income', 'Ability to block purchases in specific merchant categories automatically'], correct: 0, explanation: 'Category spending alerts are the most valuable budgeting app feature - they provide real-time guardrails against overspending.' },
-              { prompt: 'Free budget apps often make money by:', options: ['Serving ads or selling anonymized spending data to financial partners', 'Charging a 1% fee on all transactions made while the app is open', 'Requiring users to share their bank account passwords with advertising partners', 'Holding a portion of your savings balance temporarily for revenue'], correct: 0, explanation: 'If the product is free, you are often the product - free apps may monetize your spending data through analytics partnerships.' },
-              { prompt: 'Which type of person gets the LEAST benefit from a budget app?', options: ['Someone who already manually tracks every transaction in a detailed spreadsheet system they love', 'A freelancer with highly variable monthly income', 'Someone just starting to budget for the first time with no tracking system', 'A couple who share finances and need visibility into each other\'s spending'], correct: 0, explanation: 'Someone already succeeding with a spreadsheet system does not need an app - the key is finding a system you actually use consistently.' },
+              { prompt: 'The main advantage of a budget app over a spreadsheet is:', options: ['Automatic bank transaction import saves time and reduces manual entry errors', 'Apps are legally required for anyone with a bank account', 'Spreadsheets cannot track savings goals', 'Apps automatically negotiate lower prices on subscriptions'], correct: 0, explanation: 'Budget apps connect to your accounts and auto-import transactions; what takes 30 minutes of manual spreadsheet entry happens instantly.' },
+              { prompt: 'Which budget app is known for its zero-based budgeting approach?', options: ['YNAB (You Need A Budget)', 'Mint', 'Personal Capital', 'Acorns'], correct: 0, explanation: 'YNAB centers on zero-based budgeting; it helps you give every dollar a job before the month begins.' },
+              { prompt: 'A potential concern with using budget apps that connect to your bank is:', options: ['You share your bank login credentials with a third-party; understand the security implications', 'Apps automatically transfer money between your accounts without permission', 'Budget apps report your spending data directly to the IRS monthly', 'Using an app instead of a bank automatically voids your FDIC insurance'], correct: 0, explanation: 'Most reputable apps use read-only access and bank-level encryption; understanding how they access your data is still important.' },
+              { prompt: 'Which is a feature you should look for in a budget app?', options: ['Ability to set spending limits by category and receive alerts when approaching the limit', 'Guaranteed investment returns built into the savings tracker', 'Automatic legal advice when spending exceeds your income', 'Ability to block purchases in specific merchant categories automatically'], correct: 0, explanation: 'Category spending alerts are the most valuable budgeting app feature; they provide real-time guardrails against overspending.' },
+              { prompt: 'Free budget apps often make money by:', options: ['Serving ads or selling anonymized spending data to financial partners', 'Charging a 1% fee on all transactions made while the app is open', 'Requiring users to share their bank account passwords with advertising partners', 'Holding a portion of your savings balance temporarily for revenue'], correct: 0, explanation: 'If the product is free, you are often the product; free apps may monetize your spending data through analytics partnerships.' },
+              { prompt: 'Which type of person gets the LEAST benefit from a budget app?', options: ['Someone who already manually tracks every transaction in a detailed spreadsheet system they love', 'A freelancer with highly variable monthly income', 'Someone just starting to budget for the first time with no tracking system', 'A couple who share finances and need visibility into each other\'s spending'], correct: 0, explanation: 'Someone already succeeding with a spreadsheet system does not need an app; the key is finding a system you actually use consistently.' },
             ],
           },
           {
             id: 'u3-2-l2', title: 'Expense Tracking', centsReward: 10,
             questions: [
-              { prompt: 'The primary purpose of tracking every expense is:', options: ['To reveal exactly where your money goes so you can make intentional changes', 'To prove income and expenses to the IRS during an audit', 'To qualify for lower interest rates on future loans', 'To generate a monthly financial report for your employer'], correct: 0, explanation: 'Tracking expenses creates awareness - most people are shocked when they see the actual numbers behind their vague spending assumptions.' },
-              { prompt: 'How often should you review your expense tracking data?', options: ['At minimum monthly - weekly is better for making real-time adjustments', 'Only at year-end for tax preparation purposes', 'Whenever you feel like your finances are out of control', 'Daily - missing even one day of review makes the data useless'], correct: 0, explanation: 'Monthly reviews let you correct course before the month ends. Weekly reviews help you catch overspending early enough to adjust.' },
-              { prompt: 'The "latte factor" concept refers to:', options: ['Small daily purchases that seem trivial but add up to thousands annually', 'Specialty coffee drinks being the most overpriced grocery category', 'A tax category for luxury food and beverage expenses', 'The interest rate applied to small credit card purchases under $5'], correct: 0, explanation: 'A $5 daily latte = $1,825/year. Tracking reveals these accumulations - not to shame small pleasures but to make the tradeoff visible.' },
-              { prompt: 'Which is the most accurate method for tracking all spending?', options: ['Reviewing bank and credit card statements monthly since every transaction is recorded', 'Writing down every cash purchase in a small notebook throughout the day', 'Tracking only purchases over $50 since small ones do not significantly affect the budget', 'Estimating spending by category from memory at the end of each week'], correct: 0, explanation: 'Bank and card statements are automatically comprehensive - they capture every transaction without relying on your memory or discipline.' },
-              { prompt: 'After tracking expenses for 3 months, the most useful action is:', options: ['Comparing actual spending to your budget and identifying persistent overspending categories', 'Printing the data and filing it for potential future tax purposes', 'Increasing your budget in all categories by 10% to reduce financial stress', 'Sharing your spending data with a financial advisor to review for compliance'], correct: 0, explanation: '3 months of data reveals patterns - the categories where you consistently overspend are where targeted behavioral changes have the most impact.' },
-              { prompt: 'Tracking expenses is particularly important for people who:', options: ['Feel like they never have enough money but cannot identify where it goes', 'Already save 25%+ of income and have no debt outside a mortgage', 'Have a single fixed income and two or fewer expense categories', 'Work in the financial services industry and understand money professionally'], correct: 0, explanation: 'The "mystery of the disappearing paycheck" is solved by tracking - it converts vague financial anxiety into specific, actionable information.' },
+              { prompt: 'The primary purpose of tracking every expense is:', options: ['To reveal exactly where your money goes so you can make intentional changes', 'To prove income and expenses to the IRS during an audit', 'To qualify for lower interest rates on future loans', 'To generate a monthly financial report for your employer'], correct: 0, explanation: 'Tracking expenses creates awareness; most people are shocked when they see the actual numbers behind their vague spending assumptions.' },
+              { prompt: 'How often should you review your expense tracking data?', options: ['At minimum monthly; weekly is better for making real-time adjustments', 'Only at year-end for tax preparation purposes', 'Whenever you feel like your finances are out of control', 'Daily; missing even one day of review makes the data useless'], correct: 0, explanation: 'Monthly reviews let you correct course before the month ends. Weekly reviews help you catch overspending early enough to adjust.' },
+              { prompt: 'The "latte factor" concept refers to:', options: ['Small daily purchases that seem trivial but add up to thousands annually', 'Specialty coffee drinks being the most overpriced grocery category', 'A tax category for luxury food and beverage expenses', 'The interest rate applied to small credit card purchases under $5'], correct: 0, explanation: 'A $5 daily latte = $1,825/year. Tracking reveals these accumulations, not to shame small pleasures but to make the tradeoff visible.' },
+              { prompt: 'Which is the most accurate method for tracking all spending?', options: ['Reviewing bank and credit card statements monthly since every transaction is recorded', 'Writing down every cash purchase in a small notebook throughout the day', 'Tracking only purchases over $50 since small ones do not significantly affect the budget', 'Estimating spending by category from memory at the end of each week'], correct: 0, explanation: 'Bank and card statements are automatically comprehensive, capturing every transaction without relying on your memory or discipline.' },
+              { prompt: 'After tracking expenses for 3 months, the most useful action is:', options: ['Comparing actual spending to your budget and identifying persistent overspending categories', 'Printing the data and filing it for potential future tax purposes', 'Increasing your budget in all categories by 10% to reduce financial stress', 'Sharing your spending data with a financial advisor to review for compliance'], correct: 0, explanation: '3 months of data reveals patterns; the categories where you consistently overspend are where targeted behavioral changes have the most impact.' },
+              { prompt: 'Tracking expenses is particularly important for people who:', options: ['Feel like they never have enough money but cannot identify where it goes', 'Already save 25%+ of income and have no debt outside a mortgage', 'Have a single fixed income and two or fewer expense categories', 'Work in the financial services industry and understand money professionally'], correct: 0, explanation: 'The "mystery of the disappearing paycheck" is solved by tracking; it converts vague financial anxiety into specific, actionable information.' },
             ],
           },
           {
             id: 'u3-2-l3', title: 'Subscriptions', centsReward: 10,
             questions: [
-              { prompt: 'A subscription audit means:', options: ['Reviewing all recurring charges to identify services you forgot about or no longer use', 'Filing a government form when canceling subscriptions over $100/year', 'An annual review required by credit card companies for premium cardholders', 'Reporting subscription income to the IRS if you provide subscription services'], correct: 0, explanation: 'People average 12+ subscriptions and underestimate their total cost by 80% - an audit reveals the true monthly recurring spending.' },
+              { prompt: 'A subscription audit means:', options: ['Reviewing all recurring charges to identify services you forgot about or no longer use', 'Filing a government form when canceling subscriptions over $100/year', 'An annual review required by credit card companies for premium cardholders', 'Reporting subscription income to the IRS if you provide subscription services'], correct: 0, explanation: 'People average 12+ subscriptions and underestimate their total cost by 80%; an audit reveals the true monthly recurring spending.' },
               { prompt: 'The best time to do a subscription audit is:', options: ['Monthly when reviewing your bank or credit card statement', 'Only when you feel financially stressed and need to cut spending', 'Once per year, in January, as a New Year resolution', 'Whenever a new subscription service launches a promotion'], correct: 0, explanation: 'Monthly reviews catch new subscriptions before they compound and reveal ones that slipped through unnoticed since last review.' },
-              { prompt: 'Which category of subscriptions most commonly goes unnoticed?', options: ['Free trials that automatically convert to paid subscriptions after 30 days', 'Annual subscriptions since the charge is large and obvious once a year', 'Monthly streaming services since they appear on your statement every month', 'Gym memberships since banks flag exercise-related charges separately'], correct: 0, explanation: 'Free-to-paid conversions are subscription traps - companies rely on inertia and the small monthly amount flying under the radar.' },
-              { prompt: 'A service that offers "pause" as an option is better than canceling when:', options: ['You want to return to it eventually and canceling means losing your settings or price lock', 'Pausing is always cheaper than canceling regardless of your situation', 'You are legally required to maintain the subscription for a minimum term', 'Pausing extends your free trial period by an equal number of months'], correct: 0, explanation: 'Pause is useful for seasonal services (like a camping app in winter) - you stop paying without losing your account or promotional rate.' },
-              { prompt: 'How can you prevent unwanted free-trial conversions?', options: ['Set a calendar reminder for 3 days before the trial ends to decide whether to keep or cancel', 'Never sign up for any free trial regardless of the service offered', 'Use a virtual credit card number that expires before the trial period ends', 'Request that the company call you before charging to confirm your continued interest'], correct: 0, explanation: 'A calendar reminder 3 days before the conversion gives you time to cancel if needed - virtual card numbers are an even more foolproof method.' },
+              { prompt: 'Which category of subscriptions most commonly goes unnoticed?', options: ['Free trials that automatically convert to paid subscriptions after 30 days', 'Annual subscriptions since the charge is large and obvious once a year', 'Monthly streaming services since they appear on your statement every month', 'Gym memberships since banks flag exercise-related charges separately'], correct: 0, explanation: 'Free-to-paid conversions are subscription traps; companies rely on inertia and the small monthly amount flying under the radar.' },
+              { prompt: 'A service that offers "pause" as an option is better than canceling when:', options: ['You want to return to it eventually and canceling means losing your settings or price lock', 'Pausing is always cheaper than canceling regardless of your situation', 'You are legally required to maintain the subscription for a minimum term', 'Pausing extends your free trial period by an equal number of months'], correct: 0, explanation: 'Pause is useful for seasonal services (like a camping app in winter); you stop paying without losing your account or promotional rate.' },
+              { prompt: 'How can you prevent unwanted free-trial conversions?', options: ['Set a calendar reminder for 3 days before the trial ends to decide whether to keep or cancel', 'Never sign up for any free trial regardless of the service offered', 'Use a virtual credit card number that expires before the trial period ends', 'Request that the company call you before charging to confirm your continued interest'], correct: 0, explanation: 'A calendar reminder 3 days before the conversion gives you time to cancel if needed; virtual card numbers are an even more foolproof method.' },
               { prompt: 'Your subscriptions add up to $215/month. Cutting half of them saves approximately ___ per year:', options: ['~$1,290 ($107.50 × 12)', '~$215', '~$2,580', '~$650'], correct: 0, explanation: '$215 × 50% = $107.50/month saved × 12 = $1,290/year. Small monthly amounts compound significantly over a year.' },
             ],
           },
           {
             id: 'u3-2-l4', title: 'Finding Unnecessary Spending', centsReward: 10,
             questions: [
-              { prompt: 'Which spending pattern most reliably signals money being wasted?', options: ['Recurring charges from companies or services you cannot remember signing up for', 'Any restaurant purchase made on a weekday', 'Groceries bought at premium stores instead of discount retailers', 'ATM withdrawals from machines not owned by your bank'], correct: 0, explanation: 'Charges you do not recognize are the signature of forgotten subscriptions or unauthorized billing - investigate every unknown recurring charge.' },
-              { prompt: 'The easiest category to cut without significantly affecting quality of life is typically:', options: ['Subscriptions and memberships that are rarely used', 'Groceries - the largest essential spending category', 'Rent - the most impactful reduction since it is the largest expense', 'Transportation - eliminating a car saves the most money instantly'], correct: 0, explanation: 'Cutting unused subscriptions feels painless because you were not actively using them anyway - maximum savings with minimum lifestyle impact.' },
-              { prompt: 'The "30-day rule" for reducing unnecessary purchases means:', options: ['Waiting 30 days before making any non-essential purchase over a certain amount to test if you still want it', 'Returning any purchase within 30 days to qualify for a full refund', 'Only buying on the last 30 days of each quarter when prices are lowest', 'Spending 30% less than your previous month in all categories simultaneously'], correct: 0, explanation: 'The 30-day wait separates genuine needs from impulse wants - most items feel less necessary after the initial excitement fades.' },
-              { prompt: 'Comparing your spending to your stated priorities reveals:', options: ['Whether your money is going where you say your values are - often revealing a mismatch', 'Your exact credit score based on spending patterns', 'The inflation rate applied to your personal spending categories', 'How your spending compares to the national average for your income level'], correct: 0, explanation: 'If you say family is your priority but spend 10× more on eating out than on family activities, your budget is not aligned with your values.' },
-              { prompt: 'Which question best identifies unnecessary spending in a budget review?', options: ['"Would I miss this if it were gone tomorrow, and does it align with my financial goals?"', '"Is this spending below the national average for my income level?"', '"Is this purchase something most of my friends and coworkers also spend money on?"', '"Did I purchase this from a company with an A+ Better Business Bureau rating?"'], correct: 0, explanation: 'The value question cuts through rationalization - purchases that pass neither the "would I miss it" test nor the "does it serve my goals" test are unnecessary.' },
-              { prompt: 'Tracking spending for 3 months before making budget cuts is recommended because:', options: ['It reveals actual spending patterns versus what you imagine you spend - making cuts more accurate', 'The IRS requires 3 months of records before any financial plan changes', 'Banks offer lower rates after 3 months of documented positive behavior', 'You need data from all seasons (January = 1 month, April = 3 months) for seasonal accuracy'], correct: 0, explanation: 'Most people dramatically underestimate their actual spending in key categories - real data prevents cutting the wrong things.' },
+              { prompt: 'Which spending pattern most reliably signals money being wasted?', options: ['Recurring charges from companies or services you cannot remember signing up for', 'Any restaurant purchase made on a weekday', 'Groceries bought at premium stores instead of discount retailers', 'ATM withdrawals from machines not owned by your bank'], correct: 0, explanation: 'Charges you do not recognize are the signature of forgotten subscriptions or unauthorized billing; investigate every unknown recurring charge.' },
+              { prompt: 'The easiest category to cut without significantly affecting quality of life is typically:', options: ['Subscriptions and memberships that are rarely used', 'Groceries, the largest essential spending category', 'Rent, the most impactful reduction since it is the largest expense', 'Transportation; eliminating a car saves the most money instantly'], correct: 0, explanation: 'Cutting unused subscriptions feels painless because you were not actively using them anyway, delivering maximum savings with minimum lifestyle impact.' },
+              { prompt: 'The "30-day rule" for reducing unnecessary purchases means:', options: ['Waiting 30 days before making any non-essential purchase over a certain amount to test if you still want it', 'Returning any purchase within 30 days to qualify for a full refund', 'Only buying on the last 30 days of each quarter when prices are lowest', 'Spending 30% less than your previous month in all categories simultaneously'], correct: 0, explanation: 'The 30-day wait separates genuine needs from impulse wants; most items feel less necessary after the initial excitement fades.' },
+              { prompt: 'Comparing your spending to your stated priorities reveals:', options: ['Whether your money is going where you say your values are, often revealing a mismatch', 'Your exact credit score based on spending patterns', 'The inflation rate applied to your personal spending categories', 'How your spending compares to the national average for your income level'], correct: 0, explanation: 'If you say family is your priority but spend 10× more on eating out than on family activities, your budget is not aligned with your values.' },
+              { prompt: 'Which question best identifies unnecessary spending in a budget review?', options: ['"Would I miss this if it were gone tomorrow, and does it align with my financial goals?"', '"Is this spending below the national average for my income level?"', '"Is this purchase something most of my friends and coworkers also spend money on?"', '"Did I purchase this from a company with an A+ Better Business Bureau rating?"'], correct: 0, explanation: 'The value question cuts through rationalization; purchases that pass neither the "would I miss it" test nor the "does it serve my goals" test are unnecessary.' },
+              { prompt: 'Tracking spending for 3 months before making budget cuts is recommended because:', options: ['It reveals actual spending patterns versus what you imagine you spend, making cuts more accurate', 'The IRS requires 3 months of records before any financial plan changes', 'Banks offer lower rates after 3 months of documented positive behavior', 'You need data from all seasons (January = 1 month, April = 3 months) for seasonal accuracy'], correct: 0, explanation: 'Most people dramatically underestimate their actual spending in key categories; real data prevents cutting the wrong things.' },
             ],
           },
           {
             id: 'u3-2-l5', title: 'Cash Flow Forecasting', centsReward: 10,
             questions: [
-              { prompt: 'Cash flow forecasting means:', options: ['Predicting future income and expenses to identify months when you might face a shortfall', 'Calculating the return on investment of your savings account over the next year', 'Estimating how much cash you will need in physical bills for the coming week', 'Projecting future tax refunds based on current year deductions'], correct: 0, explanation: 'Forecasting reveals future financial tight spots so you can prepare - save extra now or defer a purchase until after the difficult month.' },
+              { prompt: 'Cash flow forecasting means:', options: ['Predicting future income and expenses to identify months when you might face a shortfall', 'Calculating the return on investment of your savings account over the next year', 'Estimating how much cash you will need in physical bills for the coming week', 'Projecting future tax refunds based on current year deductions'], correct: 0, explanation: 'Forecasting reveals future financial tight spots so you can prepare by saving extra now or deferring a purchase until after the difficult month.' },
               { prompt: 'Cash flow forecasting is especially important for people who:', options: ['Have irregular income or large known expenses that occur at unpredictable intervals', 'Earn a fixed salary and have identical expenses every single month', 'Have no debt and a large emergency fund already established', 'Work in banking and understand financial markets professionally'], correct: 0, explanation: 'Freelancers, commission workers, and anyone with large annual bills (insurance, property tax, tuition) benefit enormously from seeing the future in advance.' },
               { prompt: 'You know your car insurance renews in October for $1,200. Cash flow forecasting helps you:', options: ['Save $100/month from January through October so the charge is fully covered when it hits', 'Negotiate a lower rate by paying the full amount in advance with savings you already have', 'Avoid the charge by rescheduling your insurance renewal to a lower-income month', 'Apply for a special car insurance payment plan that spreads it over 3 months automatically'], correct: 0, explanation: '$1,200 ÷ 10 months = $120/month set aside. The charge becomes expected and painless instead of a shocking one-time hit.' },
               { prompt: 'Which tool is best for simple cash flow forecasting for a household?', options: ['A monthly spreadsheet showing projected income and known upcoming expenses for the next 6–12 months', 'A stock market prediction algorithm adjusted for personal spending', 'A professional CFO hired to manage household financial projections', 'The same monthly budget repeated identically each month with no forward planning'], correct: 0, explanation: 'A simple 12-month spreadsheet with columns for projected income and all known expenses (including annual ones pro-rated monthly) is the most practical tool.' },
-              { prompt: 'If a cash flow forecast shows a projected $500 deficit in March, the right response is:', options: ['Start saving extra in January and February to build up a buffer for March', 'Wait until March arrives and use a credit card to cover the shortfall', 'Pretend the forecast is wrong and hope March works out better than expected', 'Request an advance on your April paycheck to pre-fund the March deficit'], correct: 0, explanation: 'The entire point of forecasting is to act before the problem hits - proactive saving beats reactive borrowing every time.' },
-              { prompt: 'A benefit of cash flow forecasting is that it reduces:', options: ['Financial anxiety - knowing what is coming is always less stressful than being blindsided', 'Your tax liability by identifying deductible expenses in advance', 'The interest rate on your mortgage by demonstrating financial responsibility', 'The number of monthly transactions in your bank account by combining payments'], correct: 0, explanation: 'Financial stress is often rooted in uncertainty - a clear picture of what the next 6 months look like replaces anxiety with a concrete plan.' },
+              { prompt: 'If a cash flow forecast shows a projected $500 deficit in March, the right response is:', options: ['Start saving extra in January and February to build up a buffer for March', 'Wait until March arrives and use a credit card to cover the shortfall', 'Pretend the forecast is wrong and hope March works out better than expected', 'Request an advance on your April paycheck to pre-fund the March deficit'], correct: 0, explanation: 'The entire point of forecasting is to act before the problem hits; proactive saving beats reactive borrowing every time.' },
+              { prompt: 'A benefit of cash flow forecasting is that it reduces:', options: ['Financial anxiety, since knowing what is coming is always less stressful than being blindsided', 'Your tax liability by identifying deductible expenses in advance', 'The interest rate on your mortgage by demonstrating financial responsibility', 'The number of monthly transactions in your bank account by combining payments'], correct: 0, explanation: 'Financial stress is often rooted in uncertainty; a clear picture of what the next 6 months look like replaces anxiety with a concrete plan.' },
             ],
           },
           {
             id: 'u3-2-l6', title: 'Review & Adjust', centsReward: 10,
             questions: [
-              { prompt: 'Why must a budget be reviewed and adjusted regularly?', options: ['Life changes - income, expenses, and goals shift, so a static budget quickly becomes irrelevant', 'Banks require customers to update their budget with a financial advisor annually', 'A budget reviewed more than once is considered "flexible" and no longer tax-compliant', 'Budgets must be completely rebuilt every month to remain legally valid'], correct: 0, explanation: 'A budget written in January may be obsolete by March - new job, new apartment, new goal. Regular reviews keep it aligned with your reality.' },
-              { prompt: 'Which life event most commonly requires a budget overhaul?', options: ['A significant income change (raise, job loss, starting a business)', 'Moving to a different neighborhood in the same city with similar costs', 'Getting a new credit card with better rewards', 'Changing your phone plan to save $15/month'], correct: 0, explanation: 'Income changes cascade through every budget line - a new budget is needed when the foundational income number changes significantly.' },
-              { prompt: 'A budget review revealed you consistently overspend in the dining category by $150/month. The right response is:', options: ['Either increase the dining budget allocation or implement a specific plan to reduce dining spending', 'Delete the dining category and track it as "miscellaneous" instead', 'Immediately cut all restaurant spending cold turkey with no adjustment period', 'Accept the overspending since it has been consistent for several months'], correct: 0, explanation: 'Persistent overspending in a category signals either a wrong budget number or a behavioral issue - both deserve a specific response.' },
-              { prompt: 'Year-end budget reviews are most valuable for:', options: ['Identifying annual patterns and setting realistic targets for the following year based on actual data', 'Filing your tax return based on total spending in each category', 'Meeting the requirement to submit financial plans to your employer\'s HR department', 'Determining if you qualify for a government budget assistance program'], correct: 0, explanation: 'Full-year data reveals seasonal patterns, true spending averages, and whether you hit your financial goals - essential intelligence for next year\'s plan.' },
-              { prompt: 'When a financial goal is achieved (emergency fund fully funded), a budget review should:', options: ['Redirect that savings allocation toward the next priority goal (debt, investing, etc.)', 'Keep saving the same amount indefinitely since more savings is always better', 'Cancel the savings automation since the goal is done and money can be freed for spending', 'Report the achievement to your bank to qualify for premium account status'], correct: 0, explanation: 'Achieved goals free up cash flow for the next priority - a budget review ensures that money gets redirected intentionally rather than absorbed by lifestyle spending.' },
-              { prompt: 'The most useful metric to review each month in your budget is:', options: ['How closely your actual spending matched your planned budget in each category', 'Your credit score change compared to the previous month', 'Total bank account balance growth since you first started budgeting', 'The number of transactions in each category compared to the monthly average'], correct: 0, explanation: 'Budget vs. actual comparison by category is the core feedback loop - it shows where the plan worked and where behavior needs to change.' },
+              { prompt: 'Why must a budget be reviewed and adjusted regularly?', options: ['Life changes: income, expenses, and goals shift, so a static budget quickly becomes irrelevant', 'Banks require customers to update their budget with a financial advisor annually', 'A budget reviewed more than once is considered "flexible" and no longer tax-compliant', 'Budgets must be completely rebuilt every month to remain legally valid'], correct: 0, explanation: 'A budget written in January may be obsolete by March due to a new job, new apartment, or new goal. Regular reviews keep it aligned with your reality.' },
+              { prompt: 'Which life event most commonly requires a budget overhaul?', options: ['A significant income change (raise, job loss, starting a business)', 'Moving to a different neighborhood in the same city with similar costs', 'Getting a new credit card with better rewards', 'Changing your phone plan to save $15/month'], correct: 0, explanation: 'Income changes cascade through every budget line; a new budget is needed when the foundational income number changes significantly.' },
+              { prompt: 'A budget review revealed you consistently overspend in the dining category by $150/month. The right response is:', options: ['Either increase the dining budget allocation or implement a specific plan to reduce dining spending', 'Delete the dining category and track it as "miscellaneous" instead', 'Immediately cut all restaurant spending cold turkey with no adjustment period', 'Accept the overspending since it has been consistent for several months'], correct: 0, explanation: 'Persistent overspending in a category signals either a wrong budget number or a behavioral issue; both deserve a specific response.' },
+              { prompt: 'Year-end budget reviews are most valuable for:', options: ['Identifying annual patterns and setting realistic targets for the following year based on actual data', 'Filing your tax return based on total spending in each category', 'Meeting the requirement to submit financial plans to your employer\'s HR department', 'Determining if you qualify for a government budget assistance program'], correct: 0, explanation: 'Full-year data reveals seasonal patterns, true spending averages, and whether you hit your financial goals; this is essential intelligence for next year\'s plan.' },
+              { prompt: 'When a financial goal is achieved (emergency fund fully funded), a budget review should:', options: ['Redirect that savings allocation toward the next priority goal (debt, investing, etc.)', 'Keep saving the same amount indefinitely since more savings is always better', 'Cancel the savings automation since the goal is done and money can be freed for spending', 'Report the achievement to your bank to qualify for premium account status'], correct: 0, explanation: 'Achieved goals free up cash flow for the next priority; a budget review ensures that money gets redirected intentionally rather than absorbed by lifestyle spending.' },
+              { prompt: 'The most useful metric to review each month in your budget is:', options: ['How closely your actual spending matched your planned budget in each category', 'Your credit score change compared to the previous month', 'Total bank account balance growth since you first started budgeting', 'The number of transactions in each category compared to the monthly average'], correct: 0, explanation: 'Budget vs. actual comparison by category is the core feedback loop; it shows where the plan worked and where behavior needs to change.' },
             ],
           },
           {
             id: 'u3-2-l7', title: 'Spreadsheets for Budgeting', centsReward: 10,
             questions: [
-              { prompt: 'A spreadsheet budget is most useful for people who:', options: ['Want complete customization and control over their budget structure and formulas', 'Need automatic bank transaction import and categorization', 'Want the simplest possible budgeting experience with no setup required', 'Prefer to share their budget automatically with a financial advisor or partner'], correct: 0, explanation: 'Spreadsheets are infinitely customizable - you design exactly the structure that matches your life, which no app can perfectly replicate.' },
-              { prompt: 'A basic personal budget spreadsheet should include:', options: ['Columns for income sources, expense categories, budgeted amounts, and actual amounts', 'Stock ticker symbols and historical price data for portfolio tracking', 'Formulas that automatically request price decreases from service providers', 'A macro that automatically files your taxes based on tracked expenses'], correct: 0, explanation: 'Budget vs. actual is the core spreadsheet structure - it shows you the plan and how reality compared to it.' },
+              { prompt: 'A spreadsheet budget is most useful for people who:', options: ['Want complete customization and control over their budget structure and formulas', 'Need automatic bank transaction import and categorization', 'Want the simplest possible budgeting experience with no setup required', 'Prefer to share their budget automatically with a financial advisor or partner'], correct: 0, explanation: 'Spreadsheets are infinitely customizable; you design exactly the structure that matches your life, which no app can perfectly replicate.' },
+              { prompt: 'A basic personal budget spreadsheet should include:', options: ['Columns for income sources, expense categories, budgeted amounts, and actual amounts', 'Stock ticker symbols and historical price data for portfolio tracking', 'Formulas that automatically request price decreases from service providers', 'A macro that automatically files your taxes based on tracked expenses'], correct: 0, explanation: 'Budget vs. actual is the core spreadsheet structure; it shows you the plan and how reality compared to it.' },
               { prompt: 'Which spreadsheet formula is most useful for budget tracking?', options: ['SUM to total income and expenses, and a formula subtracting expenses from income', 'VLOOKUP to find historical price data for each spending category', 'IF statements that automatically transfer funds between accounts', 'RANDOM to generate spending scenarios for stress-testing the budget'], correct: 0, explanation: 'Simple SUM formulas for income and expense totals, plus a difference formula showing surplus or deficit, are the most valuable budget spreadsheet tools.' },
-              { prompt: 'One advantage spreadsheets have over budget apps is:', options: ['Full control - you can track any data point in any format without being constrained by app features', 'Automatic bank connection with zero data entry required', 'Built-in fraud detection for unauthorized transactions', 'Cloud synchronization that updates across all family members\' devices automatically'], correct: 0, explanation: 'Spreadsheets let you create exactly the budget you need - custom categories, special calculations, dashboards, or anything else you can imagine.' },
-              { prompt: 'The main challenge of using a spreadsheet for budgeting is:', options: ['Every transaction must be entered manually - this requires consistent time and discipline', 'Spreadsheets cannot perform mathematical calculations on budget data', 'Most personal finance spreadsheets are too complex for anyone without an accounting degree', 'Spreadsheet data is not secure and can be accessed by banks without permission'], correct: 0, explanation: 'Manual entry is the tradeoff for customization - apps automate this step, but many people prefer the intentionality that comes from entering each transaction.' },
+              { prompt: 'One advantage spreadsheets have over budget apps is:', options: ['Full control: you can track any data point in any format without being constrained by app features', 'Automatic bank connection with zero data entry required', 'Built-in fraud detection for unauthorized transactions', 'Cloud synchronization that updates across all family members\' devices automatically'], correct: 0, explanation: 'Spreadsheets let you create exactly the budget you need: custom categories, special calculations, dashboards, or anything else you can imagine.' },
+              { prompt: 'The main challenge of using a spreadsheet for budgeting is:', options: ['Every transaction must be entered manually, which requires consistent time and discipline', 'Spreadsheets cannot perform mathematical calculations on budget data', 'Most personal finance spreadsheets are too complex for anyone without an accounting degree', 'Spreadsheet data is not secure and can be accessed by banks without permission'], correct: 0, explanation: 'Manual entry is the tradeoff for customization; apps automate this step, but many people prefer the intentionality that comes from entering each transaction.' },
               { prompt: 'Google Sheets for budgeting has an advantage over Excel because:', options: ['It is free, cloud-based, accessible from any device, and easy to share with a partner', 'It performs more advanced financial calculations than Excel', 'Google automatically imports bank transactions into Sheets for free', 'Google Sheets is endorsed by the IRS for tax preparation purposes'], correct: 0, explanation: 'Free access and real-time cloud synchronization make Google Sheets the most accessible spreadsheet option for personal budgeting.' },
             ],
           },
@@ -1390,10 +1390,10 @@ export const levels = [
             questions: [
               { prompt: 'A SMART financial goal must be:', options: ['Specific, Measurable, Achievable, Relevant, and Time-bound', 'Simple, Monthly, Automatic, Reviewed, and Tracked', 'Safe, Manageable, Annual, Reported, and Tested', 'Structured, Meaningful, Accessible, Rounded, and Thoughtful'], correct: 0, explanation: 'SMART is the universal goal-setting framework that transforms vague intentions into actionable plans.' },
               { prompt: 'Which goal is written correctly as a SMART goal?', options: ['Save $6,000 for an emergency fund by December 31 by transferring $500/month', 'Save more money this year than last year', 'Eventually become debt-free someday', 'Start investing when I feel financially stable'], correct: 0, explanation: 'The first goal is specific ($6,000), measurable ($500/month), achievable (with the right income), relevant (emergency fund), and time-bound (December 31).' },
-              { prompt: 'A goal of "save more money" fails the SMART test primarily because it is not:', options: ['Specific or measurable - "more" gives no concrete target to work toward', 'Achievable - most people cannot save more money than they currently do', 'Relevant - saving money is not important enough to make a goal', 'Time-bound and automatic - all goals must include an automation component'], correct: 0, explanation: '"Save more" provides no definition of success - you need to know exactly how much, by when, and how you will track progress.' },
-              { prompt: 'Adding a "why" to a financial goal is important because:', options: ['Purpose drives motivation - goals connected to values are far more likely to be achieved', 'The IRS requires a stated purpose for all savings goals over $1,000', 'Banks offer better rates to customers who can explain their savings purpose', 'SMART requires a 6th "W" criterion for goals to be valid'], correct: 0, explanation: 'Knowing WHY you want to save for a house, education, or retirement connects the goal to your identity - making sacrifice feel meaningful.' },
-              { prompt: 'Which of these is achievable as a short-term SMART goal for someone earning $2,500/month take-home?', options: ['Save $1,500 for an emergency starter fund in 3 months at $500/month', 'Save $100,000 for retirement in 6 months', 'Pay off $40,000 in student loans in 12 months', 'Build a $25,000 emergency fund in 2 months at $12,500/month'], correct: 0, explanation: '$500/month on a $2,500 take-home is 20% - aggressive but realistic. The other options require saving more than the total income.' },
-              { prompt: 'Why does writing down a financial goal increase the probability of achieving it?', options: ['Commitment and clarity - written goals trigger planning behavior and create psychological accountability', 'Banks offer a "goal bonus" deposit when you submit written goals', 'Written goals are legally binding contracts between you and your future self', 'It activates a neurological memory pathway that doubles willpower for financial decisions'], correct: 0, explanation: 'Research shows written goals are significantly more likely to be achieved - they move from vague intention to concrete commitment.' },
+              { prompt: 'A goal of "save more money" fails the SMART test primarily because it is not:', options: ['Specific or measurable, since "more" gives no concrete target to work toward', 'Achievable, since most people cannot save more money than they currently do', 'Relevant, since saving money is not important enough to make a goal', 'Time-bound and automatic, since all goals must include an automation component'], correct: 0, explanation: '"Save more" provides no definition of success; you need to know exactly how much, by when, and how you will track progress.' },
+              { prompt: 'Adding a "why" to a financial goal is important because:', options: ['Purpose drives motivation; goals connected to values are far more likely to be achieved', 'The IRS requires a stated purpose for all savings goals over $1,000', 'Banks offer better rates to customers who can explain their savings purpose', 'SMART requires a 6th "W" criterion for goals to be valid'], correct: 0, explanation: 'Knowing WHY you want to save for a house, education, or retirement connects the goal to your identity, making sacrifice feel meaningful.' },
+              { prompt: 'Which of these is achievable as a short-term SMART goal for someone earning $2,500/month take-home?', options: ['Save $1,500 for an emergency starter fund in 3 months at $500/month', 'Save $100,000 for retirement in 6 months', 'Pay off $40,000 in student loans in 12 months', 'Build a $25,000 emergency fund in 2 months at $12,500/month'], correct: 0, explanation: '$500/month on a $2,500 take-home is 20%, aggressive but realistic. The other options require saving more than the total income.' },
+              { prompt: 'Why does writing down a financial goal increase the probability of achieving it?', options: ['Commitment and clarity; written goals trigger planning behavior and create psychological accountability', 'Banks offer a "goal bonus" deposit when you submit written goals', 'Written goals are legally binding contracts between you and your future self', 'It activates a neurological memory pathway that doubles willpower for financial decisions'], correct: 0, explanation: 'Research shows written goals are significantly more likely to be achieved; they move from vague intention to concrete commitment.' },
             ],
           },
           {
@@ -1401,43 +1401,43 @@ export const levels = [
             questions: [
               { prompt: 'A short-term financial goal typically covers:', options: ['0–2 years (emergency fund, vacation, new appliance, phone)', '5–10 years (college savings, home down payment)', '20–30 years (retirement, generational wealth)', 'Any goal costing under $1,000 regardless of timeline'], correct: 0, explanation: 'Short-term = within 2 years. The timeline determines where money should be held: savings account (liquid, safe), not the stock market.' },
               { prompt: 'Where should money for a short-term goal (12 months away) be kept?', options: ['A high-yield savings account - safe, liquid, and earning reasonable interest', 'The stock market - 12 months is enough time to recover from a downturn', 'A 30-year Treasury bond for maximum safety', 'Your regular checking account to keep it easily accessible for impulse use'], correct: 0, explanation: 'Money needed within 1–2 years should never be in stocks - a market drop could delay your goal or force you to sell at a loss.' },
-              { prompt: 'You want $2,400 for a vacation in 8 months. Your monthly savings target is:', options: ['$300/month', '$200/month', '$2,400/month', '$800/month'], correct: 0, explanation: '$2,400 ÷ 8 months = $300/month. Simple goal arithmetic - divide the target by the number of months remaining.' },
+              { prompt: 'You want $2,400 for a vacation in 8 months. Your monthly savings target is:', options: ['$300/month', '$200/month', '$2,400/month', '$800/month'], correct: 0, explanation: '$2,400 ÷ 8 months = $300/month. Simple goal arithmetic: divide the target by the number of months remaining.' },
               { prompt: 'Which is the most common and highest-priority short-term financial goal?', options: ['Building an emergency fund of 3–6 months of expenses', 'Buying a new car for reliable transportation', 'Saving for an international vacation', 'Purchasing the latest smartphone model'], correct: 0, explanation: 'The emergency fund is universally the first financial priority - it is the foundation that makes every other goal survivable.' },
-              { prompt: 'After achieving a short-term goal, the best next step is:', options: ['Identify and redirect savings toward the next priority goal immediately', 'Celebrate by spending the savings on something you have been wanting', 'Continue saving the same amount in the same account indefinitely', 'Request a bank reward for achieving your savings milestone'], correct: 0, explanation: 'Once a goal is funded, the savings behavior and automation are in place - redirect that same momentum to the next goal.' },
-              { prompt: 'Creating multiple separate savings accounts for different short-term goals is recommended because:', options: ['It prevents accidentally using vacation savings for an emergency and keeps progress visible per goal', 'Banks offer bonus interest when you have three or more savings accounts simultaneously', 'The IRS requires separate accounts for each type of savings goal', 'Credit scores improve by 50 points for each additional savings account opened'], correct: 0, explanation: 'Goal-specific accounts make progress visible and prevent cross-contamination - you know exactly how funded each goal is at any time.' },
+              { prompt: 'After achieving a short-term goal, the best next step is:', options: ['Identify and redirect savings toward the next priority goal immediately', 'Celebrate by spending the savings on something you have been wanting', 'Continue saving the same amount in the same account indefinitely', 'Request a bank reward for achieving your savings milestone'], correct: 0, explanation: 'Once a goal is funded, the savings behavior and automation are in place; redirect that same momentum to the next goal.' },
+              { prompt: 'Creating multiple separate savings accounts for different short-term goals is recommended because:', options: ['It prevents accidentally using vacation savings for an emergency and keeps progress visible per goal', 'Banks offer bonus interest when you have three or more savings accounts simultaneously', 'The IRS requires separate accounts for each type of savings goal', 'Credit scores improve by 50 points for each additional savings account opened'], correct: 0, explanation: 'Goal-specific accounts make progress visible and prevent cross-contamination; you know exactly how funded each goal is at any time.' },
             ],
           },
           {
             id: 'u3-3-l3', title: 'Medium-Term Goals', centsReward: 10,
             questions: [
               { prompt: 'Medium-term financial goals typically cover:', options: ['2–7 years (down payment, car purchase, grad school, starting a business)', 'Under 1 year (emergency fund, vacation)', 'Over 20 years (retirement, generational wealth)', 'Any goal costing between $5,000 and $50,000'], correct: 0, explanation: 'Medium-term goals are the bridge between immediate needs and long-horizon dreams - substantial but achievable within a few years of disciplined saving.' },
-              { prompt: 'A 3-year savings goal is best kept in:', options: ['A high-yield savings account or short-term CD - safe and accessible without market risk', 'An aggressive growth stock portfolio for maximum returns over 3 years', 'A checking account since you will need to access the money soon', 'A 30-year Treasury bond redeemed early if needed'], correct: 0, explanation: '3 years is too short for stock market risk - a HYSA earning 4-5% or a 3-year CD gives reasonable returns without the risk of a drawdown at the wrong time.' },
+              { prompt: 'A 3-year savings goal is best kept in:', options: ['A high-yield savings account or short-term CD, safe and accessible without market risk', 'An aggressive growth stock portfolio for maximum returns over 3 years', 'A checking account since you will need to access the money soon', 'A 30-year Treasury bond redeemed early if needed'], correct: 0, explanation: '3 years is too short for stock market risk; a HYSA earning 4-5% or a 3-year CD gives reasonable returns without the risk of a drawdown at the wrong time.' },
               { prompt: 'To save $15,000 for a car down payment in 30 months, your monthly savings must be:', options: ['$500/month', '$1,500/month', '$250/month', '$5,000/month'], correct: 0, explanation: '$15,000 ÷ 30 months = $500/month. The interest earned in a HYSA would slightly reduce the required contribution.' },
               { prompt: 'Which is NOT typically a medium-term financial goal?', options: ['Building a 3-month emergency fund', 'Saving a 20% down payment on a house', 'Funding a master\'s degree starting in 4 years', 'Saving to start a small business in 5 years'], correct: 0, explanation: 'An emergency fund is a short-term goal (build it as fast as possible, typically 6–18 months). The others are 3–5 year medium-term timelines.' },
               { prompt: 'Automating contributions toward a medium-term goal is important because:', options: ['Years of consistent automated saving cannot be forgotten, missed, or deprioritized', 'Automated savings earn significantly higher interest at most banks', 'The IRS requires automation for savings goals claimed as tax deductions', 'Manual saving requires visiting a bank branch which costs time and money'], correct: 0, explanation: 'A 3–5 year goal has ~36–60 monthly contributions. Manual saving fails eventually - automation ensures every contribution happens.' },
-              { prompt: 'If inflation averages 3% over 4 years, a $20,000 goal today will require approximately ___ in 4 years:', options: ['~$22,500 - about 12% more to account for purchasing power erosion', '~$20,000 - inflation does not affect savings goals, only prices', '~$17,800 - inflation reduces how much you need to save', '~$28,000 - inflation doubles the required savings every 4 years'], correct: 0, explanation: '$20,000 × 1.03^4 ≈ $22,509. For goals where the cost will increase with inflation (home purchase), factor in that target will grow.' },
+              { prompt: 'If inflation averages 3% over 4 years, a $20,000 goal today will require approximately ___ in 4 years:', options: ['~$22,500, about 12% more to account for purchasing power erosion', '~$20,000, since inflation does not affect savings goals, only prices', '~$17,800, since inflation reduces how much you need to save', '~$28,000, since inflation doubles the required savings every 4 years'], correct: 0, explanation: '$20,000 × 1.03^4 ≈ $22,509. For goals where the cost will increase with inflation (home purchase), factor in that target will grow.' },
             ],
           },
           {
             id: 'u3-3-l4', title: 'Long-Term Goals', centsReward: 10,
             questions: [
               { prompt: 'Long-term financial goals typically span:', options: ['7+ years (retirement, paying off a mortgage, building generational wealth)', '2–7 years (down payment, car, grad school)', '1–2 years (emergency fund, vacation)', 'Any goal requiring saving more than $100,000'], correct: 0, explanation: 'Long-term goals have enough time to invest in the market - the time horizon is long enough to weather downturns and benefit from compounding.' },
-              { prompt: 'For a 25-year goal, the best investment vehicle is typically:', options: ['A diversified portfolio of stocks and bonds - time allows market volatility to smooth out', 'A savings account for maximum safety over the long time horizon', 'U.S. Savings Bonds redeemed at the 25-year mark', 'A money market account at your primary bank for easy access when needed'], correct: 0, explanation: 'Over 25 years, stocks have historically outperformed all alternatives significantly. Risk tolerance for a long-horizon goal should be higher than for short-term money.' },
-              { prompt: 'The most important factor for long-term financial goals is:', options: ['Starting early - time is the most powerful force in long-term wealth building', 'Choosing the highest-performing investments with 100% accuracy', 'Earning an income in the top 20% of earners nationally', 'Maximizing the amount contributed in the final 5 years before the goal is reached'], correct: 0, explanation: 'Starting 10 years earlier can more than double the final amount due to compounding. Time beats any other variable for long-horizon goals.' },
+              { prompt: 'For a 25-year goal, the best investment vehicle is typically:', options: ['A diversified portfolio of stocks and bonds, since time allows market volatility to smooth out', 'A savings account for maximum safety over the long time horizon', 'U.S. Savings Bonds redeemed at the 25-year mark', 'A money market account at your primary bank for easy access when needed'], correct: 0, explanation: 'Over 25 years, stocks have historically outperformed all alternatives significantly, so risk tolerance for a long-horizon goal should be higher than for short-term money.' },
+              { prompt: 'The most important factor for long-term financial goals is:', options: ['Starting early, since time is the most powerful force in long-term wealth building', 'Choosing the highest-performing investments with 100% accuracy', 'Earning an income in the top 20% of earners nationally', 'Maximizing the amount contributed in the final 5 years before the goal is reached'], correct: 0, explanation: 'Starting 10 years earlier can more than double the final amount due to compounding; time beats any other variable for long-horizon goals.' },
               { prompt: 'Why should long-term goals not be funded primarily by savings accounts?', options: ['Low savings account interest rates (1–5%) significantly underperform long-term investment returns (7–10%)', 'The FDIC does not insure savings accounts held over 10 years', 'Savings accounts automatically convert to investment accounts after 7 years', 'Banks charge penalties for holding large balances in savings for over 5 years'], correct: 0, explanation: 'Over 30 years, the compounding difference between 5% (HYSA) and 9% (stock market) is enormous - long timelines demand higher-growth vehicles.' },
               { prompt: 'Investing $200/month from age 22 to 65 at 8% annual return grows to approximately:', options: ['~$800,000', '~$200,000', '~$50,000', '~$2,000,000'], correct: 0, explanation: '43 years of $200/month at 8% ≈ $800,000+. This illustrates why starting early with even modest amounts creates significant long-term wealth.' },
-              { prompt: 'A long-term goal should be reviewed:', options: ['Annually - to adjust contributions as income grows and ensure you are on track', 'Only when you are 5 years from the goal date', 'Never - long-term goals are set and left alone until maturity', 'Monthly - long-term goals require the same review frequency as short-term ones'], correct: 0, explanation: 'Annual reviews let you increase contributions as income grows and rebalance if investments drift from your target allocation.' },
+              { prompt: 'A long-term goal should be reviewed:', options: ['Annually, to adjust contributions as income grows and ensure you are on track', 'Only when you are 5 years from the goal date', 'Never; long-term goals are set and left alone until maturity', 'Monthly; long-term goals require the same review frequency as short-term ones'], correct: 0, explanation: 'Annual reviews let you increase contributions as income grows and rebalance if investments drift from your target allocation.' },
             ],
           },
           {
             id: 'u3-3-l5', title: 'Saving for College', centsReward: 10,
             questions: [
-              { prompt: 'A 529 plan is best described as:', options: ['A tax-advantaged savings account for education expenses - contributions grow tax-free', 'A federal student loan program for families below the income threshold', 'A government grant for first-generation college students only', 'A savings account that earns a guaranteed 6% return for education funds'], correct: 0, explanation: 'A 529 plan grows tax-free, and withdrawals for qualified education expenses are also tax-free - the most powerful college savings tool available.' },
+              { prompt: 'A 529 plan is best described as:', options: ['A tax-advantaged savings account for education expenses where contributions grow tax-free', 'A federal student loan program for families below the income threshold', 'A government grant for first-generation college students only', 'A savings account that earns a guaranteed 6% return for education funds'], correct: 0, explanation: 'A 529 plan grows tax-free, and withdrawals for qualified education expenses are also tax-free, making it the most powerful college savings tool available.' },
               { prompt: 'If college costs $50,000 per year and your child is 8 years old, your 10-year savings target is roughly:', options: ['~$200,000 for 4 years, adjusting for tuition inflation - a significant long-term commitment', '$50,000 total since costs will likely decrease by the time they enroll', '$800 per month exactly as recommended by the Department of Education', 'No savings needed since financial aid will cover the full cost for most families'], correct: 0, explanation: 'College costs typically inflate at 4–6%/year. Starting early in a 529 and investing aggressively is essential for a 10-year horizon.' },
-              { prompt: 'Which is a key advantage of a 529 plan over a regular savings account for college?', options: ['Investment growth and withdrawals for education expenses are both federal-income-tax-free', 'The government matches 529 contributions dollar-for-dollar up to $2,500/year', '529 funds can only be invested in FDIC-insured CDs for maximum safety', '529 plans are exempt from state property taxes on the assets held'], correct: 0, explanation: 'Tax-free growth in a 529 compound-advantage is substantial over 18 years - equivalent to investing in a high-bracket tax-sheltered account.' },
-              { prompt: 'What happens to 529 funds if the designated beneficiary does not go to college?', options: ['You can change the beneficiary to another family member, or withdraw with taxes and a 10% penalty', 'The funds are automatically donated to the state\'s higher education fund', 'Unused 529 funds revert to the government after 5 years of inactivity', 'You must repay any tax savings received on contributions made to the account'], correct: 0, explanation: 'The SECURE Act 2.0 also allows rolling up to $35,000 in unused 529 funds into a Roth IRA for the beneficiary - a newer planning option.' },
+              { prompt: 'Which is a key advantage of a 529 plan over a regular savings account for college?', options: ['Investment growth and withdrawals for education expenses are both federal-income-tax-free', 'The government matches 529 contributions dollar-for-dollar up to $2,500/year', '529 funds can only be invested in FDIC-insured CDs for maximum safety', '529 plans are exempt from state property taxes on the assets held'], correct: 0, explanation: 'Tax-free growth in a 529 compound-advantage is substantial over 18 years, equivalent to investing in a high-bracket tax-sheltered account.' },
+              { prompt: 'What happens to 529 funds if the designated beneficiary does not go to college?', options: ['You can change the beneficiary to another family member, or withdraw with taxes and a 10% penalty', 'The funds are automatically donated to the state\'s higher education fund', 'Unused 529 funds revert to the government after 5 years of inactivity', 'You must repay any tax savings received on contributions made to the account'], correct: 0, explanation: 'The SECURE Act 2.0 also allows rolling up to $35,000 in unused 529 funds into a Roth IRA for the beneficiary, a newer planning option.' },
               { prompt: 'Starting a college savings plan at birth vs. age 10 dramatically changes outcomes because:', options: ['18 years of compounding vs. 8 years results in far more growth for the same monthly contribution', 'College costs are discounted 50% for children enrolled in 529 plans before age 5', 'Financial aid applications require 10 years of savings history for maximum awards', 'Banks only offer 529 accounts to children under 5 years old'], correct: 0, explanation: '10 extra years of compounding at 7%+ means the same monthly contribution produces 2–3× more money at college enrollment.' },
-              { prompt: 'Overfunding a 529 plan (saving more than college costs) is now partially solved by:', options: ['The SECURE Act 2.0 allowing a $35,000 rollover to a Roth IRA for the beneficiary', 'Colleges issuing refunds for unused 529 funds after graduation', 'The IRS exempting 529 overfunding from penalty taxes starting in 2024', 'Automatic conversion to a general savings account when college is complete'], correct: 0, explanation: 'The Roth IRA rollover option removes the overfunding anxiety - excess 529 funds can become retirement savings instead of a trapped, penalized balance.' },
+              { prompt: 'Overfunding a 529 plan (saving more than college costs) is now partially solved by:', options: ['The SECURE Act 2.0 allowing a $35,000 rollover to a Roth IRA for the beneficiary', 'Colleges issuing refunds for unused 529 funds after graduation', 'The IRS exempting 529 overfunding from penalty taxes starting in 2024', 'Automatic conversion to a general savings account when college is complete'], correct: 0, explanation: 'The Roth IRA rollover option removes the overfunding anxiety; excess 529 funds can become retirement savings instead of a trapped, penalized balance.' },
             ],
           },
           {
@@ -1447,19 +1447,19 @@ export const levels = [
               { prompt: 'On a $300,000 home, a 20% down payment requires saving:', options: ['$60,000 for the down payment (plus additional funds for closing costs)', '$30,000 (10% down is the same as 20% in most cases)', '$300,000 since down payment equals the full purchase price', '$6,000 (2% is standard for first-time buyers in most markets)'], correct: 0, explanation: '$300,000 × 20% = $60,000. Plus closing costs (2–5% of purchase price) means actually needing $66,000–$75,000 in total ready funds.' },
               { prompt: 'To save $60,000 for a down payment in 5 years, you need to save approximately:', options: ['$1,000/month ($60,000 ÷ 60 months)', '$60,000/month for one month only', '$500/month since investing doubles the amount', '$5,000/year in a retirement account that converts to housing savings'], correct: 0, explanation: '$60,000 ÷ 60 months = $1,000/month. A high-yield savings account would shorten this slightly with interest earnings.' },
               { prompt: 'Where should a house down payment be saved?', options: ['A high-yield savings account or money market - safe and accessible without stock market risk', 'The stock market for maximum returns over a 3–5 year savings period', 'Your checking account so it is always available for the moment you find the right home', 'A 30-year Treasury bond for the highest possible government-backed return'], correct: 0, explanation: 'A home down payment is money you NEED - it cannot withstand a 30% stock market drop at the wrong moment. Safe, liquid, and predictable.' },
-              { prompt: 'FHA loans allow down payments as low as 3.5% but require:', options: ['FHA mortgage insurance premiums (MIP) for the life of the loan - an added ongoing cost', 'A credit score of 800 or higher for approval', 'A co-signer from a family member for all loans under $200,000', 'Paying points upfront to reduce the interest rate to a competitive level'], correct: 0, explanation: 'FHA MIP adds cost over time - for many borrowers, the lower down payment is worth it, but understand the true ongoing cost before choosing an FHA loan.' },
+              { prompt: 'FHA loans allow down payments as low as 3.5% but require:', options: ['FHA mortgage insurance premiums (MIP) for the life of the loan, an added ongoing cost', 'A credit score of 800 or higher for approval', 'A co-signer from a family member for all loans under $200,000', 'Paying points upfront to reduce the interest rate to a competitive level'], correct: 0, explanation: 'FHA MIP adds cost over time; for many borrowers the lower down payment is worth it, but understand the true ongoing cost before choosing an FHA loan.' },
               { prompt: 'Beyond the down payment, first-time home buyers must also budget for:', options: ['Closing costs (2–5% of purchase price), moving expenses, and initial repairs or furniture', 'Property management fees required by the city in the first year of ownership', 'A mandatory home warranty program costing 10% of the purchase price', 'First and last month\'s mortgage payments due at closing in addition to the down payment'], correct: 0, explanation: 'Closing costs on a $300,000 home range from $6,000–$15,000 - this is separate from and in addition to your down payment.' },
             ],
           },
           {
             id: 'u3-3-l7', title: 'Saving for Retirement - Intro', centsReward: 10,
             questions: [
-              { prompt: 'The most important reason to save for retirement in your 20s is:', options: ['Compound growth over 40+ years produces exponentially more wealth than starting later', 'The government penalizes people who start saving for retirement after age 30', 'Employer matching is only available to employees under 35', '401(k) contribution limits are higher for workers in their 20s'], correct: 0, explanation: 'Starting at 22 vs. 32 - 10 extra years of 8% compounding - can more than double your retirement balance from identical monthly contributions.' },
+              { prompt: 'The most important reason to save for retirement in your 20s is:', options: ['Compound growth over 40+ years produces exponentially more wealth than starting later', 'The government penalizes people who start saving for retirement after age 30', 'Employer matching is only available to employees under 35', '401(k) contribution limits are higher for workers in their 20s'], correct: 0, explanation: 'Starting at 22 vs. 32, with 10 extra years of 8% compounding, can more than double your retirement balance from identical monthly contributions.' },
               { prompt: 'How much should most workers aim to save for retirement as a percentage of income?', options: ['At least 10–15%, with 15% being the commonly recommended target', '2–5% - enough to capture the employer match and no more', '50% - the minimum required by SECURE Act 2.0 for all workers over 30', '1% in your 20s, increasing by 1% each decade as income grows'], correct: 0, explanation: 'Most financial advisors suggest 15% of gross income for retirement (including any employer match) as a guideline for a comfortable retirement.' },
-              { prompt: 'An employer 401(k) match of "50% on up to 6% of salary" means:', options: ['Your employer adds 50 cents for every dollar you contribute up to 6% - free money you should always capture', 'The employer pays 50% of your 401(k) management fees', 'You receive a 6% pay raise automatically when you enroll in the 401(k)', 'Your contributions are matched dollar-for-dollar up to 50% of your salary'], correct: 0, explanation: 'On a $60,000 salary: you contribute 6% = $3,600. Employer adds 50% of that = $1,800 free money. Always contribute enough to capture the full match.' },
-              { prompt: 'The "4% rule" for retirement planning means:', options: ['Withdraw 4% of your portfolio in year 1 of retirement, adjusting for inflation - historically sustainable for 30 years', 'Invest 4% of your income from age 22 onward to guarantee a comfortable retirement', 'Retire as soon as your investment returns average 4% annually', 'Earn at least 4% on every investment or the investment is not worth making'], correct: 0, explanation: 'The 4% safe withdrawal rate (from the Trinity Study) suggests you need 25× your annual spending saved for retirement.' },
+              { prompt: 'An employer 401(k) match of "50% on up to 6% of salary" means:', options: ['Your employer adds 50 cents for every dollar you contribute up to 6%; free money you should always capture', 'The employer pays 50% of your 401(k) management fees', 'You receive a 6% pay raise automatically when you enroll in the 401(k)', 'Your contributions are matched dollar-for-dollar up to 50% of your salary'], correct: 0, explanation: 'On a $60,000 salary: you contribute 6% = $3,600. Employer adds 50% of that = $1,800 free money. Always contribute enough to capture the full match.' },
+              { prompt: 'The "4% rule" for retirement planning means:', options: ['Withdraw 4% of your portfolio in year 1 of retirement, adjusting for inflation; historically sustainable for 30 years', 'Invest 4% of your income from age 22 onward to guarantee a comfortable retirement', 'Retire as soon as your investment returns average 4% annually', 'Earn at least 4% on every investment or the investment is not worth making'], correct: 0, explanation: 'The 4% safe withdrawal rate (from the Trinity Study) suggests you need 25× your annual spending saved for retirement.' },
               { prompt: 'Using the 4% rule, how much must you have saved to retire on $50,000/year?', options: ['$1,250,000 ($50,000 × 25)', '$500,000 ($50,000 × 10)', '$2,000,000 ($50,000 × 40)', '$250,000 ($50,000 × 5)'], correct: 0, explanation: 'The 4% rule: $50,000 ÷ 0.04 = $1,250,000. Alternatively, 25× annual spending = 25 × $50,000 = $1,250,000.' },
-              { prompt: 'Investing $500/month starting at age 22 vs age 32 at 8% annual return produces approximately:', options: ['$1.7M vs $750K by age 65 - the 10-year head start is worth ~$950,000', '$500K vs $450K - the difference is modest since late starters can contribute more', '$2M vs $2M - the total contributions eventually equalize the final balances', '$500K vs $250K - starting early exactly doubles the outcome every time'], correct: 0, explanation: 'The exact numbers vary, but starting 10 years earlier at $500/month at 8% typically produces roughly twice the retirement balance by age 65.' },
+              { prompt: 'Investing $500/month starting at age 22 vs age 32 at 8% annual return produces approximately:', options: ['$1.7M vs $750K by age 65; the 10-year head start is worth ~$950,000', '$500K vs $450K, a modest difference since late starters can contribute more', '$2M vs $2M, since total contributions eventually equalize the final balances', '$500K vs $250K, since starting early exactly doubles the outcome every time'], correct: 0, explanation: 'The exact numbers vary, but starting 10 years earlier at $500/month at 8% typically produces roughly twice the retirement balance by age 65.' },
             ],
           },
           {
@@ -1467,9 +1467,9 @@ export const levels = [
             questions: [
               { prompt: 'The best way to pay for a vacation is:', options: ['Save for it in advance so you enjoy it without worrying about the debt afterward', 'Put it on a credit card and pay it off over 12 months with minimum payments', 'Use your emergency fund since a vacation is an emergency if you haven\'t had one in years', 'Take a personal loan from a bank at 15% APR to fund a well-deserved trip'], correct: 0, explanation: 'A vacation paid for in advance is relaxing. A vacation paid for in installments at 20% credit card interest adds financial stress that outlasts the trip.' },
               { prompt: 'You want a $3,000 vacation in 10 months. Your monthly savings target is:', options: ['$300/month', '$3,000/month', '$150/month for 20 months', '$500/month for 6 months'], correct: 0, explanation: '$3,000 ÷ 10 months = $300/month. Straightforward goal arithmetic.' },
-              { prompt: 'A "vacation sinking fund" is:', options: ['A dedicated savings account that receives a fixed monthly contribution toward your next trip', 'A travel credit card that automatically saves points for future trips', 'An investment account that earns extra interest specifically on vacation savings', 'A bank feature that blocks vacation spending until a target is reached'], correct: 0, explanation: 'A vacation sinking fund turns a large annual expense into a small monthly contribution - the classic approach to irregular expenses.' },
+              { prompt: 'A "vacation sinking fund" is:', options: ['A dedicated savings account that receives a fixed monthly contribution toward your next trip', 'A travel credit card that automatically saves points for future trips', 'An investment account that earns extra interest specifically on vacation savings', 'A bank feature that blocks vacation spending until a target is reached'], correct: 0, explanation: 'A vacation sinking fund turns a large annual expense into a small monthly contribution, the classic approach to irregular expenses.' },
               { prompt: 'Which strategy reduces the total cost of a vacation without reducing the experience?', options: ['Booking flights and hotels 3–6 months in advance and using credit card travel rewards', 'Taking a vacation only every 5 years to amortize the cost over time', 'Borrowing money from a 401(k) to fund vacation costs at a lower interest rate', 'Paying for a vacation in monthly installments without interest using layaway programs'], correct: 0, explanation: 'Advance booking, travel rewards, and flexible dates can cut vacation costs 20–40% while maintaining the full trip experience.' },
-              { prompt: 'Including a small "travel fund" contribution in your monthly budget (even if no trip is planned) is useful because:', options: ['It accumulates passively so you are ready when an opportunity arises without disrupting other goals', 'The government offers a travel expense credit for consistent monthly contributors', 'Banks offer bonus interest on accounts explicitly designated for travel purposes', 'Monthly travel fund contributions are tax-deductible as healthcare-adjacent expenses'], correct: 0, explanation: 'A small consistent travel fund prevents the cycle of either skipping trips or going into debt - when an opportunity comes, the money is there.' },
+              { prompt: 'Including a small "travel fund" contribution in your monthly budget (even if no trip is planned) is useful because:', options: ['It accumulates passively so you are ready when an opportunity arises without disrupting other goals', 'The government offers a travel expense credit for consistent monthly contributors', 'Banks offer bonus interest on accounts explicitly designated for travel purposes', 'Monthly travel fund contributions are tax-deductible as healthcare-adjacent expenses'], correct: 0, explanation: 'A small consistent travel fund prevents the cycle of either skipping trips or going into debt; when an opportunity comes, the money is there.' },
               { prompt: 'Which is a red flag sign that your vacation is not financially appropriate right now?', options: ['You plan to put it on a credit card and do not have a concrete plan to pay it off within 60 days', 'The vacation costs more than 5% of your annual gross income', 'You have not taken a vacation in the previous calendar year', 'The trip involves international travel requiring a passport'], correct: 0, explanation: 'If the plan is "put it on the card and figure it out later," that is a sign the vacation is not yet financially ready to happen.' },
             ],
           },
@@ -1496,12 +1496,12 @@ export const levels = [
           {
             id: 'u4-1-l1', title: 'What is Credit', centsReward: 10,
             questions: [
-              { prompt: 'Credit in personal finance refers to:', options: ['The ability to borrow money now with a promise to repay it later', 'The total balance in all your bank accounts combined', 'The interest rate offered by lenders to preferred customers', 'A reward program offered by retailers for loyal customers'], correct: 0, explanation: 'Credit is the mechanism that lets you receive goods, services, or money now and pay later - it is the foundation of most major purchases.' },
-              { prompt: 'Which everyday item is often purchased using credit?', options: ['A home - almost nobody pays cash for a $300,000 house', 'A bottle of water at a convenience store', 'Groceries paid with a debit card linked to your checking account', 'A $5 coffee paid in cash'], correct: 0, explanation: 'Mortgages, car loans, and student loans are all forms of credit - large purchases that most people cannot afford to pay entirely in cash.' },
-              { prompt: 'Lenders check your credit history to determine:', options: ['How likely you are to repay the loan based on your past behavior', 'How much money you have in your bank account right now', 'Your total net worth including investments and real estate', 'Whether you have a college degree and stable employment history'], correct: 0, explanation: 'Credit history is a behavioral track record - lenders are predicting your future payment behavior based on what you have done in the past.' },
+              { prompt: 'Credit in personal finance refers to:', options: ['The ability to borrow money now with a promise to repay it later', 'The total balance in all your bank accounts combined', 'The interest rate offered by lenders to preferred customers', 'A reward program offered by retailers for loyal customers'], correct: 0, explanation: 'Credit is the mechanism that lets you receive goods, services, or money now and pay later; it is the foundation of most major purchases.' },
+              { prompt: 'Which everyday item is often purchased using credit?', options: ['A home, since almost nobody pays cash for a $300,000 house', 'A bottle of water at a convenience store', 'Groceries paid with a debit card linked to your checking account', 'A $5 coffee paid in cash'], correct: 0, explanation: 'Mortgages, car loans, and student loans are all forms of credit: large purchases that most people cannot afford to pay entirely in cash.' },
+              { prompt: 'Lenders check your credit history to determine:', options: ['How likely you are to repay the loan based on your past behavior', 'How much money you have in your bank account right now', 'Your total net worth including investments and real estate', 'Whether you have a college degree and stable employment history'], correct: 0, explanation: 'Credit history is a behavioral track record; lenders are predicting your future payment behavior based on what you have done in the past.' },
               { prompt: 'Which is an example of "good" use of credit?', options: ['Borrowing $250,000 for a home that appreciates in value while building equity', 'Using a credit card to buy groceries you cannot afford and carrying the balance', 'Taking out a payday loan to cover entertainment expenses', 'Using a personal loan to buy lottery tickets expecting to win and repay'], correct: 0, explanation: 'Good credit use involves borrowing for productive purposes (home, education, business) at affordable rates with a clear repayment plan.' },
-              { prompt: 'Poor credit can affect which areas of your life beyond just loan approvals?', options: ['Renting an apartment, getting a job (some employers check), and insurance rates', 'Only your ability to apply for a mortgage - nothing else', 'Only high-value purchases over $10,000 require a credit check', 'Your ability to receive Social Security benefits after age 62'], correct: 0, explanation: 'Credit reaches far beyond loans - landlords, employers (in some states), and insurance companies all use credit data in their decisions.' },
-              { prompt: 'Credit is different from a debit card or cash purchase because:', options: ['You are using borrowed money that must be repaid, potentially with interest', 'Credit is always free since card companies profit from merchant fees only', 'Debit cards require a credit check before every purchase is approved', 'Cash purchases earn more rewards than credit card purchases'], correct: 0, explanation: 'Credit creates a debt obligation - you are temporarily using someone else\'s money with a promise to repay it on agreed terms.' },
+              { prompt: 'Poor credit can affect which areas of your life beyond just loan approvals?', options: ['Renting an apartment, getting a job (some employers check), and insurance rates', 'Only your ability to apply for a mortgage, nothing else', 'Only high-value purchases over $10,000 require a credit check', 'Your ability to receive Social Security benefits after age 62'], correct: 0, explanation: 'Credit reaches far beyond loans; landlords, employers (in some states), and insurance companies all use credit data in their decisions.' },
+              { prompt: 'Credit is different from a debit card or cash purchase because:', options: ['You are using borrowed money that must be repaid, potentially with interest', 'Credit is always free since card companies profit from merchant fees only', 'Debit cards require a credit check before every purchase is approved', 'Cash purchases earn more rewards than credit card purchases'], correct: 0, explanation: 'Credit creates a debt obligation; you are temporarily using someone else\'s money with a promise to repay it on agreed terms.' },
             ],
           },
           {
@@ -1509,42 +1509,42 @@ export const levels = [
             questions: [
               { prompt: 'A FICO score is:', options: ['A three-digit number (300–850) that summarizes your creditworthiness', 'A government-issued financial wellness rating for all U.S. citizens', 'A bank account score that determines interest rates on savings', 'A debt-to-income ratio calculated by your primary lender'], correct: 0, explanation: 'FICO scores range 300–850. Higher = better. Above 740 is "very good"; above 800 is "exceptional." Most lenders offer best rates to 740+ borrowers.' },
               { prompt: 'The single largest factor in your FICO score is:', options: ['Payment history (35%) - whether you pay on time every month', 'Credit utilization (30%) - how much of your credit limit you use', 'Length of credit history (15%) - how old your oldest account is', 'New credit inquiries (10%) - how many applications you have made recently'], correct: 0, explanation: 'On-time payments are the most important credit habit. One missed payment can drop a score 50–100 points and stays on your report 7 years.' },
-              { prompt: 'A FICO score of 760 qualifies you for:', options: ['The best mortgage rates - typically reserved for 740+ borrowers', 'Only secured credit cards since 760 is below average', 'Government-subsidized loans unavailable to borrowers above 720', 'No benefit over a 680 score since all "approved" scores are treated equally'], correct: 0, explanation: '760+ unlocks the best available mortgage rates - on a 30-year $300,000 mortgage, this can save $50,000–$100,000 versus a 650 score borrower.' },
-              { prompt: 'FICO scores are calculated based on data from:', options: ['Your credit reports at the three major bureaus - Equifax, Experian, and TransUnion', 'Your bank account balance and transaction history directly', 'Your tax returns submitted to the IRS each April', 'Surveys completed by your lenders and employers about your financial character'], correct: 0, explanation: 'FICO reads your credit reports - it does not see your income, bank balance, or employment. Only credit account behavior matters.' },
-              { prompt: 'How often does your FICO score update?', options: ['Every time a lender reports new information to the credit bureaus - typically monthly', 'Only once per year when you pull your official credit report', 'Every 24 hours based on real-time credit card transaction data', 'Only when you apply for new credit'], correct: 0, explanation: 'Lenders (credit card companies, mortgage servicers) report balances and payment status to bureaus typically once a month - your score updates accordingly.' },
+              { prompt: 'A FICO score of 760 qualifies you for:', options: ['The best mortgage rates, typically reserved for 740+ borrowers', 'Only secured credit cards since 760 is below average', 'Government-subsidized loans unavailable to borrowers above 720', 'No benefit over a 680 score since all "approved" scores are treated equally'], correct: 0, explanation: '760+ unlocks the best available mortgage rates; on a 30-year $300,000 mortgage, this can save $50,000–$100,000 versus a 650 score borrower.' },
+              { prompt: 'FICO scores are calculated based on data from:', options: ['Your credit reports at the three major bureaus: Equifax, Experian, and TransUnion', 'Your bank account balance and transaction history directly', 'Your tax returns submitted to the IRS each April', 'Surveys completed by your lenders and employers about your financial character'], correct: 0, explanation: 'FICO reads your credit reports and does not see your income, bank balance, or employment. Only credit account behavior matters.' },
+              { prompt: 'How often does your FICO score update?', options: ['Every time a lender reports new information to the credit bureaus, typically monthly', 'Only once per year when you pull your official credit report', 'Every 24 hours based on real-time credit card transaction data', 'Only when you apply for new credit'], correct: 0, explanation: 'Lenders (credit card companies, mortgage servicers) report balances and payment status to bureaus typically once a month; your score updates accordingly.' },
               { prompt: 'Which action causes the biggest immediate drop in a FICO score?', options: ['Missing a payment by 30+ days - payment history is 35% of the score', 'Checking your own credit score on a free monitoring app', 'Opening one new credit card to get a sign-up bonus', 'Paying off a small collection account that had already been on the report for 6 years'], correct: 0, explanation: 'A 30-day late payment is catastrophic - it can drop a 780 score by 90–110 points and stays on your report for 7 years.' },
             ],
           },
           {
             id: 'u4-1-l3', title: 'Credit Reports', centsReward: 10,
             questions: [
-              { prompt: 'Your credit report is:', options: ['A detailed record of your credit history - accounts, payment history, balances, and inquiries', 'A single number summarizing your creditworthiness (like a FICO score)', 'A government document listing all your assets and liabilities', 'A bank statement showing your deposit and withdrawal history'], correct: 0, explanation: 'The credit report is the raw data; the credit score is the summary number derived from that data. They are related but different things.' },
-              { prompt: 'You are entitled to free credit reports from each bureau:', options: ['Once per year at AnnualCreditReport.com - the only federally authorized free source', 'Once per month for free at any time from each bureau', 'Only after being denied credit - approval entitles you to a paid report only', 'Never - credit report access costs a monthly fee under the Fair Credit Reporting Act'], correct: 0, explanation: 'Federal law (FCRA) guarantees you one free report per year per bureau. During COVID, the bureaus extended this to weekly - check the current policy.' },
-              { prompt: 'Which item on a credit report is most important to check for errors?', options: ['Account payment history - incorrect late payments are the most damaging errors', 'The list of soft inquiries that checked your report in the last 2 years', 'Your home address history showing where you have lived', 'The credit utilization calculation the bureau applies to your balances'], correct: 0, explanation: 'A falsely reported late payment can drop your score dramatically and cost you thousands in higher interest rates - errors must be disputed immediately.' },
-              { prompt: 'If you find an error on your credit report, you should:', options: ['File a dispute with the bureau online or by mail - they must investigate within 30 days', 'Call the lender and ask them to correct it verbally over the phone', 'Wait for the error to fall off naturally after 7 years', 'Hire a credit repair company since consumers cannot dispute errors directly'], correct: 0, explanation: 'The FCRA gives you the right to dispute inaccuracies. File directly with the bureau - include documentation and follow up if not resolved in 30 days.' },
-              { prompt: 'Negative information (late payments, collections) stays on your credit report for:', options: ['7 years from the date of the delinquency (10 years for Chapter 7 bankruptcy)', 'Forever - negative information never expires under federal law', '2 years - after which credit reports are fully reset', '5 years for missed payments, 3 years for collections'], correct: 0, explanation: 'Most negative items disappear after 7 years. Bankruptcy (Chapter 7) stays for 10 years. After removal, the event cannot affect your score.' },
-              { prompt: 'Which item would NOT appear on a credit report?', options: ['Your bank account balance and checking account history', 'Credit card accounts and payment history', 'Mortgage loan account information', 'Collections accounts for unpaid debts'], correct: 0, explanation: 'Bank account data (deposits, withdrawals, checking balances) is not reported to credit bureaus - only credit accounts appear on credit reports.' },
+              { prompt: 'Your credit report is:', options: ['A detailed record of your credit history: accounts, payment history, balances, and inquiries', 'A single number summarizing your creditworthiness (like a FICO score)', 'A government document listing all your assets and liabilities', 'A bank statement showing your deposit and withdrawal history'], correct: 0, explanation: 'The credit report is the raw data; the credit score is the summary number derived from it. They are related but different things.' },
+              { prompt: 'You are entitled to free credit reports from each bureau:', options: ['Once per year at AnnualCreditReport.com, the only federally authorized free source', 'Once per month for free at any time from each bureau', 'Only after being denied credit; approval entitles you to a paid report only', 'Never; credit report access costs a monthly fee under the Fair Credit Reporting Act'], correct: 0, explanation: 'Federal law (FCRA) guarantees you one free report per year per bureau. During COVID, the bureaus extended this to weekly; check the current policy.' },
+              { prompt: 'Which item on a credit report is most important to check for errors?', options: ['Account payment history, since incorrect late payments are the most damaging errors', 'The list of soft inquiries that checked your report in the last 2 years', 'Your home address history showing where you have lived', 'The credit utilization calculation the bureau applies to your balances'], correct: 0, explanation: 'A falsely reported late payment can drop your score dramatically and cost you thousands in higher interest rates; errors must be disputed immediately.' },
+              { prompt: 'If you find an error on your credit report, you should:', options: ['File a dispute with the bureau online or by mail; they must investigate within 30 days', 'Call the lender and ask them to correct it verbally over the phone', 'Wait for the error to fall off naturally after 7 years', 'Hire a credit repair company since consumers cannot dispute errors directly'], correct: 0, explanation: 'The FCRA gives you the right to dispute inaccuracies. File directly with the bureau; include documentation and follow up if not resolved in 30 days.' },
+              { prompt: 'Negative information (late payments, collections) stays on your credit report for:', options: ['7 years from the date of the delinquency, or 10 years for Chapter 7 bankruptcy', 'Forever; negative information never expires under federal law', '2 years, after which credit reports are fully reset', '5 years for missed payments, 3 years for collections'], correct: 0, explanation: 'Most negative items disappear after 7 years. Bankruptcy (Chapter 7) stays for 10 years. After removal, the event cannot affect your score.' },
+              { prompt: 'Which item would NOT appear on a credit report?', options: ['Your bank account balance and checking account history', 'Credit card accounts and payment history', 'Mortgage loan account information', 'Collections accounts for unpaid debts'], correct: 0, explanation: 'Bank account data (deposits, withdrawals, checking balances) is not reported to credit bureaus; only credit accounts appear on credit reports.' },
             ],
           },
           {
             id: 'u4-1-l4', title: 'Credit Bureaus', centsReward: 10,
             questions: [
               { prompt: 'The three major U.S. credit bureaus are:', options: ['Equifax, Experian, and TransUnion', 'FICO, VantageScore, and Clarity', 'Federal Reserve, FDIC, and CFPB', 'Chase, Bank of America, and Wells Fargo'], correct: 0, explanation: 'Equifax, Experian, and TransUnion are the three private companies that collect and maintain credit history data on most U.S. consumers.' },
-              { prompt: 'Why might your credit score differ across all three bureaus?', options: ['Not all lenders report to all three bureaus - each may have slightly different data', 'Each bureau uses a completely different scoring algorithm mandated by federal law', 'Bureaus deliberately vary scores to prevent consumers from gaming the system', 'Only one bureau (Equifax) uses the FICO model; the others use different systems entirely'], correct: 0, explanation: 'A lender might report to Experian and TransUnion but not Equifax - that missing account creates score differences across the three reports.' },
-              { prompt: 'A credit freeze prevents:', options: ['New lenders from accessing your credit report to open new accounts in your name', 'Existing creditors from seeing your current account balance', 'You from checking your own credit report at any bureau', 'Payments being reported to the bureaus during the freeze period'], correct: 0, explanation: 'A credit freeze locks down your report - great for identity theft prevention. Existing accounts and your own access are unaffected.' },
-              { prompt: 'Placing and lifting a credit freeze is:', options: ['Free and can be done at any time online or by phone at each bureau', 'A service costing $10–$25 per bureau plus a monthly maintenance fee', 'Only available after you have experienced confirmed identity theft', 'Permanent once placed - it can never be lifted without court approval'], correct: 0, explanation: 'The Economic Growth Act (2018) made credit freezes free for all consumers - it is the strongest available protection against new account fraud.' },
+              { prompt: 'Why might your credit score differ across all three bureaus?', options: ['Not all lenders report to all three bureaus; each may have slightly different data', 'Each bureau uses a completely different scoring algorithm mandated by federal law', 'Bureaus deliberately vary scores to prevent consumers from gaming the system', 'Only one bureau (Equifax) uses the FICO model; the others use different systems entirely'], correct: 0, explanation: 'A lender might report to Experian and TransUnion but not Equifax; that missing account creates score differences across the three reports.' },
+              { prompt: 'A credit freeze prevents:', options: ['New lenders from accessing your credit report to open new accounts in your name', 'Existing creditors from seeing your current account balance', 'You from checking your own credit report at any bureau', 'Payments being reported to the bureaus during the freeze period'], correct: 0, explanation: 'A credit freeze locks down your report, making it great for identity theft prevention. Existing accounts and your own access are unaffected.' },
+              { prompt: 'Placing and lifting a credit freeze is:', options: ['Free and can be done at any time online or by phone at each bureau individually', 'A service costing $10–$25 per bureau plus a monthly maintenance fee', 'Only available after you have experienced confirmed identity theft', 'Permanent once placed; it can never be lifted without court approval'], correct: 0, explanation: 'The Economic Growth Act (2018) made credit freezes free for all consumers; it is the strongest available protection against new account fraud.' },
               { prompt: 'The CFPB (Consumer Financial Protection Bureau) was created to:', options: ['Regulate credit bureaus and protect consumers\' rights related to credit reporting', 'Set interest rates for all consumer lending products nationally', 'Insure credit bureau data against cyber breaches and data theft', 'Issue FICO scores and VantageScores on behalf of all three bureaus'], correct: 0, explanation: 'The CFPB regulates credit bureaus, enforces the Fair Credit Reporting Act, and is your primary resource for credit-related complaints and disputes.' },
-              { prompt: 'The 2017 Equifax data breach exposed the personal data of approximately:', options: ['147 million Americans - nearly half the U.S. population', '5 million Americans - a relatively isolated incident', '2.5 billion people globally - the largest data breach ever', '47,000 Equifax employees who had access to the compromised systems'], correct: 0, explanation: 'The Equifax breach (SSNs, birthdates, addresses) affected nearly half the U.S. population - highlighting why credit freezes are such important protective tools.' },
+              { prompt: 'The 2017 Equifax data breach exposed the personal data of approximately:', options: ['147 million Americans, nearly half the U.S. population', '5 million Americans, a relatively isolated incident', '2.5 billion people globally, the largest data breach ever', '47,000 Equifax employees who had access to the compromised systems'], correct: 0, explanation: 'The Equifax breach (SSNs, birthdates, addresses) affected nearly half the U.S. population, highlighting why credit freezes are such important protective tools.' },
             ],
           },
           {
             id: 'u4-1-l5', title: 'Hard & Soft Inquiries', centsReward: 10,
             questions: [
-              { prompt: 'A hard inquiry occurs when:', options: ['A lender checks your credit report after you formally apply for a loan or card', 'You check your own credit score on a monitoring app or website', 'An employer verifies your identity and employment eligibility', 'Your bank automatically reviews your account for potential limit increases'], correct: 0, explanation: 'Hard inquiries happen when YOU apply for new credit - the lender pulls your full report to evaluate your creditworthiness.' },
+              { prompt: 'A hard inquiry occurs when:', options: ['A lender checks your credit report after you formally apply for a loan or card', 'You check your own credit score on a monitoring app or website', 'An employer verifies your identity and employment eligibility', 'Your bank automatically reviews your account for potential limit increases'], correct: 0, explanation: 'Hard inquiries happen when you apply for new credit; the lender pulls your full report to evaluate your creditworthiness.' },
               { prompt: 'A hard inquiry typically affects your credit score by:', options: ['Reducing it by approximately 5 points temporarily - recovering within 12 months', 'Increasing it by 10 points since it shows active credit seeking behavior', 'Dropping it by 50–100 points permanently until the account is paid off', 'Having no effect since FICO ignores all inquiry types in its calculation'], correct: 0, explanation: 'A single hard inquiry causes a small, temporary drop (~5 points). Multiple inquiries in a short period have a larger cumulative effect.' },
-              { prompt: 'A soft inquiry occurs when:', options: ['You check your own credit, a pre-approval offer is generated, or an employer does a background check', 'You apply for a new credit card and the issuer pulls your full report', 'A mortgage lender evaluates your application for a home loan', 'A debt collector checks your report to verify contact information for collections'], correct: 0, explanation: 'Soft inquiries do not affect your credit score - they are informational pulls that do not signal you are seeking new credit.' },
+              { prompt: 'A soft inquiry occurs when:', options: ['You check your own credit, a pre-approval offer is generated, or an employer does a background check', 'You apply for a new credit card and the issuer pulls your full report', 'A mortgage lender evaluates your application for a home loan', 'A debt collector checks your report to verify contact information for collections'], correct: 0, explanation: 'Soft inquiries do not affect your credit score; they are informational pulls that do not signal you are seeking new credit.' },
               { prompt: 'Shopping for a mortgage at multiple lenders in a 45-day window:', options: ['Counts as only one hard inquiry under FICO rate-shopping rules', 'Damages your score once per lender - applying to 5 lenders = 5 permanent drops', 'Is illegal under the Equal Credit Opportunity Act', 'Counts as soft inquiries for the first 3 lenders and hard inquiries for additional ones'], correct: 0, explanation: 'FICO\'s rate-shopping protection recognizes that consumers should compare mortgage, auto, and student loan rates. Multiple inquiries within 14–45 days count as one.' },
-              { prompt: 'How long does a hard inquiry remain on your credit report?', options: ['2 years - but it only affects your score for about 12 months', '7 years - same as all negative credit events', 'Permanently - hard inquiries never fall off once added', '6 months - then it is automatically purged from the report'], correct: 0, explanation: 'Hard inquiries stay visible on your report for 2 years but their scoring impact fades after about 12 months and disappears completely by 24 months.' },
+              { prompt: 'How long does a hard inquiry remain on your credit report?', options: ['2 years, but it only affects your score for about 12 months', '7 years, the same as all negative credit events', 'Permanently; hard inquiries never fall off once added', '6 months, then it is automatically purged from the report'], correct: 0, explanation: 'Hard inquiries stay visible on your report for 2 years, but their scoring impact fades after about 12 months and disappears completely by 24 months.' },
               { prompt: 'Checking your own credit score via Credit Karma or your bank\'s app causes:', options: ['A soft inquiry only - your score is completely unaffected by self-checks', 'A hard inquiry that temporarily reduces your score by 3–5 points', 'A "consumer inquiry" that reduces score by 1 point per check', 'No inquiry at all - self-checks bypass the credit bureau system entirely'], correct: 0, explanation: 'Self-checks are always soft inquiries. Check your own score as often as you want - there is no credit consequence whatsoever.' },
             ],
           },
@@ -1552,11 +1552,11 @@ export const levels = [
             id: 'u4-1-l6', title: 'Building Credit', centsReward: 10,
             questions: [
               { prompt: 'The best way to start building credit with no credit history is:', options: ['Open a secured credit card backed by a cash deposit and use it responsibly', 'Apply for five credit cards simultaneously to establish multiple accounts quickly', 'Take out a large personal loan to demonstrate you can handle significant debt', 'Ask a family member to close their oldest card and transfer the history to you'], correct: 0, explanation: 'A secured card (deposit = credit limit) is designed for credit beginners. Use it monthly, pay in full, and positive history builds within 6–12 months.' },
-              { prompt: 'Being added as an authorized user on a parent\'s credit card helps a young person because:', options: ['The card\'s age and payment history may appear on the authorized user\'s credit report', 'Authorized users receive the full credit limit in their own name automatically', 'The government grants a 50-point credit boost to all authorized users under 25', 'It avoids the need to ever apply for your own credit card since authorized status is permanent'], correct: 0, explanation: 'Authorized user status can transfer the primary cardholder\'s positive history - particularly the account age - boosting a young person\'s thin credit file.' },
-              { prompt: 'A credit-builder loan (offered by many credit unions) works by:', options: ['Holding the loan amount in a locked account while you make payments - you receive the money after paying it off', 'Giving you cash upfront that earns special credit-building interest as you repay', 'Automatically increasing your credit limit by $100 per on-time payment', 'Reporting your rent and utility payments as equivalent to credit card payments'], correct: 0, explanation: 'Credit-builder loans build payment history without giving you access to the borrowed money until the loan is repaid - perfect for building credit safely.' },
-              { prompt: 'To build credit responsibly, the most important habit is:', options: ['Never missing a payment - pay at least the minimum on time every single month', 'Maxing out your credit card each month to show high spending capacity', 'Applying for new credit every 3 months to diversify your credit types', 'Keeping zero balance on all cards at all times - never charge anything'], correct: 0, explanation: 'Payment history is 35% of your FICO score - consistent on-time payments are the single most important credit-building behavior.' },
+              { prompt: 'Being added as an authorized user on a parent\'s credit card helps a young person because:', options: ['The card\'s age and payment history may appear on the authorized user\'s credit report', 'Authorized users receive the full credit limit in their own name automatically', 'The government grants a 50-point credit boost to all authorized users under 25', 'It avoids the need to ever apply for your own credit card since authorized status is permanent'], correct: 0, explanation: 'Authorized user status can transfer the primary cardholder\'s positive history, particularly the account age, boosting a young person\'s thin credit file.' },
+              { prompt: 'A credit-builder loan (offered by many credit unions) works by:', options: ['Holding the loan amount in a locked account while you make payments; you receive the money after paying it off', 'Giving you cash upfront that earns special credit-building interest as you repay', 'Automatically increasing your credit limit by $100 per on-time payment', 'Reporting your rent and utility payments as equivalent to credit card payments'], correct: 0, explanation: 'Credit-builder loans build payment history without giving you access to the borrowed money until the loan is repaid, making them perfect for building credit safely.' },
+              { prompt: 'To build credit responsibly, the most important habit is:', options: ['Never missing a payment; pay at least the minimum on time every single month', 'Maxing out your credit card each month to show high spending capacity', 'Applying for new credit every 3 months to diversify your credit types', 'Keeping zero balance on all cards at all times; never charge anything'], correct: 0, explanation: 'Payment history is 35% of your FICO score; consistent on-time payments are the single most important credit-building behavior.' },
               { prompt: 'How long does it typically take to build a solid credit score from zero?', options: ['6–12 months of responsible credit use to establish a score; 2–3 years for a "good" score', '30 days - FICO scores are assigned immediately when an account is opened', '5 years minimum before any lender will consider a first-time borrower', 'Credit scores are assigned at birth and cannot be changed in the first 5 years'], correct: 0, explanation: 'FICO requires at least 6 months of credit account history to generate a score. A "good" (700+) score typically takes 2–3 years of consistent positive behavior.' },
-              { prompt: 'Keeping a secured credit card open for several years (even after you no longer need it) helps because:', options: ['It lengthens your average account age, which is 15% of your FICO score', 'Closed accounts are automatically reported as negative items', 'Older cards earn progressively higher cashback rewards year over year', 'Banks charge a penalty fee when accounts are closed before 5 years'], correct: 0, explanation: 'Length of credit history matters - keeping old accounts open (with minimal use to prevent inactivity closure) maintains a longer average account age.' },
+              { prompt: 'Keeping a secured credit card open for several years (even after you no longer need it) helps because:', options: ['It lengthens your average account age, which is 15% of your FICO score', 'Closed accounts are automatically reported as negative items', 'Older cards earn progressively higher cashback rewards year over year', 'Banks charge a penalty fee when accounts are closed before 5 years'], correct: 0, explanation: 'Length of credit history matters; keeping old accounts open (with minimal use to prevent inactivity closure) maintains a longer average account age.' },
             ],
           },
           {
@@ -1564,9 +1564,9 @@ export const levels = [
             questions: [
               { prompt: 'The most effective ongoing habit for maintaining a high credit score is:', options: ['Paying every account on time, every month, without exception', 'Applying for a new credit card each year to show lenders you are desirable', 'Closing old accounts you no longer use to simplify your credit file', 'Carrying a small balance on credit cards to show active usage'], correct: 0, explanation: 'Payment history is 35% of your score and the only factor you control every single month. Flawless payment history is the foundation of excellent credit.' },
               { prompt: 'The credit utilization ratio is calculated as:', options: ['Total credit card balances ÷ total credit card limits × 100%', 'Total debt ÷ annual income × 100%', 'Monthly credit card spending ÷ monthly income × 100%', 'Credit card limit ÷ number of cards × monthly payment'], correct: 0, explanation: 'If you have $1,000 in balances across cards with a combined $5,000 limit: utilization = 20%. This is the second most important scoring factor (30%).' },
-              { prompt: 'Experts recommend keeping credit utilization below:', options: ['30% - ideally below 10% for maximum score impact', '75% - as long as you never miss a payment', '50% - the midpoint between zero and fully maxed', '100% - any usage under the limit is acceptable'], correct: 0, explanation: 'High utilization signals financial stress to lenders. Below 30% is the rule of thumb; below 10% is optimal for the highest scores.' },
-              { prompt: 'Closing a credit card you no longer use can hurt your score because:', options: ['It reduces your total available credit, potentially increasing your utilization ratio', 'Closed accounts are reported as missed payments for 7 years', 'Closing cards triggers a hard inquiry that temporarily drops your score', 'Card issuers report closures to employment agencies which may affect job applications'], correct: 0, explanation: 'Closing a card removes its credit limit from your total available credit. If balances stay the same, utilization jumps - potentially hurting your score.' },
-              { prompt: 'Setting up autopay for the minimum payment on all accounts is useful because:', options: ['It prevents missed payments even if you forget - you can always pay more manually', 'Autopay immediately boosts your score by 20 points per enrolled account', 'Minimum autopay payments are not counted as on-time payments by FICO', 'Autopay eliminates interest charges on all enrolled credit accounts'], correct: 0, explanation: 'Autopay for at least the minimum is the safety net - no late fees, no score damage. Pay extra manually to avoid interest, but the autopay prevents catastrophe.' },
+              { prompt: 'Experts recommend keeping credit utilization below:', options: ['30%; ideally below 10% for maximum score impact', '75%, as long as you never miss a payment', '50%, the midpoint between zero and fully maxed', '100%; any usage under the limit is acceptable'], correct: 0, explanation: 'High utilization signals financial stress to lenders. Below 30% is the rule of thumb, and below 10% is optimal for the highest scores.' },
+              { prompt: 'Closing a credit card you no longer use can hurt your score because:', options: ['It reduces your total available credit, potentially increasing your utilization ratio', 'Closed accounts are reported as missed payments for 7 years', 'Closing cards triggers a hard inquiry that temporarily drops your score', 'Card issuers report closures to employment agencies which may affect job applications'], correct: 0, explanation: 'Closing a card removes its credit limit from your total available credit. If balances stay the same, utilization jumps, potentially hurting your score.' },
+              { prompt: 'Setting up autopay for the minimum payment on all accounts is useful because:', options: ['It prevents missed payments even if you forget; you can always pay more manually', 'Autopay immediately boosts your score by 20 points per enrolled account', 'Minimum autopay payments are not counted as on-time payments by FICO', 'Autopay eliminates interest charges on all enrolled credit accounts'], correct: 0, explanation: 'Autopay for at least the minimum is the safety net: no late fees, no score damage. Pay extra manually to avoid interest, but the autopay prevents catastrophe.' },
               { prompt: 'Your credit score drops when you are approved for and open a new credit card because:', options: ['The hard inquiry and reduced average account age temporarily lower the score', 'New accounts increase your risk profile permanently in the lender\'s algorithm', 'The credit card company reports the account to the bureaus as a new collection item', 'Adding a new card reduces your payment history score since there is no history yet on the new account'], correct: 0, explanation: 'Two things happen: hard inquiry (−5 points) and reduced average account age (new account pulls the average down). Both recover within 6–12 months.' },
             ],
           },
@@ -1575,10 +1575,10 @@ export const levels = [
             questions: [
               { prompt: 'VantageScore was created by:', options: ['The three major credit bureaus (Equifax, Experian, and TransUnion) as a FICO competitor', 'The Federal Reserve to provide an alternative to private scoring models', 'Congress under the Dodd-Frank financial reform act of 2010', 'A nonprofit consumer advocacy organization to provide free credit scores for all Americans'], correct: 0, explanation: 'Equifax, Experian, and TransUnion jointly created VantageScore in 2006 to compete with FICO and reduce their dependence on a single third-party scoring company.' },
               { prompt: 'VantageScore and FICO both use a range of:', options: ['300–850', '0–100', '1–10', '500–1000'], correct: 0, explanation: 'Both models use the same 300–850 range and general scale, making them easier to compare - though the weights of each factor differ.' },
-              { prompt: 'VantageScore 4.0 differs from older FICO models by:', options: ['Including trended data (spending patterns over time) not just a snapshot of current balances', 'Ignoring payment history entirely and focusing only on income verification', 'Requiring at least 10 years of credit history to generate a score', 'Being exclusively used by government mortgage lenders like Fannie Mae and Freddie Mac'], correct: 0, explanation: 'VantageScore 4.0 analyzes how your balances have been trending (rising or falling over time) - a more nuanced view than a single-point balance snapshot.' },
+              { prompt: 'VantageScore 4.0 differs from older FICO models by:', options: ['Including trended data (spending patterns over time) not just a snapshot of current balances', 'Ignoring payment history entirely and focusing only on income verification', 'Requiring at least 10 years of credit history to generate a score', 'Being exclusively used by government mortgage lenders like Fannie Mae and Freddie Mac'], correct: 0, explanation: 'VantageScore 4.0 analyzes how your balances have been trending (rising or falling over time), a more nuanced view than a single-point balance snapshot.' },
               { prompt: 'Free credit score services (Credit Karma, Experian free tier) typically provide:', options: ['VantageScore - not FICO - which is why it may differ from lender-provided FICO scores', 'The exact FICO score that mortgage lenders use for underwriting decisions', 'An estimated score accurate to within 10 points of all FICO versions', 'A score calculated using bank account data not visible to credit bureaus'], correct: 0, explanation: 'Most free score services show VantageScore. Lenders predominantly use FICO - they can differ by 20–50 points, which is why your lender\'s score might surprise you.' },
-              { prompt: 'Which mortgage transactions currently require a FICO score specifically?', options: ['Loans backed by Fannie Mae and Freddie Mac - though VantageScore adoption is expanding', 'All federally insured loans regardless of type', 'No mortgage loan requires FICO - lenders can choose any model', 'Only jumbo mortgages over $1 million require FICO scores'], correct: 0, explanation: 'Fannie and Freddie have historically required FICO. In 2023, they announced plans to accept FICO 10T and VantageScore 4.0 - a significant shift underway.' },
-              { prompt: 'For a consumer trying to monitor their credit health day-to-day, using a VantageScore service is:', options: ['Completely fine - it tracks trends accurately even if the exact number differs from FICO', 'Useless since only FICO scores matter for any real-world purpose', 'Dangerous because VantageScore access counts as a hard inquiry', 'Required by law once you have more than 3 active credit accounts'], correct: 0, explanation: 'VantageScore is excellent for tracking trends and catching fraud early - the exact number may differ from FICO, but the direction (up or down) is what matters for monitoring.' },
+              { prompt: 'Which mortgage transactions currently require a FICO score specifically?', options: ['Loans backed by Fannie Mae and Freddie Mac, though VantageScore adoption is expanding', 'All federally insured loans regardless of type', 'No mortgage loan requires FICO; lenders can choose any model', 'Only jumbo mortgages over $1 million require FICO scores'], correct: 0, explanation: 'Fannie and Freddie have historically required FICO. In 2023, they announced plans to accept FICO 10T and VantageScore 4.0, a significant shift underway.' },
+              { prompt: 'For a consumer trying to monitor their credit health day-to-day, using a VantageScore service is:', options: ['Completely fine; it tracks trends accurately even if the exact number differs from FICO', 'Useless since only FICO scores matter for any real-world purpose', 'Dangerous because VantageScore access counts as a hard inquiry', 'Required by law once you have more than 3 active credit accounts'], correct: 0, explanation: 'VantageScore is excellent for tracking trends and catching fraud early; the exact number may differ from FICO, but the direction (up or down) is what matters for monitoring.' },
             ],
           },
         ],
@@ -1626,12 +1626,12 @@ export const levels = [
                   'Requesting a credit limit increase',
                 ],
                 correct: 0,
-                explanation: 'Once you carry a balance, interest typically accrues daily on all purchases from the transaction date - even new ones - until you pay the full balance.',
+                explanation: 'Once you carry a balance, interest typically accrues daily on all purchases from the transaction date, even new ones, until you pay the full balance.',
               },
               {
                 prompt: 'How long is a typical credit card grace period?',
                 options: [
-                  'At least 21 days - required by federal law (the CARD Act)',
+                  'At least 21 days, as required by federal law (the CARD Act)',
                   '10 days from the statement closing date',
                   '30 days from the first purchase in the cycle',
                   '60 days, but only for new cardholders',
@@ -1648,7 +1648,7 @@ export const levels = [
                   'Carry a small balance to show the bank you are an active borrower',
                 ],
                 correct: 0,
-                explanation: 'Paying the full statement balance every month means you borrow money for up to 55 days and pay zero interest - making the card essentially free to use.',
+                explanation: 'Paying the full statement balance every month means you borrow money for up to 55 days and pay zero interest, making the card essentially free to use.',
               },
               {
                 prompt: 'Cash advances on a credit card typically have no grace period. What does this mean?',
@@ -1699,7 +1699,7 @@ export const levels = [
                   'The minimum credit score needed to qualify for a lower interest rate',
                 ],
                 correct: 0,
-                explanation: 'The CARD Act requires this "minimum payment warning" so consumers understand the true cost of paying minimums - often a shocking wake-up call.',
+                explanation: 'The CARD Act requires this "minimum payment warning" so consumers understand the true cost of paying minimums, often a shocking wake-up call.',
               },
               {
                 prompt: 'Why is paying only the minimum payment considered a debt trap?',
@@ -1744,10 +1744,10 @@ export const levels = [
               {
                 prompt: 'What does APR stand for on a credit card?',
                 options: [
-                  'Annual Percentage Rate - the yearly interest rate charged on carried balances',
-                  'Average Payment Ratio - the ratio of minimum to full payments you make',
-                  'Annual Principal Reduction - how much of your payment reduces the balance',
-                  'Authorized Purchase Requirement - the spending threshold to keep the card active',
+                  'Annual Percentage Rate, the yearly interest rate charged on carried balances',
+                  'Average Payment Ratio, the ratio of minimum to full payments you make',
+                  'Annual Principal Reduction, showing how much of your payment reduces the balance',
+                  'Authorized Purchase Requirement, the spending threshold to keep the card active',
                 ],
                 correct: 0,
                 explanation: 'APR is the annualized cost of carrying a balance. A 24% APR means roughly 2% interest per month on any unpaid balance.',
@@ -1788,10 +1788,10 @@ export const levels = [
               {
                 prompt: 'Variable APR on a credit card means the rate is tied to:',
                 options: [
-                  'The federal prime rate - when the Fed raises rates, your card APR typically rises too',
-                  'Your credit score - the rate changes every time your score shifts by 20 points',
-                  'The bank\'s monthly profitability - rates fall when the bank earns more',
-                  'Inflation - the rate matches the current Consumer Price Index',
+                  'The federal prime rate, so when the Fed raises rates, your card APR typically rises too',
+                  'Your credit score, meaning the rate changes every time your score shifts by 20 points',
+                  'The bank\'s monthly profitability, so rates fall when the bank earns more',
+                  'Inflation, meaning the rate matches the current Consumer Price Index',
                 ],
                 correct: 0,
                 explanation: 'Most credit card APRs = Prime Rate + a margin. When the Federal Reserve raises interest rates, credit card rates follow, sometimes within a billing cycle.',
@@ -1799,10 +1799,10 @@ export const levels = [
               {
                 prompt: 'At a 24% APR, approximately how much interest accumulates on a $2,000 unpaid balance over one year?',
                 options: [
-                  'About $480 - roughly 24% of $2,000',
-                  'About $48 - because the rate is monthly, not annual',
-                  'Exactly $200 - credit cards cap interest at 10% of the balance per year',
-                  'Nothing - interest only accrues if you miss the minimum payment',
+                  'About $480, which is roughly 24% of $2,000',
+                  'About $48, because the rate is monthly, not annual',
+                  'Exactly $200, since credit cards cap interest at 10% of the balance per year',
+                  'Nothing, since interest only accrues if you miss the minimum payment',
                 ],
                 correct: 0,
                 explanation: 'With daily compounding, the actual amount is slightly above $480. High balances at high APRs can make it nearly impossible to pay off debt without sacrifice.',
@@ -1817,7 +1817,7 @@ export const levels = [
               {
                 prompt: 'What is a cash back credit card reward?',
                 options: [
-                  'A rebate - typically 1–5% of each purchase returned to you as cash or statement credit',
+                  'A rebate of typically 1–5% of each purchase returned to you as cash or statement credit',
                   'Free money deposited into your checking account regardless of spending',
                   'Interest the bank pays you for keeping a high balance on the card',
                   'A discount applied at checkout automatically by the card network',
@@ -1828,20 +1828,20 @@ export const levels = [
               {
                 prompt: 'Which type of cash back structure offers the highest rewards in specific categories?',
                 options: [
-                  'Tiered or rotating category cards - e.g., 5% on groceries or gas for a quarter',
-                  'Flat-rate cards - e.g., 1.5% on all purchases equally',
-                  'Secured cards - which offer 10% back to rebuild credit faster',
-                  'Store cards - which always outperform general-purpose cash back cards',
+                  'Tiered or rotating category cards offering, e.g., 5% on groceries or gas for a quarter',
+                  'Flat-rate cards offering, e.g., 1.5% on all purchases equally',
+                  'Secured cards, which offer 10% back to rebuild credit faster',
+                  'Store cards, which always outperform general-purpose cash back cards',
                 ],
                 correct: 0,
-                explanation: 'Tiered cards reward highest in targeted categories but require tracking. Flat-rate cards are simpler. Neither is universally better - it depends on your spending.',
+                explanation: 'Tiered cards reward highest in targeted categories but require tracking. Flat-rate cards are simpler. Neither is universally better; it depends on your spending.',
               },
               {
                 prompt: 'When does cash back become a bad deal for the cardholder?',
                 options: [
-                  'When you carry a balance - interest charges dwarf any rewards earned',
+                  'When you carry a balance, because interest charges dwarf any rewards earned',
                   'When you redeem for statement credit instead of direct deposit',
-                  'When the card has no annual fee - rewards rates are always lower without a fee',
+                  'When the card has no annual fee, since rewards rates are always lower without a fee',
                   'When you use the card for online purchases instead of in-store',
                 ],
                 correct: 0,
@@ -1856,15 +1856,15 @@ export const levels = [
                   'A cash deposit made by the bank into your account when you open the card',
                 ],
                 correct: 0,
-                explanation: 'Sign-up bonuses can be very valuable - sometimes equal to hundreds of dollars - but only if you were already planning to spend that amount and pay in full.',
+                explanation: 'Sign-up bonuses can be very valuable, sometimes equal to hundreds of dollars, but only if you were already planning to spend that amount and pay in full.',
               },
               {
                 prompt: 'Cash back earned on a credit card is considered by the IRS as:',
                 options: [
-                  'A rebate on spending - generally not taxable income for personal purchases',
-                  'Ordinary income - must be reported and taxed like wages',
-                  'Capital gains - taxed at 15% when redeemed for cash',
-                  'A gift from the bank - taxed only if the value exceeds $600 in a year',
+                  'A rebate on spending that is generally not taxable income for personal purchases',
+                  'Ordinary income that must be reported and taxed like wages',
+                  'Capital gains taxed at 15% when redeemed for cash',
+                  'A gift from the bank that is taxed only if the value exceeds $600 in a year',
                 ],
                 correct: 0,
                 explanation: 'The IRS treats cash back on personal purchases as a price reduction, not income. However, bonuses earned without spending (referral bonuses with no spend requirement) may be taxable.',
@@ -1872,13 +1872,13 @@ export const levels = [
               {
                 prompt: 'How should you evaluate whether an annual fee cash back card is worth it?',
                 options: [
-                  'Compare total cash back you expect to earn against the annual fee - if rewards exceed the fee, it may be worth it',
+                  'Compare total cash back you expect to earn against the annual fee; if rewards exceed the fee, it may be worth it',
                   'Annual fee cards are never worth it since free cards earn the same rates',
                   'Calculate whether the sign-up bonus alone exceeds the fee for the lifetime of the card',
                   'Choose based solely on which card has the highest advertised reward rate',
                 ],
                 correct: 0,
-                explanation: 'A $95 annual fee card paying 2% on $10,000/year of spending earns $200 in rewards - a $105 net gain versus a no-fee 1.5% card earning $150.',
+                explanation: 'A $95 annual fee card paying 2% on $10,000/year of spending earns $200 in rewards, a $105 net gain versus a no-fee 1.5% card earning $150.',
               },
             ],
           },
@@ -1890,7 +1890,7 @@ export const levels = [
               {
                 prompt: 'What are travel rewards points or miles?',
                 options: [
-                  'Earned currency redeemable for flights, hotels, and travel expenses - often worth 1–2 cents each',
+                  'Earned currency redeemable for flights, hotels, and travel expenses, often worth 1–2 cents each',
                   'Physical vouchers mailed to you after traveling a certain number of miles',
                   'Discount codes that reduce the sticker price of airline tickets by 10%',
                   'Loyalty credits only usable at the specific airline or hotel that issued them',
@@ -1907,7 +1907,7 @@ export const levels = [
                   'A travel agency the card company uses to book discounted flights',
                 ],
                 correct: 0,
-                explanation: 'Transfer partners are often the highest-value redemption option. For example, Chase Ultimate Rewards transfer to United, Hyatt, and others - sometimes unlocking outsized value.',
+                explanation: 'Transfer partners are often the highest-value redemption option. For example, Chase Ultimate Rewards transfer to United, Hyatt, and others, sometimes unlocking outsized value.',
               },
               {
                 prompt: 'What is a travel card\'s annual travel credit?',
@@ -1951,7 +1951,7 @@ export const levels = [
                   'Full refunds on any hotel booking cancelled more than 24 hours in advance',
                 ],
                 correct: 0,
-                explanation: 'Benefits like trip cancellation coverage, lost luggage reimbursement, and travel accident insurance can be worth hundreds of dollars per incident - a genuine perk for travelers.',
+                explanation: 'Benefits like trip cancellation coverage, lost luggage reimbursement, and travel accident insurance can be worth hundreds of dollars per incident, a genuine perk for travelers.',
               },
             ],
           },
@@ -1963,7 +1963,7 @@ export const levels = [
               {
                 prompt: 'What is a deferred interest promotion (common at retail stores)?',
                 options: [
-                  'A deal where all interest is waived only if you pay the full balance before the promo ends - otherwise you owe all back interest',
+                  'A deal where all interest is waived only if you pay the full balance before the promo ends; otherwise you owe all back interest',
                   'A 0% APR promotion where any remaining balance at the end is forgiven',
                   'An arrangement where interest is calculated at half your normal APR for 12 months',
                   'A plan that allows you to skip up to three payments per year without penalty',
@@ -1985,7 +1985,7 @@ export const levels = [
               {
                 prompt: 'What is a credit card convenience check?',
                 options: [
-                  'A check mailed by your card issuer that works like a cash advance - typically with high fees and no grace period',
+                  'A check mailed by your card issuer that works like a cash advance, typically with high fees and no grace period',
                   'A pre-approved check you can write to pay off another card at 0% APR permanently',
                   'A rebate check for your annual cash back rewards, mailed each January',
                   'An overdraft protection check linked to your credit card with no fees',
@@ -2007,7 +2007,7 @@ export const levels = [
               {
                 prompt: 'Which common credit card feature is often described as "buying now, paying more later"?',
                 options: [
-                  'Carrying a balance - you pay for yesterday\'s purchases with today\'s income plus interest',
+                  'Carrying a balance, meaning you pay for yesterday\'s purchases with today\'s income plus interest',
                   'Autopay set to the minimum payment amount',
                   'Using a credit card for everyday purchases like food and gas',
                   'Signing up for a card with a high credit limit',
@@ -2018,7 +2018,7 @@ export const levels = [
               {
                 prompt: 'A store offers "12 months same as cash" financing on a $1,200 purchase. You make $100/month payments but owe $50 at month 12. What happens?',
                 options: [
-                  'You owe all deferred interest - potentially hundreds of dollars - calculated from day one of the purchase',
+                  'You owe all deferred interest, potentially hundreds of dollars, calculated from day one of the purchase',
                   'You just pay the $50 remaining balance with no additional charges',
                   'The store writes off the $50 as goodwill and closes the account',
                   'Interest is applied only to the $50 remaining at the standard 6% annual rate',
@@ -2047,10 +2047,10 @@ export const levels = [
               {
                 prompt: 'What credit utilization ratio is generally recommended to maintain a strong credit score?',
                 options: [
-                  'Below 30% - and ideally below 10% for the best scores',
-                  'Above 50% - higher utilization shows lenders you rely on credit responsibly',
-                  'Exactly 0% - never carry any balance on any credit card',
-                  '75–100% - maximizing your limit demonstrates creditworthiness',
+                  'Below 30%, and ideally below 10% for the best scores',
+                  'Above 50%, since higher utilization shows lenders you rely on credit responsibly',
+                  'Exactly 0%, meaning you should never carry any balance on any credit card',
+                  '75–100%, because maximizing your limit demonstrates creditworthiness',
                 ],
                 correct: 0,
                 explanation: 'Utilization above 30% starts to hurt your score. Scores in the 800s often have utilization below 10%. Having cards near their limit is a major red flag to lenders.',
@@ -2058,8 +2058,8 @@ export const levels = [
               {
                 prompt: 'Does credit utilization affect your score based on all your cards combined, individual cards, or both?',
                 options: [
-                  'Both - scoring models look at total utilization across all cards AND utilization on each individual card',
-                  'Only total utilization - individual card balances do not matter separately',
+                  'Both, since scoring models look at total utilization across all cards and utilization on each individual card',
+                  'Only total utilization, since individual card balances do not matter separately',
                   'Only the card with the highest utilization determines your score impact',
                   'Utilization is averaged only across cards opened within the past 24 months',
                 ],
@@ -2069,7 +2069,7 @@ export const levels = [
               {
                 prompt: 'How can you lower your credit utilization without paying down your balance?',
                 options: [
-                  'Request a credit limit increase - a higher limit with the same balance reduces utilization',
+                  'Request a credit limit increase, since a higher limit with the same balance reduces utilization',
                   'Open a new card and transfer part of your balance to it immediately',
                   'Call your issuer and ask them to temporarily pause interest charges',
                   'Pay your balance in small installments throughout the month instead of once',
@@ -2080,10 +2080,10 @@ export const levels = [
               {
                 prompt: 'You have two cards: Card A has a $1,000 limit and $900 balance (90% utilization). Card B has a $9,000 limit and $0 balance. What is your total utilization?',
                 options: [
-                  '9% - $900 of $10,000 total available credit',
-                  '45% - average of 90% and 0%',
-                  '90% - determined by the card with the highest utilization',
-                  '0% - because one card has no balance',
+                  '9%, since $900 of $10,000 total available credit is used',
+                  '45%, calculated as the average of 90% and 0%',
+                  '90%, determined by the card with the highest utilization',
+                  '0%, because one card has no balance',
                 ],
                 correct: 0,
                 explanation: 'Total utilization = $900 ÷ $10,000 = 9%, which is excellent. However, Card A\'s 90% individual utilization still hurts your score separately.',
@@ -2091,7 +2091,7 @@ export const levels = [
               {
                 prompt: 'When does credit utilization typically get reported to credit bureaus?',
                 options: [
-                  'When the statement closes - usually the balance on your statement date is what is reported',
+                  'When the statement closes, since the balance on your statement date is typically what gets reported',
                   'Only when you make a payment on the account',
                   'On the first of every month regardless of your statement cycle',
                   'Continuously in real time as transactions post to your account',
@@ -2120,13 +2120,13 @@ export const levels = [
               {
                 prompt: 'What is the typical balance transfer fee?',
                 options: [
-                  '3–5% of the transferred amount - charged upfront when the transfer is processed',
+                  '3–5% of the transferred amount, charged upfront when the transfer is processed',
                   'A flat $25 fee regardless of the amount transferred',
-                  'No fee - banks waive it to attract new customers',
+                  'No fee, since banks waive it to attract new customers',
                   '10% of the transferred amount, charged on the first statement after transfer',
                 ],
                 correct: 0,
-                explanation: 'On a $5,000 transfer, a 3% fee costs $150. But if you were paying 22% APR, that is $1,100/year in interest - the fee is still a great deal.',
+                explanation: 'On a $5,000 transfer, a 3% fee costs $150. But if you were paying 22% APR, that is $1,100/year in interest; the fee is still a great deal.',
               },
               {
                 prompt: 'What is the most important rule when doing a balance transfer?',
@@ -2153,10 +2153,10 @@ export const levels = [
               {
                 prompt: 'Can you do a balance transfer between two cards at the same bank?',
                 options: [
-                  'No - most banks do not allow transfers between their own cards; you must move to a card at a different institution',
-                  'Yes - same-bank transfers are always allowed and have no fees',
+                  'No, since most banks do not allow transfers between their own cards; you must move to a card at a different institution',
+                  'Yes, same-bank transfers are always allowed and have no fees',
                   'Only if you have had both cards for at least 12 months without any late payments',
-                  'Yes - and same-bank transfers typically offer the longest 0% periods',
+                  'Yes, and same-bank transfers typically offer the longest 0% periods',
                 ],
                 correct: 0,
                 explanation: 'Banks prevent customers from gaming promotional rates within their own portfolio. Always verify this rule before applying for a new card expecting to transfer from the same issuer.',
@@ -2202,10 +2202,10 @@ export const levels = [
               {
                 prompt: 'Which type of loan is typically used to purchase a home?',
                 options: [
-                  'A mortgage - a secured loan using the home itself as collateral',
-                  'A personal loan - unsecured and paid back over 3–5 years',
-                  'A payday loan - short-term bridge financing until you close',
-                  'A student loan - offered by federal programs for any large purchase',
+                  'A mortgage, which is a secured loan using the home itself as collateral',
+                  'A personal loan that is unsecured and paid back over 3–5 years',
+                  'A payday loan offering short-term bridge financing until you close',
+                  'A student loan offered by federal programs for any large purchase',
                 ],
                 correct: 0,
                 explanation: 'Mortgages are typically 15- or 30-year loans. The home is collateral, so if you stop making payments, the lender can foreclose and take the property.',
@@ -2224,7 +2224,7 @@ export const levels = [
               {
                 prompt: 'An auto loan is typically a secured loan because:',
                 options: [
-                  'The vehicle itself serves as collateral - the lender can repossess it if you default',
+                  'The vehicle itself serves as collateral, so the lender can repossess it if you default',
                   'Auto loans are insured by the federal government through DMV programs',
                   'Car dealers co-sign all auto loans, making them lower risk for banks',
                   'The vehicle\'s value always exceeds the loan amount throughout repayment',
@@ -2270,7 +2270,7 @@ export const levels = [
                   'The automatic reduction of your interest rate over the life of a loan',
                 ],
                 correct: 0,
-                explanation: 'With amortization, your payment amount stays the same each month, but the split between interest and principal shifts - early payments are mostly interest, later payments are mostly principal.',
+                explanation: 'With amortization, your payment amount stays the same each month, but the split between interest and principal shifts: early payments are mostly interest, later payments are mostly principal.',
               },
               {
                 prompt: 'On a 30-year mortgage, what happens in the early years of repayment?',
@@ -2303,7 +2303,7 @@ export const levels = [
                   'The collateral value compared to the outstanding loan balance each year',
                 ],
                 correct: 0,
-                explanation: 'Looking at an amortization schedule is eye-opening - it reveals exactly how much total interest you will pay over the life of a loan if you make only minimum payments.',
+                explanation: 'Looking at an amortization schedule is eye-opening; it reveals exactly how much total interest you will pay over the life of a loan if you make only minimum payments.',
               },
               {
                 prompt: 'A 15-year mortgage vs. a 30-year mortgage: what is the key tradeoff?',
@@ -2325,7 +2325,7 @@ export const levels = [
                   'When your loan balance drops to zero before the maturity date',
                 ],
                 correct: 0,
-                explanation: 'Negative amortization occurs with some adjustable-rate mortgages or income-based plans. You can end up owing more than you borrowed - a dangerous trap.',
+                explanation: 'Negative amortization occurs with some adjustable-rate mortgages or income-based plans. You can end up owing more than you borrowed, a dangerous trap.',
               },
             ],
           },
@@ -2337,7 +2337,7 @@ export const levels = [
               {
                 prompt: 'What is the FAFSA used for?',
                 options: [
-                  'Applying for federal student aid - grants, work-study, and federal loans',
+                  'Applying for federal student aid including grants, work-study, and federal loans',
                   'Comparing private student loan interest rates from different banks',
                   'Filing taxes as a college student to claim education tax credits',
                   'Registering for federal student loan forgiveness programs after graduation',
@@ -2376,7 +2376,7 @@ export const levels = [
                   '15 years of working in healthcare, education, or the military',
                 ],
                 correct: 0,
-                explanation: 'PSLF covers government jobs and most 501(c)(3) nonprofits. After 120 qualifying payments, the remaining balance is forgiven tax-free - transformative for high-debt public servants.',
+                explanation: 'PSLF covers government jobs and most 501(c)(3) nonprofits. After 120 qualifying payments, the remaining balance is forgiven tax-free, which is transformative for high-debt public servants.',
               },
               {
                 prompt: 'Capitalization of student loan interest occurs when:',
@@ -2392,10 +2392,10 @@ export const levels = [
               {
                 prompt: 'Can federal student loans be discharged in bankruptcy?',
                 options: [
-                  'Rarely - only if you can prove "undue hardship" in a court proceeding, which is very difficult',
-                  'Yes - all federal student debt is automatically discharged in Chapter 7 bankruptcy',
-                  'No - federal student loans are the only debt that can never be reduced under any circumstances',
-                  'Yes - after 7 years they automatically disappear from your record and you owe nothing',
+                  'Rarely, only if you can prove "undue hardship" in a court proceeding, which is very difficult',
+                  'Yes, all federal student debt is automatically discharged in Chapter 7 bankruptcy',
+                  'No, since federal student loans are the only debt that can never be reduced under any circumstances',
+                  'Yes, after 7 years they automatically disappear from your record and you owe nothing',
                 ],
                 correct: 0,
                 explanation: 'Student loans have special legal protection from bankruptcy discharge, unlike credit card debt or medical bills. This makes them one of the most important borrowing decisions of your life.',
@@ -2416,7 +2416,7 @@ export const levels = [
                   'The lender can sell the car at any time and apply proceeds to your balance',
                 ],
                 correct: 0,
-                explanation: 'You won\'t receive a clean title until the loan is paid off. Default on payments and the lender can repossess the vehicle - often without court approval.',
+                explanation: 'You won\'t receive a clean title until the loan is paid off. Default on payments and the lender can repossess the vehicle, often without court approval.',
               },
               {
                 prompt: 'What does it mean to be "underwater" or "upside down" on a car loan?',
@@ -2441,12 +2441,12 @@ export const levels = [
                 explanation: 'A $30,000 car at 7% over 48 months = $718/month and $4,464 in interest. At 84 months = $452/month but $7,968 in interest. You pay $3,500 more and risk the car dying before the loan ends.',
               },
               {
-                prompt: 'What should you ideally negotiate first when buying a car - price or monthly payment?',
+                prompt: 'What should you ideally negotiate first when buying a car: price or monthly payment?',
                 options: [
-                  'Price - dealers can manipulate monthly payments to hide the true total cost',
-                  'Monthly payment - keeping it under $400 ensures the deal is always fair',
-                  'Interest rate - the rate determines everything else in the loan calculation',
-                  'Trade-in value - getting maximum value for your current car is the highest priority',
+                  'Price, since dealers can manipulate monthly payments to hide the true total cost',
+                  'Monthly payment, since keeping it under $400 ensures the deal is always fair',
+                  'Interest rate, since the rate determines everything else in the loan calculation',
+                  'Trade-in value, since getting maximum value for your current car is the highest priority',
                 ],
                 correct: 0,
                 explanation: 'A dealer can offer a "low" payment by stretching the loan to 84 months. Always negotiate the out-the-door price first, then discuss financing separately.',
@@ -2489,7 +2489,7 @@ export const levels = [
                   'A credit card feature that lets you withdraw cash at ATMs',
                 ],
                 correct: 0,
-                explanation: 'A typical payday loan charges $15–$30 per $100 borrowed for two weeks - which translates to roughly 390% APR. Most borrowers cannot repay on time and roll the loan over repeatedly.',
+                explanation: 'A typical payday loan charges $15–$30 per $100 borrowed for two weeks, which translates to roughly 390% APR. Most borrowers cannot repay on time and roll the loan over repeatedly.',
               },
               {
                 prompt: 'What is predatory lending?',
@@ -2500,7 +2500,7 @@ export const levels = [
                   'A federal program that provides emergency loans to individuals with poor credit',
                 ],
                 correct: 0,
-                explanation: 'Predatory lenders specifically target people in desperate situations - often low-income, elderly, or financially inexperienced - using confusion and urgency to lock them into terrible deals.',
+                explanation: 'Predatory lenders specifically target people in desperate situations, often low-income, elderly, or financially inexperienced, using confusion and urgency to lock them into terrible deals.',
               },
               {
                 prompt: 'Which warning sign most strongly suggests a predatory loan?',
@@ -2556,7 +2556,7 @@ export const levels = [
               {
                 prompt: 'What is refinancing a loan?',
                 options: [
-                  'Taking out a new loan to pay off the old one - usually to get a lower rate or better terms',
+                  'Taking out a new loan to pay off the old one, usually to get a lower rate or better terms',
                   'Extending the repayment term of your existing loan without changing the interest rate',
                   'Temporarily pausing loan payments during financial hardship with lender approval',
                   'Combining multiple loans into a single account at your current bank',
@@ -2600,13 +2600,13 @@ export const levels = [
               {
                 prompt: 'Cash-out refinancing on a mortgage means:',
                 options: [
-                  'Borrowing more than you owe, receiving the difference as cash - your home equity decreases',
+                  'Borrowing more than you owe, receiving the difference as cash, which decreases your home equity',
                   'Receiving a cash rebate from the lender for choosing their refinancing product',
                   'Paying off the loan entirely with a lump-sum cash payment to eliminate the balance',
                   'Selling your home and refinancing the remaining mortgage at the time of sale',
                 ],
                 correct: 0,
-                explanation: 'Cash-out refinancing converts home equity to spendable cash. It can make sense for home improvements that add value, but using it for vacations or spending is risky - you are borrowing against your home.',
+                explanation: 'Cash-out refinancing converts home equity to spendable cash. It can make sense for home improvements that add value, but using it for vacations or spending is risky because you are borrowing against your home.',
               },
               {
                 prompt: 'Rate-and-term refinancing vs. cash-out refinancing: what is the key difference?',
@@ -2640,9 +2640,9 @@ export const levels = [
               {
                 prompt: 'What is a debt-to-income (DTI) ratio and why do lenders care about it?',
                 options: [
-                  'Monthly debt payments divided by gross monthly income - lenders use it to assess repayment capacity',
-                  'Total assets divided by total liabilities - lenders want it above 2.0 to approve any loan',
-                  'Annual income divided by total outstanding debt - the higher the better for loan approval',
+                  'Monthly debt payments divided by gross monthly income, which lenders use to assess repayment capacity',
+                  'Total assets divided by total liabilities, where lenders want it above 2.0 to approve any loan',
+                  'Annual income divided by total outstanding debt, where the higher the number the better for loan approval',
                   'Monthly savings rate compared to monthly debt payments to determine disposable income',
                 ],
                 correct: 0,
@@ -2663,9 +2663,9 @@ export const levels = [
                 prompt: 'What is the minimum credit score typically required for a conventional mortgage?',
                 options: [
                   'Around 620, though better rates require 740+',
-                  'Exactly 500 - any score below disqualifies you by federal law',
-                  '800 or above - anything lower requires a government-backed FHA loan',
-                  'No minimum - lenders must offer mortgages to all qualified applicants regardless of score',
+                  'Exactly 500, since any score below disqualifies you by federal law',
+                  '800 or above, since anything lower requires a government-backed FHA loan',
+                  'No minimum, since lenders must offer mortgages to all qualified applicants regardless of score',
                 ],
                 correct: 0,
                 explanation: 'FHA loans allow scores as low as 580 (or 500 with a larger down payment), but conventional loans typically require 620+. The best rates go to borrowers with 740+ scores.',
@@ -2684,13 +2684,13 @@ export const levels = [
               {
                 prompt: 'Why does applying for too many loans in a short period hurt your credit?',
                 options: [
-                  'Multiple hard inquiries signal financial distress - lenders worry you are desperately seeking credit',
+                  'Multiple hard inquiries signal financial distress, since lenders worry you are desperately seeking credit',
                   'Each application reduces your credit limit on existing cards by a fixed amount',
                   'The bureaus charge a penalty fee to lenders for excessive inquiries on one file',
                   'Federal law prohibits more than three loan applications per year without penalty',
                 ],
                 correct: 0,
-                explanation: 'A flurry of applications looks like desperation. The exception: rate shopping for a mortgage or auto loan - multiple inquiries of the same type within a short window count as one.',
+                explanation: 'A flurry of applications looks like desperation. The exception is rate shopping for a mortgage or auto loan: multiple inquiries of the same type within a short window count as one.',
               },
             ],
           },
@@ -2708,7 +2708,7 @@ export const levels = [
                   'Secured debts before unsecured debts to protect your assets',
                 ],
                 correct: 0,
-                explanation: 'The avalanche method is mathematically optimal - you pay the least total interest. List debts by rate, pay minimums on all but the highest-rate, and throw every extra dollar at that one.',
+                explanation: 'The avalanche method is mathematically optimal; you pay the least total interest. List debts by rate, pay minimums on all but the highest-rate, and throw every extra dollar at that one.',
               },
               {
                 prompt: 'The debt snowball method prioritizes paying off:',
@@ -2807,12 +2807,12 @@ export const levels = [
                 prompt: 'Which level of government typically collects income taxes?',
                 options: [
                   'Both federal and most state governments collect income taxes separately',
-                  'Only the federal government - states are prohibited from collecting income tax',
-                  'Only state governments - the federal government collects only sales tax',
+                  'Only the federal government, since states are prohibited from collecting income tax',
+                  'Only state governments, since the federal government collects only sales tax',
                   'Only local governments (cities and counties) can levy income taxes',
                 ],
                 correct: 0,
-                explanation: 'Most Americans pay federal income tax, state income tax (in most states), and sometimes local income tax - three separate tax obligations on the same income.',
+                explanation: 'Most Americans pay federal income tax, state income tax (in most states), and sometimes local income tax, three separate tax obligations on the same income.',
               },
               {
                 prompt: 'The difference between a tax deduction and a tax credit is:',
@@ -2820,7 +2820,7 @@ export const levels = [
                   'Deductions reduce taxable income; credits directly reduce the tax bill dollar-for-dollar',
                   'Credits reduce taxable income; deductions directly reduce the amount owed',
                   'Deductions apply only to federal taxes; credits apply only to state taxes',
-                  'Both reduce your tax bill by the same amount - they are interchangeable terms',
+                  'Both reduce your tax bill by the same amount, so they are interchangeable terms',
                 ],
                 correct: 0,
                 explanation: 'A $1,000 deduction in the 22% bracket saves $220. A $1,000 credit saves $1,000. Credits are almost always more valuable than deductions of the same size.',
@@ -2828,9 +2828,9 @@ export const levels = [
               {
                 prompt: 'What is "taxable income"?',
                 options: [
-                  'Your gross income minus deductions - the amount your tax rate is actually applied to',
+                  'Your gross income minus deductions, which is the amount your tax rate is actually applied to',
                   'All money you earned during the year before any deductions or exemptions',
-                  'Only wages from an employer - self-employment income is taxed separately',
+                  'Only wages from an employer, since self-employment income is taxed separately',
                   'The amount you owe the IRS before applying any credits',
                 ],
                 correct: 0,
@@ -2850,13 +2850,13 @@ export const levels = [
               {
                 prompt: 'What does "effective tax rate" mean?',
                 options: [
-                  'The average percentage of total income actually paid in taxes - typically lower than the marginal rate',
+                  'The average percentage of total income actually paid in taxes, typically lower than the marginal rate',
                   'The highest tax bracket rate that applies to any portion of your income',
                   'The tax rate set by Congress that changes every two years',
                   'The combined federal and state rate applied to all of your income equally',
                 ],
                 correct: 0,
-                explanation: 'If you earn $80,000 and pay $12,000 in federal taxes, your effective rate is 15% - not 22% (your marginal rate). Only your last dollar of income is taxed at the marginal rate.',
+                explanation: 'If you earn $80,000 and pay $12,000 in federal taxes, your effective rate is 15%, not 22% (your marginal rate). Only your last dollar of income is taxed at the marginal rate.',
               },
             ],
           },
@@ -2874,15 +2874,15 @@ export const levels = [
                   'Tax rates decrease as income increases to incentivize working more',
                 ],
                 correct: 0,
-                explanation: 'A progressive system taxes income in layers. Being in the 22% bracket does NOT mean you pay 22% on all income - only on the portion within that bracket.',
+                explanation: 'A progressive system taxes income in layers. Being in the 22% bracket does NOT mean you pay 22% on all income; only the portion within that bracket is taxed at that rate.',
               },
               {
                 prompt: 'In 2024, the lowest federal income tax bracket rate is:',
                 options: [
-                  '10% - applied to the first $11,600 of taxable income for single filers',
-                  '0% - anyone earning below the poverty line pays no taxes at all',
-                  '15% - the base rate established by the Tax Cuts and Jobs Act of 2017',
-                  '12% - the minimum rate required under the 16th Amendment',
+                  '10%, applied to the first $11,600 of taxable income for single filers',
+                  '0%, since anyone earning below the poverty line pays no taxes at all',
+                  '15%, the base rate established by the Tax Cuts and Jobs Act of 2017',
+                  '12%, the minimum rate required under the 16th Amendment',
                 ],
                 correct: 0,
                 explanation: 'Even the lowest earners pay 10% on their first dollars of taxable income (above the standard deduction). However, credits like the Earned Income Tax Credit can reduce effective tax to near zero.',
@@ -2890,7 +2890,7 @@ export const levels = [
               {
                 prompt: 'What is the "marginal tax rate"?',
                 options: [
-                  'The tax rate applied to the last dollar of income - your highest bracket rate',
+                  'The tax rate applied to the last dollar of income, which is your highest bracket rate',
                   'The average rate you pay across all of your income',
                   'The minimum tax rate required by law for your filing status',
                   'The rate used to calculate state income tax based on federal brackets',
@@ -2901,10 +2901,10 @@ export const levels = [
               {
                 prompt: 'If your taxable income is $50,000 as a single filer, what is your approximate federal tax bill?',
                 options: [
-                  'About $6,600 - you pay 10% on the first $11,600, then 12% on the rest up to $47,150, then 22% on the remainder',
-                  'Exactly $11,000 - 22% flat on your entire $50,000 income',
-                  'About $7,500 - a flat 15% on all income above the standard deduction',
-                  '$0 - income below $75,000 is fully exempt from federal income tax',
+                  'About $6,600, since you pay 10% on the first $11,600, then 12% up to $47,150, then 22% on the remainder',
+                  'Exactly $11,000, calculated as a flat 22% on your entire $50,000 income',
+                  'About $7,500, based on a flat 15% on all income above the standard deduction',
+                  '$0, since income below $75,000 is fully exempt from federal income tax',
                 ],
                 correct: 0,
                 explanation: 'Bracket math: 10% on $11,600 = $1,160. 12% on $35,550 ($47,150−$11,600) = $4,266. 22% on $2,850 ($50,000−$47,150) = $627. Total ≈ $6,053. Effective rate ≈ 12.1%.',
@@ -2924,7 +2924,7 @@ export const levels = [
                 prompt: 'Why does filing status (single, married filing jointly, head of household) matter?',
                 options: [
                   'Each status has different bracket thresholds, standard deductions, and credit eligibility',
-                  'Filing status only determines which IRS form you must use - it doesn\'t affect tax rates',
+                  'Filing status only determines which IRS form you must use and doesn\'t affect tax rates',
                   'Filing status matters only for state taxes, not federal income tax calculations',
                   'It determines how many years you must keep tax records before discarding them',
                 ],
@@ -2963,13 +2963,13 @@ export const levels = [
               {
                 prompt: 'If your taxable income is low enough (below ~$47,025 single in 2024), what is the long-term capital gains tax rate?',
                 options: [
-                  '0% - long-term capital gains are completely tax-free at lower income levels',
-                  '10% - the same as the lowest ordinary income bracket',
-                  '5% - a special reduced rate for low-income long-term investors',
-                  '15% - the standard long-term capital gains rate applied to all income levels',
+                  '0%, since long-term capital gains are completely tax-free at lower income levels',
+                  '10%, the same as the lowest ordinary income bracket',
+                  '5%, a special reduced rate for low-income long-term investors',
+                  '15%, the standard long-term capital gains rate applied to all income levels',
                 ],
                 correct: 0,
-                explanation: 'A 0% capital gains rate is a powerful wealth-building tool. Strategic "tax gain harvesting" - realizing gains in low-income years - can be completely tax-free.',
+                explanation: 'A 0% capital gains rate is a powerful wealth-building tool. Strategic "tax gain harvesting," which means realizing gains in low-income years, can be completely tax-free.',
               },
               {
                 prompt: 'What is a "step-up in basis" for inherited assets?',
@@ -2980,7 +2980,7 @@ export const levels = [
                   'Inherited assets can only be sold within one year to qualify for long-term rates',
                 ],
                 correct: 0,
-                explanation: 'Step-up in basis is a major estate planning tool. If your parent bought stock at $10 that\'s worth $100 when they die, you inherit with a $100 basis - zero capital gains if you sell at $100.',
+                explanation: 'Step-up in basis is a major estate planning tool. If your parent bought stock at $10 that\'s worth $100 when they die, you inherit with a $100 basis, meaning zero capital gains if you sell at $100.',
               },
               {
                 prompt: 'What is tax-loss harvesting?',
@@ -2999,7 +2999,7 @@ export const levels = [
                   'Up to $250,000 (or $500,000 for married couples) if they\'ve lived there 2 of the last 5 years',
                   '$100,000 per year lived in the home, with no maximum cap',
                   'All gains are excluded on primary residences regardless of amount or time lived',
-                  '$50,000 - the same exclusion available for any capital asset held over 5 years',
+                  '$50,000, the same exclusion available for any capital asset held over 5 years',
                 ],
                 correct: 0,
                 explanation: 'This Section 121 exclusion is one of the best tax breaks available. A couple selling a home with $400,000 in profit may owe zero capital gains tax if they meet the residency requirement.',
@@ -3042,15 +3042,15 @@ export const levels = [
                   'The Federal Reserve to fund infrastructure improvements',
                 ],
                 correct: 0,
-                explanation: 'Property taxes fund local public schools and services. Rates vary enormously by location - from under 0.3% in Hawaii to over 2.5% in New Jersey - and are deductible up to $10,000 federally.',
+                explanation: 'Property taxes fund local public schools and services. Rates vary enormously by location, from under 0.3% in Hawaii to over 2.5% in New Jersey, and are deductible up to $10,000 federally.',
               },
               {
                 prompt: 'Self-employment tax means freelancers and business owners pay:',
                 options: [
-                  'Both the employee and employer share of Social Security and Medicare - 15.3% total on net self-employment income',
+                  'Both the employee and employer share of Social Security and Medicare, totaling 15.3% of net self-employment income',
                   'A flat 10% surcharge on all income above the standard deduction',
-                  'Only the 6.2% Social Security portion since Medicare is waived for the self-employed',
-                  'No FICA taxes - self-employed individuals are exempt from payroll tax obligations',
+                  'Only the 6.2% Social Security portion, since Medicare is waived for the self-employed',
+                  'No FICA taxes, since self-employed individuals are exempt from payroll tax obligations',
                 ],
                 correct: 0,
                 explanation: 'Being self-employed doubles your FICA burden compared to employees. However, you can deduct half of the self-employment tax from your gross income, reducing your income tax bill.',
@@ -3058,7 +3058,7 @@ export const levels = [
               {
                 prompt: 'An estate tax is a tax on:',
                 options: [
-                  'The total value of assets transferred to heirs at death - only applies to very large estates (above $13.6M in 2024)',
+                  'The total value of assets transferred to heirs at death, which only applies to very large estates (above $13.6M in 2024)',
                   'All real estate properties owned by an individual regardless of their total net worth',
                   'Any inheritance received by children or grandchildren from a deceased parent',
                   'Rental income generated by properties owned at the time of death',
@@ -3069,7 +3069,7 @@ export const levels = [
               {
                 prompt: 'What is an excise tax?',
                 options: [
-                  'A tax on specific goods or activities - like gasoline, cigarettes, alcohol, and airline tickets',
+                  'A tax on specific goods or activities like gasoline, cigarettes, alcohol, and airline tickets',
                   'An additional charge on income earned outside the United States',
                   'A penalty tax applied when you make early withdrawals from retirement accounts',
                   'A tax on corporate profits above a certain threshold per fiscal year',
@@ -3126,7 +3126,7 @@ export const levels = [
                   'They convert ordinary income to capital gains, which are taxed at a lower rate',
                 ],
                 correct: 0,
-                explanation: 'A $6,500 traditional IRA contribution in the 22% bracket saves $1,430 in current-year taxes. You\'ll pay taxes on withdrawals in retirement - hopefully at a lower rate.',
+                explanation: 'A $6,500 traditional IRA contribution in the 22% bracket saves $1,430 in current-year taxes. You\'ll pay taxes on withdrawals in retirement, hopefully at a lower rate.',
               },
               {
                 prompt: 'Self-employed individuals can deduct which of the following business expenses?',
@@ -3142,7 +3142,7 @@ export const levels = [
               {
                 prompt: 'What is the "above-the-line" deduction, also called an adjustment to income?',
                 options: [
-                  'Deductions you can take whether or not you itemize - like student loan interest and IRA contributions',
+                  'Deductions you can take whether or not you itemize, like student loan interest and IRA contributions',
                   'Any deduction that appears in the top portion of your tax return for investments',
                   'Deductions only available to taxpayers in the highest income bracket',
                   'Credits and deductions that must be approved annually by Congress to remain active',
@@ -3171,7 +3171,7 @@ export const levels = [
               {
                 prompt: 'What is a refundable tax credit?',
                 options: [
-                  'A credit that reduces your tax bill below zero - the government sends you the excess as a refund',
+                  'A credit that reduces your tax bill below zero, so the government sends you the excess as a refund',
                   'A credit you can only use if you already paid too much in withholding',
                   'A credit that can be carried forward to future tax years if not fully used this year',
                   'A credit that applies only to state taxes and is refunded directly by the state',
@@ -3182,10 +3182,10 @@ export const levels = [
               {
                 prompt: 'The Child Tax Credit (CTC) provides:',
                 options: [
-                  'Up to $2,000 per qualifying child under 17 - partially refundable for lower-income families',
+                  'Up to $2,000 per qualifying child under 17, partially refundable for lower-income families',
                   'A deduction for childcare expenses paid to licensed providers throughout the year',
                   'A full exemption from income taxes for families with three or more children',
-                  'Monthly payments only - the credit cannot be claimed at year-end tax filing',
+                  'Monthly payments only, since the credit cannot be claimed at year-end tax filing',
                 ],
                 correct: 0,
                 explanation: 'The CTC directly reduces tax liability. The refundable portion (Additional Child Tax Credit) means lower-income families who owe less than $2,000 per child still receive a refund.',
@@ -3193,13 +3193,13 @@ export const levels = [
               {
                 prompt: 'The American Opportunity Tax Credit (AOTC) applies to:',
                 options: [
-                  'Qualified education expenses for the first 4 years of college - up to $2,500 per year, 40% refundable',
+                  'Qualified education expenses for the first 4 years of college, up to $2,500 per year and 40% refundable',
                   'All education costs including graduate school and professional certifications',
                   'Student loan interest paid during the repayment period after graduation',
                   'Private K-12 tuition for families earning above a certain income threshold',
                 ],
                 correct: 0,
-                explanation: 'The AOTC is one of the most valuable education credits - partially refundable and applies to tuition, fees, and course materials for undergrads. Income limits apply.',
+                explanation: 'The AOTC is one of the most valuable education credits; it is partially refundable and applies to tuition, fees, and course materials for undergrads. Income limits apply.',
               },
               {
                 prompt: 'What is the Earned Income Tax Credit (EITC)?',
@@ -3215,7 +3215,7 @@ export const levels = [
               {
                 prompt: 'The Saver\'s Credit rewards:',
                 options: [
-                  'Low-to-moderate income individuals who contribute to retirement accounts - worth up to 50% of contributions',
+                  'Low-to-moderate income individuals who contribute to retirement accounts, worth up to 50% of contributions',
                   'Anyone who saves more than 20% of their gross income in a calendar year',
                   'Banks and credit unions that offer high-yield savings accounts to low-income customers',
                   'Employers who contribute matching funds to employee 401(k) accounts',
@@ -3233,7 +3233,7 @@ export const levels = [
               {
                 prompt: 'What makes an account "tax-advantaged"?',
                 options: [
-                  'It receives special tax treatment - either contributions are pre-tax, growth is tax-free, or both',
+                  'It receives special tax treatment where contributions are pre-tax, growth is tax-free, or both',
                   'The account earns interest at a guaranteed rate set by the federal government',
                   'Funds in the account cannot be garnished by creditors or the IRS for unpaid taxes',
                   'The bank offering the account is exempt from paying corporate income taxes',
@@ -3250,12 +3250,12 @@ export const levels = [
                   'HSA funds can be invested in stocks tax-free and then converted to a Roth IRA after five years',
                 ],
                 correct: 0,
-                explanation: 'HSAs are arguably the best tax account available - the only one with triple tax benefits. After age 65, non-medical withdrawals are taxed like a Traditional IRA, making it a stealth retirement account.',
+                explanation: 'HSAs are arguably the best tax account available, being the only one with triple tax benefits. After age 65, non-medical withdrawals are taxed like a Traditional IRA, making it a stealth retirement account.',
               },
               {
                 prompt: 'A 529 savings plan is designed for:',
                 options: [
-                  'Education savings - contributions grow tax-free and withdrawals for qualified education expenses are tax-free',
+                  'Education savings, where contributions grow tax-free and withdrawals for qualified education expenses are also tax-free',
                   'Down payment savings for first-time homebuyers under age 30',
                   'Emergency funds for families that qualify based on federal poverty guidelines',
                   'Retirement savings for self-employed individuals who do not have a 401(k)',
@@ -3277,13 +3277,13 @@ export const levels = [
               {
                 prompt: 'Traditional 401(k) vs. Roth 401(k): when does a Roth make more sense?',
                 options: [
-                  'When you expect to be in a higher tax bracket in retirement than you are now - pay taxes now at a lower rate',
+                  'When you expect to be in a higher tax bracket in retirement than you are now, so you pay taxes now at a lower rate',
                   'When you are already in the highest tax bracket and want to maximize current-year deductions',
-                  'When your employer matches contributions - Roth matching is always tax-free',
+                  'When your employer matches contributions, since Roth matching is always tax-free',
                   'Roth 401(k) always makes more sense because all growth is permanently tax-free',
                 ],
                 correct: 0,
-                explanation: 'Younger, lower-income workers often benefit from Roth - they\'re likely in a lower bracket now than they\'ll be at peak earnings or in retirement with large RMDs.',
+                explanation: 'Younger, lower-income workers often benefit from Roth because they\'re likely in a lower bracket now than they\'ll be at peak earnings or in retirement with large RMDs.',
               },
               {
                 prompt: 'What is the annual contribution limit for an IRA in 2024?',
@@ -3306,21 +3306,21 @@ export const levels = [
               {
                 prompt: 'What is the penalty for failing to file a tax return by the deadline (without an extension)?',
                 options: [
-                  '5% of the unpaid tax per month, up to 25% - on top of any interest owed',
+                  '5% of the unpaid tax per month up to 25%, on top of any interest owed',
                   'A flat $500 fine regardless of how much tax was owed',
                   'Loss of any refund due and a permanent audit flag on your account',
-                  'No penalty if you file within 90 days - the IRS only charges after three months',
+                  'No penalty if you file within 90 days, since the IRS only charges after three months',
                 ],
                 correct: 0,
-                explanation: 'Failure-to-file is one of the most expensive tax mistakes. The penalty alone can exceed any savings from waiting. Always file on time - even if you can\'t pay, file first and arrange payment separately.',
+                explanation: 'Failure-to-file is one of the most expensive tax mistakes. The penalty alone can exceed any savings from waiting. Always file on time; even if you can\'t pay, file first and arrange payment separately.',
               },
               {
                 prompt: 'If you can\'t pay your full tax bill by April 15, what should you do?',
                 options: [
-                  'File on time anyway and set up an IRS payment plan - failure-to-file penalties are much worse than failure-to-pay',
+                  'File on time anyway and set up an IRS payment plan, since failure-to-file penalties are much worse than failure-to-pay',
                   'Don\'t file until you can pay the full amount to avoid partial payment complications',
                   'File for automatic bankruptcy protection, which pauses all IRS collection activity',
-                  'Pay the amount you can and wait - the IRS accepts any partial payment without penalty',
+                  'Pay the amount you can and wait, since the IRS accepts any partial payment without penalty',
                 ],
                 correct: 0,
                 explanation: 'The failure-to-file penalty is 10x worse than the failure-to-pay penalty. Always file on time. The IRS offers installment agreements, offers in compromise, and currently not collectible status.',
@@ -3329,8 +3329,8 @@ export const levels = [
                 prompt: 'What triggers an IRS audit?',
                 options: [
                   'Mathematical errors, unusually large deductions relative to income, and certain red-flag items like large cash business income',
-                  'Filing your taxes early - the IRS audits early filers more than those who file in April',
-                  'Using tax software instead of filing by hand - software errors are flagged automatically',
+                  'Filing your taxes early, since the IRS audits early filers more than those who file in April',
+                  'Using tax software instead of filing by hand, since software errors are flagged automatically',
                   'Claiming the standard deduction rather than itemizing for three consecutive years',
                 ],
                 correct: 0,
@@ -3340,9 +3340,9 @@ export const levels = [
                 prompt: 'What records should you keep for tax purposes and for how long?',
                 options: [
                   'Tax returns and supporting documents for at least 3 years (7 years if you underreported income)',
-                  'Only the current year\'s return - the IRS can only audit the most recent filing',
-                  'All records permanently - the IRS has unlimited time to audit any return',
-                  'One year of records - the statute of limitations runs out after 12 months',
+                  'Only the current year\'s return, since the IRS can only audit the most recent filing',
+                  'All records permanently, since the IRS has unlimited time to audit any return',
+                  'One year of records, since the statute of limitations runs out after 12 months',
                 ],
                 correct: 0,
                 explanation: 'The standard statute of limitations is 3 years. It extends to 6 years for substantial underreporting. There is no limit if fraud is involved. Keep property records until you sell plus 3 years.',
@@ -3352,11 +3352,11 @@ export const levels = [
                 options: [
                   'Evasion is illegal (hiding income, lying on returns); avoidance is legal (using deductions, credits, and strategies to minimize taxes)',
                   'Evasion applies only to foreign income; avoidance applies only to domestic income',
-                  'Both are illegal - any attempt to pay less than the stated tax rate violates federal law',
+                  'Both are illegal, since any attempt to pay less than the stated tax rate violates federal law',
                   'Avoidance is illegal for individuals; only corporations are allowed to structure transactions to minimize taxes',
                 ],
                 correct: 0,
-                explanation: 'Tax avoidance is smart financial planning - using Roth IRAs, 401(k)s, deductions, and credits. Tax evasion is a federal crime punishable by fines and imprisonment.',
+                explanation: 'Tax avoidance is smart financial planning, using Roth IRAs, 401(k)s, deductions, and credits. Tax evasion is a federal crime punishable by fines and imprisonment.',
               },
               {
                 prompt: 'What is the "wash sale" rule for investment losses?',
@@ -3382,7 +3382,7 @@ export const levels = [
         lessons: [
           {
             id: 'u5-2-l1',
-            title: 'Tax Forms - W-2 & 1099',
+            title: 'Tax Forms: W-2 & 1099',
             centsReward: 10,
             questions: [
               {
@@ -3399,7 +3399,7 @@ export const levels = [
               {
                 prompt: 'What is a 1099 form used for?',
                 options: [
-                  'Reporting income not from a traditional employer - freelance earnings, interest, dividends, or contract work',
+                  'Reporting income not from a traditional employer, such as freelance earnings, interest, dividends, or contract work',
                   'Calculating the amount of tax withheld from your regular employment paycheck',
                   'Documenting retirement account contributions made throughout the tax year',
                   'Certifying that a taxpayer qualifies for income-based tax credits',
@@ -3444,7 +3444,7 @@ export const levels = [
                 prompt: 'What should you do if you find an error on your W-2 after filing your tax return?',
                 options: [
                   'Contact your employer to issue a corrected W-2 (W-2c), then file an amended return (Form 1040-X)',
-                  'Nothing - the IRS automatically corrects errors on W-2s during processing',
+                  'Nothing, since the IRS automatically corrects errors on W-2s during processing',
                   'File a new return for the same tax year to override the original filing',
                   'Report the error directly to the IRS, which will contact your employer independently',
                 ],
@@ -3461,10 +3461,10 @@ export const levels = [
               {
                 prompt: 'What is the standard deduction for a single filer in 2024?',
                 options: [
-                  'About $14,600 - a fixed amount you can deduct without listing individual expenses',
-                  '$7,500 - the amount has not increased since the Tax Cuts and Jobs Act of 2017',
-                  '$29,200 - the same amount available to married couples filing jointly',
-                  'There is no standard deduction - all taxpayers must itemize deductions',
+                  'About $14,600, a fixed amount you can deduct without listing individual expenses',
+                  '$7,500, which has not increased since the Tax Cuts and Jobs Act of 2017',
+                  '$29,200, the same amount available to married couples filing jointly',
+                  'There is no standard deduction, so all taxpayers must itemize deductions',
                 ],
                 correct: 0,
                 explanation: 'The standard deduction is adjusted for inflation each year. For 2024: $14,600 (single), $29,200 (MFJ), $21,900 (head of household). About 90% of taxpayers claim it.',
@@ -3473,7 +3473,7 @@ export const levels = [
                 prompt: 'When should you itemize deductions instead of taking the standard deduction?',
                 options: [
                   'Only when your total itemizable expenses (mortgage interest, SALT, donations, etc.) exceed the standard deduction for your filing status',
-                  'Always - itemizing results in a larger refund regardless of your specific expenses',
+                  'Always, since itemizing results in a larger refund regardless of your specific expenses',
                   'Only if you are self-employed or run a business from your home',
                   'Whenever your income exceeds $100,000 per year',
                 ],
@@ -3494,20 +3494,20 @@ export const levels = [
               {
                 prompt: 'Can you claim both the standard deduction AND itemize deductions on the same federal return?',
                 options: [
-                  'No - you must choose one or the other on your federal return each year',
-                  'Yes - you can split them, taking standard for some categories and itemizing others',
+                  'No, you must choose one or the other on your federal return each year',
+                  'Yes, you can split them, taking standard for some categories and itemizing others',
                   'Yes, but only if your itemized deductions are less than the standard deduction',
                   'Only taxpayers over age 65 may combine both for a larger total deduction',
                 ],
                 correct: 0,
-                explanation: 'It\'s one or the other on your federal return. Some states have different rules - you might itemize on your state return while taking the standard deduction federally.',
+                explanation: 'It\'s one or the other on your federal return. Some states have different rules; you might itemize on your state return while taking the standard deduction federally.',
               },
               {
                 prompt: 'Charitable contributions are deductible when itemizing if:',
                 options: [
                   'Made to IRS-qualified 501(c)(3) organizations and properly documented with receipts or bank records',
                   'Given directly to individuals in need, with a signed letter from the recipient confirming the gift',
-                  'Made in cash only - credit card donations are not considered qualified contributions',
+                  'Made in cash only, since credit card donations are not considered qualified contributions',
                   'The donation is for an amount above $1,000, with no deduction available for smaller amounts',
                 ],
                 correct: 0,
@@ -3516,9 +3516,9 @@ export const levels = [
               {
                 prompt: 'The "SALT" deduction cap limits deductions of state and local taxes to:',
                 options: [
-                  '$10,000 per year ($5,000 if married filing separately) - regardless of how much you actually paid',
+                  '$10,000 per year ($5,000 if married filing separately), regardless of how much you actually paid',
                   '$25,000 per year with an inflation adjustment applied annually',
-                  'An unlimited amount - there is no federal cap on state tax deductions',
+                  'An unlimited amount, since there is no federal cap on state tax deductions',
                   '$15,000 or 10% of adjusted gross income, whichever is lower',
                 ],
                 correct: 0,
@@ -3545,10 +3545,10 @@ export const levels = [
               {
                 prompt: 'Getting a large tax refund each year means you:',
                 options: [
-                  'Overpaid taxes throughout the year - essentially giving the government an interest-free loan',
+                  'Overpaid taxes throughout the year, essentially giving the government an interest-free loan',
                   'Earned more income than expected and the IRS is refunding your bonus withholding',
                   'Qualified for a special rebate program for responsible taxpayers',
-                  'Filed your taxes early - refunds are larger for early filers under current IRS policy',
+                  'Filed your taxes early, since refunds are larger for early filers under current IRS policy',
                 ],
                 correct: 0,
                 explanation: 'A big refund sounds nice but means you were withholding too much all year. You could have had that money in your pocket each month and put it to work earning interest.',
@@ -3556,8 +3556,8 @@ export const levels = [
               {
                 prompt: 'What should you do with your W-4 after a major life event like marriage, divorce, or having a child?',
                 options: [
-                  'Update it with your employer - life changes affect your tax situation and desired withholding amount',
-                  'Nothing - the IRS automatically updates withholding after processing life event paperwork',
+                  'Update it with your employer, since life changes affect your tax situation and desired withholding amount',
+                  'Nothing, since the IRS automatically updates withholding after processing life event paperwork',
                   'File a new tax return immediately to adjust your withholding for the prior year',
                   'Contact the Social Security Administration, which notifies your employer of necessary changes',
                 ],
@@ -3607,10 +3607,10 @@ export const levels = [
               {
                 prompt: 'What is the standard deadline for filing federal income taxes?',
                 options: [
-                  'April 15 - unless that falls on a weekend or holiday, in which case it shifts to the next business day',
-                  'March 31 - one month before the calendar quarter ends',
-                  'June 15 - the IRS provides a built-in two-month extension for all filers',
-                  'The last day of February - giving the IRS time to process before the fiscal year',
+                  'April 15, unless that falls on a weekend or holiday, in which case it shifts to the next business day',
+                  'March 31, one month before the calendar quarter ends',
+                  'June 15, since the IRS provides a built-in two-month extension for all filers',
+                  'The last day of February, giving the IRS time to process before the fiscal year',
                 ],
                 correct: 0,
                 explanation: 'April 15 is Tax Day. Some states have different deadlines. U.S. citizens abroad get an automatic two-month extension to June 15, but interest still accrues on unpaid balances.',
@@ -3632,7 +3632,7 @@ export const levels = [
                   '5% of the unpaid tax per month (or partial month), up to 25% maximum',
                   'A flat $100 fee plus $10 per week the return remains unfiled',
                   'Automatic disqualification from all tax credits for the following tax year',
-                  'No penalty if you file before June 15 - the IRS only penalizes filings after June',
+                  'No penalty if you file before June 15, since the IRS only penalizes filings after June',
                 ],
                 correct: 0,
                 explanation: 'The failure-to-file penalty is 10x worse than the failure-to-pay penalty (0.5%/month). Even if you can\'t pay what you owe, file on time to avoid the larger penalty.',
@@ -3640,20 +3640,20 @@ export const levels = [
               {
                 prompt: 'If you expect a tax refund, what happens if you don\'t file by April 15?',
                 options: [
-                  'Nothing immediately - there\'s no penalty for late filing when you\'re owed a refund, but you must file within 3 years to claim it',
+                  'Nothing immediately, since there\'s no penalty for late filing when you\'re owed a refund, but you must file within 3 years to claim it',
                   'Your refund is automatically forfeited if not claimed by the April 15 deadline',
                   'The IRS charges a 5% fee on your refund amount for each month you file late',
                   'The refund is held indefinitely until you file, with interest added each year',
                 ],
                 correct: 0,
-                explanation: 'The late-filing penalty only applies to tax owed. If you\'re getting a refund, there\'s no penalty - but you have only 3 years to claim it before it\'s permanently forfeited to the government.',
+                explanation: 'The late-filing penalty only applies to tax owed. If you\'re getting a refund, there\'s no penalty, but you have only 3 years to claim it before it\'s permanently forfeited to the government.',
               },
               {
                 prompt: 'What happens if you cannot afford to pay your tax bill by April 15?',
                 options: [
-                  'File on time anyway and set up an IRS installment agreement - failure-to-file penalties are far harsher',
-                  'Don\'t file until you can pay in full - partial payments trigger automatic audits',
-                  'Request a penalty waiver by calling the IRS - all first-time late payments are automatically forgiven',
+                  'File on time anyway and set up an IRS installment agreement, since failure-to-file penalties are far harsher',
+                  'Don\'t file until you can pay in full, since partial payments trigger automatic audits',
+                  'Request a penalty waiver by calling the IRS, since all first-time late payments are automatically forgiven',
                   'Pay what you can and wait for the IRS to send a demand letter before sending more',
                 ],
                 correct: 0,
@@ -3662,10 +3662,10 @@ export const levels = [
               {
                 prompt: 'What is the statute of limitations for the IRS to audit a tax return?',
                 options: [
-                  'Generally 3 years from the filing date - extending to 6 years for substantial underreporting (25%+ of income)',
-                  '1 year from the filing date - after which the IRS cannot review any aspect of the return',
-                  '7 years for all returns - the IRS can request records for any of the past seven years',
-                  'Unlimited - the IRS can audit any return at any time with no time restriction',
+                  'Generally 3 years from the filing date, extending to 6 years for substantial underreporting (25%+ of income)',
+                  '1 year from the filing date, after which the IRS cannot review any aspect of the return',
+                  '7 years for all returns, since the IRS can request records for any of the past seven years',
+                  'Unlimited, since the IRS can audit any return at any time with no time restriction',
                 ],
                 correct: 0,
                 explanation: 'If you fraudulently file or don\'t file at all, there\'s no statute of limitations. Keep tax records for at least 3 years (7 for suspicious situations) and property records until sold plus 3 years.',
@@ -3691,7 +3691,7 @@ export const levels = [
               {
                 prompt: 'What is e-filing, and why is it preferred over paper filing?',
                 options: [
-                  'Electronic filing through IRS-approved software - faster processing, immediate confirmation, and quicker refunds',
+                  'Electronic filing through IRS-approved software, offering faster processing, immediate confirmation, and quicker refunds',
                   'A method of filing taxes through email directly to the IRS Taxpayer Services division',
                   'A special filing status that exempts digital workers from certain income tax rules',
                   'A reduced-fee filing option only available to taxpayers with simple returns',
@@ -3703,12 +3703,12 @@ export const levels = [
                 prompt: 'When should you consider hiring a professional tax preparer (CPA or EA)?',
                 options: [
                   'When you have complex situations: self-employment, investment sales, rental properties, business ownership, or major life changes',
-                  'Always - software makes errors that professionals catch, regardless of how simple your taxes are',
+                  'Always, since software makes errors that professionals catch regardless of how simple your taxes are',
                   'Only if you have never filed taxes before and need in-person guidance for the first time',
-                  'When your income exceeds $50,000 - the IRS requires professional filing above this threshold',
+                  'When your income exceeds $50,000, since the IRS requires professional filing above this threshold',
                 ],
                 correct: 0,
-                explanation: 'Simple W-2 employees with no investments can use free software confidently. Complexity - rental properties, self-employment, RSUs, multiple states - is where professionals earn their fees.',
+                explanation: 'Simple W-2 employees with no investments can use free software confidently. Complexity such as rental properties, self-employment, RSUs, and multiple states is where professionals earn their fees.',
               },
               {
                 prompt: 'What is an Enrolled Agent (EA)?',
@@ -3730,13 +3730,13 @@ export const levels = [
                   'Investment tax advice for low-income individuals looking to start building wealth',
                 ],
                 correct: 0,
-                explanation: 'VITA sites are in community centers, libraries, and schools. If you qualify, it\'s completely free - the volunteers are IRS-certified and the returns are quality-reviewed.',
+                explanation: 'VITA sites are in community centers, libraries, and schools. If you qualify, it\'s completely free; the volunteers are IRS-certified and the returns are quality-reviewed.',
               },
               {
                 prompt: 'What information do you typically need to gather before filing your taxes?',
                 options: [
                   'Social Security numbers, all income forms (W-2, 1099s), records of deductible expenses, and prior year\'s return as a reference',
-                  'Only your W-2 - all other income and deductions are reported automatically to the IRS by banks and employers',
+                  'Only your W-2, since all other income and deductions are reported automatically to the IRS by banks and employers',
                   'A list of all purchases made during the year and receipts for every transaction over $10',
                   'Your bank account statements for the current year and proof of identity from two government agencies',
                 ],
@@ -3753,21 +3753,21 @@ export const levels = [
               {
                 prompt: 'What causes a tax refund?',
                 options: [
-                  'You withheld more than your actual tax liability - the IRS returns the overpayment',
+                  'You withheld more than your actual tax liability, so the IRS returns the overpayment',
                   'The IRS rewards on-time filers with a bonus based on their filing history',
                   'Tax credits automatically generate refund payments regardless of withholding',
                   'Filing early triggers an automatic refund of a percentage of taxes paid',
                 ],
                 correct: 0,
-                explanation: 'A refund simply means you prepaid more than you owed. It\'s not free money - you already earned it. Optimally, you\'d owe a small amount or get a small refund rather than a large one.',
+                explanation: 'A refund simply means you prepaid more than you owed. It\'s not free money; you already earned it. Optimally, you\'d owe a small amount or get a small refund rather than a large one.',
               },
               {
                 prompt: 'How long does it typically take to receive a federal tax refund with e-filing and direct deposit?',
                 options: [
-                  'About 10–21 days after e-filing - substantially faster than a paper check',
-                  'Exactly 7 days - the IRS guarantees same-week refunds for all e-filers',
-                  '60–90 days - refunds are processed in the order returns are received',
-                  'Immediately - e-filing triggers an instant direct deposit approval',
+                  'About 10–21 days after e-filing, substantially faster than a paper check',
+                  'Exactly 7 days, since the IRS guarantees same-week refunds for all e-filers',
+                  '60–90 days, since refunds are processed in the order returns are received',
+                  'Immediately, since e-filing triggers an instant direct deposit approval',
                 ],
                 correct: 0,
                 explanation: 'E-file + direct deposit is the fastest combination. Returns claiming the EITC or Additional Child Tax Credit are held until mid-February to verify eligibility under the PATH Act.',
@@ -3786,7 +3786,7 @@ export const levels = [
               {
                 prompt: 'What is the IRS "Where\'s My Refund?" tool used for?',
                 options: [
-                  'Tracking the status of your federal tax refund after filing - shows whether it\'s received, approved, or sent',
+                  'Tracking the status of your federal tax refund after filing, showing whether it\'s received, approved, or sent',
                   'Looking up the total taxes you have paid over your entire lifetime',
                   'Checking whether the IRS has selected your return for an audit',
                   'Calculating how much of a refund you will receive before filing your return',
@@ -3814,7 +3814,7 @@ export const levels = [
                   'Convert owed income taxes to student loan debt at a reduced interest rate',
                 ],
                 correct: 0,
-                explanation: 'OIC acceptance is not guaranteed - the IRS evaluates income, expenses, and asset equity. Be wary of companies promising to "settle your debt for pennies on the dollar" - most OICs are rejected.',
+                explanation: 'OIC acceptance is not guaranteed; the IRS evaluates income, expenses, and asset equity. Be wary of companies promising to "settle your debt for pennies on the dollar," since most OICs are rejected.',
               },
             ],
           },
@@ -3826,13 +3826,13 @@ export const levels = [
               {
                 prompt: 'Who must pay self-employment (SE) tax?',
                 options: [
-                  'Anyone with net self-employment income of $400 or more in a year - freelancers, contractors, and sole proprietors',
+                  'Anyone with net self-employment income of $400 or more in a year, including freelancers, contractors, and sole proprietors',
                   'Only business owners who operate as corporations or LLCs with employees',
                   'Self-employed individuals earning more than $50,000 per year in net income',
                   'Freelancers who work for more than one client in a given calendar year',
                 ],
                 correct: 0,
-                explanation: 'Even $400 in net freelance income triggers the SE tax filing requirement. There is no employer to split the FICA burden - you pay the full 15.3% yourself.',
+                explanation: 'Even $400 in net freelance income triggers the SE tax filing requirement. There is no employer to split the FICA burden; you pay the full 15.3% yourself.',
               },
               {
                 prompt: 'The Schedule C form is used by self-employed individuals to:',
@@ -3850,7 +3850,7 @@ export const levels = [
                 options: [
                   'Half (50%) of SE tax is deductible as an adjustment to income on Form 1040',
                   'The full 15.3% is deductible, completely eliminating the SE tax burden at filing',
-                  'No deduction is available - self-employment tax is not deductible on federal returns',
+                  'No deduction is available, since self-employment tax is not deductible on federal returns',
                   'Only the Medicare portion (2.9%) can be deducted, not the Social Security portion',
                 ],
                 correct: 0,
@@ -3859,7 +3859,7 @@ export const levels = [
               {
                 prompt: 'What is the home office deduction for self-employed individuals?',
                 options: [
-                  'A deduction for the portion of your home used regularly and exclusively for business - based on square footage',
+                  'A deduction for the portion of your home used regularly and exclusively for business, calculated based on square footage',
                   'A $5,000 flat deduction available to any self-employed person who works from home',
                   'A credit for rent or mortgage interest paid on a home with any workspace setup',
                   'A deduction for the full cost of internet, utilities, and phone regardless of business use percentage',
@@ -3870,7 +3870,7 @@ export const levels = [
               {
                 prompt: 'A self-employed individual can deduct health insurance premiums:',
                 options: [
-                  'As an above-the-line deduction from gross income - even without itemizing - up to the amount of net self-employment income',
+                  'As an above-the-line deduction from gross income even without itemizing, up to the amount of net self-employment income',
                   'Only if the premiums are paid through an employer-sponsored COBRA plan',
                   'As a business expense on Schedule C, reducing self-employment tax as well as income tax',
                   'Only for the calendar year in which a medical procedure was actually performed',
@@ -3881,10 +3881,10 @@ export const levels = [
               {
                 prompt: 'Which retirement account option gives self-employed individuals the highest contribution limits?',
                 options: [
-                  'Solo 401(k) - allows contributions as both employer and employee, up to ~$69,000 in 2024',
-                  'Traditional IRA - the highest limit of all retirement accounts at $7,000 per year',
-                  'Simple IRA - available exclusively to self-employed individuals under the SECURE Act',
-                  'Roth IRA - the only retirement account that allows 100% of self-employment income as contributions',
+                  'Solo 401(k), which allows contributions as both employer and employee, up to ~$69,000 in 2024',
+                  'Traditional IRA, which has the highest limit of all retirement accounts at $7,000 per year',
+                  'Simple IRA, available exclusively to self-employed individuals under the SECURE Act',
+                  'Roth IRA, the only retirement account that allows 100% of self-employment income as contributions',
                 ],
                 correct: 0,
                 explanation: 'The Solo 401(k) (also called Individual 401(k)) is one of the most powerful retirement tools for self-employed: contribute up to $23,000 as "employee" PLUS up to 25% of net earnings as "employer."',
@@ -3899,10 +3899,10 @@ export const levels = [
               {
                 prompt: 'Getting married affects your taxes because:',
                 options: [
-                  'You can file jointly (often beneficial for one-income couples) or separately - your optimal choice depends on both incomes',
+                  'You can file jointly (often beneficial for one-income couples) or separately, and your optimal choice depends on both incomes',
                   'Marriage automatically reduces your tax rate by 15% for the first year',
                   'Married couples are exempt from capital gains tax on investment income',
-                  'You must file jointly - the IRS does not allow married individuals to file separately',
+                  'You must file jointly, since the IRS does not allow married individuals to file separately',
                 ],
                 correct: 0,
                 explanation: 'Most couples benefit from MFJ (Married Filing Jointly) but some high-dual-income couples face a "marriage penalty." Run the numbers or use software to compare both options.',
@@ -3921,7 +3921,7 @@ export const levels = [
               {
                 prompt: 'When you sell a home, you may exclude capital gains if:',
                 options: [
-                  'You\'ve owned and used it as your primary residence for at least 2 of the last 5 years - up to $250,000 single or $500,000 MFJ',
+                  'You\'ve owned and used it as your primary residence for at least 2 of the last 5 years, excluding up to $250,000 (single) or $500,000 (MFJ)',
                   'You owned it for more than 10 years regardless of whether it was your primary home',
                   'You reinvest all proceeds into a new home within 60 days of the sale',
                   'The home was purchased as your first property and you are under age 40 at the time of sale',
@@ -3930,9 +3930,9 @@ export const levels = [
                 explanation: 'The Section 121 exclusion is one of the most generous tax benefits. A couple selling a home with $450,000 in profit pays zero capital gains tax if they meet the 2-year residency requirement.',
               },
               {
-                prompt: 'Inheriting money or property - what are the typical tax consequences?',
+                prompt: 'Inheriting money or property: what are the typical tax consequences?',
                 options: [
-                  'Most inherited assets receive a stepped-up basis and are not taxed as income - but future investment gains are taxable',
+                  'Most inherited assets receive a stepped-up basis and are not taxed as income, though future investment gains are taxable',
                   'All inherited money is taxed as ordinary income at your marginal tax rate in the year received',
                   'Inheritance is taxed at a flat 40% federal rate regardless of the amount inherited',
                   'Inherited assets are tax-free for the first $1 million but fully taxed above that threshold',
@@ -3946,7 +3946,7 @@ export const levels = [
                   'Ordinary income tax on the amount withdrawn PLUS a 10% early withdrawal penalty',
                   'A flat 20% penalty with no income tax since retirement accounts are tax-exempt',
                   'Loss of all tax-deferred growth for the entire account, not just the withdrawn amount',
-                  'No immediate consequences - penalties only apply if the account is fully cashed out',
+                  'No immediate consequences, since penalties only apply if the account is fully cashed out',
                 ],
                 correct: 0,
                 explanation: 'The 10% penalty is on top of income tax. On a $20,000 withdrawal at 22%, you could lose $6,400 (22% tax + 10% penalty). Exceptions include disability, death, and certain first-home purchases.',
@@ -3998,7 +3998,7 @@ export const levels = [
                   'To replace your income dollar-for-dollar if you experience any financial setback',
                 ],
                 correct: 0,
-                explanation: 'Insurance pools risk. Each person pays a small, certain amount (premium). In exchange, the insurer covers large, uncertain losses. It\'s not investment or guaranteed replacement - it\'s risk management.',
+                explanation: 'Insurance pools risk. Each person pays a small, certain amount (premium). In exchange, the insurer covers large, uncertain losses. It\'s not investment or guaranteed replacement; it\'s risk management.',
               },
               {
                 prompt: 'What is an insurance premium?',
@@ -4009,7 +4009,7 @@ export const levels = [
                   'A penalty fee charged when you file more than two claims in a year',
                 ],
                 correct: 0,
-                explanation: 'Premiums are typically monthly or annual. They are determined by your risk profile - age, health, location, driving record, etc. Lower risk = lower premium.',
+                explanation: 'Premiums are typically monthly or annual. They are determined by your risk profile, including age, health, location, and driving record. Lower risk means a lower premium.',
               },
               {
                 prompt: 'What is a deductible?',
@@ -4053,7 +4053,7 @@ export const levels = [
                   'The risk that insurance premiums are unaffordable for low-income individuals',
                 ],
                 correct: 0,
-                explanation: 'Moral hazard is why deductibles exist - they ensure you have "skin in the game" and don\'t take on unnecessary risk just because you\'re insured.',
+                explanation: 'Moral hazard is why deductibles exist; they ensure you have "skin in the game" and don\'t take on unnecessary risk just because you\'re insured.',
               },
             ],
           },
@@ -4076,7 +4076,7 @@ export const levels = [
               {
                 prompt: 'What is the out-of-pocket maximum on a health insurance plan?',
                 options: [
-                  'The most you will pay in a year for covered services - after which the insurer covers 100%',
+                  'The most you will pay in a year for covered services, after which the insurer covers 100%',
                   'The minimum you must pay before any insurance benefits begin in the year',
                   'The portion of each medical bill that your insurance automatically denies',
                   'The maximum benefit the insurer will pay over the lifetime of the policy',
@@ -4087,7 +4087,7 @@ export const levels = [
               {
                 prompt: 'What is coinsurance?',
                 options: [
-                  'The percentage of medical costs you share with the insurer after meeting the deductible - e.g., 20% you, 80% insurer',
+                  'The percentage of medical costs you share with the insurer after meeting the deductible, e.g., 20% you and 80% insurer',
                   'A second insurance policy that covers costs your primary plan does not pay',
                   'The monthly premium split between you and your employer',
                   'A penalty for using emergency room services instead of urgent care',
@@ -4109,13 +4109,13 @@ export const levels = [
               {
                 prompt: 'COBRA continuation coverage allows you to:',
                 options: [
-                  'Keep your employer\'s health insurance for up to 18 months after leaving a job - but you pay the full premium yourself',
+                  'Keep your employer\'s health insurance for up to 18 months after leaving a job, though you pay the full premium yourself',
                   'Transfer your employer\'s health plan to a spouse\'s plan at the same price',
                   'Extend coverage at a 50% discount for up to 36 months after any job loss',
                   'Enroll in Medicare immediately after leaving employment regardless of age',
                 ],
                 correct: 0,
-                explanation: 'COBRA is expensive - you pay both your share AND the employer\'s share plus a 2% admin fee. Often better to shop the Marketplace during your 60-day SEP (Special Enrollment Period).',
+                explanation: 'COBRA is expensive because you pay both your share AND the employer\'s share plus a 2% admin fee. It is often better to shop the Marketplace during your 60-day SEP (Special Enrollment Period).',
               },
               {
                 prompt: 'What is a Health Savings Account (HSA) and who can use one?',
@@ -4126,7 +4126,7 @@ export const levels = [
                   'An investment account that earns guaranteed returns to be used for future healthcare in retirement',
                 ],
                 correct: 0,
-                explanation: 'HSAs require an HDHP (2024: $1,600 single / $3,200 family minimum deductible). Contributions are pre-tax, grow tax-free, and are withdrawn tax-free for medical expenses - the ultimate triple tax advantage.',
+                explanation: 'HSAs require an HDHP (2024: $1,600 single / $3,200 family minimum deductible). Contributions are pre-tax, grow tax-free, and are withdrawn tax-free for medical expenses, delivering the ultimate triple tax advantage.',
               },
             ],
           },
@@ -4174,10 +4174,10 @@ export const levels = [
                   'Studies show that lower credit scores correlate with higher claim frequency, so insurers charge higher premiums',
                   'Credit scores determine whether you qualify for insurance, not the price you pay',
                   'Federal law requires insurers to use credit scores as the primary pricing factor',
-                  'Credit score has no impact on auto insurance - only driving record matters',
+                  'Credit score has no impact on auto insurance, since only driving record matters',
                 ],
                 correct: 0,
-                explanation: 'California, Massachusetts, and a few other states ban credit-based insurance scoring. Everywhere else, a poor credit score can raise your premium significantly - sometimes more than a minor accident.',
+                explanation: 'California, Massachusetts, and a few other states ban credit-based insurance scoring. Everywhere else, a poor credit score can raise your premium significantly, sometimes more than a minor accident.',
               },
               {
                 prompt: 'What is a "deductible" specifically for auto insurance, and how should you choose it?',
@@ -4188,7 +4188,7 @@ export const levels = [
                   'The minimum coverage amount required by your state for any at-fault accident',
                 ],
                 correct: 0,
-                explanation: 'A $1,000 deductible vs. $500 might save $200/year in premiums. If you only file a claim every 5 years, the $1,000 deductible costs you $1,000 but saves $1,000 in premiums - break-even.',
+                explanation: 'A $1,000 deductible vs. $500 might save $200/year in premiums. If you only file a claim every 5 years, the $1,000 deductible costs you $1,000 but saves $1,000 in premiums, a break-even outcome.',
               },
               {
                 prompt: 'When is it NOT worth having collision and comprehensive coverage on a car?',
@@ -4199,7 +4199,7 @@ export const levels = [
                   'It is always worth having full coverage regardless of the vehicle\'s age or value',
                 ],
                 correct: 0,
-                explanation: 'Rule of thumb: if the car is worth less than 10x the annual premium for collision/comp, consider dropping it. The insurer pays ACV (actual cash value) minus deductible - not replacement cost.',
+                explanation: 'Rule of thumb: if the car is worth less than 10x the annual premium for collision/comp, consider dropping it. The insurer pays ACV (actual cash value) minus deductible, not replacement cost.',
               },
             ],
           },
@@ -4213,11 +4213,11 @@ export const levels = [
                 options: [
                   'Landlord insurance covers the building structure; renters insurance covers your personal belongings and liability',
                   'Landlord insurance covers both the building and tenants\' personal property',
-                  'Renters insurance only covers liability claims from visitors - not personal belongings',
-                  'Both policies are identical - renters just pay a smaller portion of the same premium',
+                  'Renters insurance only covers liability claims from visitors and not personal belongings',
+                  'Both policies are identical, so renters just pay a smaller portion of the same premium',
                 ],
                 correct: 0,
-                explanation: 'If there\'s a fire, your landlord\'s policy covers the walls and structure - not your furniture, clothing, or electronics. Renters insurance covers your stuff and provides liability protection, typically for ~$15/month.',
+                explanation: 'If there\'s a fire, your landlord\'s policy covers the walls and structure, not your furniture, clothing, or electronics. Renters insurance covers your stuff and provides liability protection, typically for ~$15/month.',
               },
               {
                 prompt: 'What does liability coverage in a renters insurance policy protect you from?',
@@ -4233,7 +4233,7 @@ export const levels = [
               {
                 prompt: 'Homeowners insurance typically covers all of the following EXCEPT:',
                 options: [
-                  'Flood damage - flood insurance must be purchased separately through the NFIP or private insurers',
+                  'Flood damage, since flood insurance must be purchased separately through the NFIP or private insurers',
                   'Fire and smoke damage to the structure and personal property',
                   'Theft of personal property both at home and sometimes away from home',
                   'Liability claims from injuries that occur on your property',
@@ -4247,7 +4247,7 @@ export const levels = [
                   'ACV pays what your property was worth at time of loss (depreciated); RCV pays what it costs to replace it with new items',
                   'ACV covers all personal property; RCV only covers structural damage to the building',
                   'RCV is the cheaper coverage; ACV pays more but costs more in premiums',
-                  'Both pay the same amount - insurers use the terms interchangeably in policy documents',
+                  'Both pay the same amount, since insurers use the terms interchangeably in policy documents',
                 ],
                 correct: 0,
                 explanation: 'Your 5-year-old laptop stolen from your apartment: ACV might pay $300 (depreciated), while RCV pays $1,200 (replacement). RCV costs more but closes the gap between what you lose and what you receive.',
@@ -4266,7 +4266,7 @@ export const levels = [
               {
                 prompt: 'PMI (Private Mortgage Insurance) is required when:',
                 options: [
-                  'You put less than 20% down on a conventional home loan - it protects the lender, not you',
+                  'You put less than 20% down on a conventional home loan, and it protects the lender rather than you',
                   'Your homeowners insurance lapses and the mortgage company requires backup coverage',
                   'You take out a home equity loan or line of credit on your primary residence',
                   'You purchase a home in a flood zone or other high-risk geographic area',
@@ -4298,7 +4298,7 @@ export const levels = [
                   'A death benefit for a set period (e.g., 20 or 30 years) at a lower cost than permanent insurance',
                   'Lifelong coverage with a guaranteed cash savings component that grows over time',
                   'Disability income if you cannot work due to injury or illness during the term',
-                  'Coverage only for accidental deaths - not deaths from illness or natural causes',
+                  'Coverage only for accidental deaths and not deaths from illness or natural causes',
                 ],
                 correct: 0,
                 explanation: 'Term life is pure, affordable protection. A healthy 30-year-old can get a $500,000 20-year policy for around $25/month. It\'s the right choice for most families with children.',
@@ -4306,7 +4306,7 @@ export const levels = [
               {
                 prompt: 'Whole life insurance differs from term life because:',
                 options: [
-                  'It provides lifelong coverage and builds a cash value component - at a much higher premium cost',
+                  'It provides lifelong coverage and builds a cash value component, at a much higher premium cost',
                   'Whole life has a fixed term of 100 years rather than 20–30 years',
                   'Whole life pays out twice the death benefit if you outlive the policy term',
                   'Whole life premiums are fully tax-deductible for individuals',
@@ -4317,8 +4317,8 @@ export const levels = [
               {
                 prompt: 'How much life insurance coverage do most financial advisors suggest?',
                 options: [
-                  '10–12 times your annual income - enough to replace your earnings for a decade or more',
-                  'Exactly $250,000 - the federal standard for middle-income families',
+                  '10–12 times your annual income, enough to replace your earnings for a decade or more',
+                  'Exactly $250,000, the federal standard for middle-income families',
                   'Twice your current outstanding debt, including mortgage and student loans',
                   'Three times your annual income, which is the industry regulatory minimum',
                 ],
@@ -4334,7 +4334,7 @@ export const levels = [
                   'A licensed insurance company that provides backup coverage if your primary insurer fails',
                 ],
                 correct: 0,
-                explanation: 'Naming beneficiaries is critical - and often forgotten. Life insurance passes outside of probate directly to named beneficiaries. Review and update after marriage, divorce, or having children.',
+                explanation: 'Naming beneficiaries is critical and often forgotten. Life insurance passes outside of probate directly to named beneficiaries. Review and update after marriage, divorce, or having children.',
               },
               {
                 prompt: 'What is the "free look" period for a new life insurance policy?',
@@ -4357,7 +4357,7 @@ export const levels = [
               {
                 prompt: 'What does disability insurance protect?',
                 options: [
-                  'Your income - it replaces a portion of your earnings if you become too ill or injured to work',
+                  'Your income, replacing a portion of your earnings if you become too ill or injured to work',
                   'Your property in the event of physical damage caused by an accident at your workplace',
                   'Your dependents in the event of your death from a work-related injury',
                   'Medical costs arising from a disability that is not covered by health insurance',
@@ -4407,7 +4407,7 @@ export const levels = [
                   'Your homeowners insurance policy legally requires it as a condition of your liability coverage',
                 ],
                 correct: 0,
-                explanation: 'Modern veterinary care can be extraordinary - and extraordinarily expensive. Pet insurance makes more sense for puppies or kittens than older animals with pre-existing conditions.',
+                explanation: 'Modern veterinary care can be extraordinary and extraordinarily expensive. Pet insurance makes more sense for puppies or kittens than older animals with pre-existing conditions.',
               },
               {
                 prompt: 'Travel insurance typically covers:',
@@ -4430,8 +4430,8 @@ export const levels = [
               {
                 prompt: 'What is the core principle when deciding how much insurance to buy?',
                 options: [
-                  'Insure against losses that would be financially catastrophic - not against small, manageable costs',
-                  'Buy maximum coverage for everything - the cost of insurance is always worth it',
+                  'Insure against losses that would be financially catastrophic and not against small, manageable costs',
+                  'Buy maximum coverage for everything, since the cost of insurance is always worth it',
                   'Spend as little as possible on insurance and self-insure everything through savings',
                   'Match your coverage exactly to your current assets, updating every year',
                 ],
@@ -4452,7 +4452,7 @@ export const levels = [
               {
                 prompt: 'Why is shopping multiple insurers for the same coverage important?',
                 options: [
-                  'Premiums for identical coverage can vary by 50–100% between insurers - comparison shopping is free money',
+                  'Premiums for identical coverage can vary by 50–100% between insurers, making comparison shopping essentially free money',
                   'Insurers are required to match the lowest competitor quote if you present proof of the offer',
                   'Shopping around builds your insurance credit score, which all insurers use for pricing',
                   'All insurers offer identical premiums by law, but coverage terms and exclusions vary',
@@ -4464,7 +4464,7 @@ export const levels = [
                 prompt: 'What should you review when your policy renews each year?',
                 options: [
                   'Whether coverage limits still match your needs, whether premiums are still competitive, and whether any life changes require updates',
-                  'Only the premium amount - all other terms are locked in at the time of original purchase',
+                  'Only the premium amount, since all other terms are locked in at the time of original purchase',
                   'The insurer\'s financial rating to ensure they can afford to pay future claims',
                   'Whether your deductible has automatically increased under the policy\'s inflation clause',
                 ],
@@ -4509,14 +4509,14 @@ export const levels = [
                   'Term insurance has no exclusions while whole life excludes pre-existing conditions',
                 ],
                 correct: 0,
-                explanation: 'A $500,000 term policy at 30 might cost $25/month. A comparable whole life policy might cost $400/month. Invest the $375 difference in a Roth IRA - over 30 years, that likely outperforms the cash value.',
+                explanation: 'A $500,000 term policy at 30 might cost $25/month. A comparable whole life policy might cost $400/month. Investing the $375 difference in a Roth IRA over 30 years likely outperforms the cash value.',
               },
               {
                 prompt: 'How does insurance relate to your emergency fund strategy?',
                 options: [
                   'A larger emergency fund lets you choose higher deductibles, lowering premiums and freeing up cash',
                   'You should not have an emergency fund if you have comprehensive insurance coverage',
-                  'Emergency funds and insurance serve the same purpose - you only need one or the other',
+                  'Emergency funds and insurance serve the same purpose, so you only need one or the other',
                   'Higher deductible insurance plans disqualify you from contributing to an HSA',
                 ],
                 correct: 0,
@@ -4531,23 +4531,23 @@ export const levels = [
                   'The company is the least likely to increase premiums on renewal for existing customers',
                 ],
                 correct: 0,
-                explanation: 'AM Best and similar rating agencies (Moody\'s, S&P) assess insurer financial stability. Buying from a financially weak insurer risks having claims unpaid - especially after widespread disasters.',
+                explanation: 'AM Best and similar rating agencies (Moody\'s, S&P) assess insurer financial stability. Buying from a financially weak insurer risks having claims unpaid, especially after widespread disasters.',
               },
               {
                 prompt: 'Over-insuring yourself means:',
                 options: [
-                  'Paying premiums for more coverage than you realistically need - money that could be invested or saved instead',
+                  'Paying premiums for more coverage than you realistically need, money that could be invested or saved instead',
                   'Having a policy that pays more than your actual financial losses for any given claim',
                   'Owning more than three different types of insurance policies simultaneously',
                   'Purchasing insurance that duplicates coverage you already have from an employer benefit',
                 ],
                 correct: 0,
-                explanation: 'Over-insurance is a financial inefficiency. For example, collision coverage on a $3,000 car at $600/year in premiums makes little sense - you\'re paying 20% of the car\'s value annually to protect it.',
+                explanation: 'Over-insurance is a financial inefficiency. For example, collision coverage on a $3,000 car at $600/year in premiums makes little sense; you\'re paying 20% of the car\'s value annually to protect it.',
               },
               {
                 prompt: 'What is "moral hazard" and how does it relate to your own insurance decisions?',
                 options: [
-                  'The tendency to take more risks or be less careful because you know a loss is insured - something to watch in yourself',
+                  'The tendency to take more risks or be less careful because you know a loss is insured, something to be mindful of in yourself',
                   'Dishonest behavior by insurance companies that intentionally underpay claims',
                   'The risk that premiums rise uncontrollably even when you have never filed a claim',
                   'A legal concept preventing insurers from denying claims on ethical grounds',
@@ -4561,7 +4561,7 @@ export const levels = [
                   'Cover catastrophic risks (health, life if dependents, disability, liability) and self-insure small, manageable losses through savings',
                   'Buy comprehensive coverage for everything to eliminate all financial uncertainty',
                   'Rely on employer benefits only and avoid purchasing any personal insurance independently',
-                  'Purchase insurance only when legally required - all other coverage is unnecessary spending',
+                  'Purchase insurance only when legally required, since all other coverage is unnecessary spending',
                 ],
                 correct: 0,
                 explanation: 'Insurance is for risk transfer, not convenience. Pay premiums for risks that could financially devastate you. Save the premium savings from high-deductible plans in an investment account to build wealth.',
@@ -4619,12 +4619,12 @@ export const levels = [
                 prompt: 'Historically, the U.S. stock market (S&P 500) has returned approximately how much per year?',
                 options: [
                   'About 10% nominally (roughly 7% after inflation) over long periods',
-                  'Exactly 2% per year - matching the Federal Reserve\'s target inflation rate',
-                  'About 25% annually - making stocks the only reliable investment',
+                  'Exactly 2% per year, matching the Federal Reserve\'s target inflation rate',
+                  'About 25% annually, making stocks the only reliable investment',
                   'Between 0–5% depending on the decade, with no reliable average',
                 ],
                 correct: 0,
-                explanation: 'The S&P 500\'s ~10% historical average (before inflation) is one of the most cited statistics in personal finance. Note: this is the AVERAGE - individual years vary wildly from −37% to +38%.',
+                explanation: 'The S&P 500\'s ~10% historical average (before inflation) is one of the most cited statistics in personal finance. Note: this is the AVERAGE; individual years vary wildly from −37% to +38%.',
               },
               {
                 prompt: 'What does it mean for money to "lose purchasing power" over time?',
@@ -4646,12 +4646,12 @@ export const levels = [
                   'Nominal returns apply to bonds; real returns apply to stock investments',
                 ],
                 correct: 0,
-                explanation: 'Earning 8% in a 5% inflation environment gives a 3% real return. Always think in real terms for long-term wealth building - inflation can silently consume much of your nominal gains.',
+                explanation: 'Earning 8% in a 5% inflation environment gives a 3% real return. Always think in real terms for long-term wealth building; inflation can silently consume much of your nominal gains.',
               },
               {
                 prompt: 'Why is starting to invest early so important, even with small amounts?',
                 options: [
-                  'Compound returns grow exponentially - time in the market matters more than the amount invested',
+                  'Compound returns grow exponentially so time in the market matters more than the amount invested',
                   'Early investors receive preferred stock at a discount through SEC programs for retail investors',
                   'The IRS provides a tax credit for investors who open brokerage accounts before age 25',
                   'Market volatility is lower for longer-term investments, guaranteeing positive returns',
@@ -4672,10 +4672,10 @@ export const levels = [
                   'Higher potential returns generally require accepting higher potential losses',
                   'Riskier investments always produce better long-term results than safer ones',
                   'The government guarantees a minimum return on all investments above a risk threshold',
-                  'Risk and return are unrelated - diversification eliminates all risk completely',
+                  'Risk and return are unrelated, since diversification eliminates all risk completely',
                 ],
                 correct: 0,
-                explanation: 'This risk-return tradeoff is the cornerstone of investing. There is no free lunch - if an investment promises high returns with zero risk, it is almost certainly a fraud.',
+                explanation: 'This risk-return tradeoff is the cornerstone of investing. There is no free lunch; if an investment promises high returns with zero risk, it is almost certainly a fraud.',
               },
               {
                 prompt: 'What is "volatility" in the context of investments?',
@@ -4686,15 +4686,15 @@ export const levels = [
                   'The difference between an investment\'s purchase price and its current market value',
                 ],
                 correct: 0,
-                explanation: 'High volatility = large price swings. Stocks are more volatile than bonds. Volatility itself isn\'t necessarily bad for long-term investors - short-term swings are the price you pay for long-term outperformance.',
+                explanation: 'High volatility = large price swings. Stocks are more volatile than bonds. Volatility itself isn\'t necessarily bad for long-term investors; short-term swings are the price you pay for long-term outperformance.',
               },
               {
                 prompt: 'Which investment is generally considered the safest (lowest risk)?',
                 options: [
-                  'U.S. Treasury securities - backed by the full faith and credit of the federal government',
-                  'Blue-chip stocks - large stable companies never lose money',
-                  'Real estate - property always increases in value over any 5-year period',
-                  'Gold - its value is guaranteed by central banks worldwide',
+                  'U.S. Treasury securities, backed by the full faith and credit of the federal government',
+                  'Blue-chip stocks, since large stable companies never lose money',
+                  'Real estate, since property always increases in value over any 5-year period',
+                  'Gold, since its value is guaranteed by central banks worldwide',
                 ],
                 correct: 0,
                 explanation: 'U.S. Treasuries are considered risk-free because a U.S. government default is extremely unlikely. They set the "risk-free rate" that all other investments are compared against.',
@@ -4719,7 +4719,7 @@ export const levels = [
                   'Market crashes only affect investors who are more than 10 years from retirement',
                 ],
                 correct: 0,
-                explanation: 'Time horizon is the primary driver of appropriate risk. A 25-year-old can hold 90% stocks and ride out a 50% crash - they have 40 years to recover. A 65-year-old retiree cannot afford to wait.',
+                explanation: 'Time horizon is the primary driver of appropriate risk. A 25-year-old can hold 90% stocks and ride out a 50% crash because they have 40 years to recover. A 65-year-old retiree cannot afford to wait.',
               },
               {
                 prompt: 'What is "sequence of returns risk"?',
@@ -4764,7 +4764,7 @@ export const levels = [
               {
                 prompt: 'What does "reinvesting dividends" do to compound growth?',
                 options: [
-                  'It uses dividend payouts to buy more shares, which then generate more dividends - accelerating compounding',
+                  'It uses dividend payouts to buy more shares, which then generate more dividends, accelerating compounding',
                   'It converts dividends to tax-free income that is excluded from annual tax calculations',
                   'It allows you to withdraw dividends monthly while keeping the original investment intact',
                   'It guarantees a fixed income stream regardless of how the underlying stock performs',
@@ -4778,7 +4778,7 @@ export const levels = [
                   'Small differences compound into huge amounts: $100,000 at 6% grows to $574k; at 8% it grows to $1M+',
                   'Higher returns are guaranteed by law to make up for inflation over long periods',
                   'The IRS reduces taxes on accounts with higher annual returns as an incentive',
-                  'Small return differences have negligible impact - what matters is contribution size',
+                  'Small return differences have negligible impact, so what matters is contribution size',
                 ],
                 correct: 0,
                 explanation: 'This is why expense ratios matter so much. An extra 1% in annual fees (e.g., a 1% expense ratio vs. 0% index fund) costs you dramatically over 30 years due to compounding of fees against you.',
@@ -4786,7 +4786,7 @@ export const levels = [
               {
                 prompt: 'Which of the following best illustrates the power of starting early?',
                 options: [
-                  'Amy invests $5,000/year from 22–32 (10 years) and stops. Bob invests $5,000/year from 32–65 (33 years). Both earn 8% - Amy ends up with more.',
+                  'Amy invests $5,000/year from 22–32 (10 years) and stops, while Bob invests $5,000/year from 32–65 (33 years); both earn 8%, yet Amy ends up with more.',
                   'Bob earns more because he contributed more total money over a longer period',
                   'Both end up with the same amount because the total contributions are what matter',
                   'Amy earns less because she stopped contributing, which resets the compounding clock',
@@ -4797,7 +4797,7 @@ export const levels = [
               {
                 prompt: 'Compound interest hurts you when:',
                 options: [
-                  'You carry high-interest debt - interest compounds against you, growing what you owe',
+                  'You carry high-interest debt, since interest compounds against you, growing what you owe',
                   'You reinvest dividends from stocks that later decline in price',
                   'You contribute to a Traditional IRA, which compounds at a lower rate due to future tax liability',
                   'You hold investments too long, causing compounding returns to trigger capital gains tax',
@@ -4821,12 +4821,12 @@ export const levels = [
                   'How much of your monthly income you decide to invest each month',
                 ],
                 correct: 0,
-                explanation: 'Asset allocation is the most important investment decision you make - research suggests it explains 90%+ of portfolio variance. The specific securities within each class matter far less.',
+                explanation: 'Asset allocation is the most important investment decision you make; research suggests it explains 90%+ of portfolio variance. The specific securities within each class matter far less.',
               },
               {
                 prompt: 'The traditional age-based rule for bonds allocation suggests:',
                 options: [
-                  'Holding a percentage of bonds equal to your age (e.g., 30% bonds at age 30) - becoming more conservative as you age',
+                  'Holding a percentage of bonds equal to your age (e.g., 30% bonds at age 30), becoming more conservative as you age',
                   'Holding 100% stocks until age 50, then shifting entirely to bonds for safety',
                   'Allocating bonds only in tax-advantaged accounts and stocks only in taxable accounts',
                   'Never holding more bonds than stocks regardless of age or retirement proximity',
@@ -4843,12 +4843,12 @@ export const levels = [
                   'Adding new asset classes every year to increase diversification over time',
                 ],
                 correct: 0,
-                explanation: 'If stocks rise, your portfolio might shift from 80/20 stocks-bonds to 90/10. Rebalancing sells some stocks and buys bonds to restore 80/20 - enforcing "sell high, buy low" automatically.',
+                explanation: 'If stocks rise, your portfolio might shift from 80/20 stocks-bonds to 90/10. Rebalancing sells some stocks and buys bonds to restore 80/20, enforcing "sell high, buy low" automatically.',
               },
               {
                 prompt: 'What is the purpose of holding bonds in a portfolio alongside stocks?',
                 options: [
-                  'Bonds tend to be less volatile and often move opposite to stocks - reducing overall portfolio swings',
+                  'Bonds tend to be less volatile and often move opposite to stocks, reducing overall portfolio swings',
                   'Bonds offer higher returns than stocks but require longer holding periods',
                   'Holding bonds protects against inflation better than any other asset class',
                   'Bonds provide dividend income that stocks do not, balancing total portfolio yield',
@@ -4870,7 +4870,7 @@ export const levels = [
               {
                 prompt: 'What is "correlation" and why does it matter for asset allocation?',
                 options: [
-                  'How similarly two assets move together - low-correlation assets reduce portfolio risk without sacrificing returns',
+                  'A measure of how similarly two assets move together, where low-correlation assets reduce portfolio risk without sacrificing returns',
                   'A metric for comparing investment returns across different brokerages',
                   'The statistical relationship between an investment\'s price and the economy\'s size',
                   'How quickly you can sell an asset and receive cash in your account',
@@ -4899,7 +4899,7 @@ export const levels = [
               {
                 prompt: 'How many individual stocks are needed to be "reasonably" diversified in a U.S. equity portfolio?',
                 options: [
-                  'About 20–30 carefully chosen stocks - research shows diminishing diversification benefits beyond that point',
+                  'About 20–30 carefully chosen stocks, since research shows diminishing diversification benefits beyond that point',
                   'At least 500 stocks to match the S&P 500 index exactly',
                   'Just 5–10 large-cap stocks from different sectors',
                   'Exactly 100 stocks, all in the technology sector for maximum growth potential',
@@ -4910,13 +4910,13 @@ export const levels = [
               {
                 prompt: 'What risk CANNOT be eliminated through diversification?',
                 options: [
-                  'Systematic (market) risk - events like recessions, pandemics, or rate hikes that affect all investments',
-                  'Company-specific risk - a CEO fraud scandal sinking one company\'s stock',
-                  'Sector risk - oil prices crashing and harming all energy stocks simultaneously',
-                  'Currency risk - a foreign country devaluing its currency and hurting overseas investments',
+                  'Systematic market risk from events like recessions, pandemics, or rate hikes that affect all investments',
+                  'Company-specific risk from a CEO fraud scandal sinking one company\'s stock',
+                  'Sector risk from oil prices crashing and harming all energy stocks simultaneously',
+                  'Currency risk from a foreign country devaluing its currency and hurting overseas investments',
                 ],
                 correct: 0,
-                explanation: 'Diversification eliminates unsystematic risk (company or sector specific). But systematic risk - the overall market going down - affects all stocks. That\'s why bonds and other asset classes help.',
+                explanation: 'Diversification eliminates unsystematic risk (company or sector specific). But systematic risk, the overall market going down, affects all stocks. That\'s why bonds and other asset classes help.',
               },
               {
                 prompt: 'What is geographic diversification?',
@@ -4943,7 +4943,7 @@ export const levels = [
               {
                 prompt: 'What is "over-diversification" and why is it a concern?',
                 options: [
-                  'Holding so many investments that you\'re essentially guaranteed mediocre results - gains in winners cancel out losses in losers',
+                  'Holding so many investments that you\'re essentially guaranteed mediocre results, since gains in winners cancel out losses in losers',
                   'Owning more than 10 different types of investment accounts at different institutions',
                   'Diversifying across more than three asset classes in a single portfolio',
                   'Investing in both index funds and actively managed funds in the same account',
@@ -4989,12 +4989,12 @@ export const levels = [
                   'Plan administrators manually time purchases to maximize the number of shares bought',
                 ],
                 correct: 0,
-                explanation: 'Regular payroll deductions into a 401(k) automatically implement DCA. Over a career, this means buying at all market levels - peaks and troughs - which averages out entry prices.',
+                explanation: 'Regular payroll deductions into a 401(k) automatically implement DCA. Over a career, this means buying at all market levels, peaks and troughs, which averages out entry prices.',
               },
               {
                 prompt: 'Research on DCA vs. lump sum investing shows that:',
                 options: [
-                  'Lump sum investing outperforms DCA about 2/3 of the time because markets trend upward - but DCA wins psychologically',
+                  'Lump sum investing outperforms DCA about 2/3 of the time because markets trend upward, but DCA wins psychologically',
                   'DCA always outperforms lump sum because buying at lower prices during downturns always produces better returns',
                   'Both strategies produce identical returns over any 10-year period',
                   'Lump sum is only better when markets are currently at historical highs',
@@ -5022,7 +5022,7 @@ export const levels = [
                   'Trading more frequently generates higher returns because more opportunities are captured',
                 ],
                 correct: 0,
-                explanation: 'Studies show missing even the 10 best trading days in a decade - often during volatile periods - dramatically reduces returns. Being out of the market waiting for "the right time" is usually wrong.',
+                explanation: 'Studies show missing even the 10 best trading days in a decade, often during volatile periods, dramatically reduces returns. Being out of the market waiting for "the right time" is usually wrong.',
               },
             ],
           },
@@ -5051,7 +5051,7 @@ export const levels = [
                   'Roth IRAs have lower expense ratios than equivalent funds in a taxable account',
                 ],
                 correct: 0,
-                explanation: 'Inside a Roth IRA, dividends, interest, and capital gains all compound tax-free. A $100,000 Roth IRA that grows to $1M means $900,000 in gains are never taxed - one of the most powerful investment benefits.',
+                explanation: 'Inside a Roth IRA, dividends, interest, and capital gains all compound tax-free. A $100,000 Roth IRA that grows to $1M means $900,000 in gains are never taxed, one of the most powerful investment benefits.',
               },
               {
                 prompt: 'A 401(k) differs from an IRA because:',
@@ -5067,7 +5067,7 @@ export const levels = [
               {
                 prompt: 'What is a taxable event in a brokerage account?',
                 options: [
-                  'Any transaction that triggers a tax obligation - selling a security for a gain, receiving dividends, or receiving interest',
+                  'Any transaction that triggers a tax obligation, such as selling a security for a gain, receiving dividends, or receiving interest',
                   'Transferring funds between your brokerage account and a linked bank account',
                   'Purchasing shares of any stock or fund at any price in the market',
                   'Checking your account balance or reviewing a statement online',
@@ -5095,7 +5095,7 @@ export const levels = [
                   'A chatbot that helps you file taxes on investment gains at the end of the year',
                 ],
                 correct: 0,
-                explanation: 'Robo-advisors (Betterment, Wealthfront, Fidelity Go) use algorithms to allocate, rebalance, and tax-loss harvest automatically. Fees are typically 0.25%/year - far below the 1%+ charged by human advisors.',
+                explanation: 'Robo-advisors (Betterment, Wealthfront, Fidelity Go) use algorithms to allocate, rebalance, and tax-loss harvest automatically. Fees are typically 0.25%/year, far below the 1%+ charged by human advisors.',
               },
             ],
           },
@@ -5113,12 +5113,12 @@ export const levels = [
                   'Contributing to a Roth IRA instead of a Traditional IRA',
                 ],
                 correct: 0,
-                explanation: '"Time in the market beats timing the market." Selling during a crash turns a paper loss into a real one. Investors who stayed invested through the 2008 crash recovered fully by 2013 - those who sold did not.',
+                explanation: '"Time in the market beats timing the market." Selling during a crash turns a paper loss into a real one. Investors who stayed invested through the 2008 crash recovered fully by 2013; those who sold did not.',
               },
               {
                 prompt: 'Why is trying to "time the market" generally a losing strategy?',
                 options: [
-                  'Missing just a handful of the market\'s best days dramatically reduces long-term returns - and those days are unpredictable',
+                  'Missing just a handful of the market\'s best days dramatically reduces long-term returns, and those days are unpredictable',
                   'Day traders must pay a special SEC fee that eliminates all profits from market timing',
                   'The SEC prohibits individual investors from buying and selling within a 30-day window',
                   'Market-timing strategies are only effective for institutional investors with access to insider data',
@@ -5151,18 +5151,18 @@ export const levels = [
               {
                 prompt: 'What is the problem with high-fee investment products?',
                 options: [
-                  'Fees compound over time just like returns - a 1% annual fee can cost you hundreds of thousands over a career',
+                  'Fees compound over time just like returns, and a 1% annual fee can cost you hundreds of thousands over a career',
                   'High-fee funds are illegal under SEC regulations unless they produce above-market returns',
-                  'Fees only matter for short-term investors - they wash out over periods of 20+ years',
+                  'Fees only matter for short-term investors since they wash out over periods of 20+ years',
                   'The IRS treats fees paid on investments as a taxable income event',
                 ],
                 correct: 0,
-                explanation: '$100,000 at 8% for 30 years with 0% fees = $1,006,266. At 7% (after 1% fee) = $761,226. The 1% fee costs $245,040 - almost a quarter million dollars on the same underlying investments.',
+                explanation: '$100,000 at 8% for 30 years with 0% fees = $1,006,266. At 7% (after 1% fee) = $761,226. The 1% fee costs $245,040, almost a quarter million dollars on the same underlying investments.',
               },
               {
                 prompt: 'What is an investment scam red flag?',
                 options: [
-                  'Guaranteed high returns with no risk - legitimate investments never promise both',
+                  'Promised guaranteed high returns with no risk, since legitimate investments never promise both',
                   'The fund charges expense ratios, which all legitimate investment products include',
                   'The investment is registered with the SEC and available to all retail investors',
                   'A long track record of consistent but modest returns',
@@ -5195,7 +5195,7 @@ export const levels = [
                   'A deposit into a corporate savings account that earns a fixed interest rate',
                 ],
                 correct: 0,
-                explanation: 'Shareholders are partial owners. If the company thrives, the share price rises and dividends may be paid. If the company fails, shares can become worthless - unlike bonds, there is no guaranteed return.',
+                explanation: 'Shareholders are partial owners. If the company thrives, the share price rises and dividends may be paid. If the company fails, shares can become worthless; unlike bonds, there is no guaranteed return.',
               },
               {
                 prompt: 'What are the two main ways investors make money from stocks?',
@@ -5211,13 +5211,13 @@ export const levels = [
               {
                 prompt: 'Common stock vs. preferred stock: what is the key difference?',
                 options: [
-                  'Preferred shareholders receive dividends before common shareholders and have priority in liquidation - but typically no voting rights',
+                  'Preferred shareholders receive dividends before common shareholders and have priority in liquidation, but typically have no voting rights',
                   'Common stock has a guaranteed minimum dividend; preferred stock earns more if the company performs well',
                   'Preferred stock is available only to employees; common stock is sold to the general public',
                   'Common shareholders receive higher dividends; preferred shareholders own a larger percentage of the company',
                 ],
                 correct: 0,
-                explanation: 'Preferred stock behaves more like a bond - fixed dividends, priority in bankruptcy, but limited upside. Common stock has unlimited upside but higher risk. Most retail investors hold common stock.',
+                explanation: 'Preferred stock behaves more like a bond: fixed dividends, priority in bankruptcy, but limited upside. Common stock has unlimited upside but higher risk. Most retail investors hold common stock.',
               },
               {
                 prompt: 'What does it mean when a stock price falls after a company reports strong earnings?',
@@ -5244,7 +5244,7 @@ export const levels = [
               {
                 prompt: 'What is a stock split?',
                 options: [
-                  'When a company divides existing shares into multiple new shares - reducing price per share but not total value',
+                  'When a company divides existing shares into multiple new shares, reducing price per share but not total value',
                   'When a company divides into two separate businesses, each inheriting part of the original assets',
                   'When shareholders vote to split dividend payments equally among preferred and common shares',
                   'A mandatory redistribution of high-priced shares by the SEC to improve market accessibility',
@@ -5268,7 +5268,7 @@ export const levels = [
                   'An official government certification that a company\'s stock is safe to purchase',
                 ],
                 correct: 0,
-                explanation: 'IPO stands for Initial Public Offering. Companies go public to raise money at scale. Facebook\'s 2012 IPO raised $16B in a single day. Not all IPOs succeed - some fall sharply after the initial excitement.',
+                explanation: 'IPO stands for Initial Public Offering. Companies go public to raise money at scale. Facebook\'s 2012 IPO raised $16B in a single day. Not all IPOs succeed; some fall sharply after the initial excitement.',
               },
               {
                 prompt: 'Who typically gets shares at the IPO price before retail investors can buy?',
@@ -5279,7 +5279,7 @@ export const levels = [
                   'Government pension funds that must legally receive the first allocation of all IPO shares',
                 ],
                 correct: 0,
-                explanation: 'The "IPO pop" - when a stock jumps 30% on the first day - mostly benefits institutional investors who got shares at the IPO price. Retail investors often buy at the inflated first-day open price.',
+                explanation: 'The "IPO pop," when a stock jumps 30% on the first day, mostly benefits institutional investors who got shares at the IPO price. Retail investors often buy at the inflated first-day open price.',
               },
               {
                 prompt: 'What is a "lock-up period" after an IPO?',
@@ -5290,7 +5290,7 @@ export const levels = [
                   'The period a company must wait after filing an S-1 before it can legally set an IPO price',
                 ],
                 correct: 0,
-                explanation: 'Lock-up expiration is important to watch - when insiders can finally sell, it often creates downward price pressure. Many IPO stocks see a dip around the lock-up expiration date.',
+                explanation: 'Lock-up expiration is important to watch; when insiders can finally sell, it often creates downward price pressure. Many IPO stocks see a dip around the lock-up expiration date.',
               },
               {
                 prompt: 'What is a SPAC (Special Purpose Acquisition Company)?',
@@ -5301,12 +5301,12 @@ export const levels = [
                   'A private company that is permanently restricted from listing on public exchanges',
                 ],
                 correct: 0,
-                explanation: 'SPACs became popular as an alternative IPO route. Critics note that SPAC investors often don\'t know what company they\'re acquiring. SPAC performance has been mixed - many have underperformed traditional IPOs.',
+                explanation: 'SPACs became popular as an alternative IPO route. Critics note that SPAC investors often don\'t know what company they\'re acquiring. SPAC performance has been mixed; many have underperformed traditional IPOs.',
               },
               {
                 prompt: 'What is a direct listing as an alternative to a traditional IPO?',
                 options: [
-                  'When a company lists shares on an exchange without underwriters - existing shareholders sell directly to the public',
+                  'When a company lists shares on an exchange without underwriters, allowing existing shareholders to sell directly to the public',
                   'When a company bypasses all regulations and sells shares directly to retail investors online',
                   'A process where institutional investors directly set the IPO price without bookbuilding',
                   'When a company issues bonds instead of shares to raise the same capital as an IPO would',
@@ -5317,7 +5317,7 @@ export const levels = [
               {
                 prompt: 'Why should retail investors be cautious about buying an IPO on the first day of trading?',
                 options: [
-                  'IPOs are often priced to benefit underwriters and insiders - retail investors frequently overpay in the opening day frenzy',
+                  'IPOs are often priced to benefit underwriters and insiders, and retail investors frequently overpay in the opening day frenzy',
                   'The SEC restricts retail investors from purchasing any new security within the first week of listing',
                   'IPO prices always fall immediately after the market opens due to mandatory short-selling requirements',
                   'The first-day price is set artificially low to benefit insiders who can then sell at a profit',
@@ -5363,12 +5363,12 @@ export const levels = [
                   'The company has fewer shares outstanding than comparable companies in its sector',
                 ],
                 correct: 0,
-                explanation: 'Value investors (following Benjamin Graham and Warren Buffett) seek to buy undervalued stocks - companies trading below what their assets, earnings, or cash flow justify. The challenge: determining intrinsic value is subjective.',
+                explanation: 'Value investors (following Benjamin Graham and Warren Buffett) seek to buy undervalued stocks, meaning companies trading below what their assets, earnings, or cash flow justify. The challenge is that determining intrinsic value is subjective.',
               },
               {
                 prompt: 'What is earnings per share (EPS)?',
                 options: [
-                  'Net profit divided by total shares outstanding - a measure of profitability per share',
+                  'Net profit divided by total shares outstanding, a measure of profitability per share',
                   'The share price multiplied by the number of shares an investor holds',
                   'The total dividends paid per share over the last four quarters',
                   'The percentage of company revenue that becomes profit after all expenses',
@@ -5382,10 +5382,10 @@ export const levels = [
                   'Intrinsic value is what a stock is theoretically worth based on fundamentals; market price is what it actually trades for right now',
                   'Intrinsic value is set by regulators; market price fluctuates based on investor sentiment',
                   'Market price is calculated from accounting data; intrinsic value is based on future rumors',
-                  'Both terms refer to the same number - the price at which a stock trades on an exchange',
+                  'Both terms refer to the same number, the price at which a stock trades on an exchange',
                 ],
                 correct: 0,
-                explanation: 'Benjamin Graham said stocks are "voting machines in the short run, weighing machines in the long run." Over time, market prices tend to converge toward intrinsic value - but can diverge wildly in the short term.',
+                explanation: 'Benjamin Graham said stocks are "voting machines in the short run, weighing machines in the long run." Over time, market prices tend to converge toward intrinsic value, but can diverge wildly in the short term.',
               },
               {
                 prompt: 'What is a "moat" in the context of stock analysis?',
@@ -5419,13 +5419,13 @@ export const levels = [
               {
                 prompt: 'What is a dividend yield?',
                 options: [
-                  'Annual dividends per share divided by the current stock price - expressed as a percentage',
+                  'Annual dividends per share divided by the current stock price, expressed as a percentage',
                   'The total earnings a company generated that were eligible to be paid as dividends',
                   'The percentage of net income a company is required to distribute to shareholders',
                   'The annualized return from price appreciation of dividend-paying stocks only',
                 ],
                 correct: 0,
-                explanation: 'If a stock pays $2/share annually and trades at $50, its yield is 4%. A higher yield can mean generous payouts - or a falling stock price (yield goes up when price goes down).',
+                explanation: 'If a stock pays $2/share annually and trades at $50, its yield is 4%. A higher yield can mean generous payouts or a falling stock price (yield goes up when price goes down).',
               },
               {
                 prompt: 'What is a "dividend aristocrat"?',
@@ -5436,7 +5436,7 @@ export const levels = [
                   'A bond-like instrument that pays guaranteed dividends backed by government insurance',
                 ],
                 correct: 0,
-                explanation: 'Dividend Aristocrats include companies like Johnson & Johnson, Coca-Cola, and Procter & Gamble. Their track records span recessions and crises - a sign of durable business models.',
+                explanation: 'Dividend Aristocrats include companies like Johnson & Johnson, Coca-Cola, and Procter & Gamble. Their track records span recessions and crises, a sign of durable business models.',
               },
               {
                 prompt: 'What is the "ex-dividend date"?',
@@ -5469,7 +5469,7 @@ export const levels = [
                   'Only foreign stocks legally can pay yields above 8%, making them subject to currency risk',
                 ],
                 correct: 0,
-                explanation: 'A 10% yield on a $100 stock means $10/share annually in dividends. If the stock falls to $50 because the company is struggling, the yield looks 20% - but the dividend is likely to be cut. Research before chasing yield.',
+                explanation: 'A 10% yield on a $100 stock means $10/share annually in dividends. If the stock falls to $50 because the company is struggling, the yield looks 20% but the dividend is likely to be cut. Research before chasing yield.',
               },
             ],
           },
@@ -5481,7 +5481,7 @@ export const levels = [
               {
                 prompt: 'What characterizes a growth stock?',
                 options: [
-                  'A company expected to grow earnings significantly faster than the market - often trading at high P/E ratios with little or no dividends',
+                  'A company expected to grow earnings significantly faster than the market, often trading at high P/E ratios with little or no dividends',
                   'A company that has consistently grown dividends for more than 25 consecutive years',
                   'Any stock that has risen in price during the most recent calendar year',
                   'A company with low debt levels and stable earnings regardless of industry',
@@ -5492,7 +5492,7 @@ export const levels = [
               {
                 prompt: 'What characterizes a value stock?',
                 options: [
-                  'A stock trading below what its fundamentals suggest it is worth - often with low P/E, low P/B, and stable dividends',
+                  'A stock trading below what its fundamentals suggest it is worth, often with low P/E, low P/B, and stable dividends',
                   'A company whose stock price has been declining for at least six consecutive months',
                   'Any stock in the technology sector that has reached profitability in the prior year',
                   'A company with a market cap under $500 million, offering high growth potential',
@@ -5506,7 +5506,7 @@ export const levels = [
                   'Value has historically outperformed growth over very long periods, but growth has dominated in recent decades',
                   'Growth always outperforms because higher risk must always be rewarded with higher returns',
                   'Value always outperforms because cheap stocks always recover to fair value eventually',
-                  'Both styles produce identical returns - academic research has found no difference',
+                  'Both styles produce identical returns, since academic research has found no difference',
                 ],
                 correct: 0,
                 explanation: 'Fama-French research shows value historically outperforms over long periods. But growth dominated from 2009–2020+. Holding both through a total market index fund captures both premiums without guessing.',
@@ -5514,7 +5514,7 @@ export const levels = [
               {
                 prompt: 'What is a "value trap"?',
                 options: [
-                  'A stock that appears cheap by traditional metrics but continues to decline because its business is structurally deteriorating',
+                  'A stock that appears cheap by traditional metrics but keeps declining because its business is structurally deteriorating',
                   'A market condition where value stocks are temporarily overpriced relative to growth stocks',
                   'An investment strategy that traps investors into holding declining bonds instead of stocks',
                   'A fund that charges high fees while claiming to follow a passive value-investing approach',
@@ -5525,24 +5525,24 @@ export const levels = [
               {
                 prompt: 'What is a "GARP" investment strategy?',
                 options: [
-                  'Growth at a Reasonable Price - buying growth companies but only when they trade at fair or below-fair valuations',
-                  'Government-Approved Retirement Portfolio - a federally mandated allocation strategy for pension funds',
-                  'Guaranteed Annual Return Plan - a hybrid insurance and investment product',
-                  'Global Asset Rebalancing Portfolio - an automatic monthly rebalancing strategy for international stocks',
+                  'Growth at a Reasonable Price, meaning buying growth companies only when they trade at fair or below-fair valuations',
+                  'A Government-Approved Retirement Portfolio, a federally mandated allocation strategy for pension funds',
+                  'A Guaranteed Annual Return Plan, a hybrid insurance and investment product',
+                  'A Global Asset Rebalancing Portfolio, an automatic monthly rebalancing strategy for international stocks',
                 ],
                 correct: 0,
-                explanation: 'GARP blends growth and value investing. Investors like Peter Lynch championed it - buy companies growing 15–20% annually but avoid paying 40–50x earnings. The PEG ratio (P/E ÷ growth rate) is a key GARP metric.',
+                explanation: 'GARP blends growth and value investing. Investors like Peter Lynch championed it: buy companies growing 15–20% annually but avoid paying 40–50x earnings. The PEG ratio (P/E ÷ growth rate) is a key GARP metric.',
               },
               {
                 prompt: 'A sector ETF invests in:',
                 options: [
-                  'Companies within a specific industry - like technology, healthcare, energy, or financial services',
+                  'Companies within a specific industry, like technology, healthcare, energy, or financial services',
                   'Companies from a specific geographic region, like Southeast Asian or European equities',
                   'Both growth and value stocks in equal proportions across all market sectors',
                   'Only dividend-paying stocks within the largest 500 U.S. companies',
                 ],
                 correct: 0,
-                explanation: 'Sector ETFs let you tilt your portfolio toward industries you believe will outperform. Risk: concentrated sector exposure - tech ETFs can drop 50%+ while the broader market falls 30%. Use as a complement, not a replacement, to diversified funds.',
+                explanation: 'Sector ETFs let you tilt your portfolio toward industries you believe will outperform. Risk: concentrated sector exposure means tech ETFs can drop 50%+ while the broader market falls 30%. Use as a complement, not a replacement, to diversified funds.',
               },
             ],
           },
@@ -5560,7 +5560,7 @@ export const levels = [
                   'A private club of institutional investors who set daily stock prices for listed companies',
                 ],
                 correct: 0,
-                explanation: 'The NYSE is a physical exchange (plus electronic) that lists companies like Berkshire Hathaway, Goldman Sachs, and ExxonMobil. NASDAQ is another major U.S. exchange - home to Apple, Microsoft, and Amazon.',
+                explanation: 'The NYSE is a physical exchange (plus electronic) that lists companies like Berkshire Hathaway, Goldman Sachs, and ExxonMobil. NASDAQ is another major U.S. exchange, home to Apple, Microsoft, and Amazon.',
               },
               {
                 prompt: 'The S&P 500 index tracks:',
@@ -5576,13 +5576,13 @@ export const levels = [
               {
                 prompt: 'What does it mean when the stock market "opens" and "closes"?',
                 options: [
-                  'U.S. stock exchanges are open for trading Monday–Friday 9:30 AM–4:00 PM Eastern Time; trades can still happen after hours with wider bid-ask spreads',
+                  'U.S. stock exchanges are open for trading Monday through Friday, 9:30 AM to 4:00 PM Eastern Time, with after-hours trading available at wider bid-ask spreads',
                   'Stocks can only be purchased before 10 AM each trading day; selling is allowed all day',
                   'The market opens at different times in each time zone, creating 24-hour trading in the U.S.',
                   'Market "open" and "close" refer to annual review periods when new companies are added to indices',
                 ],
                 correct: 0,
-                explanation: 'Most retail investors should avoid after-hours trading - volumes are low, spreads are wide, and prices are more volatile. Significant news events (earnings reports) often drop after market close.',
+                explanation: 'Most retail investors should avoid after-hours trading because volumes are low, spreads are wide, and prices are more volatile. Significant news events (earnings reports) often drop after market close.',
               },
               {
                 prompt: 'What is a "circuit breaker" in stock markets?',
@@ -5604,7 +5604,7 @@ export const levels = [
                   'To insure brokerage account balances up to $250,000 like the FDIC insures bank deposits',
                 ],
                 correct: 0,
-                explanation: 'SIPC (Securities Investor Protection Corporation) insures brokerage accounts - not the SEC. The SEC\'s job is regulation, not insurance. The SEC investigates insider trading and requires public companies to disclose financials.',
+                explanation: 'SIPC (Securities Investor Protection Corporation) insures brokerage accounts, not the SEC. The SEC\'s job is regulation, not insurance. The SEC investigates insider trading and requires public companies to disclose financials.',
               },
               {
                 prompt: 'What is a bull market vs. a bear market?',
@@ -5633,7 +5633,7 @@ export const levels = [
                   'The maximum and minimum dividends the stock paid over the past year',
                 ],
                 correct: 0,
-                explanation: 'A stock near its 52-week high might indicate momentum or overvaluation; near its low might indicate value or continued decline. Context matters - look at earnings trends, not just price levels.',
+                explanation: 'A stock near its 52-week high might indicate momentum or overvaluation; near its low might indicate value or continued decline. Context matters; look at earnings trends, not just price levels.',
               },
               {
                 prompt: 'What is the bid-ask spread on a stock?',
@@ -5644,12 +5644,12 @@ export const levels = [
                   'The fee charged by brokers to facilitate buy and sell transactions',
                 ],
                 correct: 0,
-                explanation: 'Liquid large-cap stocks have tiny spreads ($0.01). Thinly traded small-caps can have spreads of $0.50 or more - a hidden cost of trading. This is one reason index funds are efficient - they trade infrequently.',
+                explanation: 'Liquid large-cap stocks have tiny spreads ($0.01). Thinly traded small-caps can have spreads of $0.50 or more, a hidden cost of trading. This is one reason index funds are efficient; they trade infrequently.',
               },
               {
                 prompt: 'What is trading volume and why does it matter?',
                 options: [
-                  'The number of shares traded in a period - high volume often confirms a price move is significant',
+                  'The number of shares traded in a given period, where high volume often confirms that a price move is significant',
                   'The total value of shares traded measured in dollars on a given exchange',
                   'The speed at which orders are filled on an electronic trading platform',
                   'The number of shares a company is authorized to issue under its corporate charter',
@@ -5660,13 +5660,13 @@ export const levels = [
               {
                 prompt: 'What is a market order vs. a limit order?',
                 options: [
-                  'Market order: buy/sell immediately at current price. Limit order: buy/sell only at or better than a specified price.',
+                  'A market order executes immediately at the current price, while a limit order only executes at or better than a price you specify',
                   'Market orders are for index funds only; limit orders are for individual stocks',
                   'Limit orders guarantee immediate execution; market orders may take days to fill',
-                  'Both are identical - the distinction only applies to professional traders on institutional platforms',
+                  'Both are identical since the distinction only applies to professional traders on institutional platforms',
                 ],
                 correct: 0,
-                explanation: 'Always use limit orders for thinly traded stocks - market orders can fill at unexpectedly bad prices in volatile conditions. For liquid large-caps, market orders are generally safe.',
+                explanation: 'Always use limit orders for thinly traded stocks; market orders can fill at unexpectedly bad prices in volatile conditions. For liquid large-caps, market orders are generally safe.',
               },
               {
                 prompt: 'What is "short selling" a stock?',
@@ -5677,7 +5677,7 @@ export const levels = [
                   'A strategy of only buying stocks at the end of the trading day to avoid morning volatility',
                 ],
                 correct: 0,
-                explanation: 'Short sellers profit when stocks fall. Risk: theoretically unlimited - a stock can keep rising indefinitely. Short interest (% of shares shorted) is a measure of market pessimism on a stock.',
+                explanation: 'Short sellers profit when stocks fall. Risk: theoretically unlimited, since a stock can keep rising indefinitely. Short interest (% of shares shorted) is a measure of market pessimism on a stock.',
               },
               {
                 prompt: 'An analyst "price target" means:',
@@ -5700,7 +5700,7 @@ export const levels = [
               {
                 prompt: 'What is the Dow Jones Industrial Average (DJIA)?',
                 options: [
-                  'A price-weighted index of 30 large, prominent U.S. companies - one of the oldest stock market indicators',
+                  'A price-weighted index of 30 large, prominent U.S. companies and one of the oldest stock market indicators',
                   'An equal-weighted index of all 500 companies in the S&P 500 index',
                   'A government-published measure of industrial production growth each quarter',
                   'The exchange-traded fund that tracks the largest 30 technology companies',
@@ -5722,7 +5722,7 @@ export const levels = [
               {
                 prompt: 'What is the NASDAQ Composite?',
                 options: [
-                  'An index tracking all companies listed on the NASDAQ exchange - heavily weighted toward technology stocks',
+                  'An index tracking all companies listed on the NASDAQ exchange, heavily weighted toward technology stocks',
                   'A list of the 100 largest companies in the United States by revenue',
                   'A government index measuring the competitiveness of the U.S. technology industry',
                   'The combined market capitalization of all companies in the FAANG group',
@@ -5733,35 +5733,35 @@ export const levels = [
               {
                 prompt: 'What does it mean for a market index to be "market-cap weighted"?',
                 options: [
-                  'Larger companies have a proportionally bigger impact on the index - Apple\'s performance moves the S&P 500 more than a small company',
+                  'Larger companies have a proportionally bigger impact on the index, so Apple\'s performance moves the S&P 500 more than a small company would',
                   'All companies are given equal weight regardless of their total market value',
                   'The index weight changes daily based on each company\'s trading volume',
                   'Companies are weighted by revenue, not stock price or market capitalization',
                 ],
                 correct: 0,
-                explanation: 'In the S&P 500, Apple (7% of the index) moves it far more than a 0.01% company. This concentration means the top 10 companies drive a large percentage of index returns - a feature and a risk.',
+                explanation: 'In the S&P 500, Apple (7% of the index) moves it far more than a 0.01% company. This concentration means the top 10 companies drive a large percentage of index returns, which is both a feature and a risk.',
               },
               {
                 prompt: 'The VIX index is known as the "fear gauge" because:',
                 options: [
-                  'It measures expected market volatility over the next 30 days - high readings signal investor fear and uncertainty',
+                  'It measures expected market volatility over the next 30 days, with high readings signaling investor fear and uncertainty',
                   'It tracks the percentage of U.S. investors who report feeling negative about the market in surveys',
                   'It measures how far the S&P 500 has fallen from its 52-week high at any given moment',
                   'It calculates the ratio of bear market days to bull market days in any calendar year',
                 ],
                 correct: 0,
-                explanation: 'VIX above 30 typically signals high fear and often corresponds to market turmoil. VIX above 80 (seen in March 2020) is extreme panic. Contrarians sometimes buy when VIX is high - fear peaks near market bottoms.',
+                explanation: 'VIX above 30 typically signals high fear and often corresponds to market turmoil. VIX above 80 (seen in March 2020) is extreme panic. Contrarians sometimes buy when VIX is high because fear peaks near market bottoms.',
               },
               {
                 prompt: 'What does "the market is efficient" mean, according to the Efficient Market Hypothesis (EMH)?',
                 options: [
-                  'Current stock prices reflect all available public information - making it very difficult to consistently beat the market through stock picking',
+                  'Current stock prices reflect all available public information, making it very difficult to consistently beat the market through stock picking',
                   'The government guarantees that stock prices are always set at their fair intrinsic value',
                   'Stock prices always rise efficiently over time, making all investments profitable eventually',
                   'Large institutional investors have exclusive access to all price-setting information',
                 ],
                 correct: 0,
-                explanation: 'EMH suggests that if markets are efficient, active managers cannot consistently beat a simple index fund. Research largely supports this - over 90% of active funds underperform their benchmark index over 20 years.',
+                explanation: 'EMH suggests that if markets are efficient, active managers cannot consistently beat a simple index fund. Research largely supports this; over 90% of active funds underperform their benchmark index over 20 years.',
               },
             ],
           },
@@ -5804,13 +5804,13 @@ export const levels = [
               {
                 prompt: 'What is a bond\'s "coupon rate"?',
                 options: [
-                  'The fixed annual interest rate stated on the bond - paid as a percentage of face value',
+                  'The fixed annual interest rate stated on the bond, paid as a percentage of face value',
                   'A discount offered when purchasing large quantities of bonds from a single issuer',
                   'The spread between the bond\'s yield and the current federal funds rate',
                   'A variable rate tied to the Consumer Price Index that adjusts the payment each year',
                 ],
                 correct: 0,
-                explanation: 'A $1,000 bond with a 5% coupon pays $50/year in interest (usually $25 every six months). The coupon is fixed - it doesn\'t change even if market interest rates change after issuance.',
+                explanation: 'A $1,000 bond with a 5% coupon pays $50/year in interest (usually $25 every six months). The coupon is fixed; it doesn\'t change even if market interest rates change after issuance.',
               },
               {
                 prompt: 'What happens at a bond\'s "maturity date"?',
@@ -5832,18 +5832,18 @@ export const levels = [
                   'Both represent ownership but bonds are for foreign companies while stocks are for domestic companies',
                 ],
                 correct: 0,
-                explanation: 'In a corporate bankruptcy, bondholders get paid before stockholders. This priority is why bonds are safer - but also why their returns are lower. Equity upside (unlimited gain) compensates stock investors for the extra risk.',
+                explanation: 'In a corporate bankruptcy, bondholders get paid before stockholders. This priority is why bonds are safer, but also why their returns are lower. Equity upside (unlimited gain) compensates stock investors for the extra risk.',
               },
               {
                 prompt: 'What is a "callable" bond?',
                 options: [
-                  'A bond the issuer can repay early before maturity - typically when interest rates fall and they can refinance cheaper',
+                  'A bond the issuer can repay early before maturity, typically when interest rates fall and they can refinance at a lower rate',
                   'A bond that investors can sell back to the issuer at any time at face value',
                   'A bond whose coupon rate increases annually regardless of market interest rates',
                   'A government bond that converts to a savings account upon reaching maturity',
                 ],
                 correct: 0,
-                explanation: 'Callable bonds benefit issuers, not investors. If rates fall, the issuer calls the bond and refinances at lower rates - leaving you to reinvest at the now-lower market rates. You\'re compensated with a higher initial coupon.',
+                explanation: 'Callable bonds benefit issuers, not investors. If rates fall, the issuer calls the bond and refinances at lower rates, leaving you to reinvest at the now-lower market rates. You\'re compensated with a higher initial coupon.',
               },
             ],
           },
@@ -5855,7 +5855,7 @@ export const levels = [
               {
                 prompt: 'What are U.S. Treasury bonds?',
                 options: [
-                  'Debt issued by the U.S. federal government - considered virtually risk-free since the U.S. is very unlikely to default',
+                  'Debt issued by the U.S. federal government, considered virtually risk-free since the U.S. is very unlikely to default',
                   'Bonds issued by large U.S. corporations and backed by the Federal Reserve',
                   'Savings bonds sold directly to consumers through IRS tax returns',
                   'Short-term corporate loans that the U.S. Treasury regulates and prices',
@@ -5866,7 +5866,7 @@ export const levels = [
               {
                 prompt: 'Municipal bonds ("munis") are issued by:',
                 options: [
-                  'State, city, and local government entities - often to fund public projects like schools and infrastructure',
+                  'State, city, and local government entities, often to fund public projects like schools and infrastructure',
                   'Large multinational corporations that want to avoid federal income tax on bond proceeds',
                   'The Federal Reserve to fund monetary policy operations and quantitative easing',
                   'Foreign governments seeking to borrow in U.S. dollars at lower rates',
@@ -5877,7 +5877,7 @@ export const levels = [
               {
                 prompt: 'Corporate bonds are issued by:',
                 options: [
-                  'Companies seeking to raise capital by borrowing from investors - offering higher yields than government bonds to compensate for default risk',
+                  'Companies seeking to raise capital by borrowing from investors, offering higher yields than government bonds to compensate for default risk',
                   'The U.S. Treasury to fund government agencies and sponsored enterprises',
                   'Foreign governments that list bonds on U.S. exchanges for American investors',
                   'The Federal Deposit Insurance Corporation to fund bank bailout reserves',
@@ -5888,7 +5888,7 @@ export const levels = [
               {
                 prompt: 'What are TIPS (Treasury Inflation-Protected Securities)?',
                 options: [
-                  'U.S. government bonds whose principal adjusts with inflation - protecting purchasing power',
+                  'U.S. government bonds whose principal adjusts with inflation, protecting purchasing power',
                   'Short-term high-yield bonds that pay a premium when the CPI exceeds 3% annually',
                   'A type of municipal bond backed by the Treasury Department\'s full faith and credit',
                   'Tax-exempt inflation-adjusted bonds issued by the Federal Reserve System',
@@ -5899,7 +5899,7 @@ export const levels = [
               {
                 prompt: 'What are I-Bonds?',
                 options: [
-                  'U.S. savings bonds with a composite rate combining a fixed base rate and a variable inflation component - purchased directly from the Treasury',
+                  'U.S. savings bonds with a composite rate combining a fixed base rate and a variable inflation component, purchased directly from the Treasury',
                   'International bonds issued by foreign governments and priced in U.S. dollars',
                   'Infrastructure bonds sold to fund federal highway and airport construction projects',
                   'Institutional bonds available only to pension funds and mutual fund companies',
@@ -5910,7 +5910,7 @@ export const levels = [
               {
                 prompt: 'What is a "junk bond" (also called a high-yield bond)?',
                 options: [
-                  'A corporate bond with a credit rating below investment grade - offering higher yields to compensate for elevated default risk',
+                  'A corporate bond with a credit rating below investment grade, offering higher yields to compensate for elevated default risk',
                   'Any bond with an interest rate below the current federal funds rate',
                   'A bond issued during periods of financial crisis when all credit markets are impaired',
                   'A government bond from a developing nation that has previously defaulted on debt',
@@ -5928,21 +5928,21 @@ export const levels = [
               {
                 prompt: 'When market interest rates rise, what happens to existing bond prices?',
                 options: [
-                  'Bond prices fall - new bonds pay higher rates, making existing lower-rate bonds less valuable',
-                  'Bond prices rise - higher rates signal economic strength, increasing demand for bonds',
-                  'Bond prices are unaffected - they are fixed by the issuer at the time of issuance',
+                  'Bond prices fall, because new bonds pay higher rates, making existing lower-rate bonds less valuable',
+                  'Bond prices rise because higher rates signal economic strength, increasing demand for bonds',
+                  'Bond prices are unaffected since they are fixed by the issuer at the time of issuance',
                   'Short-term bonds fall but long-term bonds rise due to flight-to-safety demand',
                 ],
                 correct: 0,
-                explanation: 'This inverse relationship is fundamental. If you own a 3% bond and new bonds yield 5%, nobody will buy yours at face value - so its price falls until its effective yield matches the 5% market rate.',
+                explanation: 'This inverse relationship is fundamental. If you own a 3% bond and new bonds yield 5%, nobody will buy yours at face value; its price falls until its effective yield matches the 5% market rate.',
               },
               {
                 prompt: 'Which bonds are most sensitive to interest rate changes?',
                 options: [
-                  'Long-duration bonds - a 30-year bond changes in price much more than a 2-year note for the same rate move',
-                  'Short-term bonds - they reset rates more frequently and are most exposed',
+                  'Long-duration bonds, since a 30-year bond changes in price much more than a 2-year note for the same rate move',
+                  'Short-term bonds, since they reset rates more frequently and are most exposed',
                   'All bonds change by exactly the same amount for any interest rate movement',
-                  'High-yield corporate bonds - their credit risk amplifies interest rate sensitivity',
+                  'High-yield corporate bonds, since their credit risk amplifies interest rate sensitivity',
                 ],
                 correct: 0,
                 explanation: 'Duration measures interest rate sensitivity. A 10-year duration bond falls ~10% in price for each 1% rise in rates. A 2-year bond falls only ~2%. Longer bonds = more interest rate risk.',
@@ -5950,18 +5950,18 @@ export const levels = [
               {
                 prompt: 'If you buy a bond and hold it to maturity, interest rate fluctuations:',
                 options: [
-                  'Do not affect your total return - you still receive all coupon payments and get face value back',
+                  'Do not affect your total return, since you still receive all coupon payments and get face value back',
                   'Reduce your returns because rising rates lower the compounded value of your coupons',
                   'Cancel out because the Treasury resets your rate to the current market rate annually',
                   'Can cause you to lose your principal if rates rise above your coupon rate',
                 ],
                 correct: 0,
-                explanation: 'Interest rate risk only matters if you sell before maturity. Hold a 10-year Treasury to maturity and you\'ll get exactly what was promised - regardless of rate moves in between.',
+                explanation: 'Interest rate risk only matters if you sell before maturity. Hold a 10-year Treasury to maturity and you\'ll get exactly what was promised, regardless of rate moves in between.',
               },
               {
                 prompt: 'What is "duration" in bond investing?',
                 options: [
-                  'A measure of a bond\'s price sensitivity to interest rate changes - expressed in years',
+                  'A measure of a bond\'s price sensitivity to interest rate changes, expressed in years',
                   'The number of years until the bond reaches its maturity date',
                   'The total time you must hold a bond to avoid early redemption penalties',
                   'A credit rating category used by Moody\'s for medium-term fixed-income securities',
@@ -5972,13 +5972,13 @@ export const levels = [
               {
                 prompt: 'The 2022 bond market was historically bad because:',
                 options: [
-                  'The Fed raised rates aggressively from near-zero to 5%+ - causing long-duration bonds to lose 20–30% in value',
+                  'The Fed raised rates aggressively from near-zero to 5%+, causing long-duration bonds to lose 20–30% in value',
                   'The U.S. government defaulted on its debt obligations for the first time in history',
                   'All corporate bonds were downgraded to junk status due to COVID-related losses',
                   'The SEC temporarily suspended bond trading, freezing markets for most of the year',
                 ],
                 correct: 0,
-                explanation: 'The Bloomberg U.S. Aggregate Bond Index - considered "safe" - fell 13% in 2022, its worst year in decades. Many investors learned painfully that bonds are not risk-free, especially with high duration.',
+                explanation: 'The Bloomberg U.S. Aggregate Bond Index, considered "safe," fell 13% in 2022, its worst year in decades. Many investors learned painfully that bonds are not risk-free, especially with high duration.',
               },
               {
                 prompt: 'What is a bond "ladder"?',
@@ -5989,7 +5989,7 @@ export const levels = [
                   'A type of bond fund that automatically increases duration each year',
                 ],
                 correct: 0,
-                explanation: 'Example ladder: $20,000 each in bonds maturing in 1, 2, 3, 4, and 5 years. Each year one matures - you reinvest at current rates. This removes the pressure to guess future interest rate direction.',
+                explanation: 'Example ladder: $20,000 each in bonds maturing in 1, 2, 3, 4, and 5 years. Each year one matures; you reinvest at current rates. This removes the pressure to guess future interest rate direction.',
               },
             ],
           },
@@ -6001,10 +6001,10 @@ export const levels = [
               {
                 prompt: 'What do bond credit ratings (like AAA, BB, D) measure?',
                 options: [
-                  'The probability that the bond issuer will default - fail to make interest or principal payments',
+                  'The probability that the bond issuer will default and fail to make interest or principal payments',
                   'The expected total return of the bond compared to U.S. Treasuries',
                   'The bond\'s sensitivity to interest rate changes over its lifetime',
-                  'The liquidity of the bond - how quickly it can be sold at fair market value',
+                  'The liquidity of the bond, meaning how quickly it can be sold at fair market value',
                 ],
                 correct: 0,
                 explanation: 'AAA (Moody\'s: Aaa) = highest quality, lowest default risk. D = already in default. Investment grade: BBB−/Baa3 and above. Below that = high-yield/junk. Rating downgrades can cause bond prices to fall sharply.',
@@ -6012,10 +6012,10 @@ export const levels = [
               {
                 prompt: 'Which rating agencies are the major U.S. bond rating agencies?',
                 options: [
-                  'Moody\'s, Standard & Poor\'s (S&P), and Fitch - the "Big Three" that rate most bonds globally',
-                  'The SEC, the FDIC, and the Federal Reserve - all three evaluate corporate creditworthiness',
-                  'FINRA, SIPC, and the OCC - the three self-regulatory organizations for fixed income',
-                  'Bloomberg, Morningstar, and MSCI - the primary data providers for all bond ratings',
+                  'Moody\'s, Standard & Poor\'s (S&P), and Fitch, the "Big Three" that rate most bonds globally',
+                  'The SEC, the FDIC, and the Federal Reserve, all three of which evaluate corporate creditworthiness',
+                  'FINRA, SIPC, and the OCC, the three self-regulatory organizations for fixed income',
+                  'Bloomberg, Morningstar, and MSCI, the primary data providers for all bond ratings',
                 ],
                 correct: 0,
                 explanation: 'Rating agencies were widely blamed for rating mortgage-backed securities too high before the 2008 crisis. Despite their flaws, ratings remain the standard framework investors use to assess default risk.',
@@ -6023,7 +6023,7 @@ export const levels = [
               {
                 prompt: 'What is "investment grade" vs. "high yield" (junk)?',
                 options: [
-                  'Investment grade (BBB−/Baa3 and above) has lower default risk; high yield (below BBB−) has higher default risk but more return potential',
+                  'Investment grade (BBB−/Baa3 and above) carries lower default risk, while high yield (below BBB−) has higher default risk but more return potential',
                   'Investment grade pays higher yields; high yield bonds are more conservatively structured',
                   'High yield bonds are issued by governments; investment grade is only for corporations',
                   'Investment grade bonds have no maturity date; high yield bonds mature within three years',
@@ -6034,10 +6034,10 @@ export const levels = [
               {
                 prompt: 'What happens when a bond issuer defaults?',
                 options: [
-                  'The issuer fails to make interest or principal payments - bondholders may recover some value through bankruptcy proceedings, but often less than face value',
+                  'The issuer fails to make interest or principal payments, and bondholders may recover some value through bankruptcy proceedings but often less than face value',
                   'The issuer must immediately pay the full face value plus a 10% penalty to all bondholders',
                   'The bond converts to stock, giving bondholders ownership in the company instead of repayment',
-                  'Nothing - government insurance covers all bond defaults up to $250,000 per issuer',
+                  'Nothing, since government insurance covers all bond defaults up to $250,000 per issuer',
                 ],
                 correct: 0,
                 explanation: 'Corporate bond default recovery rates average 30–40 cents on the dollar in bankruptcy. Senior secured bondholders recover more; unsecured/subordinated bondholders often recover very little.',
@@ -6045,7 +6045,7 @@ export const levels = [
               {
                 prompt: 'What is a "credit spread"?',
                 options: [
-                  'The yield difference between a corporate bond and a comparable-maturity Treasury - reflecting the additional default risk',
+                  'The yield difference between a corporate bond and a comparable-maturity Treasury, reflecting the additional default risk',
                   'The gap between a bond\'s bid and ask price in the secondary market',
                   'The difference in yield between investment-grade and high-yield bond indices',
                   'The premium required by emerging market governments to borrow in U.S. dollars',
@@ -6056,7 +6056,7 @@ export const levels = [
               {
                 prompt: 'What is "sovereign debt risk"?',
                 options: [
-                  'The risk that a national government defaults on bonds it has issued - as seen with Greece, Argentina, and Venezuela',
+                  'The risk that a national government defaults on bonds it has issued, as seen with Greece, Argentina, and Venezuela',
                   'The risk that rising interest rates reduce the value of government bond portfolios',
                   'A currency risk where exchange rate changes reduce the value of foreign government bonds',
                   'The risk that domestic government bonds are downgraded by foreign rating agencies',
@@ -6080,12 +6080,12 @@ export const levels = [
                   'The bond\'s yield compared to the current federal funds rate',
                 ],
                 correct: 0,
-                explanation: 'If a $1,000 bond pays $50/year but now trades at $900 in the market, current yield = $50 ÷ $900 = 5.6%. Current yield rises when bond prices fall - and vice versa.',
+                explanation: 'If a $1,000 bond pays $50/year but now trades at $900 in the market, current yield = $50 ÷ $900 = 5.6%. Current yield rises when bond prices fall, and vice versa.',
               },
               {
                 prompt: 'What is yield to maturity (YTM)?',
                 options: [
-                  'The total annualized return if the bond is held to maturity, accounting for coupon payments and any gain/loss from buying at a discount/premium',
+                  'The total annualized return earned if the bond is held to maturity, accounting for coupon payments and any gain or loss from buying at a discount or premium',
                   'The coupon rate stated on the original bond certificate',
                   'The current price of the bond expressed as a percentage of its face value',
                   'The tax-equivalent yield for a municipal bond in your income tax bracket',
@@ -6096,7 +6096,7 @@ export const levels = [
               {
                 prompt: 'What is a "tax-equivalent yield" for municipal bonds?',
                 options: [
-                  'The taxable bond yield that would give you the same after-tax return as the tax-free muni - calculated as: muni yield ÷ (1 − tax rate)',
+                  'The taxable bond yield that would give the same after-tax return as the tax-free muni, calculated as: muni yield ÷ (1 − tax rate)',
                   'The yield required for munis to outperform Treasury bonds regardless of tax bracket',
                   'The minimum yield a muni must offer to qualify for federal tax exemption',
                   'The pre-tax return munis would earn if the tax exemption were eliminated',
@@ -6107,7 +6107,7 @@ export const levels = [
               {
                 prompt: 'What is an "inverted yield curve" and why does it matter?',
                 options: [
-                  'When short-term bonds yield more than long-term bonds - historically a recession predictor',
+                  'When short-term bonds yield more than long-term bonds, which has historically been a recession predictor',
                   'When all bond yields are above the current rate of inflation at the same time',
                   'A situation where corporate bond yields fall below Treasury bond yields of the same maturity',
                   'When the Federal Reserve sets interest rates above the 10-year Treasury yield',
@@ -6118,7 +6118,7 @@ export const levels = [
               {
                 prompt: 'Bonds are often used in portfolios to:',
                 options: [
-                  'Reduce overall volatility and provide stable income - balancing the higher risk of stocks',
+                  'Reduce overall volatility and provide stable income, balancing the higher risk of stocks',
                   'Maximize total portfolio returns by capturing higher yields than equities',
                   'Provide inflation protection since bond values always rise faster than inflation',
                   'Generate tax-free income that does not need to be reported on annual returns',
@@ -6147,7 +6147,7 @@ export const levels = [
               {
                 prompt: 'Why might a young investor hold very few or no bonds?',
                 options: [
-                  'With a 30+ year horizon, the higher long-term returns of stocks outweigh the stability bonds provide - there is time to recover from downturns',
+                  'With a 30+ year horizon, the higher long-term returns of stocks outweigh the stability bonds provide since there is time to recover from downturns',
                   'Bonds are only available to investors over age 50 through most U.S. brokerage accounts',
                   'Young investors are legally prohibited from holding bonds in retirement accounts',
                   'Bond yields are always negative in real terms for investors under age 40',
@@ -6158,18 +6158,18 @@ export const levels = [
               {
                 prompt: 'As you approach retirement, why should you typically increase bond allocation?',
                 options: [
-                  'You have less time to recover from a stock market crash - bonds provide stability when you need to spend the money soon',
+                  'You have less time to recover from a stock market crash, so bonds provide stability when you need to spend the money soon',
                   'Tax laws require investors over 60 to hold a minimum percentage of bonds',
                   'Stocks are inherently more tax-efficient in retirement accounts so bonds must compensate',
                   'Bond yields always rise as an investor ages, making them more profitable near retirement',
                 ],
                 correct: 0,
-                explanation: 'A retiree who experiences a 40% stock crash in year one of retirement and starts withdrawing locks in those losses permanently. Bonds act as a buffer - providing income without forced stock selling during downturns.',
+                explanation: 'A retiree who experiences a 40% stock crash in year one of retirement and starts withdrawing locks in those losses permanently. Bonds act as a buffer by providing income without forced stock selling during downturns.',
               },
               {
                 prompt: 'What is a bond index fund and why would someone hold one?',
                 options: [
-                  'A fund that tracks a bond market index (like the Bloomberg Aggregate) - offering diversification across hundreds of bonds at low cost',
+                  'A fund that tracks a bond market index like the Bloomberg Aggregate, offering diversification across hundreds of bonds at low cost',
                   'A fund that invests in index funds rather than bonds directly',
                   'A government savings account that tracks the performance of Treasury bonds',
                   'A mutual fund that holds stocks of companies that issue corporate bonds',
@@ -6180,13 +6180,13 @@ export const levels = [
               {
                 prompt: 'Should bonds be held in a taxable brokerage account or a tax-advantaged retirement account?',
                 options: [
-                  'Tax-advantaged accounts (IRA, 401k) - bond interest is taxed as ordinary income, so sheltering it from taxes is most valuable',
-                  'Taxable brokerage accounts - bond interest is taxed at the lower capital gains rate',
-                  'Either - there is no tax advantage to placing bonds in any specific type of account',
+                  'Tax-advantaged accounts like an IRA or 401k, since bond interest is taxed as ordinary income and sheltering it from taxes is most valuable',
+                  'Taxable brokerage accounts, since bond interest is taxed at the lower capital gains rate',
+                  'Either, since there is no tax advantage to placing bonds in any specific type of account',
                   'Taxable accounts for municipal bonds and tax-advantaged accounts for corporate bonds only',
                 ],
                 correct: 0,
-                explanation: 'Bond interest is taxed at your ordinary income rate (as high as 37%). Sheltering that income inside an IRA or 401(k) defers or eliminates this tax. Municipal bonds are an exception - their federal tax exemption makes taxable accounts fine.',
+                explanation: 'Bond interest is taxed at your ordinary income rate (as high as 37%). Sheltering that income inside an IRA or 401(k) defers or eliminates this tax. Municipal bonds are an exception; their federal tax exemption makes taxable accounts fine.',
               },
               {
                 prompt: 'What is a "total return" bond strategy vs. an "income" bond strategy?',
@@ -6194,17 +6194,17 @@ export const levels = [
                   'Total return focuses on price appreciation plus income; income strategy focuses solely on maximizing current yield',
                   'Total return only counts price changes; income strategy counts only coupon payments',
                   'Total return strategies hold bonds indefinitely; income strategies sell bonds before maturity',
-                  'Both terms describe identical approaches - they are used interchangeably by fund managers',
+                  'Both terms describe identical approaches and are used interchangeably by fund managers',
                 ],
                 correct: 0,
-                explanation: 'Income investors want current cash flow - useful in retirement. Total return investors are willing to accept some price volatility in exchange for potentially higher overall returns. Both are valid - the right choice depends on your needs.',
+                explanation: 'Income investors want current cash flow, useful in retirement. Total return investors are willing to accept some price volatility in exchange for potentially higher overall returns. Both are valid; the right choice depends on your needs.',
               },
               {
                 prompt: 'In which market environment do bonds typically perform best relative to stocks?',
                 options: [
-                  'During recessions and economic crises - investors flee to safety, driving bond prices up while stocks fall',
+                  'During recessions and economic crises, when investors flee to safety, driving bond prices up while stocks fall',
                   'During periods of rapid economic growth and rising corporate profits',
-                  'When inflation is high and rising - bonds earn more to keep up with price increases',
+                  'When inflation is high and rising, since bonds earn more to keep up with price increases',
                   'When the Federal Reserve is raising interest rates to cool economic growth',
                 ],
                 correct: 0,
@@ -6221,7 +6221,7 @@ export const levels = [
                 prompt: 'How are U.S. Treasury interest payments taxed?',
                 options: [
                   'Subject to federal income tax but exempt from state and local income taxes',
-                  'Fully tax-exempt at all levels - federal, state, and local',
+                  'Fully tax-exempt at all levels, including federal, state, and local',
                   'Taxed as capital gains at 0%, 15%, or 20% depending on income',
                   'Subject to both federal and all state income taxes like any other investment income',
                 ],
@@ -6231,7 +6231,7 @@ export const levels = [
               {
                 prompt: 'What makes municipal bond interest particularly attractive to high-income investors?',
                 options: [
-                  'Interest is exempt from federal income tax and often state tax too - equivalent yield is much higher on an after-tax basis',
+                  'Interest is exempt from federal income tax and often state tax too, making the equivalent yield much higher on an after-tax basis',
                   'Municipal bonds have higher credit ratings than U.S. Treasury bonds on average',
                   'Muni bonds are backed by the federal government\'s full faith and credit',
                   'They pay interest monthly rather than semi-annually, improving cash flow for investors',
@@ -6242,13 +6242,13 @@ export const levels = [
               {
                 prompt: 'What are "general obligation" (GO) municipal bonds?',
                 options: [
-                  'Munis backed by the full taxing power of the issuing government - considered safer than revenue bonds',
+                  'Munis backed by the full taxing power of the issuing government, considered safer than revenue bonds',
                   'Bonds issued to fund any project that generates revenue for repayment',
                   'Federal bonds issued for general government purposes rather than specific programs',
                   'Bonds rated "generally obligated" by Moody\'s, indicating high default likelihood',
                 ],
                 correct: 0,
-                explanation: 'GO bonds can raise taxes if needed to pay bondholders. Revenue bonds (funded by specific project income like toll roads or stadiums) are riskier - if the project doesn\'t generate expected revenue, you may not get paid.',
+                explanation: 'GO bonds can raise taxes if needed to pay bondholders. Revenue bonds (funded by specific project income like toll roads or stadiums) are riskier; if the project doesn\'t generate expected revenue, you may not get paid.',
               },
               {
                 prompt: 'What is the Federal Reserve\'s role in the Treasury bond market?',
@@ -6270,18 +6270,18 @@ export const levels = [
                   'Tracking the national debt and viewing government spending reports in real time',
                 ],
                 correct: 0,
-                explanation: 'TreasuryDirect lets retail investors buy government securities at auction - no brokerage, no commissions. It\'s the only way to buy I-Bonds and the cheapest way to buy individual Treasuries.',
+                explanation: 'TreasuryDirect lets retail investors buy government securities at auction with no brokerage and no commissions. It\'s the only way to buy I-Bonds and the cheapest way to buy individual Treasuries.',
               },
               {
                 prompt: 'What happened to Puerto Rico\'s municipal bonds in 2017?',
                 options: [
-                  'Puerto Rico defaulted on its debt - one of the largest municipal bond defaults in U.S. history, restructured under PROMESA',
+                  'Puerto Rico defaulted on its debt, one of the largest municipal bond defaults in U.S. history, ultimately restructured under PROMESA',
                   'Puerto Rico\'s bonds were upgraded to AAA after the federal government assumed all obligations',
                   'Hurricane Maria destroyed all physical bond certificates, creating a legal dispute with the Treasury',
                   'Puerto Rico\'s bonds were recalled and exchanged for U.S. Treasury bonds to protect investors',
                 ],
                 correct: 0,
-                explanation: 'Puerto Rico\'s $70B+ debt crisis showed that munis can default - even U.S. territories. Detroit\'s 2013 bankruptcy was another major municipal default. "Government-issued" doesn\'t mean risk-free below the federal level.',
+                explanation: 'Puerto Rico\'s $70B+ debt crisis showed that munis can default, even U.S. territories. Detroit\'s 2013 bankruptcy was another major municipal default. "Government-issued" doesn\'t mean risk-free below the federal level.',
               },
             ],
           },
@@ -6293,10 +6293,10 @@ export const levels = [
               {
                 prompt: 'Over long periods (20–30 years), which asset class has historically produced higher returns?',
                 options: [
-                  'Stocks - the S&P 500 has averaged ~10%/year while bonds average 3–5%/year',
-                  'Bonds - their guaranteed payments make them more reliable wealth builders over time',
-                  'Gold and commodities - they outperform both stocks and bonds over 20+ year periods',
-                  'Both have produced identical returns - the difference is purely in volatility, not total growth',
+                  'Stocks, since the S&P 500 has averaged ~10%/year while bonds average 3–5%/year',
+                  'Bonds, since their guaranteed payments make them more reliable wealth builders over time',
+                  'Gold and commodities, which outperform both stocks and bonds over 20+ year periods',
+                  'Both have produced identical returns, with the difference being purely in volatility, not total growth',
                 ],
                 correct: 0,
                 explanation: 'Over most 20-year periods, stocks have significantly outperformed bonds. The tradeoff: year-to-year stock volatility is much higher. Long-term investors can generally afford to hold more stocks for this reason.',
@@ -6304,7 +6304,7 @@ export const levels = [
               {
                 prompt: 'The "60/40 portfolio" (60% stocks, 40% bonds) is designed to:',
                 options: [
-                  'Balance growth potential with stability - capturing equity returns while bonds cushion downturns',
+                  'Balance growth potential with stability by capturing equity returns while bonds cushion downturns',
                   'Maximize dividend and coupon income while avoiding capital gains taxes',
                   'Split money evenly between domestic and international investments',
                   'Hold 60% in individual stocks and 40% in S&P 500 index funds',
@@ -6317,7 +6317,7 @@ export const levels = [
                 options: [
                   'Treasury prices rise as investors flee stocks for the safety of government bonds',
                   'Treasury prices fall in tandem with stocks as investors sell all financial assets',
-                  'Treasury prices are unaffected - they trade in a completely separate market',
+                  'Treasury prices are unaffected since they trade in a completely separate market',
                   'Treasury prices fall temporarily then recover within 30 days under Federal Reserve intervention',
                 ],
                 correct: 0,
@@ -6326,10 +6326,10 @@ export const levels = [
               {
                 prompt: 'What is the main risk of holding only bonds in retirement?',
                 options: [
-                  'Inflation - bond yields may not keep pace with rising prices, slowly eroding purchasing power over a 20–30 year retirement',
-                  'Default risk - all bonds eventually default, leaving retirees without income',
-                  'Liquidity - bonds cannot be sold in retirement accounts until age 70½',
-                  'Sequence risk - all fixed-income securities must be sold during market downturns',
+                  'Inflation, since bond yields may not keep pace with rising prices, slowly eroding purchasing power over a 20–30 year retirement',
+                  'Default risk, since all bonds eventually default, leaving retirees without income',
+                  'Liquidity, since bonds cannot be sold in retirement accounts until age 70½',
+                  'Sequence risk, since all fixed-income securities must be sold during market downturns',
                 ],
                 correct: 0,
                 explanation: 'A retiree at 65 may live 25–30 more years. If bonds yield 4% and inflation averages 3%, the real return is just 1%. Maintaining some stock allocation in retirement is increasingly recommended to combat longevity risk.',
@@ -6337,18 +6337,18 @@ export const levels = [
               {
                 prompt: 'What does "negative correlation" between stocks and bonds mean for portfolio construction?',
                 options: [
-                  'When stocks fall, bonds often rise - holding both reduces overall portfolio volatility without sacrificing all return potential',
+                  'When stocks fall, bonds often rise, so holding both reduces overall portfolio volatility without sacrificing all return potential',
                   'Adding bonds always reduces total portfolio return by exactly the percentage of bonds held',
                   'Stocks and bonds are identical assets that just have different names in different markets',
                   'Negative correlation means bonds lose value when stocks gain, making the combination counterproductive',
                 ],
                 correct: 0,
-                explanation: 'Negative correlation is why diversification works - combining negatively correlated assets reduces risk without proportionally reducing return. This mathematical free lunch is the core of modern portfolio theory.',
+                explanation: 'Negative correlation is why diversification works; combining negatively correlated assets reduces risk without proportionally reducing return. This mathematical free lunch is the core of modern portfolio theory.',
               },
               {
                 prompt: 'Warren Buffett has said that for most investors, the best portfolio is:',
                 options: [
-                  'A simple combination of low-cost S&P 500 index fund and short-term government bonds - avoiding complex strategies',
+                  'A simple combination of a low-cost S&P 500 index fund and short-term government bonds, avoiding complex strategies',
                   'A concentrated portfolio of 10–15 stocks selected through deep fundamental analysis',
                   'Equal weights in stocks, bonds, gold, and real estate, rebalanced quarterly',
                   'Exclusively Berkshire Hathaway shares, which provide built-in diversification through its holdings',
@@ -6386,7 +6386,7 @@ export const levels = [
               {
                 prompt: 'What is NAV (Net Asset Value) for a mutual fund?',
                 options: [
-                  'Total fund assets minus liabilities, divided by shares outstanding - calculated once per day after markets close',
+                  'Total fund assets minus liabilities, divided by shares outstanding, calculated once per day after markets close',
                   'The highest price the fund traded at during the past 52 weeks',
                   'A guaranteed minimum return the fund manager promises each calendar year',
                   'The annual management fee charged as a percentage of total assets under management',
@@ -6397,7 +6397,7 @@ export const levels = [
               {
                 prompt: 'How do mutual funds generate returns for investors?',
                 options: [
-                  'Through capital gains when the fund sells holdings at a profit, dividend/interest income from holdings, and increases in NAV',
+                  'Through capital gains when the fund sells holdings at a profit, dividend and interest income from holdings, and increases in NAV',
                   'By paying a fixed interest rate similar to a CD or savings account',
                   'Through government subsidies provided to registered fund companies',
                   'By lending investor assets to short sellers and receiving interest payments',
@@ -6420,9 +6420,9 @@ export const levels = [
                 prompt: 'What is the minimum investment typically required to open a mutual fund account?',
                 options: [
                   'Many funds require $1,000–$3,000, though some funds (especially at Fidelity and Vanguard) have no minimum',
-                  'Exactly $10,000 - required by the SEC for all mutual fund investments',
-                  'No minimum - all mutual funds accept any dollar amount under SEC regulations',
-                  '$25,000 - mutual funds are designed for institutional and wealthy individual investors',
+                  'Exactly $10,000, required by the SEC for all mutual fund investments',
+                  'No minimum, since all mutual funds accept any dollar amount under SEC regulations',
+                  '$25,000, since mutual funds are designed for institutional and wealthy individual investors',
                 ],
                 correct: 0,
                 explanation: 'Minimums vary widely. Fidelity now offers many funds with no minimums. This accessibility has made mutual funds a key savings vehicle for everyday investors building wealth over time.',
@@ -6430,7 +6430,7 @@ export const levels = [
               {
                 prompt: 'What is a mutual fund\'s "benchmark"?',
                 options: [
-                  'An index used to compare the fund\'s performance - e.g., an actively managed large-cap fund benchmarks against the S&P 500',
+                  'An index used to compare the fund\'s performance, such as how an actively managed large-cap fund benchmarks against the S&P 500',
                   'The minimum performance level the fund must achieve to avoid regulatory penalties',
                   'A rating given by Morningstar ranging from 1 to 5 stars based on risk-adjusted returns',
                   'The historical average return used to calculate projected future performance',
@@ -6465,12 +6465,12 @@ export const levels = [
                   'The top 25% of active managers consistently outperform their benchmarks over any 10-year period',
                 ],
                 correct: 0,
-                explanation: 'Even when an active fund outperforms one year, it rarely repeats. SPIVA (S&P Indices Versus Active) data: fewer than 10% of active large-cap managers beat the S&P 500 over 15 years - and most of those don\'t repeat.',
+                explanation: 'Even when an active fund outperforms one year, it rarely repeats. SPIVA (S&P Indices Versus Active) data: fewer than 10% of active large-cap managers beat the S&P 500 over 15 years, and most of those don\'t repeat.',
               },
               {
                 prompt: 'Why do higher fees on actively managed funds matter so much?',
                 options: [
-                  'To outperform an index fund charging 0.03%, an active fund charging 1% must generate 0.97% more - consistently - just to break even for you',
+                  'To outperform an index fund charging 0.03%, an active fund charging 1% must consistently generate 0.97% more just to break even for you',
                   'High fees only matter for investors in lower tax brackets who pay more in taxes on fund distributions',
                   'Fees are tax-deductible, so the real cost of a 1% expense ratio is closer to 0.5%',
                   'Higher fees guarantee better research capabilities that translate to better performance',
@@ -6481,13 +6481,13 @@ export const levels = [
               {
                 prompt: 'In which market environment do some argue active management has an advantage?',
                 options: [
-                  'In smaller or less efficient markets (small-cap, international, emerging markets) where information gaps may allow skilled managers to find mispricings',
+                  'In smaller or less efficient markets like small-cap, international, or emerging markets, where information gaps may allow skilled managers to find mispricings',
                   'In large-cap U.S. stocks where all information is publicly available and analysts are abundant',
-                  'During bull markets when all stocks are rising - active managers can capture more upside',
+                  'During bull markets when all stocks are rising, since active managers can capture more upside',
                   'During rising interest rate environments when bond selection is more critical than stock selection',
                 ],
                 correct: 0,
-                explanation: 'The argument for active management is strongest in less efficient markets. Even there, the data is mixed - fees still consume much of any theoretical alpha. The burden of proof remains on active management.',
+                explanation: 'The argument for active management is strongest in less efficient markets. Even there, the data is mixed; fees still consume much of any theoretical alpha. The burden of proof remains on active management.',
               },
               {
                 prompt: 'What is "closet indexing"?',
@@ -6498,12 +6498,12 @@ export const levels = [
                   'When a fund manager replicates Warren Buffett\'s portfolio with slight modifications',
                 ],
                 correct: 0,
-                explanation: 'Closet indexers are the worst of both worlds: you pay active management fees (1%+) for essentially index-like returns. Check a fund\'s "active share" metric - high active share means it truly differs from the index.',
+                explanation: 'Closet indexers are the worst of both worlds: you pay active management fees (1%+) for essentially index-like returns. Check a fund\'s "active share" metric; high active share means it truly differs from the index.',
               },
               {
                 prompt: 'What is "alpha" in fund management?',
                 options: [
-                  'Returns generated above what would be expected given the fund\'s risk level - excess return attributable to manager skill',
+                  'Returns generated above what would be expected given the fund\'s risk level, representing excess return attributable to manager skill',
                   'The fund\'s total return for the most recent calendar year',
                   'The fee charged to institutional investors who invest more than $1 million in a fund',
                   'A measure of how closely the fund tracks its benchmark index over time',
@@ -6527,26 +6527,26 @@ export const levels = [
                   'A fund that invests only in the largest company in each sector of the economy',
                 ],
                 correct: 0,
-                explanation: 'An S&P 500 index fund holds all 500 companies in the index at their exact weights. No manager decides what to buy - the index decides. Result: market returns minus a tiny fee.',
+                explanation: 'An S&P 500 index fund holds all 500 companies in the index at their exact weights. No manager decides what to buy; the index decides. Result: market returns minus a tiny fee.',
               },
               {
                 prompt: 'Who is credited with creating the first index fund for retail investors?',
                 options: [
-                  'John Bogle - founder of Vanguard - who launched the First Index Investment Trust in 1976',
+                  'John Bogle, founder of Vanguard, who launched the First Index Investment Trust in 1976',
                   'Warren Buffett, who created the first S&P 500 index fund through Berkshire Hathaway',
                   'The U.S. Securities and Exchange Commission, which mandated passive investing options in 1980',
                   'Charles Schwab, who invented low-cost investing at his discount brokerage in 1971',
                 ],
                 correct: 0,
-                explanation: 'John Bogle\'s first S&P 500 index fund was mocked as "Bogle\'s Folly" - why settle for average returns? Fifty years later, index funds hold trillions in assets and have dramatically improved returns for everyday investors.',
+                explanation: 'John Bogle\'s first S&P 500 index fund was mocked as "Bogle\'s Folly," asking why settle for average returns? Fifty years later, index funds hold trillions in assets and have dramatically improved returns for everyday investors.',
               },
               {
                 prompt: 'What is a "total market index fund"?',
                 options: [
-                  'A fund that holds all U.S. publicly traded stocks - giving exposure to large, mid, small, and micro-cap companies',
+                  'A fund that holds all U.S. publicly traded stocks, giving exposure to large, mid, small, and micro-cap companies',
                   'A fund that equally weights stocks from all global markets in a single portfolio',
                   'A fund combining stocks, bonds, real estate, and commodities for maximum diversification',
-                  'The S&P 500 index fund - considered a total measure of the U.S. stock market',
+                  'An S&P 500 index fund, considered a total measure of the U.S. stock market',
                 ],
                 correct: 0,
                 explanation: 'A total U.S. market fund (like VTI or FSKAX) holds 3,500–4,000 companies vs. the S&P 500\'s 500. You get exposure to small-cap companies that the S&P 500 misses. The "total world" equivalent covers 8,000+ companies globally.',
@@ -6554,7 +6554,7 @@ export const levels = [
               {
                 prompt: 'Why do index funds typically have lower expense ratios than active funds?',
                 options: [
-                  'No managers needed - the fund just replicates the index mechanically, requiring minimal research, trading, or staff',
+                  'No managers are needed since the fund just replicates the index mechanically, requiring minimal research, trading, or staff',
                   'Index funds receive government subsidies to lower costs for retail investors',
                   'They only hold 10–20 stocks, requiring less administrative overhead',
                   'Active funds charge higher fees as penalties for underperforming the market',
@@ -6565,18 +6565,18 @@ export const levels = [
               {
                 prompt: 'What does "tracking error" mean for an index fund?',
                 options: [
-                  'The deviation between the fund\'s actual returns and the index it tracks - ideally as small as possible',
+                  'The deviation between the fund\'s actual returns and the index it tracks, which should ideally be as small as possible',
                   'An error in the fund\'s computer system that causes incorrect share prices',
                   'The time lag between when the index rebalances and when the fund adjusts its holdings',
                   'A legal penalty assessed when a fund misreports its NAV to the SEC',
                 ],
                 correct: 0,
-                explanation: 'Perfect tracking is impossible - every fund has transaction costs and cash drag. Good index funds minimize tracking error by efficiently managing cash flow and rebalancing costs.',
+                explanation: 'Perfect tracking is impossible; every fund has transaction costs and cash drag. Good index funds minimize tracking error by efficiently managing cash flow and rebalancing costs.',
               },
               {
                 prompt: 'For a long-term investor with a 30-year horizon, which fund type do most financial experts recommend?',
                 options: [
-                  'Low-cost, diversified index funds - the evidence overwhelmingly shows they outperform most active alternatives after fees over long periods',
+                  'Low-cost, diversified index funds, since the evidence overwhelmingly shows they outperform most active alternatives after fees over long periods',
                   'Actively managed growth funds, which consistently provide 3–5% more return than index funds annually',
                   'A mix of sector-specific active funds to capture industries expected to outperform',
                   'Money market funds, which provide guaranteed returns without the risk of equity exposure',
@@ -6594,40 +6594,40 @@ export const levels = [
               {
                 prompt: 'What is an expense ratio on a mutual fund?',
                 options: [
-                  'The annual fee charged as a percentage of assets to cover the fund\'s operating costs, deducted automatically from returns',
+                  'The annual fee charged as a percentage of assets to cover the fund\'s operating costs, automatically deducted from returns',
                   'A one-time fee charged when you first purchase shares of the mutual fund',
                   'A fee paid to your financial advisor for recommending the fund',
                   'The penalty charged for withdrawing money before the fund\'s minimum holding period',
                 ],
                 correct: 0,
-                explanation: 'A 1% expense ratio on a $50,000 account costs you $500/year. It\'s not a direct charge - it silently reduces the fund\'s return. A fund returning 8% gross with a 1% expense ratio delivers 7% net.',
+                explanation: 'A 1% expense ratio on a $50,000 account costs you $500/year. It\'s not a direct charge; it silently reduces the fund\'s return. A fund returning 8% gross with a 1% expense ratio delivers 7% net.',
               },
               {
                 prompt: 'An expense ratio of 1% vs. 0.03% on a $100,000 portfolio over 30 years (assuming 8% gross return) costs roughly:',
                 options: [
-                  'Over $200,000 more in fees - compounding amplifies even tiny annual differences dramatically over decades',
-                  'About $970 more per year - significant but manageable over a 30-year period',
-                  'Exactly $970 regardless of compounding - the SEC caps fee impact at this amount',
-                  'Less than $5,000 total - long-term returns dwarf any fee difference',
+                  'Over $200,000 more in fees, since compounding amplifies even tiny annual differences dramatically over decades',
+                  'About $970 more per year, significant but manageable over a 30-year period',
+                  'Exactly $970 regardless of compounding, since the SEC caps fee impact at this amount',
+                  'Less than $5,000 total, since long-term returns dwarf any fee difference',
                 ],
                 correct: 0,
-                explanation: 'At 8% gross for 30 years: 0.03% fund → $995,383. 1% fund → $761,226. Fee difference = $234,157. The low-cost fund has the same underlying stocks - you keep $234k more by simply choosing cheaper.',
+                explanation: 'At 8% gross for 30 years: 0.03% fund → $995,383. 1% fund → $761,226. Fee difference = $234,157. The low-cost fund has the same underlying stocks; you keep $234k more by simply choosing cheaper.',
               },
               {
                 prompt: 'What is a "sales load"?',
                 options: [
-                  'A commission paid when buying (front-end load) or selling (back-end load) mutual fund shares - ranging from 0–5.75%',
+                  'A commission paid when buying (front-end load) or selling (back-end load) mutual fund shares, ranging from 0 to 5.75%',
                   'A fee charged when a fund reaches its maximum capacity for investors',
                   'An extra tax assessed on mutual fund gains when you sell within one year of purchase',
                   'The percentage of fund assets held in cash as a safety buffer for redemptions',
                 ],
                 correct: 0,
-                explanation: 'A 5% front-end load on $10,000 means $500 goes to the broker before it\'s even invested. Today, most reputable funds are "no-load." Never pay a sales load - better no-load alternatives always exist.',
+                explanation: 'A 5% front-end load on $10,000 means $500 goes to the broker before it\'s even invested. Today, most reputable funds are "no-load." Never pay a sales load; better no-load alternatives always exist.',
               },
               {
                 prompt: 'What is a 12b-1 fee?',
                 options: [
-                  'An annual marketing and distribution fee included in a fund\'s expense ratio - used to pay for advertising and broker commissions',
+                  'An annual marketing and distribution fee included in a fund\'s expense ratio, used to pay for advertising and broker commissions',
                   'A government fee paid by mutual funds to the SEC for annual regulatory compliance reviews',
                   'A performance fee charged by active managers who outperform their benchmark',
                   'A special assessment levied on funds that fail to meet their stated investment objectives',
@@ -6651,11 +6651,11 @@ export const levels = [
                 options: [
                   'The sum of all costs: expense ratio, any sales loads, transaction fees, and tax drag from turnover',
                   'The total dollar amount invested in the fund across your entire lifetime of contributions',
-                  'The fund\'s expense ratio only - all other costs are negligible and not worth considering',
+                  'The fund\'s expense ratio only, since all other costs are negligible and not worth considering',
                   'The cost to liquidate all fund holdings in a single transaction at current NAV',
                 ],
                 correct: 0,
-                explanation: 'Tax drag is often overlooked. High-turnover active funds generate taxable capital gains distributions - you pay taxes even if you didn\'t sell. Low-turnover index funds are much more tax-efficient in taxable accounts.',
+                explanation: 'Tax drag is often overlooked. High-turnover active funds generate taxable capital gains distributions; you pay taxes even if you didn\'t sell. Low-turnover index funds are much more tax-efficient in taxable accounts.',
               },
             ],
           },
@@ -6667,7 +6667,7 @@ export const levels = [
               {
                 prompt: 'What is a target-date fund?',
                 options: [
-                  'A fund designed for investors with a specific retirement year in mind - automatically shifting from aggressive (stocks) to conservative (bonds) as the date approaches',
+                  'A fund designed for investors with a specific retirement year in mind, automatically shifting from aggressive stocks to conservative bonds as that date approaches',
                   'A fund that targets a specific return rate each year regardless of market performance',
                   'An actively managed fund targeting the top-performing stocks for a given 12-month window',
                   'A savings account that matures on a set date and pays a fixed interest rate',
@@ -6684,7 +6684,7 @@ export const levels = [
                   'The fund\'s adjustment schedule for rebalancing holdings during market downturns',
                 ],
                 correct: 0,
-                explanation: 'Different fund families have different glide paths. Vanguard is more aggressive (more stocks at retirement) than Fidelity. There\'s no universally "correct" glide path - it depends on your other income sources in retirement.',
+                explanation: 'Different fund families have different glide paths. Vanguard is more aggressive (more stocks at retirement) than Fidelity. There\'s no universally "correct" glide path; it depends on your other income sources in retirement.',
               },
               {
                 prompt: 'What happens to a target-date fund AFTER you reach the target retirement year?',
@@ -6701,7 +6701,7 @@ export const levels = [
                 prompt: 'What is the main criticism of target-date funds?',
                 options: [
                   'They are more expensive than building your own 2–3 fund portfolio from index funds, and their glide path may not match your specific situation',
-                  'They are too conservative even when you are young - holding too many bonds early',
+                  'They are too conservative even when you are young, holding too many bonds in the early years',
                   'Target-date funds cannot be held in tax-advantaged accounts like 401(k)s and IRAs',
                   'They change their strategy unpredictably, making them unsuitable for long-term planning',
                 ],
@@ -6711,10 +6711,10 @@ export const levels = [
               {
                 prompt: 'Are target-date funds a good option for most people\'s 401(k)?',
                 options: [
-                  'Yes - they provide automatic diversification, rebalancing, and age-appropriate risk adjustment in a single, low-cost fund',
-                  'No - they always underperform the S&P 500 due to their bond holdings',
-                  'Only if you have more than $100,000 invested - below that, the fees are prohibitive',
-                  'Only for government employees - private sector workers should avoid them due to tax complications',
+                  'Yes, they provide automatic diversification, rebalancing, and age-appropriate risk adjustment in a single, low-cost fund',
+                  'No, since they always underperform the S&P 500 due to their bond holdings',
+                  'Only if you have more than $100,000 invested, since below that the fees are prohibitive',
+                  'Only for government employees, since private sector workers should avoid them due to tax complications',
                 ],
                 correct: 0,
                 explanation: 'Target-date funds are the default option in many 401(k) plans for good reason. For investors who won\'t actively manage their portfolio, a single target-date fund is far better than not investing or making poor allocation decisions.',
@@ -6722,7 +6722,7 @@ export const levels = [
               {
                 prompt: 'What is a common mistake investors make with target-date funds?',
                 options: [
-                  'Choosing a too-conservative fund (e.g., 2030 when they retire in 2050) - drastically reducing their growth potential',
+                  'Choosing a too-conservative fund (e.g., 2030 when they retire in 2050), which drastically reduces their growth potential',
                   'Choosing a fund that is too aggressive by selecting a year beyond their actual retirement date',
                   'Holding target-date funds in a taxable brokerage account instead of a 401(k)',
                   'Diversifying across multiple target-date funds with different target years in the same account',
@@ -6768,12 +6768,12 @@ export const levels = [
                   'A mutual fund created under a foreign government\'s regulatory framework',
                 ],
                 correct: 0,
-                explanation: 'International diversification matters - the U.S. is only ~60% of global market cap. "International" funds exclude the U.S.; "global" or "world" funds include it. Emerging market funds focus on higher-growth developing economies.',
+                explanation: 'International diversification matters because the U.S. is only ~60% of global market cap. "International" funds exclude the U.S.; "global" or "world" funds include it. Emerging market funds focus on higher-growth developing economies.',
               },
               {
                 prompt: 'What is a sector fund?',
                 options: [
-                  'A fund concentrating investments in one specific industry - like technology, healthcare, energy, or real estate',
+                  'A fund that concentrates investments in one specific industry, like technology, healthcare, energy, or real estate',
                   'A diversified fund that allocates equally across all 11 GICS economic sectors',
                   'A fund that rotates between sectors based on economic cycle predictions',
                   'A bond fund that invests only in debt issued by companies in regulated industries',
@@ -6784,18 +6784,18 @@ export const levels = [
               {
                 prompt: 'What is a money market fund?',
                 options: [
-                  'A very low-risk fund investing in short-term, high-quality debt instruments - used as a cash equivalent earning modest yield',
+                  'A very low-risk fund investing in short-term, high-quality debt instruments, used as a cash equivalent that earns a modest yield',
                   'A fund that trades currencies in global foreign exchange markets for maximum returns',
                   'A brokerage account feature that automatically converts uninvested cash to stock purchases',
                   'A government-sponsored savings product guaranteeing 2% annual returns above inflation',
                 ],
                 correct: 0,
-                explanation: 'Money market funds are not the same as money market accounts (bank product). Fund versions hold T-bills, commercial paper, and CDs - yielding slightly more than savings accounts. Common as a parking spot for cash.',
+                explanation: 'Money market funds are not the same as money market accounts (bank product). Fund versions hold T-bills, commercial paper, and CDs, yielding slightly more than savings accounts. Common as a parking spot for cash.',
               },
               {
                 prompt: 'What is an ESG fund?',
                 options: [
-                  'A fund that screens investments based on Environmental, Social, and Governance criteria - prioritizing companies with sustainable practices',
+                  'A fund that screens investments based on Environmental, Social, and Governance criteria, prioritizing companies with sustainable practices',
                   'A fund that invests exclusively in energy, semiconductor, and growth companies',
                   'A government-certified ethical savings fund for socially conscious investors',
                   'A European fund not available in the United States due to SEC regulations',
@@ -6813,7 +6813,7 @@ export const levels = [
               {
                 prompt: 'What is the single most important factor in selecting a mutual fund for long-term investors?',
                 options: [
-                  'The expense ratio - lower costs directly and predictably boost net returns',
+                  'The expense ratio, since lower costs directly and predictably boost net returns',
                   'The fund manager\'s past performance, which is the best predictor of future returns',
                   'The fund\'s most recent one-year return, indicating current momentum',
                   'The fund family\'s name recognition and age, which signals trustworthiness',
@@ -6824,18 +6824,18 @@ export const levels = [
               {
                 prompt: 'What does the Morningstar star rating system measure?',
                 options: [
-                  'Risk-adjusted historical returns relative to similar funds - 5 stars = top 10%, 1 star = bottom 10%',
+                  'Risk-adjusted historical returns relative to similar funds, where 5 stars represents the top 10% and 1 star the bottom 10%',
                   'A fund manager\'s years of experience and educational background',
                   'The number of years a fund has been in operation continuously',
                   'An absolute prediction of how the fund will perform over the next five years',
                 ],
                 correct: 0,
-                explanation: 'Morningstar stars are backward-looking. Research shows 5-star funds don\'t consistently outperform 3-star funds going forward. Stars describe the past - useful for screening but not as a performance predictor.',
+                explanation: 'Morningstar stars are backward-looking. Research shows 5-star funds don\'t consistently outperform 3-star funds going forward. Stars describe the past; useful for screening but not as a performance predictor.',
               },
               {
                 prompt: 'What is "survivorship bias" in mutual fund performance data?',
                 options: [
-                  'Poor-performing funds are closed or merged, so the historical data appears better than it was - the failures literally don\'t survive to be counted',
+                  'Poor-performing funds are closed or merged, so the historical data looks better than it actually was because the failures literally don\'t survive to be counted',
                   'Only the oldest, most durable funds appear in databases, making younger funds look riskier',
                   'Fund companies only report returns during years the fund outperformed its benchmark',
                   'The tendency for large fund companies to merge small funds with better-performing ones for marketing purposes',
@@ -6846,18 +6846,18 @@ export const levels = [
               {
                 prompt: 'When comparing two funds with similar strategies, which should you prefer?',
                 options: [
-                  'The one with the lower expense ratio - everything else equal, lower cost always wins over time',
-                  'The one with higher recent returns - past performance is reliable when comparing similar funds',
-                  'The one with more assets under management - larger funds have more buying power',
-                  'The one with the more famous fund manager - expertise drives consistent outperformance',
+                  'The one with the lower expense ratio, since everything else being equal, lower cost always wins over time',
+                  'The one with higher recent returns, since past performance is reliable when comparing similar funds',
+                  'The one with more assets under management, since larger funds have more buying power',
+                  'The one with the more famous fund manager, since expertise drives consistent outperformance',
                 ],
                 correct: 0,
-                explanation: 'If two S&P 500 index funds hold identical securities, the only difference is cost. The 0.03% fund will outperform the 0.20% fund by exactly 0.17% per year - not because of skill, but because you keep more.',
+                explanation: 'If two S&P 500 index funds hold identical securities, the only difference is cost. The 0.03% fund will outperform the 0.20% fund by exactly 0.17% per year, not because of skill, but because you keep more.',
               },
               {
                 prompt: 'What is "fund turnover ratio" and why does it matter for taxable accounts?',
                 options: [
-                  'The percentage of the fund\'s portfolio replaced each year - high turnover generates taxable capital gains distributions that investors must pay taxes on',
+                  'The percentage of the fund\'s portfolio replaced each year, where high turnover generates taxable capital gains distributions that investors must pay taxes on',
                   'How many times the fund changes its investment manager in a 12-month period',
                   'The percentage of fund shares redeemed by investors in a given year',
                   'A measure of how frequently the fund rebalances its holdings back to target weights',
@@ -6874,7 +6874,7 @@ export const levels = [
                   'The risk that a manager\'s poor stock picks in one year lead to permanent closure of the fund',
                 ],
                 correct: 0,
-                explanation: 'Active fund performance is often tied to a specific manager. When Peter Lynch left Magellan fund, returns changed significantly. Index funds have no manager risk - no star to leave, retire, or have a bad year.',
+                explanation: 'Active fund performance is often tied to a specific manager. When Peter Lynch left Magellan fund, returns changed significantly. Index funds have no manager risk; there is no star to leave, retire, or have a bad year.',
               },
             ],
           },
@@ -6886,7 +6886,7 @@ export const levels = [
               {
                 prompt: 'What is the "three-fund portfolio" recommended by many financial advisors?',
                 options: [
-                  'U.S. total market index fund + International index fund + U.S. bond index fund - covering the global market at minimal cost',
+                  'A U.S. total market index fund, an international index fund, and a U.S. bond index fund, covering the global market at minimal cost',
                   'S&P 500 index + technology sector ETF + emerging market fund for growth emphasis',
                   'Large-cap growth + small-cap value + dividend income fund for maximum diversification',
                   'Total stock market + real estate REIT fund + high-yield bond fund for income generation',
@@ -6908,10 +6908,10 @@ export const levels = [
               {
                 prompt: 'When should you consider switching from one mutual fund to another in a taxable account?',
                 options: [
-                  'Only if the new fund has meaningfully lower costs or better fits your strategy - switching triggers capital gains tax on any unrealized gains',
-                  'Every year - annual rebalancing should include replacing the prior year\'s underperforming fund',
-                  'Whenever a fund manager changes - new management always requires a fresh start',
-                  'When any fund declines more than 10% - selling prevents further losses',
+                  'Only if the new fund has meaningfully lower costs or better fits your strategy, since switching triggers capital gains tax on any unrealized gains',
+                  'Every year, since annual rebalancing should include replacing the prior year\'s underperforming fund',
+                  'Whenever a fund manager changes, since new management always requires a fresh start',
+                  'When any fund declines more than 10%, since selling prevents further losses',
                 ],
                 correct: 0,
                 explanation: 'Switching funds in a taxable account triggers a taxable event. Before switching, calculate whether the long-term fee savings exceed the immediate tax cost of selling. In tax-advantaged accounts, switching is free and easy.',
@@ -6930,7 +6930,7 @@ export const levels = [
               {
                 prompt: 'What is automatic dividend reinvestment in a mutual fund and why is it powerful?',
                 options: [
-                  'Using dividend distributions to automatically buy more fund shares - accelerating compounding over long periods',
+                  'Using dividend distributions to automatically buy more fund shares, accelerating compounding over long periods',
                   'A feature that converts dividends to tax-free income by immediately reinvesting them',
                   'A brokerage service that automatically moves dividends into a higher-yielding money market fund',
                   'A mutual fund feature that guarantees your dividends will increase each year',
@@ -6979,20 +6979,20 @@ export const levels = [
               {
                 prompt: 'The first ETF ever created was the SPDR S&P 500 ETF (ticker: SPY), launched in:',
                 options: [
-                  '1993 - it is still one of the most traded securities in the world',
-                  '2000 - created during the dot-com era to give retail investors index access',
-                  '1985 - part of Reagan-era deregulation of financial markets',
-                  '2008 - created in response to the financial crisis to stabilize markets',
+                  '1993, and it is still one of the most traded securities in the world',
+                  '2000, created during the dot-com era to give retail investors index access',
+                  '1985, as part of Reagan-era deregulation of financial markets',
+                  '2008, created in response to the financial crisis to stabilize markets',
                 ],
                 correct: 0,
-                explanation: 'SPY launched January 22, 1993. It tracks the S&P 500 and now holds over $500 billion in assets. The ETF industry has grown to over $10 trillion globally - one of the most significant financial innovations ever.',
+                explanation: 'SPY launched January 22, 1993. It tracks the S&P 500 and now holds over $500 billion in assets. The ETF industry has grown to over $10 trillion globally, one of the most significant financial innovations ever.',
               },
               {
                 prompt: 'What securities can an ETF hold?',
                 options: [
-                  'Nearly anything: stocks, bonds, commodities, currencies, real estate - there are ETFs for almost every asset class',
+                  'Nearly anything including stocks, bonds, commodities, currencies, and real estate, with ETFs available for almost every asset class',
                   'Only large-cap U.S. stocks that are listed on the New York Stock Exchange',
-                  'Exclusively index components - ETFs cannot hold actively selected securities',
+                  'Exclusively index components, since ETFs cannot hold actively selected securities',
                   'Only securities rated investment grade or above by the major rating agencies',
                 ],
                 correct: 0,
@@ -7001,35 +7001,35 @@ export const levels = [
               {
                 prompt: 'What is the ticker symbol used for?',
                 options: [
-                  'A unique abbreviation identifying a specific ETF or stock on an exchange - like SPY for the S&P 500 ETF',
+                  'A unique abbreviation identifying a specific ETF or stock on an exchange, like SPY for the S&P 500 ETF',
                   'The fund\'s expense ratio displayed as a code in financial data systems',
                   'A security code that determines which investors are allowed to purchase the ETF',
                   'A rating system from 1–10 indicating the fund\'s risk level relative to the market',
                 ],
                 correct: 0,
-                explanation: 'SPY, QQQ (NASDAQ-100), VTI (Vanguard Total Market), BND (Vanguard Total Bond) - memorizing a few key tickers gives you access to broad market exposure with minimal cost.',
+                explanation: 'SPY, QQQ (NASDAQ-100), VTI (Vanguard Total Market), BND (Vanguard Total Bond): memorizing a few key tickers gives you access to broad market exposure with minimal cost.',
               },
               {
                 prompt: 'What does it mean for an ETF to be "passively managed"?',
                 options: [
                   'The ETF mechanically holds the components of a specific index without active security selection',
                   'The fund manager only makes changes once per year, minimizing transaction activity',
-                  'Investors cannot trade the ETF on a daily basis - it can only be bought at month-end',
+                  'Investors cannot trade the ETF on a daily basis since it can only be bought at month-end',
                   'The ETF automatically reduces equity exposure when markets fall more than 10%',
                 ],
                 correct: 0,
-                explanation: 'Most ETFs are passively managed - they track an index. The manager doesn\'t decide what to buy; the index does. This is why passive ETFs have such low expense ratios: no research staff needed.',
+                explanation: 'Most ETFs are passively managed; they track an index. The manager doesn\'t decide what to buy; the index does. This is why passive ETFs have such low expense ratios: no research staff needed.',
               },
               {
                 prompt: 'What is "NAV" for an ETF vs. the market price?',
                 options: [
-                  'NAV is the per-share value of the ETF\'s underlying holdings; market price is what you actually pay to buy or sell on an exchange - they stay very close due to arbitrage',
+                  'NAV is the per-share value of the ETF\'s underlying holdings, while market price is what you actually pay on an exchange; they stay very close thanks to arbitrage',
                   'NAV is the historical average price; market price is the real-time price',
-                  'ETFs don\'t have an NAV - they are priced purely by supply and demand',
+                  'ETFs don\'t have an NAV since they are priced purely by supply and demand',
                   'Market price is always higher than NAV to compensate market makers for their services',
                 ],
                 correct: 0,
-                explanation: 'Authorized participants (large institutions) can create or redeem ETF shares in large blocks. This arbitrage keeps the ETF\'s market price extremely close to the value of its underlying holdings - usually within a few cents.',
+                explanation: 'Authorized participants (large institutions) can create or redeem ETF shares in large blocks. This arbitrage keeps the ETF\'s market price extremely close to the value of its underlying holdings, usually within a few cents.',
               },
             ],
           },
@@ -7058,15 +7058,15 @@ export const levels = [
                   'The IRS exempts ETF holders from paying taxes on gains under $10,000 per year',
                 ],
                 correct: 0,
-                explanation: 'When mutual fund investors redeem shares, the fund must sell holdings to raise cash - triggering capital gains for everyone. ETF in-kind redemptions sidestep this, making ETFs significantly more tax-efficient in taxable accounts.',
+                explanation: 'When mutual fund investors redeem shares, the fund must sell holdings to raise cash, triggering capital gains for everyone. ETF in-kind redemptions sidestep this, making ETFs significantly more tax-efficient in taxable accounts.',
               },
               {
                 prompt: 'In which account type does the ETF vs. mutual fund tax efficiency distinction matter MOST?',
                 options: [
-                  'Taxable brokerage accounts - inside a 401(k) or IRA, there are no annual taxes regardless of structure',
-                  'Roth IRA accounts - ETF efficiency compounds the tax-free growth advantage',
-                  'Traditional IRA accounts - ETF efficiency prevents RMD calculations from including capital gains',
-                  'HSA accounts - ETF efficiency is most critical for healthcare-related investing',
+                  'Taxable brokerage accounts, since inside a 401(k) or IRA there are no annual taxes regardless of structure',
+                  'Roth IRA accounts, where ETF efficiency compounds the tax-free growth advantage',
+                  'Traditional IRA accounts, where ETF efficiency prevents RMD calculations from including capital gains',
+                  'HSA accounts, where ETF efficiency is most critical for healthcare-related investing',
                 ],
                 correct: 0,
                 explanation: 'In a tax-advantaged account, capital gains distributions don\'t matter - you don\'t pay taxes until withdrawal (or never with a Roth). In taxable accounts, the ETF structure can save you 0.2–0.5% or more in annual tax drag.',
@@ -7074,18 +7074,18 @@ export const levels = [
               {
                 prompt: 'Can you place a limit order on an ETF? Can you do the same with a mutual fund?',
                 options: [
-                  'Yes on ETFs - you can set any order type; No on mutual funds - they always execute at end-of-day NAV, no order types available',
+                  'Yes on ETFs where you can set any order type, but no on mutual funds since they always execute at end-of-day NAV with no order types available',
                   'Both ETFs and mutual funds accept limit orders through any brokerage platform',
-                  'Neither accepts limit orders - both always execute at the next available price',
+                  'Neither accepts limit orders since both always execute at the next available price',
                   'Mutual funds accept limit orders during after-hours sessions; ETFs do not',
                 ],
                 correct: 0,
-                explanation: 'ETFs trade exactly like stocks - you can use market orders, limit orders, stop orders, and even sell short. This flexibility is unnecessary for most long-term investors but useful for sophisticated strategies.',
+                explanation: 'ETFs trade exactly like stocks; you can use market orders, limit orders, stop orders, and even sell short. This flexibility is unnecessary for most long-term investors but useful for sophisticated strategies.',
               },
               {
                 prompt: 'For a long-term buy-and-hold investor in a tax-advantaged account, how different are ETFs and low-cost index mutual funds?',
                 options: [
-                  'Very little difference - both provide low-cost index exposure; the choice often comes down to minimum investment and personal preference',
+                  'Very little difference, since both provide low-cost index exposure and the choice often comes down to minimum investment and personal preference',
                   'ETFs are vastly superior in all situations for every type of investor',
                   'Mutual funds are always better because they offer higher dividend reinvestment rates',
                   'ETFs are only appropriate for investors who actively trade at least monthly',
@@ -7096,13 +7096,13 @@ export const levels = [
               {
                 prompt: 'What is the minimum investment to buy one share of most ETFs?',
                 options: [
-                  'The price of one share - often $50–$500 for popular ETFs, though some brokerages now offer fractional shares',
-                  '$1,000 - the standard minimum for all exchange-traded products',
-                  'No minimum - all ETFs can be purchased for any dollar amount',
+                  'The price of one share, often $50–$500 for popular ETFs, though some brokerages now offer fractional shares',
+                  '$1,000, the standard minimum for all exchange-traded products',
+                  'No minimum, since all ETFs can be purchased for any dollar amount',
                   '$10,000 for institutional ETFs; $2,500 for retail ETFs',
                 ],
                 correct: 0,
-                explanation: 'ETFs have no official minimum - you just need enough to buy one share (or a fraction with fractional share programs). This beats many mutual funds that require $1,000–$3,000 minimums.',
+                explanation: 'ETFs have no official minimum; you just need enough to buy one share (or a fraction with fractional share programs). This beats many mutual funds that require $1,000–$3,000 minimums.',
               },
             ],
           },
@@ -7114,7 +7114,7 @@ export const levels = [
               {
                 prompt: 'What does a broad market ETF like VTI (Vanguard Total Stock Market) provide?',
                 options: [
-                  'Exposure to virtually all U.S. publicly traded companies - large, mid, small, and micro-cap - in a single fund',
+                  'Exposure to virtually all U.S. publicly traded companies, including large, mid, small, and micro-cap, in a single fund',
                   'Exposure only to the 500 largest U.S. companies in the S&P 500 index',
                   'A 50/50 mix of U.S. and international stocks automatically rebalanced monthly',
                   'Only dividend-paying stocks selected for their income potential and stability',
@@ -7125,7 +7125,7 @@ export const levels = [
               {
                 prompt: 'What does QQQ (Invesco NASDAQ-100 ETF) track?',
                 options: [
-                  'The 100 largest non-financial companies listed on NASDAQ - heavily concentrated in technology',
+                  'The 100 largest non-financial companies listed on NASDAQ, heavily concentrated in technology',
                   'All 3,000+ companies listed on the NASDAQ exchange',
                   'The 100 fastest-growing companies in the United States by revenue',
                   'An equal-weighted portfolio of the 100 highest-paying dividend stocks',
@@ -7136,29 +7136,29 @@ export const levels = [
               {
                 prompt: 'What is a bond ETF?',
                 options: [
-                  'An ETF that holds a portfolio of bonds - providing access to fixed income with stock-like trading flexibility',
+                  'An ETF that holds a portfolio of bonds, providing access to fixed income with stock-like trading flexibility',
                   'A fund that combines stocks and bonds in a target-date-like glide path structure',
                   'A government savings bond product that can be traded on stock exchanges',
                   'An ETF that uses leverage to double the returns of Treasury bond indices',
                 ],
                 correct: 0,
-                explanation: 'BND (Vanguard Total Bond Market ETF) holds thousands of U.S. bonds - government, corporate, and mortgage-backed - for 0.03% per year. Bond ETFs have made fixed income accessible and cheap for retail investors.',
+                explanation: 'BND (Vanguard Total Bond Market ETF) holds thousands of U.S. bonds, including government, corporate, and mortgage-backed, for 0.03% per year. Bond ETFs have made fixed income accessible and cheap for retail investors.',
               },
               {
                 prompt: 'What is a gold ETF, and why might investors hold one?',
                 options: [
-                  'An ETF backed by physical gold - provides exposure to gold prices without storing physical bars',
+                  'An ETF backed by physical gold, providing exposure to gold prices without the need to store physical bars',
                   'An ETF that invests in gold mining company stocks rather than the physical metal',
                   'A government-backed fund that guarantees returns tied to gold\'s five-year price average',
                   'A leveraged ETF that provides 3x the daily returns of gold spot price movements',
                 ],
                 correct: 0,
-                explanation: 'GLD and IAU are popular gold ETFs. Investors hold gold as inflation protection and portfolio insurance. Gold often rises when stocks and bonds fall. The downside: gold pays no income - only price appreciation matters.',
+                explanation: 'GLD and IAU are popular gold ETFs. Investors hold gold as inflation protection and portfolio insurance. Gold often rises when stocks and bonds fall. The downside is that gold pays no income; only price appreciation matters.',
               },
               {
                 prompt: 'What is a leveraged ETF, and why are they dangerous for most investors?',
                 options: [
-                  'Funds that use derivatives to amplify index returns (e.g., 2x or 3x daily) - compounding effects erode value over time in volatile markets',
+                  'Funds that use derivatives to amplify index returns (e.g., 2x or 3x daily), where compounding effects erode value over time in volatile markets',
                   'ETFs that borrow money to increase position sizes, generating higher yields for income investors',
                   'Funds that hold twice as many shares as standard ETFs to increase diversification',
                   'Low-cost funds that use options to generate a small leveraged return on dividend income',
@@ -7169,7 +7169,7 @@ export const levels = [
               {
                 prompt: 'What is an inverse ETF?',
                 options: [
-                  'An ETF designed to rise when its benchmark index falls - used to profit from or hedge against market declines',
+                  'An ETF designed to rise when its benchmark index falls, used to profit from or hedge against market declines',
                   'An ETF that starts in bonds and converts to stocks as the market rises',
                   'A fund that reverses its portfolio allocation after each month-end rebalance',
                   'An ETF that adjusts its holdings opposite to what other investors are buying',
@@ -7187,18 +7187,18 @@ export const levels = [
               {
                 prompt: 'What is the bid-ask spread for an ETF, and when does it matter?',
                 options: [
-                  'The difference between the highest buy price and lowest sell price - wider in illiquid ETFs, representing a hidden trading cost',
+                  'The difference between the highest buy price and lowest sell price, which is wider in illiquid ETFs and represents a hidden trading cost',
                   'The gap between the ETF\'s expense ratio and its benchmark index return',
                   'The difference between the ETF\'s market price and its net asset value',
                   'A fee charged by market makers to facilitate large institutional ETF trades',
                 ],
                 correct: 0,
-                explanation: 'SPY might have a $0.01 spread. An obscure sector ETF might have a $0.20 spread. On a $50 ETF, that $0.20 is 0.40% - a significant cost if you trade frequently. Use limit orders for thinly traded ETFs.',
+                explanation: 'SPY might have a $0.01 spread. An obscure sector ETF might have a $0.20 spread. On a $50 ETF, that $0.20 is 0.40%, a significant cost if you trade frequently. Use limit orders for thinly traded ETFs.',
               },
               {
                 prompt: 'What is an ETF\'s "assets under management" (AUM) and why does it matter?',
                 options: [
-                  'Total market value of all shares held - larger AUM generally means tighter bid-ask spreads and less risk of the fund being closed',
+                  'The total market value of all shares held, where larger AUM generally means tighter bid-ask spreads and less risk of the fund being closed',
                   'The maximum amount the ETF is legally allowed to hold under SEC regulations',
                   'How much the fund manager personally has invested in the ETF',
                   'The number of shares outstanding multiplied by the expense ratio',
@@ -7209,7 +7209,7 @@ export const levels = [
               {
                 prompt: 'What does it mean when an ETF\'s market price trades at a "premium" to NAV?',
                 options: [
-                  'You are paying more than the underlying assets are worth - acceptable in small amounts but can signal liquidity issues in illiquid ETFs',
+                  'You are paying more than the underlying assets are worth, which is acceptable in small amounts but can signal liquidity issues in illiquid ETFs',
                   'The fund has temporarily outperformed its benchmark and the extra value is stored as premium',
                   'The ETF has recently paid a dividend that will reduce the NAV at the next close',
                   'A premium means the ETF has a lower expense ratio than comparable funds',
@@ -7234,15 +7234,15 @@ export const levels = [
                   'Distribution yield is only the income paid out (dividends/interest); total return includes price appreciation plus distributions',
                   'Total return is what the ETF earns before fees; distribution yield is what investors keep after fees',
                   'Distribution yield is reported by the fund; total return is calculated by investors independently',
-                  'There is no difference - the terms are synonymous and used interchangeably in fund documents',
+                  'There is no difference since the terms are synonymous and used interchangeably in fund documents',
                 ],
                 correct: 0,
-                explanation: 'A bond ETF might have a 4% distribution yield (income) and a −2% price return in a rising-rate environment, for a total return of 2%. Income alone doesn\'t tell the full story - always check total return.',
+                explanation: 'A bond ETF might have a 4% distribution yield (income) and a −2% price return in a rising-rate environment, for a total return of 2%. Income alone doesn\'t tell the full story; always check total return.',
               },
               {
                 prompt: 'What does the "inception date" on an ETF fact sheet tell you?',
                 options: [
-                  'When the ETF was first created and began trading - short track records limit meaningful performance analysis',
+                  'When the ETF was first created and began trading, since short track records limit meaningful performance analysis',
                   'The date when the ETF\'s current fund manager took over portfolio management',
                   'The date the underlying index was first created and published',
                   'The last time the ETF\'s expense ratio was changed',
@@ -7271,18 +7271,18 @@ export const levels = [
               {
                 prompt: 'What is a "capital gains distribution" and why do ETFs rarely have them?',
                 options: [
-                  'A taxable payout to shareholders when a fund sells holdings at a profit - ETFs avoid this through in-kind redemptions',
+                  'A taxable payout to shareholders when a fund sells holdings at a profit, which ETFs avoid through in-kind redemptions',
                   'A mandatory annual fee charged by the IRS on all investment fund profits',
                   'A special dividend paid to shareholders who have held the ETF for more than one year',
                   'An IRS-mandated distribution that converts short-term gains to long-term rates automatically',
                 ],
                 correct: 0,
-                explanation: 'A mutual fund that must sell Apple stock to meet redemptions realizes a capital gain that gets distributed to all shareholders - including those who didn\'t sell. ETFs almost never create this problem.',
+                explanation: 'A mutual fund that must sell Apple stock to meet redemptions realizes a capital gain that gets distributed to all shareholders, including those who didn\'t sell. ETFs almost never create this problem.',
               },
               {
                 prompt: 'Even in a tax-advantaged account (IRA, 401k), which type of fund is generally preferred from a cost perspective?',
                 options: [
-                  'The lowest-cost available option - often an index ETF or index mutual fund, since tax efficiency doesn\'t matter inside tax-sheltered accounts',
+                  'The lowest-cost available option, often an index ETF or index mutual fund, since tax efficiency doesn\'t matter inside tax-sheltered accounts',
                   'High-yield bond ETFs, which are especially efficient inside tax-advantaged accounts',
                   'Actively managed funds, which have better gross returns before tax that shine in tax-sheltered environments',
                   'Target-date funds are always preferred inside 401(k)s over ETFs regardless of cost',
@@ -7299,23 +7299,23 @@ export const levels = [
                   'Converting ETF shares to mutual fund shares to reset the cost basis for future gains',
                 ],
                 correct: 0,
-                explanation: 'Example: Sell VTI (Vanguard Total Market) at a loss, immediately buy SCHB (Schwab equivalent) - capturing the loss while staying in the market. Watch out for the wash-sale rule: can\'t buy the SAME or "substantially identical" fund within 30 days.',
+                explanation: 'Example: Sell VTI (Vanguard Total Market) at a loss, immediately buy SCHB (Schwab equivalent), capturing the loss while staying in the market. Watch out for the wash-sale rule: can\'t buy the SAME or "substantially identical" fund within 30 days.',
               },
               {
                 prompt: 'Which ETF type in a taxable account generates the MOST tax drag annually?',
                 options: [
-                  'High-turnover bond ETFs or REITs - their income is taxed as ordinary income (up to 37%)',
-                  'Broad market stock index ETFs like VTI or SPY - they pay the most in dividends',
+                  'High-turnover bond ETFs or REITs, since their income is taxed as ordinary income (up to 37%)',
+                  'Broad market stock index ETFs like VTI or SPY, since they pay the most in dividends',
                   'Gold ETFs, which are taxed as collectibles at a flat 28% rate',
                   'International ETFs, because foreign dividends face double taxation',
                 ],
                 correct: 0,
-                explanation: 'Bonds and REITs generate income taxed at ordinary rates - hold these inside tax-advantaged accounts. Stock index ETFs generate qualified dividends (15% max) and have low turnover - most tax-efficient in taxable accounts.',
+                explanation: 'Bonds and REITs generate income taxed at ordinary rates; hold these inside tax-advantaged accounts. Stock index ETFs generate qualified dividends (15% max) and have low turnover, making them most tax-efficient in taxable accounts.',
               },
               {
                 prompt: 'What is the "step-up in basis" benefit when gifting appreciated ETF shares at death?',
                 options: [
-                  'Heirs inherit ETF shares at the market value on date of death - all prior gains are never taxed',
+                  'Heirs inherit ETF shares at the market value on date of death, and all prior gains are never taxed',
                   'The ETF company steps up the dividend yield upon transfer to compensate for capital gains',
                   'The IRS requires heirs to hold inherited ETFs for one year before any step-up applies',
                   'Step-up in basis only applies to real estate and collectibles, not publicly traded ETFs',
@@ -7333,9 +7333,9 @@ export const levels = [
               {
                 prompt: 'What is the simplest one-ETF portfolio for a long-term investor?',
                 options: [
-                  'A single "total world" ETF like VT (Vanguard Total World) - holding 9,000+ companies across all countries in one fund',
+                  'A single "total world" ETF like VT (Vanguard Total World), holding 9,000+ companies across all countries in one fund',
                   'An ETF holding only the S&P 500\'s top 10 companies for maximum concentrated returns',
-                  'A sector ETF in the industry you know best - knowledge is the best diversification',
+                  'A sector ETF in the industry you know best, since knowledge is the best diversification',
                   'A bond ETF as the sole holding to guarantee principal protection',
                 ],
                 correct: 0,
@@ -7377,9 +7377,9 @@ export const levels = [
               {
                 prompt: 'How should you handle rebalancing a multi-ETF portfolio?',
                 options: [
-                  'Periodically (annually or when allocation drifts 5%+) sell overweight ETFs and buy underweight ones - or direct new contributions to lagging allocations',
+                  'Periodically, annually or when allocation drifts 5%+, sell overweight ETFs and buy underweight ones, or direct new contributions to lagging allocations',
                   'Rebalance daily by selling any ETF that rose and buying any that fell to maintain target weights',
-                  'Never rebalance - changing allocations triggers taxes and transaction costs that outweigh benefits',
+                  'Never rebalance, since changing allocations triggers taxes and transaction costs that outweigh the benefits',
                   'Rebalance only when your total portfolio value drops more than 20% from its peak',
                 ],
                 correct: 0,
@@ -7388,9 +7388,9 @@ export const levels = [
               {
                 prompt: 'What advantage do ETFs provide for an investor just starting with $1,000?',
                 options: [
-                  'No minimums - you can buy a single share of an ETF (or a fraction) and instantly own a diversified global portfolio',
+                  'No minimums, since you can buy a single share of an ETF (or a fraction) and instantly own a diversified global portfolio',
                   'ETFs guarantee a minimum 5% return for investors with portfolios under $5,000',
-                  'Small investors receive preferred pricing - lower expense ratios for portfolios under $10,000',
+                  'Small investors receive preferred pricing with lower expense ratios for portfolios under $10,000',
                   'ETFs are available before the market opens, allowing small investors to trade at lower prices',
                 ],
                 correct: 0,
@@ -7406,7 +7406,7 @@ export const levels = [
               {
                 prompt: 'What is a sector ETF?',
                 options: [
-                  'An ETF concentrating in one specific industry sector - like technology, healthcare, energy, or utilities',
+                  'An ETF concentrating in one specific industry sector, like technology, healthcare, energy, or utilities',
                   'An ETF that equally weights all sectors of the S&P 500 regardless of market cap',
                   'A fund that rotates between sectors based on economic cycle analysis every quarter',
                   'An ETF available only within the sector of the economy where you are employed',
@@ -7417,7 +7417,7 @@ export const levels = [
               {
                 prompt: 'What is the primary risk of heavily concentrating a portfolio in a single sector ETF?',
                 options: [
-                  'Sector-specific downturns can devastate a concentrated portfolio - tech fell 35% in 2022 while healthcare held up',
+                  'Sector-specific downturns can devastate a concentrated portfolio, as when tech fell 35% in 2022 while healthcare held up',
                   'Sector ETFs charge higher expense ratios than broad market ETFs',
                   'Sector ETFs cannot be held in tax-advantaged retirement accounts like IRAs',
                   'Most sector ETFs hold fewer than 10 stocks, creating company-specific risk',
@@ -7428,7 +7428,7 @@ export const levels = [
               {
                 prompt: 'What is a "thematic ETF"?',
                 options: [
-                  'An ETF built around an investment theme - like artificial intelligence, clean energy, or cybersecurity',
+                  'An ETF built around an investment theme, like artificial intelligence, clean energy, or cybersecurity',
                   'An ETF that tracks a market theme like "highest dividend yield" across all sectors',
                   'A fund that adjusts its portfolio to match the current political or social theme',
                   'A fund that uses a theme to determine which countries to invest in internationally',
@@ -7439,7 +7439,7 @@ export const levels = [
               {
                 prompt: 'What is a REIT ETF?',
                 options: [
-                  'An ETF holding a diversified portfolio of Real Estate Investment Trusts - providing exposure to commercial real estate without buying property',
+                  'An ETF holding a diversified portfolio of Real Estate Investment Trusts, providing exposure to commercial real estate without buying property',
                   'An ETF that tracks residential home prices using futures contracts',
                   'A rental income ETF that collects monthly payments from commercial tenants',
                   'An ETF backed by physical real estate properties held in trust for shareholders',
@@ -7450,21 +7450,21 @@ export const levels = [
               {
                 prompt: 'Why do newer thematic ETFs often underperform broad market ETFs over the long term?',
                 options: [
-                  'They launch when a theme is already popular and overvalued - investors buy high, and the theme often disappoints',
+                  'They launch when a theme is already popular and overvalued, so investors buy high and the theme often disappoints',
                   'New ETFs are required to hold cash for the first year, reducing market exposure',
                   'Thematic ETFs cannot participate in S&P 500 index rebalancing events',
                   'The SEC limits thematic ETF returns to protect investors from excessive speculation',
                 ],
                 correct: 0,
-                explanation: 'Fund companies launch thematic ETFs to capture investor demand - which typically peaks when the theme is already widely known and priced in. The best time to buy was before the ETF existed.',
+                explanation: 'Fund companies launch thematic ETFs to capture investor demand, which typically peaks when the theme is already widely known and priced in. The best time to buy was before the ETF existed.',
               },
               {
                 prompt: 'How much of your portfolio should most retail investors typically allocate to sector and thematic ETFs?',
                 options: [
-                  'A small portion - no more than 10–20% - with the core portfolio in broad market index ETFs',
-                  'At least 50% - sector knowledge provides an edge that broad market funds cannot replicate',
-                  'None - all money should be in total market index ETFs without exception',
-                  '100% - thematic investing is the only way to beat the broad market over time',
+                  'A small portion, no more than 10–20%, with the core portfolio in broad market index ETFs',
+                  'At least 50%, since sector knowledge provides an edge that broad market funds cannot replicate',
+                  'None, since all money should be in total market index ETFs without exception',
+                  '100%, since thematic investing is the only way to beat the broad market over time',
                 ],
                 correct: 0,
                 explanation: 'Keeping speculative allocations small limits the damage if a theme doesn\'t pan out. Core-satellite is the key principle: anchor in broad diversification, use sectors/themes as deliberate, limited tilts.',
@@ -7479,10 +7479,10 @@ export const levels = [
               {
                 prompt: 'What is the largest ETF issuer in the world by assets under management?',
                 options: [
-                  'BlackRock (iShares) - followed closely by Vanguard and State Street (SPDR)',
-                  'Fidelity - which invented the ETF in 1993 with the first S&P 500 ETF',
-                  'Goldman Sachs - which manages the most assets across all investment products globally',
-                  'The U.S. government - which oversees all ETF issuance through the SEC',
+                  'BlackRock (iShares), followed closely by Vanguard and State Street (SPDR)',
+                  'Fidelity, which invented the ETF in 1993 with the first S&P 500 ETF',
+                  'Goldman Sachs, which manages the most assets across all investment products globally',
+                  'The U.S. government, which oversees all ETF issuance through the SEC',
                 ],
                 correct: 0,
                 explanation: 'BlackRock\'s iShares lineup includes hundreds of ETFs covering virtually every market. Vanguard and State Street compete at the top. Together, the "Big Three" hold the majority of ETF assets globally.',
@@ -7490,7 +7490,7 @@ export const levels = [
               {
                 prompt: 'What is an "authorized participant" (AP) in the ETF ecosystem?',
                 options: [
-                  'A large financial institution that can create and redeem large blocks of ETF shares directly with the fund, keeping the price close to NAV',
+                  'A large financial institution that can create and redeem large blocks of ETF shares directly with the fund to keep the price close to NAV',
                   'An individual investor approved to trade ETFs outside of normal market hours',
                   'A regulator at the SEC who monitors ETF compliance and approves new fund launches',
                   'A financial advisor certified to recommend ETFs to retail clients',
@@ -7501,7 +7501,7 @@ export const levels = [
               {
                 prompt: 'What is an actively managed ETF?',
                 options: [
-                  'An ETF where a portfolio manager makes active investment decisions rather than tracking an index - combining ETF structure with active strategy',
+                  'An ETF where a portfolio manager makes active investment decisions rather than tracking an index, combining the ETF structure with an active strategy',
                   'An ETF that investors can actively customize by selecting which individual stocks to include',
                   'A leveraged ETF that actively amplifies daily returns using derivatives and margin',
                   'An ETF available only through actively managed brokerage accounts rather than self-directed platforms',
@@ -7512,13 +7512,13 @@ export const levels = [
               {
                 prompt: 'How do ETF expense ratios get paid?',
                 options: [
-                  'Automatically deducted daily from the fund\'s assets - you never write a check, but the ETF\'s NAV grows slightly slower than the index',
+                  'Automatically deducted daily from the fund\'s assets, so you never write a check but the ETF\'s NAV grows slightly slower than the index',
                   'As a monthly fee deducted from your brokerage cash account',
                   'As an annual invoice sent by the ETF issuer to all registered shareholders',
                   'Paid upfront as a commission when you first purchase shares of the ETF',
                 ],
                 correct: 0,
-                explanation: 'The expense ratio is accrued daily (0.03% ÷ 365 per day). It silently reduces NAV slightly below the index each day. You\'ll never see a line-item charge - it\'s reflected in the lower-than-index total return.',
+                explanation: 'The expense ratio is accrued daily (0.03% ÷ 365 per day). It silently reduces NAV slightly below the index each day. You\'ll never see a line-item charge; it\'s reflected in the lower-than-index total return.',
               },
               {
                 prompt: 'What major advantage do ETFs offer for investors who want to practice tax-loss harvesting?',
@@ -7529,18 +7529,18 @@ export const levels = [
                   'ETF losses are automatically doubled for tax purposes compared to mutual fund losses',
                 ],
                 correct: 0,
-                explanation: 'Selling VTI (Vanguard Total Market) and buying SCHB (Schwab Total Market) keeps you in equivalent market exposure while harvesting the loss. The two ETFs track slightly different indexes - not "substantially identical."',
+                explanation: 'Selling VTI (Vanguard Total Market) and buying SCHB (Schwab Total Market) keeps you in equivalent market exposure while harvesting the loss. The two ETFs track slightly different indexes, so they are not "substantially identical."',
               },
               {
                 prompt: 'What should you consider before investing in an ETF with less than $100 million in assets?',
                 options: [
-                  'The risk of closure - small ETFs may be shut down if they\'re unprofitable for the issuer, forcing you to sell (a taxable event)',
+                  'The risk of closure, since small ETFs may be shut down if they\'re unprofitable for the issuer, forcing you to sell in a taxable event',
                   'Smaller ETFs automatically charge higher expense ratios to cover fixed operating costs',
                   'The SEC prohibits retail investors from owning ETFs below $100 million in AUM',
                   'Small ETFs are only available to investors with more than $500,000 in brokerage assets',
                 ],
                 correct: 0,
-                explanation: 'Hundreds of ETFs close each year. Closure isn\'t catastrophic - you receive the NAV - but it triggers a taxable event and forces reinvestment decisions. Stick to established, large ETFs for core holdings.',
+                explanation: 'Hundreds of ETFs close each year. Closure isn\'t catastrophic; you receive the NAV, but it triggers a taxable event and forces reinvestment decisions. Stick to established, large ETFs for core holdings.',
               },
             ],
           },
@@ -7578,14 +7578,14 @@ export const levels = [
                   'Early savers receive higher Social Security benefits as a reward for planning ahead',
                 ],
                 correct: 0,
-                explanation: '$5,000 invested at age 25 grows to ~$85,000 by 65 at 7% annual return. The same $5,000 at 45 grows to only ~$19,000. Time is the most powerful retirement planning tool - and it can never be recovered once lost.',
+                explanation: '$5,000 invested at age 25 grows to ~$85,000 by 65 at 7% annual return. The same $5,000 at 45 grows to only ~$19,000. Time is the most powerful retirement planning tool, and it can never be recovered once lost.',
               },
               {
                 prompt: 'Why can\'t most people rely solely on Social Security for retirement income?',
                 options: [
-                  'Social Security replaces only 30–40% of average earnings - far below what most retirees need to maintain their lifestyle',
+                  'Social Security replaces only 30–40% of average earnings, far below what most retirees need to maintain their lifestyle',
                   'Social Security benefits are only paid for 10 years after retirement regardless of lifespan',
-                  'Social Security is means-tested - high earners are ineligible for any benefits',
+                  'Social Security is means-tested, so high earners are ineligible for any benefits',
                   'Social Security was eliminated and replaced by mandatory private retirement accounts in 2010',
                 ],
                 correct: 0,
@@ -7605,21 +7605,21 @@ export const levels = [
               {
                 prompt: 'What is "longevity risk" in retirement planning?',
                 options: [
-                  'The risk of outliving your retirement savings - especially relevant as life expectancy extends',
+                  'The risk of outliving your retirement savings, especially relevant as life expectancy extends',
                   'The risk of market crashes reducing portfolio value in the first years of retirement',
                   'The risk that inflation erodes the purchasing power of fixed retirement income',
                   'The risk that Social Security benefits are reduced before you reach claiming age',
                 ],
                 correct: 0,
-                explanation: 'A 65-year-old today has roughly a 25% chance of living past 90 - a 25-year retirement! Under-saving or withdrawing too much leads to running out of money in your 80s, a devastating scenario.',
+                explanation: 'A 65-year-old today has roughly a 25% chance of living past 90, potentially a 25-year retirement. Under-saving or withdrawing too much leads to running out of money in your 80s, a devastating scenario.',
               },
               {
                 prompt: 'How much of your income do most financial experts recommend saving for retirement?',
                 options: [
-                  '10–15% of gross income - including employer match - is the most commonly cited guideline',
-                  'Exactly 4% - just enough to capture the full employer match on most plans',
-                  '25–35% - only this level guarantees a comfortable retirement',
-                  'Nothing until your 40s - early career should focus entirely on paying off debt',
+                  '10–15% of gross income including employer match, which is the most commonly cited guideline',
+                  'Exactly 4%, just enough to capture the full employer match on most plans',
+                  '25–35%, since only this level guarantees a comfortable retirement',
+                  'Nothing until your 40s, since early career should focus entirely on paying off debt',
                 ],
                 correct: 0,
                 explanation: 'The "save 15% of income" guideline is a starting point. Higher savings rates allow earlier retirement (the FIRE movement targets 50%+). Lower rates require working longer or accepting reduced retirement spending.',
@@ -7656,7 +7656,7 @@ export const levels = [
               {
                 prompt: 'What is an employer 401(k) match and why is it the #1 priority?',
                 options: [
-                  'Free money from your employer - a 100% instant return on every matched dollar, making it better than any investment',
+                  'Free money from your employer, representing a 100% instant return on every matched dollar and making it better than any investment',
                   'A taxable benefit added to your W-2 that you must repay if you leave the job within two years',
                   'An optional employer contribution available only to workers earning below the median salary',
                   'A plan feature that invests your contributions in company stock to align with firm performance',
@@ -7667,13 +7667,13 @@ export const levels = [
               {
                 prompt: 'What is vesting in a 401(k)?',
                 options: [
-                  'The schedule by which employer contributions become permanently yours - often requiring 2–6 years of employment',
+                  'The schedule by which employer contributions become permanently yours, often requiring 2–6 years of employment',
                   'The annual process of updating your investment choices within the 401(k) plan',
                   'The conversion of Traditional 401(k) funds to Roth when you leave a job',
                   'The legal confirmation that your 401(k) is protected from creditors in bankruptcy',
                 ],
                 correct: 0,
-                explanation: 'Your own contributions are always 100% vested immediately. Employer match may have a vesting schedule - leave after 1 year and you might forfeit the match. Check your plan\'s vesting terms before job-hopping.',
+                explanation: 'Your own contributions are always 100% vested immediately. Employer match may have a vesting schedule; leave after 1 year and you might forfeit the match. Check your plan\'s vesting terms before job-hopping.',
               },
               {
                 prompt: 'What happens to your 401(k) when you leave a job?',
@@ -7684,12 +7684,12 @@ export const levels = [
                   'The plan automatically converts to an IRA managed by your former employer\'s HR department',
                 ],
                 correct: 0,
-                explanation: 'Rolling to an IRA is often best - more investment options and lower fees. Rolling to a new employer plan keeps it simple. Never cash out (income tax + 10% penalty) unless absolutely necessary.',
+                explanation: 'Rolling to an IRA is often best, offering more investment options and lower fees. Rolling to a new employer plan keeps it simple. Never cash out (income tax + 10% penalty) unless absolutely necessary.',
               },
               {
                 prompt: 'What is a 401(k) loan?',
                 options: [
-                  'Borrowing from your own 401(k) balance - repaid with interest to yourself, but risking growth loss and taxes if you leave the job',
+                  'Borrowing from your own 401(k) balance, repaid with interest to yourself, but risking growth loss and taxes if you leave the job',
                   'A personal loan from your employer that you repay through 401(k) contributions',
                   'A government program allowing workers to borrow against future Social Security benefits',
                   'A feature allowing you to withdraw up to $10,000 penalty-free for any financial emergency',
@@ -7700,10 +7700,10 @@ export const levels = [
               {
                 prompt: 'The 2024 401(k) contribution limit is $23,000 for employees under 50. What additional "catch-up" contribution is allowed for those 50+?',
                 options: [
-                  'An extra $7,500 - for a total of $30,500 for workers 50 and older',
-                  'An extra $1,000 - matching the IRA catch-up amount',
-                  'An extra $10,000 - doubling the standard limit for near-retirees',
-                  'No catch-up is available for 401(k) plans - only IRAs allow catch-up contributions',
+                  'An extra $7,500, for a total of $30,500 for workers 50 and older',
+                  'An extra $1,000, matching the IRA catch-up amount',
+                  'An extra $10,000, doubling the standard limit for near-retirees',
+                  'No catch-up is available for 401(k) plans, since only IRAs allow catch-up contributions',
                 ],
                 correct: 0,
                 explanation: 'Catch-up contributions let older workers accelerate savings in their peak earning years. Someone saving $30,500 annually from 50–65 (15 years at 7%) could add over $800,000 to their retirement nest egg.',
@@ -7741,7 +7741,7 @@ export const levels = [
                 prompt: 'What are the income limits for direct Roth IRA contributions in 2024 (single filers)?',
                 options: [
                   'Contributions begin phasing out at $146,000 and are completely eliminated above $161,000',
-                  'There are no income limits - anyone with earned income can contribute to a Roth IRA',
+                  'There are no income limits since anyone with earned income can contribute to a Roth IRA',
                   'Roth IRA contributions are limited to workers earning under $50,000 per year',
                   'Income must exceed $100,000 to qualify for the maximum Roth IRA contribution',
                 ],
@@ -7751,21 +7751,21 @@ export const levels = [
               {
                 prompt: 'What makes the Roth IRA uniquely flexible compared to other retirement accounts?',
                 options: [
-                  'Contributions (not earnings) can be withdrawn at any time without taxes or penalties - making it an emergency fund backup',
+                  'Contributions (not earnings) can be withdrawn at any time without taxes or penalties, making it a useful emergency fund backup',
                   'Roth IRA accounts have no limits on how much can be withdrawn in any single year',
                   'The government guarantees a minimum 3% return on all Roth IRA accounts annually',
                   'Roth IRAs allow you to contribute even if you have no earned income in a given year',
                 ],
                 correct: 0,
-                explanation: 'You can always pull out your original contributions penalty-free. This makes a Roth IRA a secondary emergency fund. Earnings have stricter rules - typically taxable and penalized if withdrawn before 59½ and the 5-year rule.',
+                explanation: 'You can always pull out your original contributions penalty-free. This makes a Roth IRA a secondary emergency fund. Earnings have stricter rules; they are typically taxable and penalized if withdrawn before 59½ and the 5-year rule.',
               },
               {
                 prompt: 'What is the annual IRA contribution limit for 2024?',
                 options: [
-                  '$7,000 ($8,000 if age 50+) - shared across all your IRAs combined',
-                  '$7,000 per IRA - if you have both Traditional and Roth, you can contribute $7,000 to each',
-                  '$23,000 - the same limit as a 401(k) plan',
-                  '$5,500 - the limit has not changed since 2018',
+                  '$7,000 ($8,000 if age 50+), shared across all your IRAs combined',
+                  '$7,000 per IRA, so if you have both Traditional and Roth you can contribute $7,000 to each',
+                  '$23,000, the same limit as a 401(k) plan',
+                  '$5,500, since the limit has not changed since 2018',
                 ],
                 correct: 0,
                 explanation: 'The $7,000 limit is combined across ALL your IRAs. Having a Roth and Traditional IRA doesn\'t double your limit. Contribute to both? The total still can\'t exceed $7,000 (or $8,000 if 50+).',
@@ -7773,13 +7773,13 @@ export const levels = [
               {
                 prompt: 'What is a Roth IRA conversion?',
                 options: [
-                  'Moving money from a Traditional IRA to a Roth IRA - paying income tax on the converted amount in the year of conversion',
+                  'Moving money from a Traditional IRA to a Roth IRA, paying income tax on the converted amount in the year of conversion',
                   'Converting Roth IRA shares into individual stocks without triggering a taxable event',
                   'Rolling a 401(k) into a Roth IRA without any tax consequences at the time of transfer',
                   'Changing your IRA\'s investment allocations from bonds to stocks at any time tax-free',
                 ],
                 correct: 0,
-                explanation: 'Roth conversions make sense when your current tax rate is low - early retirement, low-income years, or after a job loss. Pay taxes today, enjoy tax-free growth and withdrawals forever after.',
+                explanation: 'Roth conversions make sense when your current tax rate is low, such as in early retirement, low-income years, or after a job loss. Pay taxes today and enjoy tax-free growth and withdrawals forever after.',
               },
             ],
           },
@@ -7794,7 +7794,7 @@ export const levels = [
                   '1) 401(k) up to the employer match, 2) Max an HSA if eligible, 3) Max a Roth or Traditional IRA, 4) Return to 401(k) up to the limit',
                   '1) Roth IRA, 2) 401(k) match, 3) Taxable brokerage, 4) 401(k) above the match',
                   '1) 401(k) to the max, 2) Roth IRA, 3) HSA, 4) Taxable accounts',
-                  'Contribute equally to all accounts simultaneously - diversification applies to account types too',
+                  'Contribute equally to all accounts simultaneously, since diversification applies to account types too',
                 ],
                 correct: 0,
                 explanation: 'The match first (100% return) → HSA (triple tax advantage) → IRA (more investment flexibility than most 401(k)s) → back to 401(k) for higher limits → then taxable is the optimal sequence for most workers.',
@@ -7802,7 +7802,7 @@ export const levels = [
               {
                 prompt: 'What is a "Solo 401(k)"?',
                 options: [
-                  'A 401(k) plan for self-employed individuals - allowing contributions as both "employee" and "employer" for dramatically higher limits',
+                  'A 401(k) plan for self-employed individuals, allowing contributions as both "employee" and "employer" for dramatically higher limits',
                   'A 401(k) plan available to workers who are the only employee at a small company',
                   'A plan that automatically invests in a single target-date fund without options',
                   'A government plan for solo musicians and artists classified as independent contractors',
@@ -7813,7 +7813,7 @@ export const levels = [
               {
                 prompt: 'What is a Simplified Employee Pension (SEP-IRA)?',
                 options: [
-                  'A retirement account for self-employed and small business owners - up to 25% of compensation (max $69,000 in 2024)',
+                  'A retirement account for self-employed individuals and small business owners, allowing contributions up to 25% of compensation (max $69,000 in 2024)',
                   'A simplified version of the Traditional IRA with a $3,000 contribution limit for low-income workers',
                   'A government pension plan for federal employees who opt out of the standard FERS system',
                   'A small business plan where employees contribute but employers are not allowed to match',
@@ -7824,7 +7824,7 @@ export const levels = [
               {
                 prompt: 'What is a 403(b) plan and who uses it?',
                 options: [
-                  'A tax-advantaged retirement plan for employees of public schools, nonprofits, and hospitals - similar to a 401(k)',
+                  'A tax-advantaged retirement plan for employees of public schools, nonprofits, and hospitals, similar to a 401(k)',
                   'A government pension plan for federal employees with guaranteed monthly benefits',
                   'An investment account for healthcare workers that focuses on medical sector ETFs',
                   'A deferred compensation plan available only to highly compensated executives',
@@ -7835,7 +7835,7 @@ export const levels = [
               {
                 prompt: 'What is the "backdoor Roth" strategy?',
                 options: [
-                  'Contributing to a non-deductible Traditional IRA and immediately converting it to a Roth - circumventing the Roth IRA income limits',
+                  'Contributing to a non-deductible Traditional IRA and immediately converting it to a Roth, circumventing the Roth IRA income limits',
                   'Making anonymous contributions to a Roth IRA under a different Social Security number to avoid income reporting',
                   'Using after-tax 401(k) contributions to fund additional retirement savings beyond the $23,000 limit',
                   'A strategy to convert Social Security income to tax-free Roth IRA withdrawals after age 65',
@@ -7846,13 +7846,13 @@ export const levels = [
               {
                 prompt: 'What is the "mega backdoor Roth" and who can use it?',
                 options: [
-                  'Making after-tax 401(k) contributions up to the $69,000 total limit and converting them to Roth - only available in plans that allow after-tax contributions and in-service distributions',
+                  'Making after-tax 401(k) contributions up to the $69,000 total limit and converting them to Roth, only available in plans that allow after-tax contributions and in-service distributions',
                   'Converting an entire Traditional IRA balance to Roth in a single year regardless of income',
                   'Making Roth IRA contributions in a year when your income exceeds the limit by up to 100%',
                   'A strategy combining HSA, 401(k), and IRA contributions to exceed the normal annual savings limits',
                 ],
                 correct: 0,
-                explanation: 'The mega backdoor Roth can allow up to $46,000/year in after-tax 401(k) contributions (on top of the $23,000 pre-tax limit) converted to Roth. Not all 401(k) plans offer this feature - check your plan documents.',
+                explanation: 'The mega backdoor Roth can allow up to $46,000/year in after-tax 401(k) contributions (on top of the $23,000 pre-tax limit) converted to Roth. Not all 401(k) plans offer this feature; check your plan documents.',
               },
             ],
           },
@@ -7865,7 +7865,7 @@ export const levels = [
                 prompt: 'When can you begin collecting Social Security retirement benefits?',
                 options: [
                   'As early as age 62, but with a permanent reduction; full benefits at full retirement age (66–67); maximum at age 70',
-                  'Only at age 65 - the federal mandatory retirement age for Social Security benefits',
+                  'Only at age 65, the federal mandatory retirement age for Social Security benefits',
                   'At any age after leaving the workforce, with no penalty for early collection',
                   'At age 60 for people who began working before age 18',
                 ],
@@ -7875,7 +7875,7 @@ export const levels = [
               {
                 prompt: 'How is your Social Security benefit amount calculated?',
                 options: [
-                  'Based on your 35 highest-earning years, adjusted for inflation - averaged to create your Primary Insurance Amount (PIA)',
+                  'Based on your 35 highest-earning years adjusted for inflation, averaged to create your Primary Insurance Amount (PIA)',
                   'A flat monthly payment equal to 40% of your final year\'s salary',
                   'Based on how much you paid in FICA taxes over your entire working career without averaging',
                   'Calculated using only your last 10 years of earnings before claiming benefits',
@@ -7892,14 +7892,14 @@ export const levels = [
                   'Both spouses delay to age 70 regardless of health or financial situation',
                 ],
                 correct: 0,
-                explanation: 'When a spouse dies, the survivor keeps only the higher of the two benefits. Having the higher earner delay to 70 maximizes the survivor\'s lifetime income - crucial since women often outlive men.',
+                explanation: 'When a spouse dies, the survivor keeps only the higher of the two benefits. Having the higher earner delay to 70 maximizes the survivor\'s lifetime income, which is crucial since women often outlive men.',
               },
               {
                 prompt: 'Does Social Security income get taxed?',
                 options: [
-                  'Yes - up to 85% of Social Security benefits may be subject to federal income tax if combined income exceeds certain thresholds',
-                  'No - all Social Security income is exempt from federal and state income taxes',
-                  'Only the portion earned before 1983 is taxable - everything after that year is exempt',
+                  'Yes, up to 85% of Social Security benefits may be subject to federal income tax if combined income exceeds certain thresholds',
+                  'No, since all Social Security income is exempt from federal and state income taxes',
+                  'Only the portion earned before 1983 is taxable, with everything after that year being exempt',
                   'Social Security is taxed at a flat 10% rate regardless of income level',
                 ],
                 correct: 0,
@@ -7920,7 +7920,7 @@ export const levels = [
                 prompt: 'What is the Social Security trust fund and what does its projected depletion mean?',
                 options: [
                   'The fund is projected to be depleted around 2033–2035, after which payroll taxes alone could fund about 75–80% of scheduled benefits without changes',
-                  'The fund has been fully depleted - Social Security is now funded entirely through annual Treasury bonds',
+                  'The fund has been fully depleted, so Social Security is now funded entirely through annual Treasury bonds',
                   'Trust fund depletion means all Social Security benefits will immediately stop in 2033',
                   'The fund is fully secure until 2095 due to demographic changes increasing worker contributions',
                 ],
@@ -7948,18 +7948,18 @@ export const levels = [
               {
                 prompt: 'Which retirement accounts are subject to RMDs?',
                 options: [
-                  'Traditional IRAs, 401(k)s, 403(b)s, and most other tax-deferred accounts - but NOT Roth IRAs (during the owner\'s lifetime)',
+                  'Traditional IRAs, 401(k)s, 403(b)s, and most other tax-deferred accounts, but NOT Roth IRAs during the owner\'s lifetime',
                   'All retirement accounts including Roth IRAs after the account owner turns 73',
-                  'Only 401(k) plans - IRAs of any type are exempt from RMD requirements',
+                  'Only 401(k) plans, since IRAs of any type are exempt from RMD requirements',
                   'Only accounts with balances over $1 million are subject to RMD requirements',
                 ],
                 correct: 0,
-                explanation: 'Roth IRA owners never face RMDs during their lifetime - a major advantage for estate planning. Roth 401(k) accounts used to require RMDs, but the SECURE 2.0 Act eliminated Roth 401(k) RMDs starting in 2024.',
+                explanation: 'Roth IRA owners never face RMDs during their lifetime, a major advantage for estate planning. Roth 401(k) accounts used to require RMDs, but the SECURE 2.0 Act eliminated Roth 401(k) RMDs starting in 2024.',
               },
               {
                 prompt: 'How is the RMD amount calculated?',
                 options: [
-                  'Account balance divided by a life expectancy factor from the IRS Uniform Lifetime Table - the factor decreases (meaning larger withdrawals) each year',
+                  'Account balance divided by a life expectancy factor from the IRS Uniform Lifetime Table, with the factor decreasing (meaning larger withdrawals) each year',
                   'A flat 10% of the prior year-end account balance regardless of age',
                   'The IRS requires you to withdraw the same percentage as your marginal tax rate',
                   'You choose any amount you wish as long as it exceeds $5,000 annually',
@@ -7976,18 +7976,18 @@ export const levels = [
                   'Automatic conversion of the account to a taxable account for the following year',
                 ],
                 correct: 0,
-                explanation: 'This used to be 50% - one of the harshest tax penalties. SECURE 2.0 lowered it to 25% (10% if fixed within the correction window). Forgetting RMDs is an expensive mistake that catches many new retirees off guard.',
+                explanation: 'This used to be 50%, one of the harshest tax penalties. SECURE 2.0 lowered it to 25% (10% if fixed within the correction window). Forgetting RMDs is an expensive mistake that catches many new retirees off guard.',
               },
               {
                 prompt: 'What is a Qualified Charitable Distribution (QCD) and how does it relate to RMDs?',
                 options: [
-                  'Transferring up to $105,000/year directly from an IRA to a charity - counts as the RMD but is not included in taxable income',
+                  'Transferring up to $105,000/year directly from an IRA to a charity, which counts as the RMD but is not included in taxable income',
                   'A donation of unused RMD funds to charity after they have already been included in taxable income',
                   'A strategy that eliminates all RMD requirements for account owners who make regular charitable contributions',
                   'A charitable deduction available to itemizers who withdraw and donate their full RMD each year',
                 ],
                 correct: 0,
-                explanation: 'QCDs are powerful: the distribution satisfies the RMD without creating taxable income. This is better than taking the RMD and donating cash - particularly for non-itemizers who can\'t deduct charitable gifts.',
+                explanation: 'QCDs are powerful: the distribution satisfies the RMD without creating taxable income. This is better than taking the RMD and donating cash, particularly for non-itemizers who can\'t deduct charitable gifts.',
               },
               {
                 prompt: 'Why do large Traditional IRA or 401(k) balances create "RMD risk"?',
@@ -8021,7 +8021,7 @@ export const levels = [
               {
                 prompt: 'What is annuitization and when might it make sense?',
                 options: [
-                  'Converting a lump sum into guaranteed lifetime income payments - useful for covering essential expenses and eliminating longevity risk',
+                  'Converting a lump sum into guaranteed lifetime income payments, useful for covering essential expenses and eliminating longevity risk',
                   'Converting a Traditional IRA to a Roth IRA to avoid future taxes on all distributions',
                   'A strategy of withdrawing exactly 4% per year from retirement accounts with no variation',
                   'Rolling all investment accounts into a single consolidated account for simplified management',
@@ -8033,7 +8033,7 @@ export const levels = [
                 prompt: 'What is "sequence of returns risk" and how does it affect retirees?',
                 options: [
                   'Bad returns early in retirement (when the portfolio is largest and withdrawals are ongoing) can permanently deplete savings even if long-term average returns are good',
-                  'A risk that returns come in the wrong sequence - stocks first, then bonds - causing rebalancing to occur too early',
+                  'A risk that returns come in the wrong sequence, stocks first then bonds, causing rebalancing to occur too early',
                   'The risk that annuity payments fall out of sequence with inflation adjustments',
                   'A statistical concept where random return variability makes 30-year retirement projections unreliable',
                 ],
@@ -8065,13 +8065,13 @@ export const levels = [
               {
                 prompt: 'What is Medicare and when does eligibility begin?',
                 options: [
-                  'Federal health insurance for Americans 65 and older (and some disabled) - Part A (hospital), Part B (medical), Part C (Medicare Advantage), and Part D (prescription)',
+                  'Federal health insurance for Americans 65 and older (and some disabled), with Part A (hospital), Part B (medical), Part C (Medicare Advantage), and Part D (prescription)',
                   'A private insurance program that replaces employer health coverage at retirement',
                   'A government program that provides health coverage for all Americans regardless of age',
                   'A federal supplement to Social Security that provides dental and vision coverage at age 62',
                 ],
                 correct: 0,
-                explanation: 'Medicare eligibility at 65 is a critical retirement planning milestone. The gap between early retirement and 65 requires private health insurance - often the most expensive part of retiring early. Plan carefully for healthcare in your 50s and early 60s.',
+                explanation: 'Medicare eligibility at 65 is a critical retirement planning milestone. The gap between early retirement and 65 requires private health insurance, often the most expensive part of retiring early. Plan carefully for healthcare in your 50s and early 60s.',
               },
             ],
           },
@@ -8083,7 +8083,7 @@ export const levels = [
               {
                 prompt: 'What retirement milestone should you focus on in your 20s?',
                 options: [
-                  'Starting contributions immediately - even small amounts - and capturing any employer match to harness decades of compounding',
+                  'Starting contributions immediately, even small amounts, and capturing any employer match to harness decades of compounding',
                   'Paying off your mortgage entirely before contributing to any retirement account',
                   'Building a portfolio of individual stocks to beat the market while you can afford the risk',
                   'Waiting until you earn at least $75,000 to start retirement savings for maximum impact',
@@ -8100,7 +8100,7 @@ export const levels = [
                   'Pausing retirement contributions to pay off your mortgage before age 45',
                 ],
                 correct: 0,
-                explanation: 'Peak earning years in your 30s–40s are when you can make the biggest contributions. Increasing your savings rate by just 1% annually - "raising the rate" - can dramatically change your retirement trajectory.',
+                explanation: 'Peak earning years in your 30s–40s are when you can make the biggest contributions. Increasing your savings rate by just 1% annually, or "raising the rate," can dramatically change your retirement trajectory.',
               },
               {
                 prompt: 'In your 50s, the key retirement planning action is:',
@@ -8127,8 +8127,8 @@ export const levels = [
               {
                 prompt: 'What is the "FIRE" movement in personal finance?',
                 options: [
-                  'Financial Independence, Retire Early - achieving retirement in your 30s–40s by saving 50–70% of income and living on a 3–4% withdrawal rate',
-                  'Federal Income Retirement Exemption - a government program for early retirees',
+                  'Financial Independence, Retire Early, achieved by saving 50–70% of income and living on a 3–4% withdrawal rate to retire in your 30s or 40s',
+                  'A Federal Income Retirement Exemption, a government program for early retirees',
                   'A retirement strategy of investing exclusively in energy sector stocks for high income',
                   'A tax filing category for individuals who retire before the standard Social Security age',
                 ],
@@ -8138,13 +8138,13 @@ export const levels = [
               {
                 prompt: 'What is one of the most important non-financial aspects of retirement planning?',
                 options: [
-                  'Identifying how you will spend your time - purpose, social connection, and identity all shift dramatically when work ends',
+                  'Identifying how you will spend your time, since purpose, social connection, and identity all shift dramatically when work ends',
                   'Memorizing all IRS rules and regulations for retirement account withdrawals',
                   'Selecting the optimal financial advisor and paying premium fees for their expertise',
                   'Moving to a lower-cost country immediately upon retirement to reduce living expenses',
                 ],
                 correct: 0,
-                explanation: 'Studies consistently find that social isolation and loss of purpose are among the greatest risks retirees face. The financial plan matters enormously - but having a plan for how to live retirement is just as important.',
+                explanation: 'Studies consistently find that social isolation and loss of purpose are among the greatest risks retirees face. The financial plan matters enormously, but having a plan for how to live retirement is just as important.',
               },
             ],
           },
@@ -8204,12 +8204,12 @@ export const levels = [
                   'A government declaration made when tax revenues fall below projected levels',
                 ],
                 correct: 0,
-                explanation: 'The National Bureau of Economic Research (NBER) uses a broader definition including income, employment, and consumption - not just the "two quarters" rule. But "two consecutive quarters" is the common shorthand.',
+                explanation: 'The National Bureau of Economic Research (NBER) uses a broader definition including income, employment, and consumption, not just the "two quarters" rule. But "two consecutive quarters" is the common shorthand.',
               },
               {
                 prompt: 'What does GDP per capita tell you?',
                 options: [
-                  'The average economic output per person - a rough measure of living standards across countries',
+                  'The average economic output per person, a rough measure of living standards across countries',
                   'The total amount each citizen is required to contribute to GDP each year',
                   'The GDP divided by the number of government employees in the country',
                   'The per-person share of the national debt divided by annual economic output',
@@ -8220,7 +8220,7 @@ export const levels = [
               {
                 prompt: 'What is economic growth and why does it matter for individuals?',
                 options: [
-                  'When the economy produces more output over time - enabling rising incomes, better jobs, and improved living standards for most people',
+                  'When the economy produces more output over time, enabling rising incomes, better jobs, and improved living standards for most people',
                   'When the government expands its spending programs to increase employment',
                   'When a country\'s stock market index rises more than 5% in a calendar year',
                   'When population growth increases total consumption and drives up aggregate demand',
@@ -8232,7 +8232,7 @@ export const levels = [
                 prompt: 'What is GDP growth vs. a "healthy" growth rate for a developed economy like the U.S.?',
                 options: [
                   'About 2–3% annual real GDP growth is considered healthy; below 0% for two quarters is recession',
-                  'At least 5% annual growth is required - anything below indicates economic stagnation',
+                  'At least 5% annual growth is required, and anything below indicates economic stagnation',
                   'GDP should grow exactly as fast as population growth, meaning 0–1% in most developed nations',
                   'The U.S. economy must grow at 8%+ annually or it enters structural decline',
                 ],
@@ -8249,13 +8249,13 @@ export const levels = [
               {
                 prompt: 'What is inflation?',
                 options: [
-                  'A general rise in the price level of goods and services over time - reducing the purchasing power of money',
+                  'A general rise in the price level of goods and services over time, reducing the purchasing power of money',
                   'An increase in a country\'s population that drives up demand for housing and food',
                   'When the government prints money and distributes it to citizens as stimulus checks',
                   'A stock market rally that increases the value of investments held by consumers',
                 ],
                 correct: 0,
-                explanation: 'At 3% annual inflation, $100 today buys what $74 buys in 10 years. Inflation erodes savings, fixed incomes, and debt in different ways - it benefits borrowers (debt becomes cheaper) and hurts savers (cash loses value).',
+                explanation: 'At 3% annual inflation, $100 today buys what $74 buys in 10 years. Inflation erodes savings, fixed incomes, and debt in different ways; it benefits borrowers (debt becomes cheaper) and hurts savers (cash loses value).',
               },
               {
                 prompt: 'The Consumer Price Index (CPI) measures:',
@@ -8271,7 +8271,7 @@ export const levels = [
               {
                 prompt: 'What is "core" inflation and why do economists track it?',
                 options: [
-                  'Inflation excluding volatile food and energy prices - shows underlying, persistent inflation trends more clearly',
+                  'Inflation excluding volatile food and energy prices, which shows underlying and persistent inflation trends more clearly',
                   'The inflation rate in the largest cities rather than rural areas',
                   'Inflation among core consumer goods like food and medicine that everyone must purchase',
                   'The federal government\'s target inflation rate set annually by the Treasury',
@@ -8282,35 +8282,35 @@ export const levels = [
               {
                 prompt: 'What causes inflation?',
                 options: [
-                  'Too much money chasing too few goods - demand-pull (excess spending) or cost-push (supply disruptions raising production costs)',
+                  'Too much money chasing too few goods, through demand-pull (excess spending) or cost-push (supply disruptions raising production costs)',
                   'Government tax increases that force companies to raise prices to maintain profit margins',
                   'Population growth that automatically increases demand beyond what the economy can supply',
                   'A rising stock market that makes consumers feel wealthy and increases spending simultaneously',
                 ],
                 correct: 0,
-                explanation: 'COVID-19 created both: demand-pull (stimulus checks + pent-up demand) and cost-push (supply chain disruptions). The result was 9% CPI inflation in 2022 - the highest in 40 years in the U.S.',
+                explanation: 'COVID-19 created both: demand-pull (stimulus checks + pent-up demand) and cost-push (supply chain disruptions). The result was 9% CPI inflation in 2022, the highest in 40 years in the U.S.',
               },
               {
                 prompt: 'What is hyperinflation?',
                 options: [
-                  'Extremely rapid, out-of-control inflation that destroys purchasing power - as seen in Zimbabwe (2008) and Venezuela (2018)',
+                  'Extremely rapid, out-of-control inflation that destroys purchasing power, as seen in Zimbabwe (2008) and Venezuela (2018)',
                   'Any inflation rate above 10% per year as defined by the International Monetary Fund',
                   'Inflation that occurs specifically in technology and luxury goods sectors',
                   'A government policy of deliberately raising prices to reduce real wages and boost exports',
                 ],
                 correct: 0,
-                explanation: 'In Zimbabwe, inflation reached 89.7 sextillion percent per month in 2008 - prices doubled every 24 hours. People rushed to spend currency before it became worthless. Hyperinflation destroys savings, commerce, and social trust.',
+                explanation: 'In Zimbabwe, inflation reached 89.7 sextillion percent per month in 2008; prices doubled every 24 hours. People rushed to spend currency before it became worthless. Hyperinflation destroys savings, commerce, and social trust.',
               },
               {
                 prompt: 'What is deflation and why can it be dangerous for an economy?',
                 options: [
-                  'Falling prices across the economy - can trigger a "deflationary spiral" where consumers delay spending, causing more price drops and economic contraction',
+                  'Falling prices across the economy, which can trigger a "deflationary spiral" where consumers delay spending, causing more price drops and economic contraction',
                   'A reduction in the government deficit achieved through spending cuts and tax increases',
                   'A planned reduction in the money supply by the central bank to reduce economic growth',
                   'The normal decline in prices for technology goods as manufacturing becomes more efficient',
                 ],
                 correct: 0,
-                explanation: 'Japan experienced deflation for decades - consumers waiting for cheaper prices and businesses cutting investment created a "lost decade." The Great Depression involved severe deflation. Mild inflation (2%) is actually preferred over deflation.',
+                explanation: 'Japan experienced deflation for decades; consumers waiting for cheaper prices and businesses cutting investment created a "lost decade." The Great Depression involved severe deflation. Mild inflation (2%) is actually preferred over deflation.',
               },
             ],
           },
@@ -8322,7 +8322,7 @@ export const levels = [
               {
                 prompt: 'What is the Federal Reserve?',
                 options: [
-                  'The U.S. central bank - responsible for monetary policy, setting interest rates, and maintaining financial stability',
+                  'The U.S. central bank, responsible for monetary policy, setting interest rates, and maintaining financial stability',
                   'A branch of the Treasury Department that prints and distributes U.S. currency',
                   'A government savings bank that holds deposits for federal agencies and departments',
                   'A regulatory body that sets accounting standards for public companies',
@@ -8333,7 +8333,7 @@ export const levels = [
               {
                 prompt: 'What is the Federal Funds Rate?',
                 options: [
-                  'The overnight interest rate banks charge each other for short-term loans - the primary tool the Fed uses to control monetary policy',
+                  'The overnight interest rate banks charge each other for short-term loans, which is the primary tool the Fed uses to control monetary policy',
                   'The interest rate the federal government pays on 10-year Treasury bonds',
                   'The rate at which the Federal Reserve lends money directly to consumers',
                   'The minimum interest rate banks must charge on mortgages and auto loans',
@@ -8361,12 +8361,12 @@ export const levels = [
                   'An international agreement to ease trade barriers between major economies',
                 ],
                 correct: 0,
-                explanation: 'The Fed used QE aggressively after 2008 and again in 2020 - purchasing trillions in Treasury and mortgage bonds. This expanded the money supply and kept long-term rates low. "Quantitative tightening" (QT) is the reverse.',
+                explanation: 'The Fed used QE aggressively after 2008 and again in 2020, purchasing trillions in Treasury and mortgage bonds. This expanded the money supply and kept long-term rates low. "Quantitative tightening" (QT) is the reverse.',
               },
               {
                 prompt: 'What is the Fed\'s "dual mandate"?',
                 options: [
-                  'Maximum employment AND stable prices (2% inflation target) - the Fed must balance both objectives simultaneously',
+                  'Maximum employment and stable prices (2% inflation target), with the Fed required to balance both objectives simultaneously',
                   'Regulating all U.S. banks AND setting the federal income tax rate',
                   'Controlling the money supply AND managing the national debt on behalf of the Treasury',
                   'Setting interest rates AND determining the value of the U.S. dollar in foreign exchange markets',
@@ -8377,7 +8377,7 @@ export const levels = [
               {
                 prompt: 'What is the "yield curve" and what does an inverted yield curve signal?',
                 options: [
-                  'A graph showing interest rates across different maturities - inverted (short > long rates) has historically predicted recessions',
+                  'A graph showing interest rates across different maturities, where an inversion (short rates exceeding long rates) has historically predicted recessions',
                   'A chart showing the relationship between a country\'s GDP growth rate and its inflation rate',
                   'The rate at which the Federal Reserve adjusts interest rates per quarter',
                   'A market index measuring investor confidence across the technology and financial sectors',
@@ -8395,10 +8395,10 @@ export const levels = [
               {
                 prompt: 'What is the law of demand?',
                 options: [
-                  'As the price of a good rises, the quantity demanded generally falls - and vice versa',
+                  'As the price of a good rises, the quantity demanded generally falls, and vice versa',
                   'Producers must supply more of a good as prices rise to meet government requirements',
                   'Consumer demand for goods rises automatically when the economy grows above 2%',
-                  'Government demand for goods is independent of price - it\'s determined by legislation',
+                  'Government demand for goods is independent of price since it\'s determined by legislation',
                 ],
                 correct: 0,
                 explanation: 'The demand curve slopes downward. When gas prices rose to $5/gallon, Americans drove less and bought more fuel-efficient cars. When streaming prices jumped, subscriptions fell. Price and quantity demanded move in opposite directions.',
@@ -8406,10 +8406,10 @@ export const levels = [
               {
                 prompt: 'What is the law of supply?',
                 options: [
-                  'As the price of a good rises, producers are generally willing to supply more of it - and vice versa',
+                  'As the price of a good rises, producers are generally willing to supply more of it, and vice versa',
                   'The government must supply essential goods when private markets fail to meet demand',
                   'Higher wages always cause workers to supply less labor because they achieve target income sooner',
-                  'Supply is fixed in the short run - only government intervention can change it',
+                  'Supply is fixed in the short run, so only government intervention can change it',
                 ],
                 correct: 0,
                 explanation: 'High oil prices → more wells drilled. High chip prices → more chip factories built. Producers respond to price signals by producing more when it\'s profitable. The supply curve slopes upward.',
@@ -8417,7 +8417,7 @@ export const levels = [
               {
                 prompt: 'What is the "equilibrium price" in a market?',
                 options: [
-                  'The price where the quantity supplied exactly equals the quantity demanded - the market "clears" with no surplus or shortage',
+                  'The price where quantity supplied exactly equals quantity demanded, allowing the market to "clear" with no surplus or shortage',
                   'The price the government sets to prevent market manipulation and ensure fairness',
                   'The average price across all sellers, calculated monthly by the Bureau of Labor Statistics',
                   'The price at which the total revenue of all sellers equals their total production costs',
@@ -8428,29 +8428,29 @@ export const levels = [
               {
                 prompt: 'What happens to housing prices when housing supply is restricted but population grows?',
                 options: [
-                  'Prices rise - insufficient supply with growing demand pushes the equilibrium price upward',
-                  'Prices fall - more people competing to rent means landlords must lower prices to attract tenants',
-                  'Prices stay the same - supply and demand effects cancel each other out in real estate',
+                  'Prices rise, since insufficient supply with growing demand pushes the equilibrium price upward',
+                  'Prices fall, since more people competing to rent means landlords must lower prices to attract tenants',
+                  'Prices stay the same, since supply and demand effects cancel each other out in real estate',
                   'The government automatically builds more housing to prevent any price increase',
                 ],
                 correct: 0,
-                explanation: 'San Francisco, Manhattan, and most coastal cities illustrate this: zoning restrictions limit supply, population grows, and prices skyrocket. Houston - with fewer zoning restrictions - has far more affordable housing despite strong population growth.',
+                explanation: 'San Francisco, Manhattan, and most coastal cities illustrate this: zoning restrictions limit supply, population grows, and prices skyrocket. Houston, with fewer zoning restrictions, has far more affordable housing despite strong population growth.',
               },
               {
                 prompt: 'What is price elasticity of demand?',
                 options: [
-                  'How sensitive the quantity demanded is to price changes - inelastic goods (gas, insulin) see little demand change even with big price moves',
+                  'How sensitive quantity demanded is to price changes, where inelastic goods like gas and insulin see little demand change even with large price moves',
                   'The rate at which market prices change in response to government monetary policy',
                   'The flexibility a business has in setting its own prices without regulatory approval',
                   'A measure of how quickly a market reaches equilibrium after a supply or demand shock',
                 ],
                 correct: 0,
-                explanation: 'Insulin is price inelastic - diabetics need it regardless of price. Luxury vacations are price elastic - a 20% price increase causes many to cancel. Understanding elasticity helps businesses, governments, and investors make better decisions.',
+                explanation: 'Insulin is price inelastic; diabetics need it regardless of price. Luxury vacations are price elastic; a 20% price increase causes many to cancel. Understanding elasticity helps businesses, governments, and investors make better decisions.',
               },
               {
                 prompt: 'What is a "market failure" and what are common examples?',
                 options: [
-                  'When markets produce inefficient outcomes - like pollution (externalities), public goods (defense), or monopolies with excessive pricing power',
+                  'When markets produce inefficient outcomes, such as pollution (externalities), public goods like defense, or monopolies with excessive pricing power',
                   'When a business goes bankrupt due to competition from a more efficient competitor',
                   'When supply and demand temporarily mismatch, causing short-term shortages or surpluses',
                   'When stock markets crash and investors lose more than 20% of portfolio value in a year',
@@ -8468,10 +8468,10 @@ export const levels = [
               {
                 prompt: 'What are the four phases of the business cycle?',
                 options: [
-                  'Expansion, peak, contraction (recession), and trough - economies oscillate through these phases repeatedly',
-                  'Growth, stability, decline, and recovery - each lasting exactly five years',
-                  'Bull market, bear market, correction, and recovery - measured exclusively by stock market movements',
-                  'Inflation, deflation, stagflation, and stabilization - tied to the consumer price index trajectory',
+                  'Expansion, peak, contraction, and trough, with economies oscillating through these phases repeatedly',
+                  'Growth, stability, decline, and recovery, each lasting exactly five years',
+                  'Bull market, bear market, correction, and recovery, measured exclusively by stock market movements',
+                  'Inflation, deflation, stagflation, and stabilization, tied to the consumer price index trajectory',
                 ],
                 correct: 0,
                 explanation: 'Business cycles average 5.5 years from trough to trough historically. Expansions last longer than recessions. Post-WWII, the average expansion lasted about 5 years; the average recession about 11 months.',
@@ -8479,18 +8479,18 @@ export const levels = [
               {
                 prompt: 'What is the difference between a recession and a depression?',
                 options: [
-                  'Severity and duration - a depression is a deep, prolonged recession (the Great Depression saw 25% unemployment for years)',
+                  'Severity and duration, since a depression is a deep, prolonged recession such as the Great Depression, which saw 25% unemployment for years',
                   'A recession is global; a depression affects only the originating country',
                   'Recessions are caused by government policy; depressions result from natural market forces',
-                  'The terms are interchangeable - the NBER uses both to describe the same economic condition',
+                  'The terms are interchangeable, with the NBER using both to describe the same economic condition',
                 ],
                 correct: 0,
-                explanation: 'There\'s no formal definition of "depression" - economists say "a recession is when your neighbor loses their job; a depression is when you lose yours." The Great Depression had 25% unemployment and lasted over a decade.',
+                explanation: 'There\'s no formal definition of "depression." Economists say "a recession is when your neighbor loses their job; a depression is when you lose yours." The Great Depression had 25% unemployment and lasted over a decade.',
               },
               {
                 prompt: 'What is a "soft landing" in monetary policy?',
                 options: [
-                  'When the Fed raises rates enough to control inflation without causing a recession - a rare and celebrated achievement',
+                  'When the Fed raises rates enough to control inflation without causing a recession, a rare and celebrated achievement',
                   'When the government reduces deficit spending gradually without cutting essential services',
                   'The gradual decline in stock market values that precedes a prolonged bear market',
                   'A debt restructuring program that allows countries to avoid default without austerity',
@@ -8501,19 +8501,19 @@ export const levels = [
               {
                 prompt: 'What is "stagflation"?',
                 options: [
-                  'The combination of high inflation AND economic stagnation (slow growth/high unemployment) - occurred in the 1970s with oil shocks',
+                  'The combination of high inflation and economic stagnation with slow growth and high unemployment, as occurred in the 1970s with oil shocks',
                   'A period of stable, predictable growth with exactly 2% inflation and 4% unemployment simultaneously',
-                  'Rapid economic expansion combined with deflation - caused by technological productivity gains',
+                  'Rapid economic expansion combined with deflation, caused by technological productivity gains',
                   'When the stock market stagnates while real estate prices inflate simultaneously',
                 ],
                 correct: 0,
-                explanation: 'Stagflation breaks the typical inflation/unemployment tradeoff (the Phillips Curve). The 1970s oil embargo caused it: prices rose while unemployment also rose. Standard monetary policy is helpless - raising rates fights inflation but worsens unemployment.',
+                explanation: 'Stagflation breaks the typical inflation/unemployment tradeoff (the Phillips Curve). The 1970s oil embargo caused it: prices rose while unemployment also rose. Standard monetary policy is helpless; raising rates fights inflation but worsens unemployment.',
               },
               {
                 prompt: 'How do recessions typically affect personal finances?',
                 options: [
-                  'Unemployment rises, credit tightens, asset prices fall, and consumer spending contracts - a reinforcing cycle that can deepen downturns',
-                  'Recessions primarily affect businesses - employed individuals are fully protected from economic downturns',
+                  'Unemployment rises, credit tightens, asset prices fall, and consumer spending contracts, creating a reinforcing cycle that can deepen downturns',
+                  'Recessions primarily affect businesses, while employed individuals are fully protected from economic downturns',
                   'Recessions automatically reduce living costs through deflation, making the purchasing power of wages rise',
                   'Recessions only affect workers in financial services; manufacturing and healthcare are fully recession-proof',
                 ],
@@ -8523,9 +8523,9 @@ export const levels = [
               {
                 prompt: 'What is fiscal policy vs. monetary policy?',
                 options: [
-                  'Fiscal policy: government spending and taxation (Congress/President). Monetary policy: money supply and interest rates (Federal Reserve).',
+                  'Fiscal policy covers government spending and taxation decided by Congress, while monetary policy covers money supply and interest rates managed by the Federal Reserve',
                   'Fiscal policy is set by the Federal Reserve; monetary policy is controlled by the Treasury Department',
-                  'Both are the same - fiscal and monetary policy refer to identical tools managed by different agencies',
+                  'Both are the same, with fiscal and monetary policy referring to identical tools managed by different agencies',
                   'Monetary policy controls government spending; fiscal policy controls the private sector money supply',
                 ],
                 correct: 0,
@@ -8547,12 +8547,12 @@ export const levels = [
                   'Workers who lost jobs in the past month divided by jobs created in the same month',
                 ],
                 correct: 0,
-                explanation: 'The "labor force" includes only those working or actively looking. Discouraged workers who gave up searching are not counted - a criticism of the official rate. The U-6 rate includes these "marginally attached" workers and is typically higher.',
+                explanation: 'The "labor force" includes only those working or actively looking. Discouraged workers who gave up searching are not counted, a criticism of the official rate. The U-6 rate includes these "marginally attached" workers and is typically higher.',
               },
               {
                 prompt: 'What is "frictional unemployment"?',
                 options: [
-                  'Temporary unemployment from people between jobs while searching for better-fitting work - considered normal and healthy',
+                  'Temporary unemployment from people between jobs while searching for better-fitting work, considered normal and healthy',
                   'Unemployment caused by friction between unions and employers during contract negotiations',
                   'Unemployment that persists because workers lack skills needed for available jobs',
                   'The unemployment created by automation replacing workers in manufacturing industries',
@@ -8563,19 +8563,19 @@ export const levels = [
               {
                 prompt: 'What is "structural unemployment"?',
                 options: [
-                  'A mismatch between workers\' skills and available jobs - often caused by technological change or industrial shifts',
+                  'A mismatch between workers\' skills and available jobs, often caused by technological change or industrial shifts',
                   'Unemployment during recessions when the entire economic structure contracts',
                   'Job losses caused specifically by factory construction or infrastructure projects',
                   'Unemployment concentrated in specific geographic regions with aging populations',
                 ],
                 correct: 0,
-                explanation: 'Coal miners displaced by renewable energy, factory workers replaced by automation - these are structural. The skills needed don\'t match the skills workers have. Retraining programs aim to address this.',
+                explanation: 'Coal miners displaced by renewable energy and factory workers replaced by automation are examples of structural unemployment. The skills needed don\'t match the skills workers have. Retraining programs aim to address this.',
               },
               {
                 prompt: 'What is "full employment" in economic terms?',
                 options: [
-                  'The level of unemployment consisting only of frictional and structural unemployment - often estimated at 4–5% in the U.S.',
-                  'Zero unemployment - every adult of working age has a job and is earning income',
+                  'The level of unemployment consisting only of frictional and structural unemployment, often estimated at 4–5% in the U.S.',
+                  'Zero unemployment, where every adult of working age has a job and is earning income',
                   'An employment level where government payroll jobs make up at least 30% of all jobs',
                   'A state where real wages are growing faster than inflation for all workers',
                 ],
@@ -8585,7 +8585,7 @@ export const levels = [
               {
                 prompt: 'The Phillips Curve describes the traditional relationship between:',
                 options: [
-                  'Inflation and unemployment - historically inverse: lower unemployment leads to higher inflation',
+                  'Inflation and unemployment, which are historically inversely related, with lower unemployment typically leading to higher inflation',
                   'Economic growth and stock market returns over a given time period',
                   'Interest rates and government debt levels over a 10-year economic cycle',
                   'A country\'s GDP growth and its balance of trade with other nations',
@@ -8596,7 +8596,7 @@ export const levels = [
               {
                 prompt: 'How does high unemployment affect an individual\'s personal finances?',
                 options: [
-                  'Income stops, savings are depleted, debt can spiral, and health insurance may be lost - an emergency fund and employable skills are the best protections',
+                  'Income stops, savings are depleted, debt can spiral, and health insurance may be lost, making an emergency fund and employable skills the best protections',
                   'Unemployment compensation replaces 100% of your prior income for up to 5 years',
                   'Banks are legally required to pause all debt collection during periods of high unemployment',
                   'High unemployment reduces prices (deflation), making your remaining savings worth more',
@@ -8620,29 +8620,29 @@ export const levels = [
                   'The competitive advantage corporations gain from operating in low-tax jurisdictions',
                 ],
                 correct: 0,
-                explanation: 'David Ricardo\'s idea (1817): even if Country A makes everything cheaper, trade still benefits both - each specializes in its comparative (relative) advantage. This is the theoretical foundation for free trade.',
+                explanation: 'David Ricardo\'s idea (1817): even if Country A makes everything cheaper, trade still benefits both; each specializes in its comparative (relative) advantage. This is the theoretical foundation for free trade.',
               },
               {
                 prompt: 'What is a trade deficit?',
                 options: [
-                  'When a country imports more than it exports - the U.S. runs a persistent trade deficit, especially in goods',
+                  'When a country imports more than it exports, as the U.S. does persistently, especially in goods',
                   'When government spending exceeds tax revenue in a fiscal year',
                   'When a country\'s currency value falls below the global average exchange rate',
                   'When a country\'s exports fall below the level needed to fund national debt payments',
                 ],
                 correct: 0,
-                explanation: 'The U.S. runs roughly a $1 trillion annual trade deficit in goods (offset by a services surplus). Trade deficits are not inherently bad - they can reflect strong domestic demand. They also mean other countries are investing in U.S. assets to settle the balance.',
+                explanation: 'The U.S. runs roughly a $1 trillion annual trade deficit in goods (offset by a services surplus). Trade deficits are not inherently bad; they can reflect strong domestic demand and also mean other countries are investing in U.S. assets to settle the balance.',
               },
               {
                 prompt: 'What is a tariff?',
                 options: [
-                  'A tax on imported goods - raising prices for domestic consumers while protecting domestic producers from foreign competition',
+                  'A tax on imported goods that raises prices for domestic consumers while protecting domestic producers from foreign competition',
                   'A trade agreement that eliminates all restrictions on goods crossing international borders',
                   'A fee paid to foreign governments for the right to sell products in their country',
                   'A subsidy provided to domestic exporters to make their products cheaper abroad',
                 ],
                 correct: 0,
-                explanation: 'Tariffs protect domestic industries but raise costs for consumers. The Smoot-Hawley Tariff Act of 1930 raised tariffs on 20,000 goods - triggering retaliatory tariffs and worsening the Great Depression.',
+                explanation: 'Tariffs protect domestic industries but raise costs for consumers. The Smoot-Hawley Tariff Act of 1930 raised tariffs on 20,000 goods, triggering retaliatory tariffs and worsening the Great Depression.',
               },
               {
                 prompt: 'What is globalization?',
@@ -8661,7 +8661,7 @@ export const levels = [
                   'Exports become more expensive in foreign currencies, potentially reducing demand for American goods abroad',
                   'Exports become cheaper internationally, boosting U.S. manufacturing and employment',
                   'A stronger dollar reduces the cost of domestic production, making exports more competitive',
-                  'Dollar strength has no effect on exports - trade volumes are determined by supply chains',
+                  'Dollar strength has no effect on exports, since trade volumes are determined by supply chains',
                 ],
                 correct: 0,
                 explanation: 'A strong dollar means foreigners must pay more of their currency to buy a dollar. A $100 product costs 100 euros when 1:1, but 120 euros when the dollar strengthens to 1.20:1. This hurts U.S. export competitiveness.',
@@ -8687,7 +8687,7 @@ export const levels = [
               {
                 prompt: 'What is the unemployment report (monthly jobs report) and why do markets react to it?',
                 options: [
-                  'A monthly report showing jobs added and the unemployment rate - strong job growth can signal inflation risk, causing bond yields and sometimes stocks to react',
+                  'A monthly report showing jobs added and the unemployment rate, where strong job growth can signal inflation risk and cause bond yields and sometimes stocks to react',
                   'An annual government survey of all businesses to determine how many workers they plan to hire',
                   'A stock market index measuring employment in the 500 largest U.S. companies by sector',
                   'A Federal Reserve report on planned workforce changes at government agencies',
@@ -8698,7 +8698,7 @@ export const levels = [
               {
                 prompt: 'What is the Conference Board\'s Consumer Confidence Index?',
                 options: [
-                  'A survey measuring how optimistic consumers are about the economy - a leading indicator since confident consumers spend more',
+                  'A survey measuring how optimistic consumers are about the economy, a leading indicator since confident consumers tend to spend more',
                   'A measurement of whether consumers are satisfied with their government representatives',
                   'An index tracking the prices of consumer goods in the 10 largest U.S. cities monthly',
                   'A score assigned to individual consumers rating their creditworthiness and financial health',
@@ -8709,18 +8709,18 @@ export const levels = [
               {
                 prompt: 'What is the ISM Manufacturing Index?',
                 options: [
-                  'A monthly survey of manufacturing purchasing managers - above 50 signals expansion, below 50 signals contraction',
+                  'A monthly survey of manufacturing purchasing managers, where a reading above 50 signals expansion and below 50 signals contraction',
                   'A government measurement of factory output in units produced per calendar quarter',
                   'An index of the manufacturing sector\'s contribution to total GDP in percentage terms',
                   'A Department of Labor index tracking manufacturing wages relative to inflation each month',
                 ],
                 correct: 0,
-                explanation: 'The PMI (Purchasing Managers\' Index) is a leading indicator - purchasing managers must order materials for future production. A rising PMI before GDP data is released often correctly forecasts future growth.',
+                explanation: 'The PMI (Purchasing Managers\' Index) is a leading indicator; purchasing managers must order materials for future production. A rising PMI before GDP data is released often correctly forecasts future growth.',
               },
               {
                 prompt: 'What is the "Personal Consumption Expenditures" (PCE) price index?',
                 options: [
-                  'The Federal Reserve\'s preferred inflation measure - considered more comprehensive than CPI because it accounts for consumer substitution behavior',
+                  'The Federal Reserve\'s preferred inflation measure, considered more comprehensive than CPI because it accounts for consumer substitution behavior',
                   'A monthly measure of total household spending on goods, services, and experiences',
                   'An index comparing personal spending in the current year to the previous decade\'s average',
                   'The IRS measure used to determine inflation adjustments to tax brackets each year',
@@ -8731,7 +8731,7 @@ export const levels = [
               {
                 prompt: 'What is "housing starts" as an economic indicator?',
                 options: [
-                  'The number of new residential construction projects beginning each month - a leading economic indicator tied to jobs, materials demand, and consumer confidence',
+                  'The number of new residential construction projects beginning each month, a leading economic indicator tied to jobs, materials demand, and consumer confidence',
                   'The number of homebuyers who started their home search in a given month',
                   'An index measuring average home prices in the 20 largest U.S. metropolitan areas',
                   'A government program counting the number of first-time homebuyers receiving federal assistance',
@@ -8742,7 +8742,7 @@ export const levels = [
               {
                 prompt: 'What is the "yield on the 10-year Treasury" and why is it tracked so closely?',
                 options: [
-                  'The interest rate on 10-year U.S. government bonds - a benchmark for mortgage rates, corporate borrowing, and the discount rate used to value all financial assets',
+                  'The interest rate on 10-year U.S. government bonds, a benchmark for mortgage rates, corporate borrowing, and the discount rate used to value all financial assets',
                   'The guaranteed annual return available from a 10-year CD at federally chartered banks',
                   'The projected growth rate of the U.S. economy over the next decade based on Treasury models',
                   'A monthly measure of government revenue from bond issuance divided by total debt outstanding',
@@ -8786,7 +8786,7 @@ export const levels = [
                   'Return on equity for shareholders',
                 ],
                 correct: 0,
-                explanation: 'Net profit = Revenue − all expenses. This is the "bottom line" - what owners actually keep after paying for everything.',
+                explanation: 'Net profit = Revenue − all expenses. This is the "bottom line," what owners actually keep after paying for everything.',
               },
               {
                 prompt: 'A company earns $500,000 in revenue but spends $480,000 on all expenses. What is its net profit?',
@@ -8808,7 +8808,7 @@ export const levels = [
                   'Revenue and profit are always proportional',
                 ],
                 correct: 0,
-                explanation: 'High revenue with low profit means costs are high relative to sales. Many successful companies operate on thin margins - controlling costs is just as important as growing revenue.',
+                explanation: 'High revenue with low profit means costs are high relative to sales. Many successful companies operate on thin margins; controlling costs is just as important as growing revenue.',
               },
               {
                 prompt: 'Gross profit is calculated as:',
@@ -8830,7 +8830,7 @@ export const levels = [
                   'Marketing campaign costs',
                 ],
                 correct: 0,
-                explanation: 'COGS are direct costs tied to producing goods - materials, manufacturing labor, packaging. Rent, salaries (non-production), and marketing are operating expenses, not COGS.',
+                explanation: 'COGS are direct costs tied to producing goods: materials, manufacturing labor, and packaging. Rent, salaries (non-production), and marketing are operating expenses, not COGS.',
               },
               {
                 prompt: 'A company can be profitable yet still struggle financially if:',
@@ -8841,7 +8841,7 @@ export const levels = [
                   'Its gross profit margin exceeds 50%',
                 ],
                 correct: 0,
-                explanation: 'Profit is an accounting concept; cash flow is reality. A profitable business can fail if customers pay late and the company can\'t cover its immediate bills - this is why cash flow management matters.',
+                explanation: 'Profit is an accounting concept; cash flow is reality. A profitable business can fail if customers pay late and the company can\'t cover its immediate bills; this is why cash flow management matters.',
               },
             ],
           },
@@ -8859,7 +8859,7 @@ export const levels = [
                   'The stock price history over the past 12 months',
                 ],
                 correct: 0,
-                explanation: 'The income statement (P&L) covers a time period - a quarter or year - and shows whether the business was profitable. It\'s one of three core financial statements.',
+                explanation: 'The income statement (P&L) covers a time period, a quarter or year, and shows whether the business was profitable. It\'s one of three core financial statements.',
               },
               {
                 prompt: 'On an income statement, which line comes first?',
@@ -8943,7 +8943,7 @@ export const levels = [
                   'Retained earnings',
                 ],
                 correct: 0,
-                explanation: 'Assets are things the company owns or is owed. Accounts receivable is money owed TO the company - an asset. Accounts payable and debt are liabilities; retained earnings is equity.',
+                explanation: 'Assets are things the company owns or is owed. Accounts receivable is money owed TO the company, an asset. Accounts payable and debt are liabilities; retained earnings is equity.',
               },
               {
                 prompt: 'A balance sheet gives you a snapshot of a company\'s financial position:',
@@ -8954,7 +8954,7 @@ export const levels = [
                   'At the moment of each major transaction',
                 ],
                 correct: 0,
-                explanation: 'Unlike the income statement (a period), the balance sheet is a snapshot - it shows assets, liabilities, and equity on a specific date, such as December 31.',
+                explanation: 'Unlike the income statement (a period), the balance sheet is a snapshot; it shows assets, liabilities, and equity on a specific date, such as December 31.',
               },
               {
                 prompt: 'Current assets differ from non-current assets because current assets:',
@@ -9016,7 +9016,7 @@ export const levels = [
                   'Depreciation is listed as a cash outflow',
                 ],
                 correct: 0,
-                explanation: 'If customers pay slowly, cash is tied up in receivables even though revenue is recognized. This shows why cash flow can differ from profit - timing of cash collection matters enormously.',
+                explanation: 'If customers pay slowly, cash is tied up in receivables even though revenue is recognized. This shows why cash flow can differ from profit; timing of cash collection matters enormously.',
               },
               {
                 prompt: 'Which activity would appear in the investing section of the cash flow statement?',
@@ -9027,7 +9027,7 @@ export const levels = [
                   'Collecting revenue from customers',
                 ],
                 correct: 0,
-                explanation: 'Investing activities cover buying/selling long-term assets and investments - equipment, buildings, or securities. Operations cover day-to-day; financing covers debt and equity.',
+                explanation: 'Investing activities cover buying/selling long-term assets and investments such as equipment, buildings, or securities. Operations cover day-to-day; financing covers debt and equity.',
               },
               {
                 prompt: 'Free cash flow (FCF) is generally calculated as:',
@@ -9038,7 +9038,7 @@ export const levels = [
                   'Total assets minus total debt',
                 ],
                 correct: 0,
-                explanation: 'FCF = Operating Cash Flow − CapEx. It shows how much cash remains after maintaining/expanding assets - money the business can use for dividends, debt paydown, or growth.',
+                explanation: 'FCF = Operating Cash Flow − CapEx. It shows how much cash remains after maintaining/expanding assets; this is money the business can use for dividends, debt paydown, or growth.',
               },
               {
                 prompt: 'Depreciation is added back in the operating cash flow section because:',
@@ -9060,7 +9060,7 @@ export const levels = [
                   'Statement of retained earnings',
                 ],
                 correct: 0,
-                explanation: 'The cash flow statement shows actual cash coming in and going out. A company can be profitable on paper yet unable to pay bills if cash timing is poor - the cash flow statement reveals this truth.',
+                explanation: 'The cash flow statement shows actual cash coming in and going out. A company can be profitable on paper yet unable to pay bills if cash timing is poor; the cash flow statement reveals this truth.',
               },
             ],
           },
@@ -9100,7 +9100,7 @@ export const levels = [
                   'Large businesses are exempt from federal income tax',
                 ],
                 correct: 0,
-                explanation: 'Sole proprietorships, partnerships, LLCs, and S Corps use pass-through taxation - profits flow to owners\' personal returns. C Corps face double taxation: corporate tax on profits, then personal tax on dividends.',
+                explanation: 'Sole proprietorships, partnerships, LLCs, and S Corps use pass-through taxation; profits flow to owners\' personal returns. C Corps face double taxation: corporate tax on profits, then personal tax on dividends.',
               },
               {
                 prompt: 'In a general partnership, if your partner makes a business decision that causes a lawsuit, you:',
@@ -9111,7 +9111,7 @@ export const levels = [
                   'Owe nothing since only the partner who acted is liable',
                 ],
                 correct: 0,
-                explanation: 'General partners have joint and several liability - each partner can be held fully responsible for the partnership\'s debts and legal judgments, even for actions of other partners.',
+                explanation: 'General partners have joint and several liability; each partner can be held fully responsible for the partnership\'s debts and legal judgments, even for actions of other partners.',
               },
               {
                 prompt: 'Which structure is best for a small business owner who wants liability protection and simple pass-through taxes?',
@@ -9195,7 +9195,7 @@ export const levels = [
                   'Pay down long-term debt',
                 ],
                 correct: 0,
-                explanation: 'Gross margin = (Revenue − COGS) / Revenue. Lowering COGS - through better sourcing, manufacturing efficiency, or scale - directly expands gross margin without touching price.',
+                explanation: 'Gross margin = (Revenue − COGS) / Revenue. Lowering COGS through better sourcing, manufacturing efficiency, or scale directly expands gross margin without touching price.',
               },
               {
                 prompt: 'Two companies each earn $1M in revenue. Company A has 70% gross margin; Company B has 30%. What does this tell you?',
@@ -9206,7 +9206,7 @@ export const levels = [
                   'Both companies have the same profitability since revenue is equal',
                 ],
                 correct: 0,
-                explanation: 'Higher gross margin means more dollars available to cover overhead and generate profit. Company A retains $700K after COGS vs. Company B\'s $300K - a massive difference in financial flexibility.',
+                explanation: 'Higher gross margin means more dollars available to cover overhead and generate profit. Company A retains $700K after COGS vs. Company B\'s $300K, a massive difference in financial flexibility.',
               },
             ],
           },
@@ -9224,7 +9224,7 @@ export const levels = [
                   'The business first becomes incorporated',
                 ],
                 correct: 0,
-                explanation: 'Break-even = the point where revenue covers all costs - fixed and variable. Above it, the business profits. Below it, it loses money. Every business owner should know their break-even.',
+                explanation: 'Break-even is the point where revenue covers all costs, both fixed and variable. Above it, the business profits; below it, it loses money. Every business owner should know their break-even.',
               },
               {
                 prompt: 'Fixed costs are costs that:',
@@ -9235,7 +9235,7 @@ export const levels = [
                   'Are always equal to 50% of total operating expenses',
                 ],
                 correct: 0,
-                explanation: 'Fixed costs - rent, insurance, salaried staff - don\'t change with production volume. Variable costs (materials, commissions) scale with output. This distinction drives break-even analysis.',
+                explanation: 'Fixed costs such as rent, insurance, and salaried staff don\'t change with production volume. Variable costs (materials, commissions) scale with output. This distinction drives break-even analysis.',
               },
               {
                 prompt: 'Break-even units = Fixed Costs ÷ (Price − Variable Cost per Unit). If fixed costs are $10,000, price is $50, and variable cost is $30, break-even is:',
@@ -9319,7 +9319,7 @@ export const levels = [
                   'The interest rate is always lower than any term loan',
                 ],
                 correct: 0,
-                explanation: 'A line of credit is flexible revolving credit - draw and repay as needed, like a business credit card. A term loan gives you a lump sum upfront with a fixed repayment schedule.',
+                explanation: 'A line of credit is flexible revolving credit; draw and repay as needed, like a business credit card. A term loan gives you a lump sum upfront with a fixed repayment schedule.',
               },
               {
                 prompt: 'When a bank evaluates a small business loan application, which factor matters most?',
@@ -9384,13 +9384,13 @@ export const levels = [
               {
                 prompt: 'A P/E ratio of 30 vs. 15 suggests:',
                 options: [
-                  'Investors pay more for each dollar of earnings - expecting faster future growth',
+                  'Investors pay more for each dollar of earnings, expecting faster future growth',
                   'The company with P/E 30 is twice as profitable as P/E 15',
                   'The lower P/E stock always represents a better investment value',
                   'The stock with P/E 30 will always outperform the market',
                 ],
                 correct: 0,
-                explanation: 'High P/E = growth expectations. Low P/E = either undervalued or slow-growth/troubled. Context matters - compare P/E to the company\'s own history and sector peers.',
+                explanation: 'High P/E = growth expectations. Low P/E = either undervalued or slow-growth/troubled. Context matters; compare P/E to the company\'s own history and sector peers.',
               },
               {
                 prompt: 'The P/E ratio is calculated as:',
@@ -9434,7 +9434,7 @@ export const levels = [
                   'The stock is extremely undervalued relative to the market',
                 ],
                 correct: 0,
-                explanation: 'When a company has negative earnings (a net loss), P/E becomes negative or is listed as "N/A." Many young, high-growth companies are unprofitable - you need other metrics like Price/Sales to value them.',
+                explanation: 'When a company has negative earnings (a net loss), P/E becomes negative or is listed as "N/A." Many young, high-growth companies are unprofitable; you need other metrics like Price/Sales to value them.',
               },
               {
                 prompt: 'The PEG ratio improves on the P/E by also accounting for:',
@@ -9485,7 +9485,7 @@ export const levels = [
                   'They\'re less likely to be affected by interest rate changes',
                 ],
                 correct: 0,
-                explanation: 'High-beta stocks amplify market moves in both directions. In a bull market they can outperform significantly - but they also fall harder in downturns. Only suit investors with high risk tolerance and long time horizons.',
+                explanation: 'High-beta stocks amplify market moves in both directions. In a bull market they can outperform significantly, but they also fall harder in downturns. They only suit investors with high risk tolerance and long time horizons.',
               },
               {
                 prompt: 'Standard deviation in investing measures:',
@@ -9552,9 +9552,9 @@ export const levels = [
               {
                 prompt: 'If a DCF analysis gives an intrinsic value of $80 and the stock trades at $60, the stock appears to be:',
                 options: [
-                  'Undervalued - a potential buying opportunity',
-                  'Overvalued - a potential selling opportunity',
-                  'Fairly valued - no action is warranted',
+                  'Undervalued, representing a potential buying opportunity',
+                  'Overvalued, representing a potential selling opportunity',
+                  'Fairly valued, meaning no action is warranted',
                   'Impossible to assess without knowing the company\'s P/E ratio',
                 ],
                 correct: 0,
@@ -9569,7 +9569,7 @@ export const levels = [
                   'It requires access to non-public insider information to be accurate',
                 ],
                 correct: 0,
-                explanation: '"Garbage in, garbage out." A DCF is highly sensitive to assumptions - changing the growth rate from 8% to 10% can swing intrinsic value by 50%+. Always stress-test with multiple scenarios.',
+                explanation: '"Garbage in, garbage out." A DCF is highly sensitive to assumptions; changing the growth rate from 8% to 10% can swing intrinsic value by 50%+. Always stress-test with multiple scenarios.',
               },
               {
                 prompt: 'Terminal value in a DCF represents:',
@@ -9585,7 +9585,7 @@ export const levels = [
               {
                 prompt: 'DCF analysis is most reliable for companies that have:',
                 options: [
-                  'Predictable, stable cash flows - like utilities or consumer staples',
+                  'Predictable, stable cash flows, like those of utilities or consumer staples',
                   'Highly variable earnings due to rapidly changing technology',
                   'Negative free cash flow but high revenue growth',
                   'Recently gone public with less than 2 years of earnings history',
@@ -9609,7 +9609,7 @@ export const levels = [
                   'Timing the market using moving averages to buy at the lowest point',
                 ],
                 correct: 0,
-                explanation: 'DCA removes the emotional burden of timing the market. You buy more shares when prices are low and fewer when high - averaging out the cost over time.',
+                explanation: 'DCA removes the emotional burden of timing the market. You buy more shares when prices are low and fewer when high, averaging out the cost over time.',
               },
               {
                 prompt: 'You invest $500/month in an index fund. In month 1 shares cost $50; in month 2 they cost $25. How many total shares did you buy?',
@@ -9642,7 +9642,7 @@ export const levels = [
                   'It allows you to avoid paying capital gains taxes on purchases',
                 ],
                 correct: 0,
-                explanation: 'Many investors freeze waiting for the "right time." DCA creates a systematic habit - invest the same amount every month - removing emotion and the paralysis of market timing.',
+                explanation: 'Many investors freeze waiting for the "right time." DCA creates a systematic habit of investing the same amount every month, removing emotion and the paralysis of market timing.',
               },
               {
                 prompt: 'DCA is most effective when used for:',
@@ -9653,7 +9653,7 @@ export const levels = [
                   'Speculative assets like individual stocks to minimize risk of loss',
                 ],
                 correct: 0,
-                explanation: 'DCA shines over long time horizons - years or decades. Short-term traders need fast deployment of capital. Lump sums may be better invested at once in rising markets.',
+                explanation: 'DCA shines over long time horizons of years or decades. Short-term traders need fast deployment of capital, and lump sums may be better invested at once in rising markets.',
               },
               {
                 prompt: 'Which investor is practicing dollar-cost averaging?',
@@ -9693,7 +9693,7 @@ export const levels = [
                   'The company paid a larger dividend than in the previous quarter',
                 ],
                 correct: 0,
-                explanation: 'Wall Street analysts publish EPS estimates before quarterly reports. "Beating" means actual EPS > consensus estimate. This often causes the stock to jump - sometimes even if EPS was lower than last year.',
+                explanation: 'Wall Street analysts publish EPS estimates before quarterly reports. "Beating" means actual EPS > consensus estimate. This often causes the stock to jump, sometimes even if EPS was lower than last year.',
               },
               {
                 prompt: 'Why can a stock DROP after reporting strong earnings growth?',
@@ -9704,7 +9704,7 @@ export const levels = [
                   'Strong earnings attract short sellers who profit from the subsequent decline',
                 ],
                 correct: 0,
-                explanation: '"Buy the rumor, sell the news." If a stock ran up 30% ahead of earnings expecting perfection, even good results can disappoint. Weak forward guidance - the company\'s own forecast - is the most common cause.',
+                explanation: '"Buy the rumor, sell the news." If a stock ran up 30% ahead of earnings expecting perfection, even good results can disappoint. Weak forward guidance (the company\'s own forecast) is the most common cause.',
               },
               {
                 prompt: 'Diluted EPS differs from basic EPS because it accounts for:',
@@ -9726,7 +9726,7 @@ export const levels = [
                   'Year-over-year comparisons of key financial metrics',
                 ],
                 correct: 0,
-                explanation: 'Earnings reports include financials, guidance, and comparisons - but not what the stock did that day. Stock price movements happen in the market in reaction to the report.',
+                explanation: 'Earnings reports include financials, guidance, and comparisons, but not what the stock did that day. Stock price movements happen in the market in reaction to the report.',
               },
               {
                 prompt: 'A company reports EPS of $3.00, up 20% year-over-year, but the stock falls 8% after the announcement. The most likely explanation is:',
@@ -9737,7 +9737,7 @@ export const levels = [
                   'Competitors reported the same EPS growth, making the result seem unimpressive',
                 ],
                 correct: 0,
-                explanation: 'Earnings beats can still lead to sell-offs if management\'s future guidance disappoints. Investors price the future, not the past - lowered guidance signals slower growth ahead.',
+                explanation: 'Earnings beats can still lead to sell-offs if management\'s future guidance disappoints. Investors price the future, not the past; lowered guidance signals slower growth ahead.',
               },
             ],
           },
@@ -9755,7 +9755,7 @@ export const levels = [
                   'Market capitalization to total annual dividend payments',
                 ],
                 correct: 0,
-                explanation: 'P/B = Market Price ÷ Book Value Per Share. Book value = assets minus liabilities. A P/B below 1 means you\'re buying $1 of assets for less than $1 - potentially undervalued.',
+                explanation: 'P/B = Market Price ÷ Book Value Per Share. Book value = assets minus liabilities. A P/B below 1 means you\'re buying $1 of assets for less than $1, which is potentially undervalued.',
               },
               {
                 prompt: 'The Price-to-Sales (P/S) ratio is most useful for valuing:',
@@ -9788,7 +9788,7 @@ export const levels = [
                   'How many years of earnings are needed to pay off all debt',
                 ],
                 correct: 0,
-                explanation: 'D/E = Total Debt ÷ Total Equity. A D/E of 2.0 means the company uses $2 of debt for every $1 of equity. High D/E can mean higher risk - especially during recessions when revenue can fall while debt payments remain fixed.',
+                explanation: 'D/E = Total Debt ÷ Total Equity. A D/E of 2.0 means the company uses $2 of debt for every $1 of equity. High D/E can mean higher risk, especially during recessions when revenue can fall while debt payments remain fixed.',
               },
               {
                 prompt: 'Enterprise Value (EV) differs from market capitalization because EV also includes:',
@@ -9799,7 +9799,7 @@ export const levels = [
                   'Minority interests and pension obligations but not debt',
                 ],
                 correct: 0,
-                explanation: 'EV = Market Cap + Debt − Cash. It reflects what an acquirer would actually pay - including taking on debt and receiving cash. EV/EBITDA is a popular ratio for comparing companies across capital structures.',
+                explanation: 'EV = Market Cap + Debt − Cash. It reflects what an acquirer would actually pay, including taking on debt and receiving cash. EV/EBITDA is a popular ratio for comparing companies across capital structures.',
               },
               {
                 prompt: 'Which ratio best measures how efficiently a company uses its assets to generate revenue?',
@@ -9839,7 +9839,7 @@ export const levels = [
                   'Interest rate changes explain most short-term stock price movements',
                 ],
                 correct: 0,
-                explanation: 'Technical analysts study charts, trends, support/resistance levels, and indicators like moving averages. They believe all public information is already priced in - only the pattern of price movement gives an edge.',
+                explanation: 'Technical analysts study charts, trends, support/resistance levels, and indicators like moving averages. They believe all public information is already priced in; only the pattern of price movement gives an edge.',
               },
               {
                 prompt: 'A "support level" in technical analysis refers to:',
@@ -9861,15 +9861,15 @@ export const levels = [
                   'Completely useless except when applied to emerging market stocks',
                 ],
                 correct: 0,
-                explanation: 'EMH says public information is instantly priced in, so no analysis gives a consistent edge. This is why most active managers underperform index funds long-term - the evidence strongly supports EMH.',
+                explanation: 'EMH says public information is instantly priced in, so no analysis gives a consistent edge. This is why most active managers underperform index funds long-term; the evidence strongly supports EMH.',
               },
               {
                 prompt: 'Which approach is more appropriate for evaluating a 30-year retirement investment in a diversified portfolio?',
                 options: [
-                  'Fundamental analysis - focus on company quality and long-term earnings power',
-                  'Technical analysis - track moving averages to time entry and exit points',
-                  'Equal use of both since they complement each other perfectly over decades',
-                  'Neither - long-term investors should only use macroeconomic indicators',
+                  'Fundamental analysis, focusing on company quality and long-term earnings power',
+                  'Technical analysis, tracking moving averages to time entry and exit points',
+                  'Equal use of both, since they complement each other perfectly over decades',
+                  'Neither, since long-term investors should only use macroeconomic indicators',
                 ],
                 correct: 0,
                 explanation: 'For long-term investing, fundamentals dominate. Over 30 years, a company\'s earnings power and competitive position matter far more than short-term chart patterns. Technical analysis is more relevant for traders.',
@@ -9883,7 +9883,7 @@ export const levels = [
                   'A regulatory trigger requiring institutional investors to disclose their positions',
                 ],
                 correct: 0,
-                explanation: 'The golden cross is one of the most watched technical signals. When shorter-term average rises above longer-term average, it suggests upward price momentum. Its opposite - the "death cross" - is bearish.',
+                explanation: 'The golden cross is one of the most watched technical signals. When shorter-term average rises above longer-term average, it suggests upward price momentum. Its opposite, the "death cross," is bearish.',
               },
             ],
           },
@@ -9901,7 +9901,7 @@ export const levels = [
                   'Asking your broker which stocks they recommend this month',
                 ],
                 correct: 0,
-                explanation: 'A 10-K is the gold standard - it\'s a detailed annual filing with financials, risk factors, business overview, and management discussion. Start here before looking at price charts or opinions.',
+                explanation: 'A 10-K is the gold standard; it\'s a detailed annual filing with financials, risk factors, business overview, and management discussion. Start here before looking at price charts or opinions.',
               },
               {
                 prompt: 'A company\'s "moat" refers to:',
@@ -9923,7 +9923,7 @@ export const levels = [
                   'Only buying stocks with a dividend yield above 3% as a cushion',
                 ],
                 correct: 0,
-                explanation: 'If you estimate a stock is worth $100, buying at $70 gives a 30% margin of safety. Your estimate could be wrong - the margin of safety protects you. Benjamin Graham first formalized this principle.',
+                explanation: 'If you estimate a stock is worth $100, buying at $70 gives a 30% margin of safety. Your estimate could be wrong; the margin of safety protects you. Benjamin Graham first formalized this principle.',
               },
               {
                 prompt: 'Which of these is a sign of potentially poor corporate governance?',
@@ -9934,7 +9934,7 @@ export const levels = [
                   'Executive compensation is tied primarily to long-term stock performance',
                 ],
                 correct: 0,
-                explanation: 'Good governance separates the CEO role from the board chair who oversees the CEO. One person holding both roles creates a conflict - who watches the watchman? Poor governance often leads to scandals.',
+                explanation: 'Good governance separates the CEO role from the board chair who oversees the CEO. One person holding both roles creates a conflict; who watches the watchman? Poor governance often leads to scandals.',
               },
               {
                 prompt: 'Before buying an individual stock, a thorough investor should ask all of the following EXCEPT:',
@@ -9945,7 +9945,7 @@ export const levels = [
                   'Is the valuation reasonable relative to growth prospects?',
                 ],
                 correct: 0,
-                explanation: 'The past 3 days of price action is essentially noise. Competent stock research focuses on business quality, management, competitive position, and valuation - not short-term price movements.',
+                explanation: 'The past 3 days of price action is essentially noise. Competent stock research focuses on business quality, management, competitive position, and valuation, not short-term price movements.',
               },
               {
                 prompt: 'The most common mistake individual stock investors make is:',
@@ -9989,7 +9989,7 @@ export const levels = [
                 prompt: 'When does buying a home make more financial sense than renting?',
                 options: [
                   'When you plan to stay 5+ years and total ownership costs beat rent costs',
-                  'Always - buying is always better than renting in the long run',
+                  'Always, since buying is always better than renting in the long run',
                   'When mortgage payments are lower than rent regardless of how long you stay',
                   'Only when you can put down 50% to avoid any interest payments',
                 ],
@@ -9999,13 +9999,13 @@ export const levels = [
               {
                 prompt: 'The price-to-rent ratio helps determine whether a local market favors buying or renting. A very high ratio (e.g., 30+) suggests:',
                 options: [
-                  'Renting may be smarter - home prices are high relative to rental costs',
+                  'Renting may be smarter, since home prices are high relative to rental costs',
                   'Buying is always the better choice when the ratio exceeds 20',
                   'The rental market is overheated and rents will soon decline',
                   'Property taxes in that area are unusually low, making buying cheaper',
                 ],
                 correct: 0,
-                explanation: 'Price-to-rent = Home Price ÷ Annual Rent. A ratio of 30 means you pay 30 years of rent to buy - making renting and investing the difference potentially more lucrative.',
+                explanation: 'Price-to-rent = Home Price ÷ Annual Rent. A ratio of 30 means you pay 30 years of rent to buy, making renting and investing the difference potentially more lucrative.',
               },
               {
                 prompt: 'Which of these is a TRUE hidden cost of homeownership that renters avoid?',
@@ -10016,7 +10016,7 @@ export const levels = [
                   'Mortgage interest deduction that reduces federal income taxes',
                 ],
                 correct: 0,
-                explanation: 'Renters pay rent but avoid maintenance, property taxes, insurance, and HOA fees. A 1% maintenance cost on a $400,000 home = $4,000/year - costs that never show up in a mortgage payment comparison.',
+                explanation: 'Renters pay rent but avoid maintenance, property taxes, insurance, and HOA fees. A 1% maintenance cost on a $400,000 home = $4,000/year, costs that never show up in a mortgage payment comparison.',
               },
               {
                 prompt: 'The opportunity cost argument for renting says that:',
@@ -10043,7 +10043,7 @@ export const levels = [
               {
                 prompt: '"Throwing money away on rent" is a common argument for buying. Why do many financial experts disagree with this framing?',
                 options: [
-                  'Renters receive housing in exchange - it\'s not wasted, and mortgage interest and taxes also don\'t build equity',
+                  'Renters receive housing in exchange, so it\'s not wasted, and mortgage interest and taxes also don\'t build equity',
                   'Rent payments are fully tax-deductible, just like mortgage interest',
                   'Renters build equity through security deposits that are returned at lease end',
                   'Monthly rent payments are always lower than mortgage payments for the same home',
@@ -10167,7 +10167,7 @@ export const levels = [
               {
                 prompt: 'One key advantage of REITs over direct property ownership is:',
                 options: [
-                  'Liquidity - REIT shares can be sold in seconds vs. months for a property',
+                  'Liquidity, since REIT shares can be sold in seconds vs. months for a property',
                   'Tax-free dividends that avoid all federal and state income taxes',
                   'Government-guaranteed returns similar to FDIC-insured bank accounts',
                   'Zero exposure to property market downturns since REITs are diversified',
@@ -10210,7 +10210,7 @@ export const levels = [
                   '2–5% of the purchase price (appraisal, title, origination fees, etc.)',
                   'Exactly 1% of the mortgage amount set by federal law',
                   '$500–$1,000 regardless of the purchase price',
-                  'Nothing - sellers pay all closing costs by convention',
+                  'Nothing, since sellers pay all closing costs by convention',
                 ],
                 correct: 0,
                 explanation: 'On a $300,000 home, expect $6,000–$15,000 in closing costs. These are in addition to your down payment and must be saved separately.',
@@ -10292,7 +10292,7 @@ export const levels = [
                 prompt: 'A 15-year mortgage compared to a 30-year mortgage typically means:',
                 options: [
                   'Higher monthly payments but much less total interest paid over the loan life',
-                  'Lower monthly payments and lower total interest - it\'s always better',
+                  'Lower monthly payments and lower total interest, making it always better',
                   'The same total interest cost since you\'re borrowing the same amount',
                   'Higher interest rates because shorter loans are riskier for lenders',
                 ],
@@ -10470,10 +10470,10 @@ export const levels = [
               {
                 prompt: 'In which phase of the real estate cycle is it generally best to BUY?',
                 options: [
-                  'Recession/Recovery - when prices have fallen and pessimism is high',
-                  'Peak/Expansion - when prices are rising and competition is fierce',
-                  'Stabilization - when prices haven\'t moved in 3+ years',
-                  'Hyper-supply - when new construction is booming and vacancies are rising',
+                  'Recession and recovery phase, when prices have fallen and pessimism is high',
+                  'Peak and expansion phase, when prices are rising and competition is fierce',
+                  'Stabilization phase, when prices haven\'t moved in 3+ years',
+                  'Hyper-supply phase, when new construction is booming and vacancies are rising',
                 ],
                 correct: 0,
                 explanation: 'Contrarian buyers buy when others are fearful - during downturns when prices are depressed. The challenge: it\'s psychologically hard to buy when headlines scream crisis, and timing the exact bottom is impossible.',
@@ -10554,7 +10554,7 @@ export const levels = [
               {
                 prompt: 'Which ongoing cost of homeownership is most often underestimated by first-time buyers?',
                 options: [
-                  'Maintenance and repairs - experts recommend budgeting 1–2% of home value annually',
+                  'Maintenance and repairs, with experts recommending budgeting 1–2% of home value annually',
                   'Property taxes, which are publicly disclosed before purchase',
                   'Homeowners insurance, which is quoted during the mortgage process',
                   'HOA fees, which are disclosed in the purchase agreement',
@@ -10603,9 +10603,9 @@ export const levels = [
               {
                 prompt: 'You have three debts: $500 at 5%, $2,000 at 15%, and $8,000 at 9%. Using the snowball method, you pay off first:',
                 options: [
-                  '$500 at 5% - the smallest balance',
-                  '$2,000 at 15% - the highest interest rate',
-                  '$8,000 at 9% - the largest balance',
+                  '$500 at 5%, the smallest balance',
+                  '$2,000 at 15%, the highest interest rate',
+                  '$8,000 at 9%, the largest balance',
                   'All three simultaneously with equal extra payments',
                 ],
                 correct: 0,
@@ -10676,9 +10676,9 @@ export const levels = [
               {
                 prompt: 'You have three debts: $500 at 5%, $2,000 at 15%, and $8,000 at 9%. Using the avalanche method, you pay off first:',
                 options: [
-                  '$2,000 at 15% - the highest interest rate',
-                  '$500 at 5% - the smallest balance',
-                  '$8,000 at 9% - the largest balance',
+                  '$2,000 at 15%, the highest interest rate',
+                  '$500 at 5%, the smallest balance',
+                  '$8,000 at 9%, the largest balance',
                   'All three simultaneously with proportional extra payments',
                 ],
                 correct: 0,
@@ -10687,9 +10687,9 @@ export const levels = [
               {
                 prompt: 'Over a 5-year payoff period, the avalanche method compared to the snowball will typically result in:',
                 options: [
-                  'Less total interest paid - sometimes hundreds or thousands of dollars less',
+                  'Less total interest paid, sometimes hundreds or thousands of dollars less',
                   'Faster payoff time because you eliminate more debts in the first year',
-                  'The exact same total interest paid - the method chosen doesn\'t matter',
+                  'The exact same total interest paid regardless of which method is chosen',
                   'More total interest paid because you skip the psychological benefits of quick wins',
                 ],
                 correct: 0,
@@ -10884,10 +10884,10 @@ export const levels = [
               {
                 prompt: 'Bankruptcy should be considered:',
                 options: [
-                  'Only as a last resort - it damages credit for 7–10 years',
+                  'Only as a last resort, since it damages credit for 7–10 years',
                   'Immediately when debt exceeds one year\'s salary',
                   'Before trying debt consolidation or avalanche repayment',
-                  'Freely - it resets all debt with no long-term consequences',
+                  'Freely, since it resets all debt with no long-term consequences',
                 ],
                 correct: 0,
                 explanation: 'Chapter 7 stays on your credit report for 10 years; Chapter 13 for 7. It should be a last resort after exhausting negotiation, consolidation, and repayment strategies.',
@@ -11115,9 +11115,9 @@ export const levels = [
                 prompt: 'Credit utilization ratio should ideally be kept below:',
                 options: [
                   '30%, with under 10% being optimal for the highest scores',
-                  '50% - any lower and lenders see you as too conservative with credit',
-                  '75% - as long as you make minimum payments, utilization doesn\'t matter',
-                  '100% - you can use all available credit without score impact',
+                  '50%, since any lower and lenders see you as too conservative with credit',
+                  '75%, since as long as you make minimum payments, utilization doesn\'t matter',
+                  '100%, since you can use all available credit without score impact',
                 ],
                 correct: 0,
                 explanation: 'Utilization = Balances ÷ Total Credit Limits. Paying down credit card debt directly improves this ratio. Under 10% is optimal for elite scores - above 30% starts hurting significantly.',
@@ -11196,7 +11196,7 @@ export const levels = [
               {
                 prompt: 'The most effective way to avoid financial scams is:',
                 options: [
-                  'Verify independently - never act on urgency pressure from an unsolicited contact',
+                  'Verify independently and never act on urgency pressure from an unsolicited contact',
                   'Only use cash for all transactions to avoid digital fraud',
                   'Keep all financial accounts at a single bank for easier monitoring',
                   'Share account credentials only with people you\'ve met in person',
@@ -11313,9 +11313,9 @@ export const levels = [
               {
                 prompt: 'You should review your credit reports from all three bureaus:',
                 options: [
-                  'At least once per year - free at AnnualCreditReport.com',
+                  'At least once per year, for free at AnnualCreditReport.com',
                   'Only after receiving a suspicious credit inquiry notice',
-                  'Every month - three bureaus means 36 free reports per year',
+                  'Every month, since three bureaus means 36 free reports per year',
                   'Only when applying for a major loan like a mortgage',
                 ],
                 correct: 0,
@@ -11448,8 +11448,8 @@ export const levels = [
               {
                 prompt: 'Negotiating a medical bill after receiving treatment is:',
                 options: [
-                  'Common and effective - hospitals often accept significantly less than the listed price',
-                  'Illegal - medical bills are set by government rate schedules',
+                  'Common and effective, since hospitals often accept significantly less than the listed price',
+                  'Illegal, since medical bills are set by government rate schedules',
                   'Only possible before treatment, not after services have been rendered',
                   'Unnecessary because insurance companies always negotiate on your behalf',
                 ],
@@ -11470,10 +11470,10 @@ export const levels = [
               {
                 prompt: 'Which everyday expense is most frequently negotiable but rarely negotiated?',
                 options: [
-                  'Cable, internet, phone, and insurance bills - especially at renewal time',
-                  'Grocery store prices - most stores match competitor flyers on request',
-                  'Bank account fees - legally fixed and cannot be adjusted by branch staff',
-                  'Utility bills - regulated by the state and not subject to negotiation',
+                  'Cable, internet, phone, and insurance bills, especially at renewal time',
+                  'Grocery store prices, since most stores match competitor flyers on request',
+                  'Bank account fees, which are legally fixed and cannot be adjusted by branch staff',
+                  'Utility bills, which are regulated by the state and not subject to negotiation',
                 ],
                 correct: 0,
                 explanation: 'Calling your cable, internet, or phone provider at renewal and threatening to cancel often yields 20–40% discounts. Retention departments have authority to offer deals that customer service representatives cannot.',
@@ -11689,7 +11689,7 @@ export const levels = [
               {
                 prompt: 'You can cancel a subscription but still have access until the billing period ends. This means:',
                 options: [
-                  'Cancel immediately when you decide - there\'s no reason to wait until the last day',
+                  'Cancel immediately when you decide, since there\'s no reason to wait until the last day',
                   'Wait until the day before renewal to maximize your access for the money paid',
                   'Cancellation refunds the unused portion of the current billing period automatically',
                   'You lose access immediately upon cancellation regardless of billing cycle',
@@ -11884,7 +11884,7 @@ export const levels = [
               {
                 prompt: 'A new business has $50,000 in monthly revenue but $60,000 in monthly expenses. It is:',
                 options: [
-                  'Cash flow negative - spending more than it earns and burning reserves',
+                  'Cash flow negative, spending more than it earns and burning reserves',
                   'Profitable because the revenue minus expenses are close to breakeven',
                   'In good shape because revenue of $50K is high for a new business',
                   'Insolvent and required to file for bankruptcy protection immediately',
@@ -12187,7 +12187,7 @@ export const levels = [
               {
                 prompt: 'Price elasticity describes how much:',
                 options: [
-                  'Demand changes in response to a price change - high elasticity means demand is price-sensitive',
+                  'Demand changes in response to a price change, with high elasticity meaning demand is price-sensitive',
                   'A business\'s price can increase before customers start leaving for competitors',
                   'Prices must change to match inflation in the broader economy each year',
                   'Your costs must change proportionally when you increase output significantly',
@@ -12479,7 +12479,7 @@ export const levels = [
                 options: [
                   'More expensive for European buyers, reducing demand for U.S. goods abroad',
                   'Cheaper for European buyers, dramatically increasing export volumes',
-                  'Unaffected - exchange rates only matter for financial transactions',
+                  'Unaffected, since exchange rates only matter for financial transactions',
                   'More competitive because European importers prefer strong currencies',
                 ],
                 correct: 0,
@@ -12488,10 +12488,10 @@ export const levels = [
               {
                 prompt: 'If you\'re an American traveling to Europe and the dollar strengthens against the euro, your trip becomes:',
                 options: [
-                  'Cheaper - your dollars buy more euros',
-                  'More expensive - your dollars buy fewer euros',
-                  'Unaffected - prices in Europe are set in euros',
-                  'Free - the exchange rate gain offsets all travel costs',
+                  'Cheaper, since your dollars buy more euros',
+                  'More expensive, since your dollars buy fewer euros',
+                  'Unaffected, since prices in Europe are set in euros',
+                  'Essentially free, since the exchange rate gain offsets all travel costs',
                 ],
                 correct: 0,
                 explanation: 'A stronger dollar buys more foreign currency - hotels, meals, and goods in Europe cost you fewer dollars. Conversely, a weak dollar makes international travel more expensive for Americans.',
@@ -12553,7 +12553,7 @@ export const levels = [
                   'Countries benefit from trading even if one is better at producing everything',
                   'The richest country always sets the terms of international trade agreements',
                   'Only developing nations benefit from international trade',
-                  'Trade is zero-sum - one country\'s gain is another\'s loss',
+                  'Trade is zero-sum, meaning one country\'s gain is another\'s loss',
                 ],
                 correct: 0,
                 explanation: 'Even if the U.S. can produce both wine and cloth more efficiently than Portugal, both countries gain by specializing in their comparative advantage and trading.',
@@ -12707,10 +12707,10 @@ export const levels = [
               {
                 prompt: 'Investing in emerging market stocks adds which specific risk not present in U.S. stocks?',
                 options: [
-                  'Political risk - governments may seize assets, change regulations, or restrict capital',
-                  'Inflation risk - inflation never affects U.S. stocks but always affects emerging ones',
-                  'Liquidity risk - all emerging market stocks can only be sold once per year',
-                  'Deflation risk - emerging markets experience price declines that destroy returns',
+                  'Political risk, since governments may seize assets, change regulations, or restrict capital',
+                  'Inflation risk, since inflation never affects U.S. stocks but always affects emerging ones',
+                  'Liquidity risk, since all emerging market stocks can only be sold once per year',
+                  'Deflation risk, since emerging markets experience price declines that destroy returns',
                 ],
                 correct: 0,
                 explanation: 'Political risk (nationalization, capital controls, regulatory reversal) is a real consideration in countries with less stable governance. Venezuela, Russia (after 2022), and others have shown how quickly investor protections can vanish.',
@@ -13054,7 +13054,7 @@ export const levels = [
                 options: [
                   'Small (0–5% for risk-tolerant investors) due to extreme volatility and speculative nature',
                   'At least 20% because crypto has historically outperformed all other asset classes',
-                  'Zero - professional investors universally agree crypto has no place in portfolios',
+                  'Zero, since professional investors universally agree crypto has no place in portfolios',
                   '50% or more if you\'re under 35 because time horizon offsets the volatility',
                 ],
                 correct: 0,
@@ -13063,10 +13063,10 @@ export const levels = [
               {
                 prompt: 'Cryptocurrency gains are taxed by the IRS as:',
                 options: [
-                  'Capital gains - short-term (ordinary rates) if held under a year, long-term if held longer',
+                  'Capital gains, taxed at short-term ordinary rates if held under a year, or long-term rates if held longer',
                   'Ordinary income at a flat 15% rate regardless of how long you held it',
                   'Currency exchange gains, which are exempt from capital gains tax',
-                  'Not taxable - the IRS does not currently track or tax cryptocurrency',
+                  'Not taxable, since the IRS does not currently track or tax cryptocurrency',
                 ],
                 correct: 0,
                 explanation: 'The IRS treats crypto as property. Selling, trading, or spending crypto triggers a taxable event. Gains held under a year are taxed as ordinary income; over a year qualifies for lower long-term capital gains rates.',
@@ -13092,10 +13092,10 @@ export const levels = [
               {
                 prompt: 'Gold and stocks tend to be:',
                 options: [
-                  'Negatively correlated - gold often rises when stocks fall, providing portfolio balance',
-                  'Perfectly correlated - they move together in all market conditions',
+                  'Negatively correlated, with gold often rising when stocks fall and providing portfolio balance',
+                  'Perfectly correlated, moving together in all market conditions',
                   'Uncorrelated with any asset class, making gold essentially random in a portfolio',
-                  'Positively correlated - both benefit from economic expansion simultaneously',
+                  'Positively correlated, with both benefiting from economic expansion simultaneously',
                 ],
                 correct: 0,
                 explanation: 'Gold\'s negative correlation with equities is its portfolio value. During the 2008 crash, gold rose ~5% while the S&P fell ~37%. This diversification benefit is why many advisors suggest 5–10% gold exposure.',
@@ -13187,7 +13187,7 @@ export const levels = [
               {
                 prompt: 'Options expire worthless (a total loss of premium) when:',
                 options: [
-                  'The option is "out of the money" at expiration - price didn\'t move favorably enough',
+                  'The option is out of the money at expiration, meaning the price didn\'t move favorably enough',
                   'The underlying company pays a dividend larger than the option premium',
                   'The option holder fails to exercise within 24 hours of purchase',
                   'The option is held in a non-margin brokerage account at expiration',
@@ -13420,7 +13420,7 @@ export const levels = [
                   '$250,000 to $1 million or more, restricted to accredited investors',
                   '$10,000, similar to mutual fund minimums, open to any investor',
                   '$50,000 for retail investors or $5M for institutional accounts',
-                  'No minimum - hedge funds are open to all investors through major brokerages',
+                  'No minimum, since hedge funds are open to all investors through major brokerages',
                 ],
                 correct: 0,
                 explanation: 'Hedge funds are legally restricted to accredited investors (net worth over $1M or income over $200K). Minimums often run $1M+. This "protects" retail investors from complex strategies - but also from the marketing of mediocre performers.',
@@ -13519,7 +13519,7 @@ export const levels = [
               {
                 prompt: 'The main reason to add alternative investments to a portfolio is:',
                 options: [
-                  'Diversification - they can reduce overall portfolio risk when they\'re uncorrelated with stocks and bonds',
+                  'Diversification, since they can reduce overall portfolio risk when uncorrelated with stocks and bonds',
                   'Guaranteed higher returns than traditional assets over any time period',
                   'Tax advantages that completely eliminate capital gains on alternative holdings',
                   'Regulatory requirements for investors with portfolios over $1 million',
@@ -13552,7 +13552,7 @@ export const levels = [
               {
                 prompt: 'Which alternative asset has the HIGHEST correlation with traditional stock markets during market crashes?',
                 options: [
-                  'High-yield ("junk") bonds, which often sell off with equities',
+                  'High-yield junk bonds, which often sell off along with equities',
                   'Physical gold, which typically rallies during financial crises',
                   'Commodities, which tend to be uncorrelated with stock market moves',
                   'Real estate (REITs), which have low beta relative to the S&P 500',
@@ -13565,7 +13565,7 @@ export const levels = [
                 options: [
                   '5–20% across REITs, commodities, and/or private assets depending on risk tolerance',
                   '50% or more in alternatives to maximize diversification away from stock risk',
-                  '0% - all alternatives underperform traditional assets after fees and taxes',
+                  '0%, since all alternatives underperform traditional assets after fees and taxes',
                   '100% for investors over 60, since alternatives eliminate equity market risk',
                 ],
                 correct: 0,
@@ -13645,7 +13645,7 @@ export const levels = [
               {
                 prompt: 'Tax-loss harvesting is most valuable in which type of account?',
                 options: [
-                  'Taxable brokerage accounts - tax-advantaged accounts like IRAs don\'t benefit',
+                  'Taxable brokerage accounts, since tax-advantaged accounts like IRAs don\'t benefit',
                   'Roth IRA accounts because they hold the most volatile investments',
                   'Traditional 401(k) because pre-tax contributions amplify the tax savings',
                   'HSA accounts because losses carry forward at the highest tax rate',
@@ -13729,7 +13729,7 @@ export const levels = [
               {
                 prompt: 'The biggest risk to a FIRE strategy is:',
                 options: [
-                  'Sequence-of-returns risk - a market crash in early retirement depletes the portfolio irreversibly',
+                  'Sequence-of-returns risk, where a market crash in early retirement depletes the portfolio irreversibly',
                   'Inflation being exactly 0% for decades, leaving too much money at death',
                   'Social Security benefits reducing the amount needed to save',
                   'The government changing the 4% rule to a lower legally mandated withdrawal rate',
@@ -13740,10 +13740,10 @@ export const levels = [
               {
                 prompt: 'The most critical factor in determining how quickly you can reach FIRE is:',
                 options: [
-                  'Your savings rate - not your income or investment returns',
-                  'Your investment return - averaging 12%+ is the key to early retirement',
-                  'Your income level - only six-figure earners can realistically achieve FIRE',
-                  'Your age - FIRE is mathematically impossible if you start after age 35',
+                  'Your savings rate, not your income or investment returns',
+                  'Your investment return, since averaging 12%+ is the key to early retirement',
+                  'Your income level, since only six-figure earners can realistically achieve FIRE',
+                  'Your age, since FIRE is mathematically impossible if you start after age 35',
                 ],
                 correct: 0,
                 explanation: 'Research by "Mr. Money Mustache" and others shows saving rate is the dominant variable. A 50% savings rate leads to FI in ~17 years regardless of income. At 10% savings rate, it takes ~45 years. Higher returns help but savings rate dominates.',
@@ -13758,7 +13758,7 @@ export const levels = [
               {
                 prompt: 'Estate planning is important even for young adults because:',
                 options: [
-                  'A will ensures your assets go to the right people - not default state law',
+                  'A will ensures your assets go to the right people rather than default state law',
                   'You must have a trust to legally transfer assets after death',
                   'Estate taxes apply to all assets over $1,000 left to heirs',
                   'Without a will, the government automatically takes your assets',
@@ -13769,7 +13769,7 @@ export const levels = [
               {
                 prompt: 'Beneficiary designations on retirement accounts and life insurance:',
                 options: [
-                  'Override your will - assets pass directly to named beneficiaries regardless of what the will says',
+                  'Override your will, with assets passing directly to named beneficiaries regardless of what the will says',
                   'Must match your will exactly or courts will resolve the conflict in probate',
                   'Only apply if you die before age 65 and have no surviving spouse',
                   'Automatically update when you update your will through an estate attorney',
@@ -13803,9 +13803,9 @@ export const levels = [
                 prompt: 'The federal estate tax only applies to estates larger than:',
                 options: [
                   'Approximately $13 million per individual (as of 2024, indexed for inflation)',
-                  '$1 million per individual - the most common misconception',
+                  '$1 million per individual, which is the most common misconception',
                   '$500,000, which is why most homeowners need to do estate planning',
-                  'Any amount - all estates pay at least 5% federal estate tax',
+                  'Any amount, since all estates pay at least 5% federal estate tax',
                 ],
                 correct: 0,
                 explanation: 'Federal estate tax hits estates over ~$13.6M per person (2024 exemption). Very few estates owe federal estate tax. State estate taxes have lower thresholds - Massachusetts taxes estates over $2M. But basic estate planning matters for everyone.',
@@ -13875,7 +13875,7 @@ export const levels = [
               {
                 prompt: 'Asset protection planning should be done:',
                 options: [
-                  'In advance, before any lawsuit is threatened - transfers after a lawsuit is filed may be reversed',
+                  'In advance, before any lawsuit is threatened, since transfers after a lawsuit is filed may be reversed',
                   'Only after receiving notice of a specific legal threat or lawsuit',
                   'Exclusively by ultra-high-net-worth individuals with over $10M in assets',
                   'Only if you live in a state without homestead exemption laws',
@@ -13937,9 +13937,9 @@ export const levels = [
               {
                 prompt: 'A car loan of $25,000 impacts your net worth by:',
                 options: [
-                  'Reducing it - the loan is a liability; the car\'s depreciating value is an asset',
-                  'Increasing it - the car is an asset worth more than the loan immediately',
-                  'Having no effect - assets and liabilities cancel out exactly at purchase',
+                  'Reducing it, since the loan is a liability and the car\'s depreciating value is an asset',
+                  'Increasing it, since the car is an asset worth more than the loan immediately',
+                  'Having no effect, since assets and liabilities cancel out exactly at purchase',
                   'Increasing it in year 1 but reducing it in subsequent years as the car depreciates',
                 ],
                 correct: 0,
@@ -14050,7 +14050,7 @@ export const levels = [
               {
                 prompt: 'A will only controls assets that:',
                 options: [
-                  'Go through probate - it cannot override beneficiary designations or joint tenancy',
+                  'Go through probate, since it cannot override beneficiary designations or joint tenancy',
                   'Were purchased after the will was created and notarized',
                   'Are worth more than $10,000 at the time of the will writer\'s death',
                   'Are located in the state where the will was written and filed',
@@ -14158,7 +14158,7 @@ export const levels = [
                 options: [
                   'Let parents invest for minors, but assets become the child\'s property at adulthood',
                   'Are protected from estate taxes since they\'re in the child\'s name at creation',
-                  'Receive the same tax treatment as 529 accounts - tax-free growth and withdrawals',
+                  'Receive the same tax treatment as 529 accounts, with tax-free growth and withdrawals',
                   'Can be reclaimed by parents at any time if the child makes poor spending decisions',
                 ],
                 correct: 0,
@@ -14167,8 +14167,8 @@ export const levels = [
               {
                 prompt: 'The annual gift tax exclusion allows individuals to give up to how much per recipient per year without tax consequences?',
                 options: [
-                  '$18,000 (2024) - indexed annually for inflation',
-                  '$10,000 - the same flat amount since 1980',
+                  '$18,000 in 2024, indexed annually for inflation',
+                  '$10,000, the same flat amount since 1980',
                   '$50,000 for direct family members but only $25,000 for unrelated recipients',
                   'Unlimited amounts to spouses; $15,000 to all others',
                 ],
@@ -14180,7 +14180,7 @@ export const levels = [
                 options: [
                   'Consistently spending less than you earn and investing the difference from an early age',
                   'Maximizing income above all else by pursuing the highest-paying career',
-                  'Never taking on any debt - even for education or real estate investments',
+                  'Never taking on any debt, even for education or real estate investments',
                   'Concentrating investments in a few high-conviction ideas for maximum returns',
                 ],
                 correct: 0,
@@ -14217,8 +14217,8 @@ export const levels = [
                 prompt: 'Loss aversion means people feel losses:',
                 options: [
                   'About twice as painfully as they feel equivalent gains are pleasurable',
-                  'Less intensely than gains - which is why they take too much risk',
-                  'Equally to gains - pain and pleasure are symmetrical in economics',
+                  'Less intensely than gains, which is why they take too much risk',
+                  'Equally to gains, since pain and pleasure are symmetrical in economics',
                   'Only when losses exceed 50% of total portfolio value',
                 ],
                 correct: 0,
@@ -14289,7 +14289,7 @@ export const levels = [
               {
                 prompt: 'Herd mentality in investing leads to:',
                 options: [
-                  'Buying at peaks and selling at bottoms - the opposite of what creates wealth',
+                  'Buying at peaks and selling at bottoms, which is the opposite of what creates wealth',
                   'Perfectly diversified portfolios because everyone holds market-weight positions',
                   'Stable prices because everyone is making the same rational decision',
                   'Consistent outperformance as collective wisdom beats individual analysis',
@@ -14322,7 +14322,7 @@ export const levels = [
               {
                 prompt: 'Warren Buffett\'s famous advice "Be greedy when others are fearful" is designed to counter:',
                 options: [
-                  'Herd mentality - great investments often appear when the crowd is running away',
+                  'Herd mentality, since great investments often appear when the crowd is running away',
                   'Confirmation bias by seeking contrarian opinions from other investors',
                   'Loss aversion by encouraging investors to take on more risk than feels comfortable',
                   'Overconfidence bias by reminding investors that fear beats arrogance',
@@ -14676,10 +14676,10 @@ export const levels = [
               {
                 prompt: '"This time is different" thinking, which occurs during bubbles, is an example of:',
                 options: [
-                  'Recency bias - recent price gains make investors believe new permanent conditions exist',
-                  'Anchoring bias - investors anchor to the new high as the permanent floor',
-                  'Overconfidence bias - investors believe they identified a structural market change',
-                  'Loss aversion - investors ignore downside risk to focus on recent upside',
+                  'Recency bias, since recent price gains make investors believe new permanent conditions exist',
+                  'Anchoring bias, since investors anchor to the new high as the permanent floor',
+                  'Overconfidence bias, since investors believe they identified a structural market change',
+                  'Loss aversion, since investors ignore downside risk to focus on recent upside',
                 ],
                 correct: 0,
                 explanation: '"This time is different" is history\'s most expensive phrase. In every bubble, participants believe new technology/policy/conditions have changed the rules. The rules (mean reversion, valuation discipline) eventually reassert themselves.',
@@ -14687,10 +14687,10 @@ export const levels = [
               {
                 prompt: 'Investors who stopped contributing to stocks after the 2008 crash and moved to cash suffered from:',
                 options: [
-                  'Recency bias - recent losses made the future seem catastrophically risky',
-                  'Confirmation bias - they only read news confirming their decision to exit',
-                  'Anchoring bias - they were anchored to pre-crash portfolio values',
-                  'Sunk cost fallacy - they couldn\'t sell because of their original investment',
+                  'Recency bias, since recent losses made the future seem catastrophically risky',
+                  'Confirmation bias, since they only read news confirming their decision to exit',
+                  'Anchoring bias, since they were anchored to pre-crash portfolio values',
+                  'Sunk cost fallacy, since they couldn\'t sell because of their original investment',
                 ],
                 correct: 0,
                 explanation: 'Investors who fled to cash in early 2009 missed one of the strongest bull markets in history. Recent losses felt like they would continue - but the market bottomed in March 2009 and quintupled over the next decade.',
@@ -15053,7 +15053,7 @@ export const levels = [
                   '$75,000 per year in household income (updated estimates suggest $100K+ in today\'s money)',
                   '$250,000, after which additional income became a source of stress rather than happiness',
                   '$40,000, matching the federal poverty threshold for a family of four',
-                  'There was no income threshold - well-being improved continuously with income',
+                  'There was no income threshold, since well-being improved continuously with income',
                 ],
                 correct: 0,
                 explanation: 'Above roughly $75,000 (2010 dollars, higher today), daily emotional experience didn\'t improve much with more income. Life evaluation (how people rate their lives overall) continued rising with income, suggesting a distinction between feeling happy day-to-day vs. satisfaction with life direction.',
@@ -15167,7 +15167,7 @@ export const levels = [
               {
                 prompt: 'A practical implication of hedonic adaptation for personal finance is:',
                 options: [
-                  'Avoid automatic lifestyle upgrades when income rises - the initial pleasure will fade',
+                  'Avoid automatic lifestyle upgrades when income rises, since the initial pleasure will fade',
                   'Pursue all possible lifestyle improvements since adaptation means no lasting regret',
                   'Buy the most expensive version of every product to slow adaptation through quality',
                   'Upgrade all major purchases simultaneously to reset adaptation to a new baseline',
@@ -15240,7 +15240,7 @@ export const levels = [
               {
                 prompt: 'Research on willpower suggests that self-control is:',
                 options: [
-                  'A limited resource that gets depleted with use - making evening purchases riskier',
+                  'A limited resource that gets depleted with use, making evening purchases riskier',
                   'Unlimited for financially literate individuals who understand the consequences of spending',
                   'Equally strong at all times of day regardless of prior decision fatigue',
                   'Strengthened by exposure to more temptations over time through habituation',
@@ -15426,8 +15426,8 @@ export const levels = [
               {
                 prompt: 'Housing, food, transportation, and healthcare are universally classified as:',
                 options: [
-                  'Needs - essential for basic functioning regardless of income level',
-                  'Wants - since the specific form (where you live, what you eat) is a choice',
+                  'Needs, essential for basic functioning regardless of income level',
+                  'Wants, since the specific form (where you live, what you eat) is a choice',
                   'Semi-discretionary expenses that shift between categories with income changes',
                   'Fixed expenses because their cost cannot be reduced once committed',
                 ],
@@ -15653,10 +15653,10 @@ export const levels = [
               {
                 prompt: 'Someone earns $60K at 25 and $90K at 35 but saves the same dollar amount each year. This demonstrates:',
                 options: [
-                  'Lifestyle creep - spending expanded with income, preventing the savings rate from improving',
-                  'Effective budgeting - maintaining consistent absolute savings regardless of income',
-                  'Financial discipline - refusing to spend more despite higher income availability',
-                  'The impact of inflation - rising prices absorbed all additional income gains',
+                  'Lifestyle creep, since spending expanded with income and prevented the savings rate from improving',
+                  'Effective budgeting, maintaining consistent absolute savings regardless of income',
+                  'Financial discipline, refusing to spend more despite higher income availability',
+                  'The impact of inflation, with rising prices absorbing all additional income gains',
                 ],
                 correct: 0,
                 explanation: 'If savings don\'t grow with income, you\'re experiencing lifestyle creep. The extra $30K was absorbed by lifestyle upgrades. A true wealth-building strategy allocates a portion of each raise to saving before spending catches up.',
@@ -15748,7 +15748,7 @@ export const levels = [
               {
                 prompt: 'The minimum amount to "pay yourself first" when starting out is:',
                 options: [
-                  'Whatever you can - even $25/month builds the habit that scales with income',
+                  'Whatever you can, since even $25/month builds the habit that scales with income',
                   '$500/month minimum to make a meaningful dent in future financial goals',
                   '10% of gross income as specified by standard personal finance guidelines',
                   'Enough to max out all tax-advantaged accounts before any other financial goal',
@@ -15759,7 +15759,7 @@ export const levels = [
               {
                 prompt: 'The financial benefit of paying yourself first over 30 years is primarily driven by:',
                 options: [
-                  'Compound growth - early consistent contributions benefit from decades of compounding',
+                  'Compound growth, since early consistent contributions benefit from decades of compounding',
                   'Tax-loss harvesting opportunities from automated portfolio rebalancing',
                   'Higher savings rates that automatically increase as income grows',
                   'Reduced financial stress that leads to higher career earnings over time',
@@ -15945,7 +15945,7 @@ export const levels = [
               {
                 prompt: 'Financial anxiety is most commonly driven by:',
                 options: [
-                  'The fear of what will be discovered - uncertainty is often worse than the reality',
+                  'The fear of what will be discovered, since uncertainty is often worse than the reality',
                   'Inherited genetic predispositions to anxiety that manifest specifically around money',
                   'Past negative financial experiences that create lasting phobias of financial topics',
                   'The mathematical complexity of personal finance that intimidates non-experts',
@@ -16040,7 +16040,7 @@ export const levels = [
               {
                 prompt: 'Which financial behavior requires the most long-term thinking?',
                 options: [
-                  'Investing in a Roth IRA at 25 - benefits aren\'t felt for 40 years',
+                  'Investing in a Roth IRA at 25, where benefits aren\'t felt for 40 years',
                   'Paying off a credit card with a 20% APR to stop immediate interest charges',
                   'Building a 3-month emergency fund to handle the next financial surprise',
                   'Negotiating a salary increase to improve immediate monthly cash flow',
