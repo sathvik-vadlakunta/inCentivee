@@ -69,9 +69,9 @@ export default function Navbar() {
             <span className="navbar-cents-count">{currentUser ? (profile?.xp ?? 0) : 0}</span>
           </div>
           {!currentUser && (
-            <button className="navbar-mobile-login" onClick={() => navigate('/login')} aria-label="Log in">
-              <LogIn size={16} strokeWidth={2.5} />
-              <span>Log in</span>
+            <button className="btn btn-secondary navbar-mobile-login" onClick={() => navigate('/login')}>
+              <span className="btn-label">Log in</span>
+              <span className="btn-icon-badge"><LogIn size={16} strokeWidth={2.5} /></span>
             </button>
           )}
           <button
