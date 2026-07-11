@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Menu, X, ArrowRight, LogOut } from 'lucide-react'
-import Button from './Button'
+import { Menu, X, LogIn, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import './Navbar.css'
 
@@ -56,9 +55,10 @@ export default function Navbar() {
                 <span className="navbar-cents-coin">¢</span>
                 <span className="navbar-cents-count">0</span>
               </div>
-              <Button variant="primary" icon={ArrowRight} href="/#cta">
-                Get Started
-              </Button>
+              <button className="btn btn-secondary navbar-logout" onClick={() => navigate('/login')}>
+                <span className="btn-label">Log in</span>
+                <span className="btn-icon-badge"><LogIn size={16} strokeWidth={2.5} /></span>
+              </button>
             </>
           )}
         </div>
@@ -100,9 +100,10 @@ export default function Navbar() {
               </button>
             </div>
           ) : (
-            <Button variant="primary" icon={ArrowRight} href="/#cta" onClick={() => setOpen(false)}>
-              Get Started
-            </Button>
+            <button className="btn btn-secondary" onClick={() => { navigate('/login'); setOpen(false) }} style={{ alignSelf: 'stretch', justifyContent: 'center' }}>
+              <span className="btn-label">Log in</span>
+              <span className="btn-icon-badge"><LogIn size={16} strokeWidth={2.5} /></span>
+            </button>
           )}
         </div>
       )}
