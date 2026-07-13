@@ -58,7 +58,7 @@ export default function AboutPage() {
             <div className="about-shape about-shape--triangle" />
             <div className="about-shape about-shape--square" />
           </div>
-          <h1>About InCentive</h1>
+          <h1>About in<span className="brand-highlight">cent</span>ive</h1>
           <p className="about-hero-sub">
             Empowering the next generation with financial confidence.
           </p>
@@ -70,14 +70,14 @@ export default function AboutPage() {
           <div className="about-mission-content">
             <h2>Our Mission</h2>
             <p>
-              InCentive is a student-led organization on a mission to make financial
+              incentive is a student-led organization on a mission to make financial
               literacy accessible, engaging, and fun for everyone.
             </p>
             <p>
               We believe that understanding money is one of the most important life
               skills you can develop. But too often, financial education is either
               missing from classrooms or taught in ways that feel disconnected from
-              real life. That is why we built InCentive.
+              real life. That is why we built incentive.
             </p>
             <p>
               Through interactive presentations, hands-on calculators, and a growing
@@ -88,7 +88,7 @@ export default function AboutPage() {
             </p>
             <p>
               What started as a passion project by two students has grown into a
-              movement with chapters spanning from coast to coast. InCentive is proof
+              movement with chapters spanning from coast to coast. incentive is proof
               that young people can lead meaningful change in their communities.
             </p>
           </div>
