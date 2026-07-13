@@ -1,4 +1,18 @@
 import { useState, useMemo } from 'react'
+
+function Squiggle({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 200 12" fill="none" preserveAspectRatio="none">
+      <path
+        d="M2 8 C 20 2, 40 12, 60 6 S 100 2, 120 8 S 160 12, 180 6 S 198 4, 198 4"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
 import { geoPath, geoAlbersUsa } from 'd3-geo'
 import { feature } from 'topojson-client'
 import { MapPin, Instagram, Users } from 'lucide-react'
@@ -51,25 +65,39 @@ export default function AboutPage() {
 
   return (
     <>
+      {/* ── HERO ── */}
       <section className="about-hero section">
         <div className="container">
-          <div className="about-hero-shapes">
-            <div className="about-shape about-shape--circle" />
-            <div className="about-shape about-shape--triangle" />
-            <div className="about-shape about-shape--square" />
+          <div className="about-hero-text">
+            <div className="about-hero-shapes">
+              <div className="about-shape about-shape--circle" />
+              <div className="about-shape about-shape--triangle" />
+              <div className="about-shape about-shape--square" />
+            </div>
+            <h1 className="about-hero-title">
+              The <span className="about-quote-accent">&ldquo;</span>Incentive<span className="about-quote-accent">&rdquo;</span> behind in<span className="brand-highlight">cent</span>ive
+            </h1>
+            <blockquote className="about-hero-quote">
+              <p>
+                The financial preparedness of our nation's youth is essential to their
+                well-being and of vital importance to our economic future.
+              </p>
+              <cite>— Ben Bernanke</cite>
+            </blockquote>
           </div>
-          <h1>About in<span className="brand-highlight">cent</span>ive</h1>
-          <p className="about-hero-sub">
-            Empowering the next generation with financial confidence.
-          </p>
         </div>
       </section>
 
-      <div className="about-split">
+      {/* ── MISSION ── */}
       <section className="about-mission section">
         <div className="container">
-          <div className="about-mission-content">
-            <h2>Our Mission</h2>
+          <div className="about-section-label">
+            Our <span className="hero-highlight">Mission<Squiggle className="hero-squiggle" /></span>
+          </div>
+          <h2 className="about-mission-headline">
+            Giving students the tools to lead,<br />teach, and make change.
+          </h2>
+          <div className="about-mission-body">
             <p>
               incentive is a student-led non-profit that is changing the way financial
               literacy education is brought to the classroom. With extensive opportunities
@@ -98,11 +126,14 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* ── TEAM ── */}
       <section className="about-team section">
         <div className="container">
-          <h2>Our Team</h2>
+          <div className="about-section-label">
+            Our <span className="hero-highlight">Team<Squiggle className="hero-squiggle" /></span>
+          </div>
 
-          <div className="about-team-group">
+          <div className="about-team-group about-team-group--founders">
             <h3>Co-Founders</h3>
             <div className="about-team-grid">
               <div className="about-person-card">
@@ -146,20 +177,24 @@ export default function AboutPage() {
                   <img src="/images/advisor.jpg" alt="Frederick Steinmann" />
                 </div>
                 <h4>Frederick Steinmann</h4>
-                <p className="about-person-role">
-                  Assistant Research Professor at UNR
-                </p>
+                <p className="about-person-role">Assistant Research Professor at UNR</p>
+                <div className="about-person-socials">
+                  <a href="https://www.linkedin.com/in/fredsteinmann/" target="_blank" rel="noopener noreferrer" className="about-social-btn" aria-label="Frederick LinkedIn">
+                    <img src="/images/linkedin-logo.jpg" alt="LinkedIn" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      </div>
-
+      {/* ── CHAPTERS ── */}
       <section className="about-chapters section">
         <div className="container">
-          <h2>Our Chapters</h2>
+          <div className="about-section-label">
+            Our <span className="hero-highlight">Chapters<Squiggle className="hero-squiggle" /></span>
+          </div>
           <p className="about-chapters-sub">
             Click a pin on the map to learn more about each chapter.
           </p>
@@ -171,32 +206,19 @@ export default function AboutPage() {
               onClick={() => setActiveChapter(null)}
             >
               {states.map((state, i) => (
-                <path
-                  key={i}
-                  d={pathGenerator(state)}
-                  className="about-map-state"
-                />
+                <path key={i} d={pathGenerator(state)} className="about-map-state" />
               ))}
               {markers.map((ch) => (
                 <g key={ch.id} className="about-map-marker-group">
-                  <circle
-                    cx={ch.pos[0]}
-                    cy={ch.pos[1]}
-                    r={14}
-                    className="about-map-pin-ring"
-                  />
+                  <circle cx={ch.pos[0]} cy={ch.pos[1]} r={14} className="about-map-pin-ring" />
                   <circle
                     cx={ch.pos[0]}
                     cy={ch.pos[1]}
                     r={8}
-                    className={`about-map-pin ${
-                      activeChapter?.id === ch.id ? 'about-map-pin--active' : ''
-                    }`}
+                    className={`about-map-pin ${activeChapter?.id === ch.id ? 'about-map-pin--active' : ''}`}
                     onClick={(e) => {
                       e.stopPropagation()
-                      setActiveChapter(
-                        activeChapter?.id === ch.id ? null : ch
-                      )
+                      setActiveChapter(activeChapter?.id === ch.id ? null : ch)
                     }}
                   />
                 </g>
@@ -204,15 +226,8 @@ export default function AboutPage() {
             </svg>
 
             {activeChapter && (
-              <div
-                className="about-chapter-popup"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  className="about-chapter-close"
-                  onClick={() => setActiveChapter(null)}
-                  aria-label="Close"
-                >
+              <div className="about-chapter-popup" onClick={(e) => e.stopPropagation()}>
+                <button className="about-chapter-close" onClick={() => setActiveChapter(null)} aria-label="Close">
                   &times;
                 </button>
                 <div className="about-chapter-header">
@@ -224,12 +239,7 @@ export default function AboutPage() {
                   <span>{activeChapter.presidents}</span>
                 </div>
                 {activeChapter.instagram ? (
-                  <a
-                    href={`https://instagram.com/${activeChapter.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="about-chapter-ig"
-                  >
+                  <a href={`https://instagram.com/${activeChapter.instagram}`} target="_blank" rel="noopener noreferrer" className="about-chapter-ig">
                     <Instagram size={16} strokeWidth={2} />
                     @{activeChapter.instagram}
                   </a>
