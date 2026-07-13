@@ -65,31 +65,34 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <div className="about-split">
       <section className="about-mission section">
         <div className="container">
           <div className="about-mission-content">
             <h2>Our Mission</h2>
             <p>
-              incentive is a student-led organization on a mission to make financial
-              literacy accessible, engaging, and fun for everyone.
+              incentive is a student-led non-profit that is changing the way financial
+              literacy education is brought to the classroom. With extensive opportunities
+              for high school students to take rigorous leadership positions within their
+              community, incentive gives these student educators a platform to make
+              lasting change in their community.
             </p>
             <p>
-              We believe that understanding money is one of the most important life
-              skills you can develop. But too often, financial education is either
-              missing from classrooms or taught in ways that feel disconnected from
-              real life. That is why we built incentive.
+              Instead of obsolete, old, and tiring systems that don't give students what
+              they need, incentive brings a spark of youth into financial education for
+              everyone. Every high schooler who joins incentive walks away with more than
+              community service hours. They develop the ability to communicate complex
+              ideas clearly, lead a room with confidence, take initiative, and build
+              something that has real impact in their community.
             </p>
             <p>
-              Through interactive presentations, hands-on calculators, and a growing
-              network of chapters across the United States, we bring financial education
-              directly to students and communities. From budgeting basics to investing
-              fundamentals, our tools are designed to make learning about money feel
-              approachable and exciting.
-            </p>
-            <p>
-              What started as a passion project by two students has grown into a
-              movement with chapters spanning from coast to coast. incentive is proof
-              that young people can lead meaningful change in their communities.
+              But at the same time, the same students being taught financial literacy
+              have the opportunity to return the gesture and keep the cycle going.
+              incentive isn't just a "one-off" project, it's a movement of student
+              leaders and educators ready to make that next step to ensure financial
+              freedom for everyone. From budgeting basics to investing fundamentals, our
+              tools are designed to make learning about money feel approachable and
+              exciting.
             </p>
           </div>
         </div>
@@ -151,6 +154,8 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      </div>
 
       <section className="about-chapters section">
         <div className="container">

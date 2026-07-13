@@ -351,6 +351,36 @@
 }
 
 /* ================================================ */
+/* SIDE-BY-SIDE LAYOUT (desktop only)               */
+/* ================================================ */
+
+@media (min-width: 769px) {
+  .about-split {
+    display: flex;
+    align-items: flex-start;
+    max-width: var(--container-width);
+    margin: 0 auto;
+    padding-inline: var(--container-padding);
+    padding-top: var(--section-spacing);
+    gap: 48px;
+  }
+
+  .about-split .about-mission,
+  .about-split .about-team {
+    flex: 1;
+    min-width: 0;
+    padding-top: 0;
+  }
+
+  .about-split .about-mission .container,
+  .about-split .about-team .container {
+    max-width: none;
+    padding-inline: 0;
+    margin: 0;
+  }
+}
+
+/* ================================================ */
 /* RESPONSIVE                                       */
 /* ================================================ */
 

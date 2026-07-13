@@ -21,11 +21,6 @@ export default function Hero() {
     <section className="hero section" id="about">
       <div className="hero-inner container">
         <div className="hero-content">
-          <div className="hero-badge">
-            <span className="hero-badge-dot" />
-            Financial Education for Everyone
-          </div>
-
           <h1 className="hero-title">
             Learn Money.
             <br />
