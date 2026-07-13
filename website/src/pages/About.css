@@ -341,7 +341,7 @@
 
 .about-map-state {
   fill: var(--background);
-  stroke: var(--border);
+  stroke: var(--muted-foreground);
   stroke-width: 0.75;
 }
 
