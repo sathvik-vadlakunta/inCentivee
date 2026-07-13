@@ -164,6 +164,43 @@
   font-size: var(--text-sm);
   color: var(--accent) !important;
   font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.about-person-socials {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.about-social-btn {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  border-radius: 22%;
+  border: var(--border-width) solid var(--foreground);
+  box-shadow: 2px 2px 0 var(--foreground);
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.about-social-btn img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transform: scale(1.22);
+  object-fit: cover;
+}
+
+.about-social-btn:last-child img {
+  transform: scale(1.45);
+}
+
+.about-social-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 var(--foreground);
 }
 
 /* ================================================ */
