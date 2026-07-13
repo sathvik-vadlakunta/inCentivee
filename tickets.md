@@ -11,6 +11,7 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 |---|---|---|---|
 | 1 | Add client-portal data-layer methods to `geo_agent/db.py` | M | None |
 | 2 | Build client auth/session (mutually exclusive with admin) + login/logout routes + portal shell | M | 1 |
+| 2a | Add CSRF protection and secure session cookie flags *(to be reviewed later)* | S | 2 |
 | 3 | Write plain-English portal copy module | S | None |
 | 4 | Build Overview page (score hero, pillar breakdown, supporting cards) | M | 1, 2, 3 |
 | 5 | Build Pillar Detail page for GEO Foundation, Content & Coverage, Reputation, Search Performance | L | 1, 2, 3, 4 |
@@ -85,11 +86,28 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 - [ ] `GET /portal/` exists as a stub behind `client_login_required` rendering `portal_base.html` with a placeholder body (real content lands in Ticket 4).
 - [ ] Manual verification: (a) log into `/login` as staff, then in the same browser open `/portal/login` and log in as a client — confirm the admin session's `logged_in`/`username` keys are gone and hitting `/` now redirects to `/login`, not admin content; (b) reverse the order (client first, then staff) and confirm the same exclusivity holds; (c) confirm `/portal/` with no session redirects to `/portal/login`, and any `@login_required` admin route with only `client_logged_in` set redirects to `/login`.
 
-**Out of scope:** Overview page content, pillar pages, action items, reports list, the sign-up page itself (Ticket 12).
+**Out of scope:** Overview page content, pillar pages, action items, reports list, the sign-up page itself (Ticket 12), CSRF protection and secure cookie flags (Ticket 2a).
 
 **Dependencies:** Ticket 1 (`authenticate_client_user`).
 
 **Estimate:** M
+
+---
+
+## Ticket 2a — Add CSRF protection and secure session cookie flags
+
+**Context:** Flagged during research into auth best practices — the app currently has neither. Not part of the original spec; this is hardening that piggybacks on Ticket 2 introducing a second login surface (`/portal/login`) sharing the same Flask app/secret key as admin. **Status: to be reviewed later**, not yet approved for build.
+
+**Acceptance criteria:**
+- [ ] **CSRF protection:** `Flask-WTF` added to `dashboard/requirements.txt` (not currently a dependency) and `CSRFProtect(app)` initialized in `app.py` alongside the `Flask(__name__)` app object (`app.py:55`). Applies globally, so every existing admin form (currently plain POSTs, no tokens) needs `{{ csrf_token() }}` added or it will start rejecting with 400 once this is enabled — that cleanup is in scope here. `portal_login.html`, `portal_base.html`'s logout, and all new portal POST forms include the token from the start.
+- [ ] **Secure session cookie flags:** `app.config` gets `SESSION_COOKIE_SECURE=True`, `SESSION_COOKIE_SAMESITE="Lax"`, and an explicit `PERMANENT_SESSION_LIFETIME` (e.g. `timedelta(hours=12)`) added near the existing `app.config["PREFERRED_URL_SCHEME"] = "https"` line (`app.py:63`). `SESSION_COOKIE_HTTPONLY` is already Flask's default (True) — no change needed there. Applies to both admin and portal sessions since they share one Flask app/secret key.
+- [ ] Manual verification: (a) confirm a POST to `/login`, `/portal/login`, or any admin form missing a CSRF token is rejected (400); (b) inspect the `Set-Cookie` header in dev tools and confirm `Secure` and `SameSite=Lax` are present on both admin and client sessions; (c) spot-check a handful of existing admin forms still submit successfully post-change.
+
+**Out of scope:** Rate limiting / brute-force lockout on login routes (deferred per Ticket 13 assumption #7, no existing precedent to match); MFA.
+
+**Dependencies:** Ticket 2 (both login surfaces need to exist to verify cookie/CSRF behavior on each).
+
+**Estimate:** S
 
 ---
 

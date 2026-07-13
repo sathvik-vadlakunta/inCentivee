@@ -596,6 +596,23 @@ class CustomerDB:
             )
         """)
 
+        # Migration: Client portal users table (password-less invite state until signup)
+        self.conn.executescript("""
+            CREATE TABLE IF NOT EXISTS client_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                customer_id TEXT NOT NULL REFERENCES customers(id),
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT,
+                display_name TEXT NOT NULL DEFAULT '',
+                active INTEGER NOT NULL DEFAULT 1,
+                signup_token TEXT UNIQUE,
+                signup_token_created_at TEXT,
+                last_login TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_client_users_customer ON client_users(customer_id);
+        """)
+
         # Migration v5 → v6: SEO tools expansion tables
         self.conn.executescript("""
             CREATE TABLE IF NOT EXISTS customer_integrations (
@@ -3056,6 +3073,102 @@ class CustomerDB:
         self.conn.commit()
         return cur.rowcount > 0
 
+    # --- Client Portal Users ---
+
+    def create_client_user(self, customer_id: str, username: str, display_name: str = "") -> dict:
+        """Create a client-portal user in the password-less invite state.
+
+        Returns {"id": ..., "signup_token": ...}. Raises ValueError if the
+        username is already taken (caught by the caller, not a bare sqlite3 error).
+        """
+        token = secrets.token_urlsafe(24)
+        try:
+            cur = self.conn.execute(
+                """INSERT INTO client_users
+                   (customer_id, username, display_name, signup_token, signup_token_created_at)
+                   VALUES (?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%SZ','now'))""",
+                (customer_id, username.strip(), display_name, token),
+            )
+            self.conn.commit()
+        except sqlite3.IntegrityError:
+            raise ValueError(f"Username '{username}' is already taken")
+        return {"id": cur.lastrowid, "signup_token": token}
+
+    def get_client_user_by_signup_token(self, token: str) -> dict | None:
+        """Look up an invited-but-not-yet-signed-up client user by signup token."""
+        if not token:
+            return None
+        cur = self.conn.execute(
+            "SELECT * FROM client_users WHERE signup_token = ? AND password_hash IS NULL",
+            (token,),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+    def complete_client_signup(self, token: str, password: str) -> bool:
+        """Consume a signup token and set the client's password. Returns False on an
+        invalid/already-used/unknown token."""
+        user = self.get_client_user_by_signup_token(token)
+        if not user:
+            return False
+        cur = self.conn.execute(
+            """UPDATE client_users SET password_hash = ?, signup_token = NULL,
+               signup_token_created_at = NULL WHERE id = ? AND signup_token = ?""",
+            (self._hash_password(password), user["id"], token),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def regenerate_client_signup_token(self, id: int) -> str:
+        """Reset a client user back to the invite state with a fresh signup token
+        (staff-driven 'resend invite' / 'reset access')."""
+        token = secrets.token_urlsafe(24)
+        self.conn.execute(
+            """UPDATE client_users SET password_hash = NULL, signup_token = ?,
+               signup_token_created_at = strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id = ?""",
+            (token, id),
+        )
+        self.conn.commit()
+        return token
+
+    def authenticate_client_user(self, username: str, password: str) -> dict | None:
+        """Authenticate a client-portal user. Returns None on no match, wrong password,
+        inactive account, or an account that hasn't completed signup yet."""
+        cur = self.conn.execute(
+            "SELECT * FROM client_users WHERE username = ? AND active = 1 AND password_hash IS NOT NULL",
+            (username.strip(),),
+        )
+        user = cur.fetchone()
+        if not user:
+            return None
+        if not self._verify_password(password, user["password_hash"]):
+            return None
+        self.conn.execute(
+            "UPDATE client_users SET last_login = ? WHERE id = ?",
+            (datetime.now(timezone.utc).isoformat(), user["id"]),
+        )
+        self.conn.commit()
+        return dict(user)
+
+    def list_client_users(self, customer_id: str) -> list[dict]:
+        """List all client-portal users for a customer, ordered by creation time."""
+        cur = self.conn.execute(
+            "SELECT * FROM client_users WHERE customer_id = ? ORDER BY created_at",
+            (customer_id,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+
+    def set_client_user_active(self, id: int, active: bool) -> None:
+        self.conn.execute(
+            "UPDATE client_users SET active = ? WHERE id = ?",
+            (1 if active else 0, id),
+        )
+        self.conn.commit()
+
+    def delete_client_user(self, id: int) -> None:
+        self.conn.execute("DELETE FROM client_users WHERE id = ?", (id,))
+        self.conn.commit()
+
     # --- Customer Integrations ---
 
     def save_integration(self, customer_id: str, integration: str, config: dict,
@@ -4228,6 +4341,12 @@ class CustomerDB:
             (customer_id, report_type, period_end),
         )
         self.conn.commit()
+
+    def get_report_snapshot(self, snapshot_id: int) -> dict | None:
+        """Fetch a single snapshot by primary key, including payload_json and html."""
+        cur = self.conn.execute("SELECT * FROM report_snapshots WHERE id = ?", (snapshot_id,))
+        row = cur.fetchone()
+        return dict(row) if row else None
 
     def get_latest_report_snapshot(self, customer_id: str, report_type: str = "weekly") -> dict | None:
         cur = self.conn.execute(

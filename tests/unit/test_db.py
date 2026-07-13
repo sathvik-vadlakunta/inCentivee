@@ -404,3 +404,120 @@ def test_offsite_delete_cascades_assets(populated_db):
     assert db.delete_offsite_order(oid) is True
     assert db.get_offsite_assets(cid) == []
     assert db.get_offsite_order(oid) is None
+
+
+class TestClientPortalUsers:
+    def test_create_client_user_issues_signup_token(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg", "Dr. David Gallup")
+        assert result["id"] is not None
+        assert result["signup_token"]
+
+        users = db.list_client_users("hilltop-dental")
+        assert len(users) == 1
+        assert users[0]["username"] == "davidg"
+        assert users[0]["password_hash"] is None
+
+    def test_duplicate_username_raises_clean_error(self, populated_db):
+        db = populated_db
+        db.create_client_user("hilltop-dental", "davidg")
+        with pytest.raises(ValueError):
+            db.create_client_user("hilltop-dental", "davidg")
+
+    def test_get_client_user_by_signup_token_hit_and_miss(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        token = result["signup_token"]
+
+        found = db.get_client_user_by_signup_token(token)
+        assert found is not None
+        assert found["username"] == "davidg"
+
+        assert db.get_client_user_by_signup_token("not-a-real-token") is None
+
+    def test_complete_client_signup_then_token_fails_second_time(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        token = result["signup_token"]
+
+        assert db.complete_client_signup(token, "correct horse battery staple") is True
+        # Token is consumed: same token doesn't work again.
+        assert db.complete_client_signup(token, "another password") is False
+        # And no longer resolves via lookup either.
+        assert db.get_client_user_by_signup_token(token) is None
+
+    def test_authenticate_client_user_before_and_after_signup(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        token = result["signup_token"]
+
+        # Not yet signed up: authentication must fail even with the eventual password.
+        assert db.authenticate_client_user("davidg", "correct horse battery staple") is None
+
+        db.complete_client_signup(token, "correct horse battery staple")
+
+        user = db.authenticate_client_user("davidg", "correct horse battery staple")
+        assert user is not None
+        assert user["username"] == "davidg"
+        # last_login is stamped by this call (mirrors authenticate_user's precedent of
+        # returning the pre-update row), so re-fetch to confirm it was actually set.
+        assert db.list_client_users("hilltop-dental")[0]["last_login"] is not None
+
+    def test_authenticate_client_user_wrong_password(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        db.complete_client_signup(result["signup_token"], "correct horse battery staple")
+        assert db.authenticate_client_user("davidg", "wrong password") is None
+
+    def test_authenticate_client_user_inactive(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        db.complete_client_signup(result["signup_token"], "correct horse battery staple")
+        user = db.list_client_users("hilltop-dental")[0]
+        db.set_client_user_active(user["id"], False)
+        assert db.authenticate_client_user("davidg", "correct horse battery staple") is None
+
+    def test_regenerate_client_signup_token_invalidates_old_issues_new(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        old_token = result["signup_token"]
+        db.complete_client_signup(old_token, "correct horse battery staple")
+
+        user = db.list_client_users("hilltop-dental")[0]
+        new_token = db.regenerate_client_signup_token(user["id"])
+
+        assert new_token != old_token
+        assert db.get_client_user_by_signup_token(old_token) is None
+        assert db.get_client_user_by_signup_token(new_token) is not None
+        # Password was cleared, so the old password no longer authenticates.
+        assert db.authenticate_client_user("davidg", "correct horse battery staple") is None
+        # And the new token completes signup normally.
+        assert db.complete_client_signup(new_token, "a new password") is True
+        assert db.authenticate_client_user("davidg", "a new password") is not None
+
+    def test_delete_client_user(self, populated_db):
+        db = populated_db
+        result = db.create_client_user("hilltop-dental", "davidg")
+        user = db.list_client_users("hilltop-dental")[0]
+        db.delete_client_user(user["id"])
+        assert db.list_client_users("hilltop-dental") == []
+
+
+class TestReportSnapshotByID:
+    def test_get_report_snapshot_hit(self, populated_db):
+        db = populated_db
+        db.save_report_snapshot(
+            "hilltop-dental", "weekly", "2026-07-01", "2026-07-07",
+            score=72, payload_json=json.dumps({"score": 72}), html="<html>report</html>",
+        )
+        row = db.conn.execute(
+            "SELECT id FROM report_snapshots WHERE customer_id = ?", ("hilltop-dental",)
+        ).fetchone()
+        snap = db.get_report_snapshot(row["id"])
+        assert snap is not None
+        assert snap["score"] == 72
+        assert snap["html"] == "<html>report</html>"
+        assert json.loads(snap["payload_json"]) == {"score": 72}
+
+    def test_get_report_snapshot_miss(self, populated_db):
+        assert populated_db.get_report_snapshot(999999) is None

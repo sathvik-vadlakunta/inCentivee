@@ -155,11 +155,38 @@ def audit_log(action: str, customer_id: str = "", details: str = "", **extra):
 
 # --- Auth ---
 
+def _reset_session_kind(keep: str):
+    """Pop the *other* session mode's keys before establishing a new session.
+
+    A browser is either logged into the admin dashboard or the client portal,
+    never both — keep='admin' clears client_* keys, keep='client' clears the
+    admin keys.
+    """
+    if keep == "admin":
+        session.pop("client_logged_in", None)
+        session.pop("client_user_id", None)
+        session.pop("client_customer_id", None)
+        session.pop("client_display_name", None)
+    elif keep == "client":
+        session.pop("logged_in", None)
+        session.pop("username", None)
+        session.pop("display_name", None)
+
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def client_login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("client_logged_in"):
+            return redirect(url_for("portal_login"))
         return f(*args, **kwargs)
     return decorated
 
@@ -174,6 +201,7 @@ def login():
         db = get_db()
         user = db.authenticate_user(username, password)
         if user:
+            _reset_session_kind("admin")
             session["logged_in"] = True
             session["username"] = user["username"]
             session["display_name"] = user["display_name"] or user["username"]
@@ -184,6 +212,7 @@ def login():
         expected_user = os.environ.get("DASHBOARD_USER", "admin")
         expected_pass = os.environ.get("DASHBOARD_PASS", "")
         if expected_pass and username == expected_user and password == expected_pass:
+            _reset_session_kind("admin")
             session["logged_in"] = True
             session["username"] = username
             session["display_name"] = username
@@ -200,6 +229,70 @@ def logout():
     audit_log("logout")
     session.clear()
     return redirect(url_for("login"))
+
+
+# --- Client Portal Auth ---
+
+@app.route("/portal/login", methods=["GET", "POST"])
+def portal_login():
+    if request.method == "POST":
+        username = request.form.get("username", "")
+        password = request.form.get("password", "")
+
+        db = get_db()
+        try:
+            user = db.authenticate_client_user(username, password)
+        finally:
+            db.close()
+
+        if user:
+            _reset_session_kind("client")
+            session["client_logged_in"] = True
+            session["client_user_id"] = user["id"]
+            session["client_customer_id"] = user["customer_id"]
+            session["client_display_name"] = user["display_name"] or user["username"]
+            audit_log(
+                "client_login", customer_id=user["customer_id"],
+                details=f"Client user '{user['username']}' logged in",
+            )
+            return redirect(url_for("portal_home"))
+
+        audit_log("client_login_failed", details=f"Failed portal login attempt for '{username}'")
+        flash("Invalid username or password.", "error")
+    return render_template("portal_login.html")
+
+
+@app.route("/portal/logout")
+def portal_logout():
+    audit_log("client_logout", customer_id=session.get("client_customer_id", ""))
+    session.pop("client_logged_in", None)
+    session.pop("client_user_id", None)
+    session.pop("client_customer_id", None)
+    session.pop("client_display_name", None)
+    return redirect(url_for("portal_login"))
+
+
+@app.context_processor
+def inject_portal_customer():
+    """Make the logged-in client's practice available to every portal template."""
+    if not session.get("client_logged_in"):
+        return {}
+    ctx: dict = {}
+    try:
+        db = get_db()
+        try:
+            ctx["portal_customer"] = db.get_customer(session.get("client_customer_id"))
+        finally:
+            db.close()
+    except Exception:
+        logger.warning("portal customer context failed", exc_info=True)
+    return ctx
+
+
+@app.route("/portal/")
+@client_login_required
+def portal_home():
+    return render_template("portal_base.html")
 
 
 # --- Dashboard Home ---
