@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PracticeRank — Client Portal Spec</title>
+<style>
+  :root{
+    --ink:#1a1a2e; --muted:#62707f; --line:#e6e8ec;
+    --bg:#f4f5f7; --card:#ffffff; --brand:#08080d; --accent:#16a34a; --accent2:#4ade80;
+    --good:#16a34a; --good-bg:#e8f5ec; --warn:#d97706; --bad:#dc2626;
+    --radius:14px; --shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+  h1,h2,h3{line-height:1.2;margin:0}
+  h1{font-size:30px;letter-spacing:-.02em}
+  h2{font-size:21px;margin:36px 0 12px;letter-spacing:-.01em}
+  h3{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+  p{margin:10px 0}
+  code{background:#eef1f4;padding:1px 6px;border-radius:5px;font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+  a{color:var(--accent);text-decoration:none}
+  .lead{color:var(--muted);font-size:16px;max-width:66ch}
+  .pill{display:inline-block;background:var(--brand);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;letter-spacing:.04em}
+  .doc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:28px 30px;box-shadow:var(--shadow);margin-bottom:26px}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .t-real{background:var(--good-bg);color:var(--good)}
+  .t-new{background:#eef4f8;color:#1d4e6b}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:5px 0}
+  .note{background:#fff8ed;border:1px solid #f4dcb0;border-radius:10px;padding:14px 16px;font-size:14px;color:#7a5b1e}
+  .mini{font-size:12px;color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+  /* ===== Rendered mockup shell ===== */
+  .device{background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);margin:16px 0 40px}
+  .p-topbar{background:var(--brand);color:#fff;padding:16px 30px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .p-topbar .brand{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent2)}
+  .p-topbar .practice{font-size:17px;font-weight:600;margin-top:2px}
+  .p-nav{display:flex;gap:4px;font-size:13px}
+  .p-nav a{color:rgba(255,255,255,.75);padding:7px 12px;border-radius:8px}
+  .p-nav a.active{background:rgba(255,255,255,.12);color:#fff;font-weight:600}
+  .p-logout{font-size:12.5px;color:rgba(255,255,255,.6)}
+  .p-body{padding:30px}
+
+  /* Score hero */
+  .score-hero{display:flex;gap:26px;align-items:center;flex-wrap:wrap;padding:26px;background:linear-gradient(135deg,#f8faf9,#eef7f0);border:1px solid #dcefe1;border-radius:16px}
+  .score-badge{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto;box-shadow:0 8px 20px rgba(22,163,74,.25)}
+  .score-badge b{font-size:46px;line-height:1}
+  .score-badge span{font-size:13px;opacity:.92;margin-top:2px}
+  .score-copy{flex:1;min-width:240px}
+  .score-copy .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+  .score-copy h2{margin:2px 0 8px;font-size:26px}
+  .score-copy .delta{font-size:14px;font-weight:600}
+  .score-copy .takeaway{margin-top:8px;font-size:15px;color:#14532d;background:var(--good-bg);border:1px solid #c7e7d1;border-radius:10px;padding:12px 14px;display:inline-block}
+  .up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--muted)}
+
+  /* Pillar breakdown */
+  .pillar-sec{margin-top:28px}
+  .pillar-sec .h{display:flex;align-items:baseline;justify-content:space-between}
+  .pillar{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:10px 0}
+  .pillar .row{display:flex;justify-content:space-between;align-items:baseline;font-size:14.5px;font-weight:600}
+  .pillar .weight{font-size:12px;color:var(--muted);font-weight:500}
+  .bar{height:9px;background:#eef1f4;border-radius:99px;overflow:hidden;margin:8px 0 6px}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .pillar .why{font-size:13.5px;color:var(--muted);margin:0}
+
+  /* Supporting cards */
+  .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:28px}
+  @media(max-width:640px){.cards{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h3{margin-bottom:8px}
+  .card .v{font-size:26px;font-weight:700}
+  .card .d{font-size:13px;font-weight:600;margin-top:2px}
+  .card ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+  .engines{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .chip{font-size:12px;background:#eef4f8;border:1px solid #d7e6ef;color:var(--brand);padding:4px 10px;border-radius:99px}
+  .chip.miss{background:#f6f7f8;color:var(--muted);border-color:var(--line)}
+
+  /* Action items — content recommendations */
+  .rec-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:10px 0}
+  .rec-card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .rec-card .title{font-weight:700;font-size:15.5px}
+  .rec-type{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:#eef4f8;color:#1d4e6b;padding:3px 9px;border-radius:99px;white-space:nowrap}
+  .rec-card .why{font-size:13.5px;color:var(--muted);margin:8px 0 0;max-width:64ch}
+  .rec-card .actions{display:flex;gap:8px;margin-top:14px;align-items:center;flex-wrap:wrap}
+  .rec-btn{font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;border:none}
+  .rec-btn.approve{background:var(--accent);color:#fff}
+  .rec-btn.reject{background:#fff;color:var(--muted);border:1px solid var(--line)}
+  .rec-btn.preview{background:none;color:var(--brand);font-weight:600;padding:8px 4px}
+  .pub-row{display:flex;align-items:center;justify-content:space-between;padding:11px 4px;border-bottom:1px solid var(--line);font-size:14px}
+  .pub-row:last-child{border-bottom:0}
+  .pub-row .name{font-weight:600}
+  .pub-row .meta{font-size:12.5px;color:var(--muted);margin-top:1px}
+  .action{display:flex;gap:14px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:10px 0}
+  .action .icon{font-size:22px;flex:0 0 auto}
+  .action .title{font-weight:600;font-size:15px}
+  .action .why{font-size:13.5px;color:var(--muted);margin-top:2px}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+  .empty-state .big{font-size:38px}
+  .section-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:26px 0 6px}
+  .section-lbl:first-child{margin-top:0}
+
+  /* Reports history */
+  .cadence-tabs{display:inline-flex;gap:3px;background:#eef1f4;border-radius:9px;padding:3px;margin-bottom:16px}
+  .cadence-tabs span{font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px;color:var(--muted)}
+  .cadence-tabs span.active{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .report-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--line);border-radius:10px;margin:8px 0}
+  .report-row .period{font-weight:600;font-size:14.5px}
+  .report-row .range{font-size:12.5px;color:var(--muted)}
+  .report-row .score-mini{font-size:13px;font-weight:700;padding:3px 10px;border-radius:99px;color:#fff}
+  .btn{font-size:13px;font-weight:600;background:var(--brand);color:#fff;padding:7px 14px;border-radius:8px}
+
+  /* Pillar detail page */
+  .breadcrumb{font-size:13px;color:var(--muted);margin-bottom:18px}
+  .breadcrumb a{color:var(--muted);font-weight:600}
+  .pillar-hero{display:flex;gap:24px;align-items:center;flex-wrap:wrap;padding:22px 26px;background:#f8faf9;border:1px solid var(--line);border-radius:16px}
+  .pillar-hero .badge{width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
+  .pillar-hero .badge b{font-size:30px;line-height:1}
+  .pillar-hero .badge span{font-size:11px;opacity:.9}
+  .pillar-hero .copy h2{font-size:22px;margin:2px 0 4px}
+  .pillar-hero .copy p{margin:0;color:var(--muted);font-size:14.5px;max-width:52ch}
+  .engine-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .engine-row:last-child{border-bottom:0}
+  .engine-row .logo{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:0 0 auto}
+  .engine-row .name{font-weight:600;font-size:14.5px;width:110px;flex:0 0 auto}
+  .engine-row .bar{flex:1;margin:0}
+  .engine-row .pct{width:70px;text-align:right;font-weight:700;font-size:14.5px;flex:0 0 auto}
+  .engine-row .sub{font-size:12px;color:var(--muted);width:90px;text-align:right;flex:0 0 auto}
+  .prompt-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border:1px solid var(--line);border-radius:9px;margin:7px 0;font-size:13.5px}
+  .prompt-row .q{color:var(--ink)}
+  .hit{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px}
+  .hit.yes{background:var(--good-bg);color:var(--good)}
+  .hit.no{background:#f6f7f8;color:var(--muted)}
+  .sov-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:14px}
+  .sov-row .who{width:150px;flex:0 0 auto;font-weight:600}
+  .sov-row.you .who{color:var(--accent)}
+  .sov-row .bar{flex:1;margin:0}
+  .sov-row .pct{width:46px;text-align:right;font-weight:700}
+  .checklist-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .checklist-row:last-child{border-bottom:0}
+  .checklist-row .dot{width:20px;height:20px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+  .checklist-row .dot.done{background:var(--good)}
+  .checklist-row .dot.pending{background:#d7dce1;color:var(--muted)}
+  .view-link{font-size:12.5px;font-weight:700;color:var(--accent);margin-top:6px;display:inline-block}
+
+  /* Pillar detail — content breakdown, area coverage, trend chart, keyword table */
+  .type-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .type-row:last-child{border-bottom:0}
+  .type-row .name{width:170px;flex:0 0 auto;font-weight:600}
+  .type-row .bar{flex:1;margin:0}
+  .type-row .count{width:70px;text-align:right;font-weight:700;flex:0 0 auto}
+  .area-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  @media(max-width:640px){.area-grid{grid-template-columns:repeat(2,1fr)}}
+  .area-chip{display:flex;align-items:center;gap:7px;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+  .area-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .area-chip .dot.done{background:var(--good)}
+  .area-chip .dot.pending{background:#d7dce1}
+  .line-chart{width:100%;height:auto;display:block;overflow:visible}
+  .line-chart .grid{stroke:var(--line);stroke-width:1}
+  .line-chart .axis-lbl{font-size:9px;fill:var(--muted)}
+  .line-chart .x-lbl{font-size:10px;fill:var(--muted)}
+  .line-chart .area{opacity:.12}
+  .line-chart .line{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .line-chart .dot{stroke:#fff;stroke-width:1.5}
+  .line-chart .end-lbl{font-size:13px;font-weight:700;fill:var(--ink)}
+  .chart-table{width:100%;font-size:12.5px;margin-top:4px;border-collapse:collapse}
+  .chart-table th,.chart-table td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line)}
+  .chart-table th:first-child,.chart-table td:first-child{text-align:left}
+  .chart-table th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em}
+  .chart-table td{font-variant-numeric:tabular-nums}
+  details.table-toggle{margin-top:10px}
+  details.table-toggle summary{font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;list-style:none}
+  details.table-toggle summary::-webkit-details-marker{display:none}
+  .rating-row{display:flex;align-items:center;gap:12px;margin:7px 0;font-size:13.5px}
+  .rating-row .m{width:60px;flex:0 0 auto;color:var(--muted)}
+  .rating-row .bar{flex:1;margin:0;height:7px}
+  .rating-row .v{width:38px;text-align:right;font-weight:700;flex:0 0 auto}
+  .mover-up{color:var(--good);font-weight:700}
+  .mover-down{color:var(--bad);font-weight:700}
+
+  /* Login */
+  .login-shell{background:var(--brand);padding:60px 20px;display:flex;justify-content:center}
+  .login-card{background:#fff;border-radius:16px;padding:36px 34px;width:100%;max-width:360px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  .login-card .brand{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .login-card h2{margin:8px 0 20px;font-size:22px}
+  .field{margin:14px 0}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  .field input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+  .login-btn{width:100%;padding:11px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14.5px;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="pill">SPEC · PLATFORM</span>
+  <h1 style="margin-top:14px">Client Portal</h1>
+  <p class="lead">A persistent, login-gated place for a client to check their own PracticeRank stats whenever they want — no expiring links, no admin-panel access. Built entirely on data and rendering we already have: <code>compute_practicerank_score()</code>, <code>weekly_report.build_report_data()</code>, and the existing <code>report_snapshots</code> table. This file is both the spec and a rendered mockup of all four pages (scroll down).</p>
+  <p class="mini">Owner: Kody · Status: Draft v1 · Lives in <code>specs/platform/</code> · Precedent: <a href="weekly-customer-report.html">weekly-customer-report.html</a></p>
+
+  <!-- ===================== PART 1: SPEC ===================== -->
+  <div class="doc">
+    <h2 style="margin-top:0">1. Goal &amp; principles</h2>
+    <ul>
+      <li><b>The customer is a dental practice owner, not a marketer.</b> No SEO/AEO jargon — every metric gets a plain-English explanation of what it means and why it matters to their practice.</li>
+      <li><b>Score first, breakdown second.</b> The PracticeRank Score is the single number a client tracks over time — it's the headline. Immediately below it, "what makes up your score" explains the 5 weighted pillars in plain language, since the score means nothing without knowing what drives it.</li>
+      <li><b>Every category is a door, not a dead end.</b> Each pillar bar on the Overview is a link into a dedicated detail page for that category, showing the actual underlying metrics (e.g. AI Visibility → your hit rate on each individual AI assistant, not just one blended percentage). A summary number is not "clear" on its own — clarity means being able to see what's behind it.</li>
+      <li><b>Real accounts, not links.</b> Unlike the existing <code>/r/&lt;token&gt;</code> share-link report (still used for ad hoc sharing), the portal uses real email/password login so a client has one stable place to return to, and staff can revoke access per person.</li>
+      <li><b>Zero admin surface.</b> Client sessions use entirely separate session keys from staff logins and a separate page shell — there is no path by which admin navigation, other customers' data, or internal operational detail (competitor DA gaps, off-site vendor line items, system alerts) reaches this experience.</li>
+      <li><b>Reuse, don't recompute.</b> Every figure on these pages already exists in the DB or is already computed by <code>weekly_report.py</code>. This spec adds no new metrics — only a client-appropriate presentation layer.</li>
+    </ul>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">2. Pages</h2>
+    <table>
+      <tr><th>Page</th><th>Route</th><th>Purpose</th></tr>
+      <tr><td><b>Login</b></td><td><code>/portal/login</code></td><td>Email + password. Generic error on failure (no user-enumeration).</td></tr>
+      <tr><td><b>Overview</b></td><td><code>/portal/</code></td><td>Score hero → pillar breakdown → supporting metric cards. The landing page.</td></tr>
+      <tr><td><b>Pillar Detail</b> <span class="mini">×5</span></td><td><code>/portal/pillar/&lt;key&gt;</code></td><td>One page per pillar (<code>ai-visibility</code>, <code>geo-foundation</code>, <code>content-coverage</code>, <code>reputation</code>, <code>search-performance</code>) with the metrics that actually make up that score. Linked from every pillar bar on Overview.</td></tr>
+      <tr><td><b>Action Items</b></td><td><code>/portal/actions</code></td><td>Content recommendations awaiting the client's approval (the main content), what's recently gone live, plus a short list of other current to-dos.</td></tr>
+      <tr><td><b>Full Reports</b></td><td><code>/portal/reports</code></td><td>Weekly / monthly / quarterly report history, links to the full rendered report per period.</td></tr>
+    </table>
+  </div>
+
+  <div class="doc">
+    <h2 style="margin-top:0">3. Data mapping — everything already exists</h2>
+    <table>
+      <tr><th>Portal field</th><th>Source</th><th>Status</th></tr>
+      <tr><td>PracticeRank Score, grade, trend</td><td><code>compute_practicerank_score()</code> — <code>geo_agent/practicerank_score.py</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>5 pillar scores + weights (AI Visibility 30%, GEO Foundation 30%, Content &amp; Coverage 20%, Reputation 10%, Search Performance 10%)</td><td><code>PILLAR_LABELS</code> / <code>PILLAR_WEIGHTS</code> — <code>practicerank_score.py:33-48</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Plain-English sentence per pillar</td><td>New copy — see §4 below</td><td><span class="tag t-new">NEW COPY</span></td></tr>
+      <tr><td><b>AI Visibility detail:</b> hit rate per engine (Claude/ChatGPT/Perplexity/Gemini/Grok)</td><td><code>ai_mention_runs.engines_json</code> — built in <code>scripts/scheduled_ai_check.py:203-210</code> as <code>{engine: {status, mentions, total}}</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>AI Visibility detail:</b> sample questions tested + which engines mentioned you</td><td><code>ai_mention_results</code> table (per run × engine × prompt)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>AI Visibility detail:</b> share of voice vs named competitors</td><td><code>db.get_share_of_voice()</code> — <code>geo_agent/db.py:2239</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>GEO Foundation detail:</b> which deliverables are done (schema, llms.txt, sitemap, robots, FAQ, headings)</td><td><code>db.get_checklist()</code> + <code>_FOUNDATION_ITEMS</code> — <code>practicerank_score.py:349-378</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>Content &amp; Coverage detail:</b> pieces published by type, service-area page coverage</td><td><code>compute_content_velocity()</code> — <code>practicerank_score.py:420-444</code>, <code>db.get_content_recommendations()</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>Reputation detail:</b> rating trend, review growth</td><td><code>compute_reputation()</code> — <code>practicerank_score.py:485+</code>, <code>sections.reviews</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>Search Performance detail:</b> clicks/impressions trend, keyword movers</td><td><code>sections.search</code>, <code>sections.keywords.movers</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td><b>Content recommendations</b> (title, type, why it helps, status) — the main content of Action Items</td><td><code>content_recommendations</code> table via <code>db.get_content_recommendations()</code> — <code>geo_agent/db.py:164-182, 2574</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Approve / reject a recommendation</td><td><code>db.update_content_recommendation_status()</code> — <code>geo_agent/db.py:2594</code> (same write the admin content queue already uses)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Other action items ("what we need from you")</td><td><code>sections.needs</code> in <code>build_report_data(..., live_state=True)</code> — <code>weekly_report.py:390-420</code></td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Full report HTML per period</td><td><code>report_snapshots.html</code> (same content as <code>/r/&lt;token&gt;</code>)</td><td><span class="tag t-real">REAL</span></td></tr>
+      <tr><td>Client login (email/password)</td><td>New <code>client_users</code> table, reusing the existing scrypt hash helpers</td><td><span class="tag t-new">NEW TABLE</span></td></tr>
+    </table>
+    <p class="mini">All 5 pillar detail pages are fully mocked in §4 below — each follows the identical pattern: a hero for that pillar's score, then the specific metrics that actually compute it, using the sources listed above.</p>
+  </div>
+
+  <!-- ===================== PART 2: RENDERED MOCKUP ===================== -->
+  <h2>4. Rendered mockups</h2>
+  <p class="lead">Sample data for Hilltop Family Dental.</p>
+
+  <!-- LOGIN -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Login</h3>
+  <div class="device">
+    <div class="login-shell">
+      <div class="login-card">
+        <div class="brand">PracticeRank</div>
+        <h2>Client Portal</h2>
+        <div class="field"><label>Email</label><input placeholder="drgallup@hilltopfamilydental.com"></div>
+        <div class="field"><label>Password</label><input type="password" placeholder="••••••••••"></div>
+        <button class="login-btn">Sign In</button>
+        <p class="mini" style="margin-top:16px;text-align:center">Trouble logging in? Contact your PracticeRank account manager.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERVIEW -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Overview</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a class="active">Overview</a><a>Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+
+      <!-- 1. Score hero -->
+      <div class="score-hero">
+        <div class="score-badge" style="background:#65a30d"><b>78</b><span>Grade B</span></div>
+        <div class="score-copy">
+          <div class="label">Your PracticeRank Score</div>
+          <h2>78 <span class="delta up">▲ 4 pts vs last month</span></h2>
+          <div class="takeaway">✅ Strong — you're in the top range for AI search visibility. Reputation is your biggest opportunity (see below).</div>
+        </div>
+      </div>
+
+      <!-- 2. What makes up your score -->
+      <div class="pillar-sec">
+        <div class="h"><h3 style="margin:0">What makes up your score</h3></div>
+
+        <div class="pillar">
+          <div class="row"><span>AI Visibility <span class="weight">30% of your score</span></span><span class="up">71 ▲6</span></div>
+          <div class="bar"><i style="width:71%;background:#65a30d"></i></div>
+          <p class="why">Out of 5 AI assistants we test (ChatGPT, Claude, Perplexity, Gemini, Grok), how many recommend you when a patient asks — and how you rank against nearby practices in those answers.</p>
+          <a class="view-link">See your hit rate on each AI assistant →</a>
+        </div>
+
+        <div class="pillar">
+          <div class="row"><span>GEO Foundation <span class="weight">30% of your score</span></span><span class="flat">88 –</span></div>
+          <div class="bar"><i style="width:88%;background:#16a34a"></i></div>
+          <p class="why">7 technical deliverables that make your site machine-readable to AI search (structured business info, FAQ formatting, sitemap, etc.) — how many are done.</p>
+          <a class="view-link">See which items are done →</a>
+        </div>
+
+        <div class="pillar">
+          <div class="row"><span>Content &amp; Coverage <span class="weight">20% of your score</span></span><span class="up">74 ▲8</span></div>
+          <div class="bar"><i style="width:74%;background:#65a30d"></i></div>
+          <p class="why">Pages and articles we've published for you, and how many of your service areas/cities have their own page.</p>
+          <a class="view-link">See what's been published →</a>
+        </div>
+
+        <div class="pillar">
+          <div class="row"><span>Reputation <span class="weight">10% of your score</span></span><span class="up">69 ▲2</span></div>
+          <div class="bar"><i style="width:69%;background:#d97706"></i></div>
+          <p class="why">Your Google rating (4.7★) and how quickly your review count is growing month over month.</p>
+          <a class="view-link">See your rating &amp; review trend →</a>
+        </div>
+
+        <div class="pillar">
+          <div class="row"><span>Search Performance <span class="weight">10% of your score</span></span><span class="up">82 ▲5</span></div>
+          <div class="bar"><i style="width:82%;background:#16a34a"></i></div>
+          <p class="why">Clicks and impressions from regular Google search, this period vs last — and which keywords are moving.</p>
+          <a class="view-link">See your search trend &amp; keywords →</a>
+        </div>
+      </div>
+
+      <!-- 3. Supporting cards -->
+      <div class="cards">
+        <div class="card">
+          <h3>Website visits from Google</h3>
+          <div class="v">312 <span style="font-size:14px;color:var(--muted);font-weight:500">clicks / 30 days</span></div>
+          <div class="d up">▲ +18% vs prior period</div>
+        </div>
+        <div class="card">
+          <h3>Seen by AI assistants</h3>
+          <div class="v">58% <span style="font-size:14px;color:var(--muted);font-weight:500">avg. hit rate</span></div>
+          <div class="engines">
+            <span class="chip">✓ Claude</span><span class="chip">✓ ChatGPT</span><span class="chip">✓ Perplexity</span>
+            <span class="chip miss">Gemini — low</span><span class="chip miss">Grok — not yet</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Google reviews</h3>
+          <div class="v">4.7★ <span style="font-size:14px;color:var(--muted);font-weight:500">128 total</span></div>
+          <div class="d up">▲ 2 new 5-star reviews this period</div>
+        </div>
+        <div class="card">
+          <h3>What we did for you this period</h3>
+          <ul>
+            <li>Published "Emergency Dental Care in Casper"</li>
+            <li>Published "What to Do If You Chip a Tooth"</li>
+            <li>Sent 14 post-visit review requests</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AI VISIBILITY PILLAR DETAIL -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Pillar Detail — AI Visibility</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a class="active">Overview</a><a>Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <div class="breadcrumb">← <a>Back to Overview</a></div>
+
+      <div class="pillar-hero">
+        <div class="badge" style="background:#65a30d"><b>71</b><span>of 100</span></div>
+        <div class="copy">
+          <h2>AI Visibility <span class="delta up" style="font-size:14px">▲ 6 pts</span></h2>
+          <p>How often ChatGPT, Claude, Perplexity, Gemini, and Grok recommend your practice when someone asks a question like "best dentist near me" — and how you rank against nearby practices in those answers. 30% of your overall score.</p>
+        </div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Your hit rate by AI assistant</h3>
+        <p class="mini" style="margin-top:0">Out of 8 benchmark questions we test monthly, how many times each assistant mentioned your practice.</p>
+
+        <div class="engine-row">
+          <div class="logo">C</div><div class="name">Claude</div>
+          <div class="bar" style="flex:1"><i style="width:100%;background:#16a34a"></i></div>
+          <div class="pct">100%</div><div class="sub">8 / 8</div>
+        </div>
+        <div class="engine-row">
+          <div class="logo">G</div><div class="name">ChatGPT</div>
+          <div class="bar" style="flex:1"><i style="width:75%;background:#16a34a"></i></div>
+          <div class="pct">75%</div><div class="sub">6 / 8</div>
+        </div>
+        <div class="engine-row">
+          <div class="logo">P</div><div class="name">Perplexity</div>
+          <div class="bar" style="flex:1"><i style="width:63%;background:#65a30d"></i></div>
+          <div class="pct">63%</div><div class="sub">5 / 8</div>
+        </div>
+        <div class="engine-row">
+          <div class="logo">Ge</div><div class="name">Gemini</div>
+          <div class="bar" style="flex:1"><i style="width:38%;background:#d97706"></i></div>
+          <div class="pct">38%</div><div class="sub">3 / 8</div>
+        </div>
+        <div class="engine-row">
+          <div class="logo">X</div><div class="name">Grok</div>
+          <div class="bar" style="flex:1"><i style="width:13%;background:#dc2626"></i></div>
+          <div class="pct">13%</div><div class="sub">1 / 8</div>
+        </div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Questions we test</h3>
+        <p class="mini" style="margin-top:0">A sample of the real questions patients ask AI assistants, and whether you came up.</p>
+        <div class="prompt-row"><span class="q">"Best emergency dentist in Casper WY"</span><span class="hit yes">Mentioned by 5/5</span></div>
+        <div class="prompt-row"><span class="q">"Family dentist near me that takes new patients"</span><span class="hit yes">Mentioned by 4/5</span></div>
+        <div class="prompt-row"><span class="q">"Dentist in Casper that does same-day crowns"</span><span class="hit yes">Mentioned by 3/5</span></div>
+        <div class="prompt-row"><span class="q">"Cheapest teeth whitening in Casper Wyoming"</span><span class="hit no">Not mentioned</span></div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Share of voice</h3>
+        <p class="mini" style="margin-top:0">Of every practice mentioned across these AI answers, how much belongs to you vs. nearby competitors.</p>
+        <div class="sov-row you"><span class="who">Hilltop Family Dental</span><div class="bar" style="flex:1"><i style="width:34%;background:#16a34a"></i></div><span class="pct">34%</span></div>
+        <div class="sov-row"><span class="who">Casper Dental Group</span><div class="bar" style="flex:1"><i style="width:28%;background:#9aa5b1"></i></div><span class="pct">28%</span></div>
+        <div class="sov-row"><span class="who">Wyoming Smiles</span><div class="bar" style="flex:1"><i style="width:19%;background:#9aa5b1"></i></div><span class="pct">19%</span></div>
+        <div class="sov-row"><span class="who">Everyone else</span><div class="bar" style="flex:1"><i style="width:19%;background:#cbd5e1"></i></div><span class="pct">19%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GEO FOUNDATION PILLAR DETAIL -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Pillar Detail — GEO Foundation</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a class="active">Overview</a><a>Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <div class="breadcrumb">← <a>Back to Overview</a></div>
+
+      <div class="pillar-hero">
+        <div class="badge" style="background:#16a34a"><b>88</b><span>of 100</span></div>
+        <div class="copy">
+          <h2>GEO Foundation <span class="delta flat" style="font-size:14px">– no change</span></h2>
+          <p>The technical groundwork that makes your website readable and trustworthy to AI search tools — the deliverables we ship for every practice. 30% of your overall score.</p>
+        </div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">What's done</h3>
+        <p class="mini" style="margin-top:0">7 of 8 deliverables complete.</p>
+        <div class="checklist-row"><div class="dot done">✓</div><div>Business info schema <span class="mini">— tells Google &amp; AI assistants your name, address, hours, and services</span></div></div>
+        <div class="checklist-row"><div class="dot done">✓</div><div>FAQ formatting <span class="mini">— lets AI assistants pull direct answers from your site</span></div></div>
+        <div class="checklist-row"><div class="dot done">✓</div><div>AI-readability file (llms.txt) <span class="mini">— a file that tells AI assistants how to read your site</span></div></div>
+        <div class="checklist-row"><div class="dot done">✓</div><div>AI crawling permissions <span class="mini">— the rules that let AI bots access your site</span></div></div>
+        <div class="checklist-row"><div class="dot pending">–</div><div>Extended AI content file <span class="mini">— more detail for AI assistants (in progress)</span></div></div>
+        <div class="checklist-row"><div class="dot done">✓</div><div>Sitemap <span class="mini">— tells search engines every page on your site</span></div></div>
+        <div class="checklist-row"><div class="dot done">✓</div><div>Additional structured data <span class="mini">— reviews, staff bios, service listings</span></div></div>
+        <div class="checklist-row"><div class="dot done">✓</div><div>Organized page headings <span class="mini">— helps AI assistants understand your page structure</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTENT & COVERAGE PILLAR DETAIL -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Pillar Detail — Content &amp; Coverage</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a class="active">Overview</a><a>Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <div class="breadcrumb">← <a>Back to Overview</a></div>
+
+      <div class="pillar-hero">
+        <div class="badge" style="background:#65a30d"><b>74</b><span>of 100</span></div>
+        <div class="copy">
+          <h2>Content &amp; Coverage <span class="delta up" style="font-size:14px">▲ 8 pts</span></h2>
+          <p>New pages and articles we've written for your practice, and how completely they cover your services and service areas. 20% of your overall score.</p>
+        </div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">What we've published, by type</h3>
+        <div class="type-row"><div class="name">Location &amp; service pages</div><div class="bar" style="flex:1"><i style="width:75%;background:#16a34a"></i></div><div class="count">3</div></div>
+        <div class="type-row"><div class="name">Blog posts</div><div class="bar" style="flex:1"><i style="width:100%;background:#16a34a"></i></div><div class="count">4</div></div>
+        <div class="type-row"><div class="name">FAQ enhancements</div><div class="bar" style="flex:1"><i style="width:50%;background:#65a30d"></i></div><div class="count">2</div></div>
+        <div class="type-row"><div class="name">Content refreshes</div><div class="bar" style="flex:1"><i style="width:25%;background:#d97706"></i></div><div class="count">1</div></div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Service-area coverage</h3>
+        <p class="mini" style="margin-top:0">3 of 4 areas you serve have their own dedicated page.</p>
+        <div class="area-grid">
+          <div class="area-chip"><span class="dot done"></span>Casper, WY</div>
+          <div class="area-chip"><span class="dot done"></span>Mills, WY</div>
+          <div class="area-chip"><span class="dot done"></span>Evansville, WY</div>
+          <div class="area-chip"><span class="dot pending"></span>East Casper, WY</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPUTATION PILLAR DETAIL -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Pillar Detail — Reputation</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a class="active">Overview</a><a>Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <div class="breadcrumb">← <a>Back to Overview</a></div>
+
+      <div class="pillar-hero">
+        <div class="badge" style="background:#d97706"><b>69</b><span>of 100</span></div>
+        <div class="copy">
+          <h2>Reputation <span class="delta up" style="font-size:14px">▲ 2 pts</span></h2>
+          <p>Your Google rating and how quickly your review count is growing. 10% of your overall score.</p>
+        </div>
+      </div>
+
+      <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-top:24px">
+        <div class="card"><h3>Current rating</h3><div class="v">4.7★</div><div class="d flat">– no change this period</div></div>
+        <div class="card"><h3>Total reviews</h3><div class="v">128</div><div class="d up">▲ +2 this period</div></div>
+        <div class="card"><h3>New this period</h3><div class="v">2</div><div class="d up">both 5★</div></div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Rating trend</h3>
+        <p class="mini" style="margin-top:0">We benchmark against 4.5★ — the point where rating stops holding back local ranking.</p>
+        <div class="rating-row"><div class="m">Mar</div><div class="bar" style="flex:1"><i style="width:88%;background:#d97706"></i></div><div class="v">4.4★</div></div>
+        <div class="rating-row"><div class="m">Apr</div><div class="bar" style="flex:1"><i style="width:90%;background:#d97706"></i></div><div class="v">4.5★</div></div>
+        <div class="rating-row"><div class="m">May</div><div class="bar" style="flex:1"><i style="width:92%;background:#65a30d"></i></div><div class="v">4.6★</div></div>
+        <div class="rating-row"><div class="m">Jun</div><div class="bar" style="flex:1"><i style="width:94%;background:#16a34a"></i></div><div class="v">4.7★</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEARCH PERFORMANCE PILLAR DETAIL -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Pillar Detail — Search Performance</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a class="active">Overview</a><a>Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <div class="breadcrumb">← <a>Back to Overview</a></div>
+
+      <div class="pillar-hero">
+        <div class="badge" style="background:#16a34a"><b>82</b><span>of 100</span></div>
+        <div class="copy">
+          <h2>Search Performance <span class="delta up" style="font-size:14px">▲ 5 pts</span></h2>
+          <p>How your website is trending in regular Google search — clicks and visibility over time. 10% of your overall score.</p>
+        </div>
+      </div>
+
+      <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-top:24px">
+        <div class="card"><h3>Clicks (30 days)</h3><div class="v">312</div><div class="d up">▲ +18% vs prior period</div></div>
+        <div class="card"><h3>Impressions</h3><div class="v">9,840</div><div class="d up">▲ +11% vs prior period</div></div>
+        <div class="card"><h3>Click-through rate</h3><div class="v">3.2%</div><div class="d up">▲ +0.3pt vs prior period</div></div>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Clicks over the last 8 weeks</h3>
+        <p class="mini" style="margin-top:0">A trend, so it's a line, not bars. The dot at the end is this week; gridlines mark 0/50/100 clicks so you can read the rest by eye — exact numbers for every week are in the table below.</p>
+        <svg class="line-chart" viewBox="0 0 560 150" preserveAspectRatio="xMidYMid meet">
+          <line class="grid" x1="30" y1="118" x2="550" y2="118"></line>
+          <line class="grid" x1="30" y1="66" x2="550" y2="66"></line>
+          <line class="grid" x1="30" y1="14" x2="550" y2="14"></line>
+          <text class="axis-lbl" x="24" y="121" text-anchor="end">0</text>
+          <text class="axis-lbl" x="24" y="69" text-anchor="end">50</text>
+          <text class="axis-lbl" x="24" y="17" text-anchor="end">100</text>
+          <path class="area" d="M30,118 L30,79.5 L104.3,72.2 L178.6,75.4 L252.9,62.9 L327.1,58.7 L401.4,51.4 L475.7,36.9 L550,22.3 L550,118 Z" fill="var(--accent)"></path>
+          <polyline class="line" points="30,79.5 104.3,72.2 178.6,75.4 252.9,62.9 327.1,58.7 401.4,51.4 475.7,36.9 550,22.3" stroke="var(--accent)"></polyline>
+          <circle class="dot" cx="30" cy="79.5" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="104.3" cy="72.2" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="178.6" cy="75.4" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="252.9" cy="62.9" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="327.1" cy="58.7" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="401.4" cy="51.4" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="475.7" cy="36.9" r="3.5" fill="var(--accent)"></circle>
+          <circle class="dot" cx="550" cy="22.3" r="4.5" fill="var(--accent)"></circle>
+          <text class="end-lbl" x="546" y="14" text-anchor="end">92</text>
+          <text class="x-lbl" x="30" y="138" text-anchor="middle">4/28</text>
+          <text class="x-lbl" x="104.3" y="138" text-anchor="middle">5/5</text>
+          <text class="x-lbl" x="178.6" y="138" text-anchor="middle">5/12</text>
+          <text class="x-lbl" x="252.9" y="138" text-anchor="middle">5/19</text>
+          <text class="x-lbl" x="327.1" y="138" text-anchor="middle">5/26</text>
+          <text class="x-lbl" x="401.4" y="138" text-anchor="middle">6/2</text>
+          <text class="x-lbl" x="475.7" y="138" text-anchor="middle">6/9</text>
+          <text class="x-lbl" x="550" y="138" text-anchor="middle">6/16</text>
+        </svg>
+        <details class="table-toggle">
+          <summary>Show weekly numbers ▾</summary>
+          <table class="chart-table">
+            <tr><th>Week of</th><th>Clicks</th><th>CTR</th></tr>
+            <tr><td>Apr 28</td><td>37</td><td>2.6%</td></tr>
+            <tr><td>May 5</td><td>44</td><td>2.8%</td></tr>
+            <tr><td>May 12</td><td>41</td><td>2.7%</td></tr>
+            <tr><td>May 19</td><td>53</td><td>2.9%</td></tr>
+            <tr><td>May 26</td><td>57</td><td>3.0%</td></tr>
+            <tr><td>Jun 2</td><td>64</td><td>3.1%</td></tr>
+            <tr><td>Jun 9</td><td>78</td><td>3.3%</td></tr>
+            <tr><td>Jun 16</td><td>92</td><td>3.4%</td></tr>
+          </table>
+        </details>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">AI mention rate over the same 8 weeks</h3>
+        <p class="mini" style="margin-top:0">A separate chart on its own 0–100% scale, not overlaid on clicks — the two are different kinds of measurement, and forcing them onto one axis would invent a correlation that isn't really there. This is the same rolling mention rate that drives your AI Visibility score: the share of tracked questions where an AI assistant mentioned your practice.</p>
+        <svg class="line-chart" viewBox="0 0 560 150" preserveAspectRatio="xMidYMid meet">
+          <line class="grid" x1="30" y1="118" x2="550" y2="118"></line>
+          <line class="grid" x1="30" y1="66" x2="550" y2="66"></line>
+          <line class="grid" x1="30" y1="14" x2="550" y2="14"></line>
+          <text class="axis-lbl" x="24" y="121" text-anchor="end">0%</text>
+          <text class="axis-lbl" x="24" y="69" text-anchor="end">50%</text>
+          <text class="axis-lbl" x="24" y="17" text-anchor="end">100%</text>
+          <path class="area" d="M30,118 L30,82.6 L104.3,79.5 L178.6,77.4 L252.9,74.3 L327.1,70.2 L401.4,67.0 L475.7,62.9 L550,57.7 L550,118 Z" fill="#1d4e6b"></path>
+          <polyline class="line" points="30,82.6 104.3,79.5 178.6,77.4 252.9,74.3 327.1,70.2 401.4,67.0 475.7,62.9 550,57.7" stroke="#1d4e6b"></polyline>
+          <circle class="dot" cx="30" cy="82.6" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="104.3" cy="79.5" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="178.6" cy="77.4" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="252.9" cy="74.3" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="327.1" cy="70.2" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="401.4" cy="67.0" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="475.7" cy="62.9" r="3.5" fill="#1d4e6b"></circle>
+          <circle class="dot" cx="550" cy="57.7" r="4.5" fill="#1d4e6b"></circle>
+          <text class="end-lbl" x="546" y="49" text-anchor="end">58%</text>
+          <text class="x-lbl" x="30" y="138" text-anchor="middle">4/28</text>
+          <text class="x-lbl" x="104.3" y="138" text-anchor="middle">5/5</text>
+          <text class="x-lbl" x="178.6" y="138" text-anchor="middle">5/12</text>
+          <text class="x-lbl" x="252.9" y="138" text-anchor="middle">5/19</text>
+          <text class="x-lbl" x="327.1" y="138" text-anchor="middle">5/26</text>
+          <text class="x-lbl" x="401.4" y="138" text-anchor="middle">6/2</text>
+          <text class="x-lbl" x="475.7" y="138" text-anchor="middle">6/9</text>
+          <text class="x-lbl" x="550" y="138" text-anchor="middle">6/16</text>
+        </svg>
+        <details class="table-toggle">
+          <summary>Show weekly numbers ▾</summary>
+          <table class="chart-table">
+            <tr><th>Week of</th><th>AI mention rate</th></tr>
+            <tr><td>Apr 28</td><td>34%</td></tr>
+            <tr><td>May 5</td><td>37%</td></tr>
+            <tr><td>May 12</td><td>39%</td></tr>
+            <tr><td>May 19</td><td>42%</td></tr>
+            <tr><td>May 26</td><td>46%</td></tr>
+            <tr><td>Jun 2</td><td>49%</td></tr>
+            <tr><td>Jun 9</td><td>53%</td></tr>
+            <tr><td>Jun 16</td><td>58%</td></tr>
+          </table>
+        </details>
+      </div>
+
+      <div class="pillar-sec">
+        <h3 style="margin:0 0 4px">Biggest keyword movers</h3>
+        <table>
+          <tr><th>Search term</th><th>Clicks</th><th>Position</th><th>Move</th></tr>
+          <tr><td>emergency dentist casper</td><td>41</td><td>6.8</td><td class="mover-up">▲ 3.5</td></tr>
+          <tr><td>dentist casper wy</td><td>74</td><td>4.1</td><td class="mover-up">▲ 1.2</td></tr>
+          <tr><td>teeth whitening casper</td><td>33</td><td>5.2</td><td class="mover-up">▲ 0.9</td></tr>
+          <tr><td>family dentist near me</td><td>28</td><td>11.4</td><td class="mover-down">▼ 0.6</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION ITEMS -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Action Items</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a>Overview</a><a class="active">Action Items</a><a>Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <p class="lead" style="margin-top:0">Content we've prepared for your practice — take a look and let us know what to publish.</p>
+
+      <div class="section-lbl">Needs your approval · 3</div>
+
+      <div class="rec-card">
+        <div class="top">
+          <div class="title">"What to Do If You Chip a Tooth" — blog post</div>
+          <span class="rec-type">Blog post</span>
+        </div>
+        <p class="why">Patients search this exact question after a dental injury. A clear, reassuring answer builds trust and gives Google (and AI assistants) something specific to point to when someone asks.</p>
+        <div class="actions">
+          <button class="rec-btn approve">Approve</button>
+          <button class="rec-btn reject">Not for us</button>
+          <a class="rec-btn preview">Preview full piece →</a>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="top">
+          <div class="title">Dentist Near East Casper — new location page</div>
+          <span class="rec-type">Location &amp; service page</span>
+        </div>
+        <p class="why">You serve East Casper but don't have a page targeting it yet — this closes that gap so patients searching "dentist near East Casper" can find you.</p>
+        <div class="actions">
+          <button class="rec-btn approve">Approve</button>
+          <button class="rec-btn reject">Not for us</button>
+          <a class="rec-btn preview">Preview full piece →</a>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="top">
+          <div class="title">FAQ update: "Do you accept my insurance?"</div>
+          <span class="rec-type">FAQ enhancement</span>
+        </div>
+        <p class="why">This is one of the top questions AI assistants get asked about dental practices — adding it helps you show up in those answers.</p>
+        <div class="actions">
+          <button class="rec-btn approve">Approve</button>
+          <button class="rec-btn reject">Not for us</button>
+          <a class="rec-btn preview">Preview full piece →</a>
+        </div>
+      </div>
+
+      <div class="section-lbl">Recently added to your site</div>
+      <div class="pub-row"><div><div class="name">Emergency Dental Care in Casper</div><div class="meta">Location &amp; service page · published June 10</div></div><a class="rec-btn preview" style="padding:4px">View →</a></div>
+      <div class="pub-row"><div><div class="name">Teeth Whitening: What to Expect</div><div class="meta">Blog post · published June 3</div></div><a class="rec-btn preview" style="padding:4px">View →</a></div>
+
+      <div class="section-lbl">Other things we need from you</div>
+      <div class="action">
+        <div class="icon">📸</div>
+        <div><div class="title">Send us 10+ photos for your Google Business Profile</div><div class="why">Profiles with fresh, real photos get far more views, calls, and direction requests.</div></div>
+      </div>
+      <div class="action">
+        <div class="icon">💬</div>
+        <div><div class="title">Reply to 3 Google reviews without a response yet</div><div class="why">Replying to reviews builds trust and is a Google local-ranking signal.</div></div>
+      </div>
+
+      <p class="mini" style="margin-top:22px">Empty state (nothing outstanding anywhere on this page):</p>
+      <div class="empty-state">
+        <div class="big">✅</div>
+        <p><b>You're all caught up.</b> No action needed from you right now.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL REPORTS -->
+  <h3 style="text-transform:none;color:var(--ink);font-size:16px;font-weight:700;letter-spacing:0">Full Reports</h3>
+  <div class="device">
+    <div class="p-topbar">
+      <div><div class="brand">PracticeRank Portal</div><div class="practice">Hilltop Family Dental</div></div>
+      <div class="p-nav"><a>Overview</a><a>Action Items</a><a class="active">Full Reports</a></div>
+      <div class="p-logout">Dr. David Gallup · Log out</div>
+    </div>
+    <div class="p-body">
+      <div class="cadence-tabs"><span class="active">Weekly</span><span>Monthly</span><span>Quarterly</span></div>
+
+      <div class="report-row">
+        <div><div class="period">Week of June 9–15, 2026</div><div class="range">Generated June 16</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="score-mini" style="background:#65a30d">78</span><a class="btn">View Report</a></div>
+      </div>
+      <div class="report-row">
+        <div><div class="period">Week of June 2–8, 2026</div><div class="range">Generated June 9</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="score-mini" style="background:#65a30d">74</span><a class="btn">View Report</a></div>
+      </div>
+      <div class="report-row">
+        <div><div class="period">Week of May 26–June 1, 2026</div><div class="range">Generated June 2</div></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="score-mini" style="background:#d97706">69</span><a class="btn">View Report</a></div>
+      </div>
+      <p class="mini" style="margin-top:14px">"View Report" opens the same full detailed report already used for the <code>/r/&lt;token&gt;</code> share links — no new rendering, just the stored HTML for that snapshot.</p>
+    </div>
+  </div>
+
+  <p class="mini" style="margin-top:24px">End of spec. Next step: <code>client_users</code> table + auth (§ plan), then wire these routes/templates (Login, Overview, 5× Pillar Detail, Action Items, Full Reports) in <code>dashboard/app.py</code> against real data.</p>
+
+</div>
+</body>
+</html>
