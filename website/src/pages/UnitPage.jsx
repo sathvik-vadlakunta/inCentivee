@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
 import { allUnits } from '../data/levels'
+import { fetchQuestionsMap } from '../lib/questionsApi'
 import './Learn.css'
 import './UnitPage.css'
 
@@ -94,7 +95,17 @@ export default function UnitPage() {
   const navigate   = useNavigate()
   const { currentUser, bumpXP } = useAuth()
 
-  const unit = useMemo(() => allUnits.find(u => u.id === unitId), [unitId])
+  const [qData, setQData] = useState(null)
+  useEffect(() => {
+    fetchQuestionsMap().then(setQData).catch(err => console.error('Failed to load questions:', err))
+  }, [])
+
+  const unit = useMemo(() => {
+    const base = allUnits.find(u => u.id === unitId)
+    if (!base) return base
+    const lessons = base.lessons?.map(l => ({ ...l, questions: qData?.byLesson[l.id] ?? [] }))
+    return { ...base, lessons }
+  }, [unitId, qData])
 
   const sectionMeta = useMemo(() => {
     for (let i = 0; i < SECTIONS.length; i++) {
@@ -142,6 +153,14 @@ export default function UnitPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [activeLesson, lessonDone, showFeedback, qIndex, shuffledQs])
+
+  if (!qData) {
+    return (
+      <main className="learn-page">
+        <div className="unit-not-found"><p>Loading lessons…</p></div>
+      </main>
+    )
+  }
 
   if (!unit?.lessons) {
     return (

@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { allUnits } from '../data/levels'
-import { fillBlanks } from '../data/fillBlanks'
+import { fetchQuestionsMap } from '../lib/questionsApi'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
 import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw } from 'lucide-react'
 import './Learn.css'
@@ -155,12 +155,20 @@ export default function Learn() {
   const [finalScore,    setFinalScore]    = useState({ correct:0, total:0 })
   const [sectionIndex,  setSectionIndex]  = useState(() => location.state?.sectionIndex ?? 0)
   const [sparklingId,   setSparklingId]   = useState(null)
+  const [qData,         setQData]         = useState(null)
+
+  useEffect(() => {
+    fetchQuestionsMap().then(setQData).catch(err => console.error('Failed to load questions:', err))
+  }, [])
 
   const unitMap = useMemo(() => {
     const m = {}
-    allUnits.forEach(u => { m[u.id] = u })
+    allUnits.forEach(u => {
+      const lessons = u.lessons?.map(l => ({ ...l, questions: qData?.byLesson[l.id] ?? [] }))
+      m[u.id] = { ...u, lessons, questions: qData?.byLesson[u.id] ?? u.questions ?? [] }
+    })
     return m
-  }, [])
+  }, [qData])
 
   useEffect(() => {
     if (!currentUser) return
@@ -239,21 +247,21 @@ export default function Learn() {
         if (u) {
           const qs = u.lessons ? u.lessons.flatMap(l => l.questions ?? []) : (u.questions ?? [])
           pool.push(...qs)
-          if (fillBlanks[id]) pool.push(fillBlanks[id])
+          if (qData?.fillBlanks[id]) pool.push(qData.fillBlanks[id])
         }
       })
       questions = shuffleOptions(fisherYates(pool)).slice(0, 10)
     } else if (node.isCapstone) {
       const pool = []
-      allUnits.forEach(u => {
+      Object.values(unitMap).forEach(u => {
         const qs = u.lessons ? u.lessons.flatMap(l => l.questions ?? []) : (u.questions ?? [])
         pool.push(...qs)
-        if (fillBlanks[u.id]) pool.push(fillBlanks[u.id])
+        if (qData?.fillBlanks[u.id]) pool.push(qData.fillBlanks[u.id])
       })
       questions = shuffleOptions(fisherYates(pool)).slice(0, 40)
     } else {
       const base = [...node.questions]
-      if (fillBlanks[node.id]) { const at = Math.floor(Math.random()*(base.length+1)); base.splice(at,0,fillBlanks[node.id]) }
+      if (qData?.fillBlanks[node.id]) { const at = Math.floor(Math.random()*(base.length+1)); base.splice(at,0,qData.fillBlanks[node.id]) }
       questions = shuffleOptions(base)
     }
     setActiveUnit(node); setShuffledQs(questions)
@@ -263,6 +271,16 @@ export default function Learn() {
   }
 
   function exitLesson() { setActiveUnit(null); setLessonDone(false) }
+
+  if (!qData) {
+    return (
+      <main className="learn-page">
+        <section className="section"><div className="container">
+          <div className="lesson-done"><p className="done-subtitle">Loading lessons…</p></div>
+        </div></section>
+      </main>
+    )
+  }
 
   function handleNodeClick(node) {
     if (!isUnlocked(node.id) || sparklingId) return
