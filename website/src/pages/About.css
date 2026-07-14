@@ -69,6 +69,17 @@
   margin-bottom: 64px;
 }
 
+.about-cite-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 200ms ease;
+}
+
+.about-cite-link:hover {
+  color: var(--accent);
+}
+
 .about-hero-photo {
   flex: 1;
   border-radius: var(--radius-lg);

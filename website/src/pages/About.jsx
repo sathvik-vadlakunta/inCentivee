@@ -82,7 +82,7 @@ export default function AboutPage() {
                 The financial preparedness of our nation's youth is essential to their
                 well-being and of vital importance to our economic future.
               </p>
-              <cite>— Ben Bernanke</cite>
+              <cite>— <a href="https://en.wikipedia.org/wiki/Ben_Bernanke" target="_blank" rel="noopener noreferrer" className="about-cite-link">Ben Bernanke</a></cite>
             </blockquote>
           </div>
         </div>
