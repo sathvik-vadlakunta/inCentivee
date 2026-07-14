@@ -197,12 +197,17 @@ export default function Learn() {
     const score  = Math.round((correct / total) * 100)
     const earned = Math.round((unit.centsReward ?? 0) * (correct / total))
     if (currentUser) {
-      await supabase.from('lesson_progress').upsert({
-        user_id: currentUser.id, lesson_id: unit.id,
-        completed: true, score, completed_at: new Date().toISOString(),
-      })
-      setCompletedIds(prev => new Set([...prev, unit.id]))
-      bumpXP(earned)
+      const { error } = await supabase.from('lesson_progress').upsert(
+        { user_id: currentUser.id, lesson_id: unit.id, completed: true, score },
+        { onConflict: 'user_id,lesson_id' }
+      )
+      if (error) {
+        console.error('Failed to save lesson progress:', error)
+      } else {
+        setCompletedIds(prev => new Set([...prev, unit.id]))
+        bumpXP(earned)
+        refreshProfile()
+      }
     }
     setCentsEarned(earned)
     setFinalScore({ correct, total })
