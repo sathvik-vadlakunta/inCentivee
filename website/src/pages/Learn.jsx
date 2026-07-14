@@ -158,7 +158,12 @@ export default function Learn() {
   const [qData,         setQData]         = useState(null)
 
   useEffect(() => {
-    fetchQuestionsMap().then(setQData).catch(err => console.error('Failed to load questions:', err))
+    fetchQuestionsMap()
+      .then(setQData)
+      .catch(err => {
+        console.error('Failed to load questions from DB, falling back to local data:', err)
+        setQData({ byLesson: {}, fillBlanks: {} })
+      })
   }, [])
 
   const unitMap = useMemo(() => {
