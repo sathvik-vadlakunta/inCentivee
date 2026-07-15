@@ -4,6 +4,36 @@
   padding: 32px var(--container-padding) 80px;
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: var(--border-width) solid var(--foreground);
+  border-radius: var(--radius-md);
+  background: var(--background);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.admin-tab--active {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+.admin-main--full {
+  width: 100%;
+  max-width: 720px;
+}
+
 .admin-header {
   display: flex;
   align-items: flex-start;

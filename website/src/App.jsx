@@ -8,8 +8,8 @@ import CompoundInterest from './pages/CompoundInterest'
 import LoanCalculator from './pages/LoanCalculator'
 import RetirementCalculator from './pages/RetirementCalculator'
 import AboutPage from './pages/About'
-import PresentationsPage from './pages/Presentations'
-import PresentationViewer from './pages/PresentationViewer'
+import ArticlesPage from './pages/Articles'
+import ArticlePage from './pages/ArticlePage'
 import Login from './pages/Login'
 import Learn from './pages/Learn'
 import UnitPage from './pages/UnitPage'
@@ -29,8 +29,8 @@ export default function App() {
             <Route path="loan-calculator" element={<LoanCalculator />} />
             <Route path="retirement-calculator" element={<RetirementCalculator />} />
             <Route path="about" element={<AboutPage />} />
-            <Route path="presentations" element={<PresentationsPage />} />
-            <Route path="presentations/:code" element={<PresentationViewer />} />
+            <Route path="articles" element={<ArticlesPage />} />
+            <Route path="articles/:id" element={<ArticlePage />} />
             <Route path="login" element={<Login />} />
             <Route path="learn" element={<Learn />} />
             <Route path="learn/unit/:unitId" element={<UnitPage />} />

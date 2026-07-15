@@ -7,7 +7,7 @@ import './Navbar.css'
 const links = [
   { label: 'Learn', href: '/learn' },
   { label: 'Resources', href: '/resources' },
-  { label: 'Presentations', href: '/presentations' },
+  { label: 'Articles', href: '/articles' },
   { label: 'About', href: '/about' },
 ]
 
