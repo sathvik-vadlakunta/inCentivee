@@ -1,0 +1,358 @@
+{% extends "portal_base.html" %}
+{% block title %}{{ copy.label or 'Pillar' }} - Client Portal - PracticeRank{% endblock %}
+
+{% macro line_chart(chart, color) %}
+<div class="chart-wrap">
+  <svg class="line-chart" viewBox="0 0 560 150" preserveAspectRatio="xMidYMid meet">
+    {% for g in chart.grid %}
+    <line class="grid" x1="30" y1="{{ g.y }}" x2="550" y2="{{ g.y }}"></line>
+    <text class="axis-lbl" x="24" y="{{ g.y + 3 }}" text-anchor="end">{{ g.label }}</text>
+    {% endfor %}
+    <path class="area" d="{{ chart.area_path }}" fill="{{ color }}"></path>
+    <polyline class="line" points="{{ chart.line_points }}" stroke="{{ color }}"></polyline>
+    <line class="crosshair" x1="-10" y1="14" x2="-10" y2="118"></line>
+    {% for p in chart.points %}
+    <circle class="dot" cx="{{ p.x }}" cy="{{ p.y }}" r="{{ '4.5' if loop.last else '3.5' }}" fill="{{ color }}"
+            tabindex="0" data-label="{{ p.label }}" data-value="{{ p.value_label }}"></circle>
+    {% endfor %}
+    <text class="end-lbl" x="546" y="{{ chart.points[-1].y - 8 }}" text-anchor="end">{{ chart.end_label }}</text>
+    {% for p in chart.points %}
+    <text class="x-lbl" x="{{ p.x }}" y="138" text-anchor="middle">{{ p.label }}</text>
+    {% endfor %}
+    <rect class="hit-area" x="30" y="10" width="520" height="118" fill="transparent"></rect>
+  </svg>
+  <div class="chart-tooltip" hidden></div>
+</div>
+{% endmacro %}
+
+{% block extra_style %}
+  .mini{font-size:12px;color:var(--muted)}
+  .breadcrumb{font-size:13px;color:var(--muted);margin-bottom:18px}
+  .breadcrumb a{color:var(--muted);font-weight:600}
+
+  .pillar-hero{display:flex;gap:24px;align-items:center;flex-wrap:wrap;padding:22px 26px;background:#f8faf9;border:1px solid var(--line);border-radius:16px}
+  .pillar-hero .badge{width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
+  .pillar-hero .badge b{font-size:30px;line-height:1}
+  .pillar-hero .badge span{font-size:11px;opacity:.9}
+  .pillar-hero .copy h2{font-size:22px;margin:2px 0 4px}
+  .pillar-hero .copy p{margin:0;color:var(--muted);font-size:14.5px;max-width:52ch}
+  .delta{font-size:14px;font-weight:600}
+  .up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--muted)}
+
+  .pillar-sec{margin-top:28px}
+  .pillar-sec h3{margin:0 0 4px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+
+  .bar{height:9px;background:#eef1f4;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+
+  .checklist-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .checklist-row:last-child{border-bottom:0}
+  .checklist-row .dot{width:20px;height:20px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+  .checklist-row .dot.done{background:var(--good)}
+  .checklist-row .dot.pending{background:#d7dce1;color:var(--muted)}
+
+  .type-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .type-row:last-child{border-bottom:0}
+  .type-row .name{width:190px;flex:0 0 auto;font-weight:600}
+  .type-row .bar{flex:1;margin:0}
+  .type-row .count{width:40px;text-align:right;font-weight:700;flex:0 0 auto}
+
+  .area-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+  @media(max-width:640px){.area-grid{grid-template-columns:repeat(2,1fr)}}
+  .area-chip{display:flex;align-items:center;gap:7px;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+  .area-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .area-chip .dot.done{background:var(--good)}
+  .area-chip .dot.pending{background:#d7dce1}
+
+  .rating-row{display:flex;align-items:center;gap:12px;margin:7px 0;font-size:13.5px}
+  .rating-row .m{width:60px;flex:0 0 auto;color:var(--muted)}
+  .rating-row .bar{flex:1;margin:0;height:7px}
+  .rating-row .v{width:44px;text-align:right;font-weight:700;flex:0 0 auto}
+
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+  @media(max-width:640px){.cards{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .card .v{font-size:26px;font-weight:700}
+  .card .d{font-size:13px;font-weight:600;margin-top:2px}
+
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:10px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+  .mover-up{color:var(--good);font-weight:700}
+  .mover-down{color:var(--bad);font-weight:700}
+
+  .chart-wrap{position:relative}
+  .line-chart{width:100%;height:auto;display:block;overflow:visible}
+  .line-chart .grid{stroke:var(--line);stroke-width:1}
+  .line-chart .axis-lbl{font-size:9px;fill:var(--muted)}
+  .line-chart .x-lbl{font-size:10px;fill:var(--muted)}
+  .line-chart .area{opacity:.12}
+  .line-chart .line{fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .line-chart .dot{stroke:#fff;stroke-width:1.5;cursor:pointer}
+  .line-chart .dot:focus{outline:2px solid var(--ink);outline-offset:1px}
+  .line-chart .end-lbl{font-size:13px;font-weight:700;fill:var(--ink)}
+  .line-chart .crosshair{stroke:var(--muted);stroke-width:1;stroke-dasharray:2 2;opacity:0}
+  .line-chart .hit-area{cursor:crosshair}
+  .chart-tooltip{position:absolute;transform:translate(-50%,-125%);background:var(--ink);color:#fff;
+    font-size:12px;padding:5px 9px;border-radius:6px;pointer-events:none;white-space:nowrap;z-index:2}
+  .chart-tooltip strong{font-weight:700;margin-right:5px}
+
+  .chart-table{width:100%;font-size:12.5px;margin-top:4px;border-collapse:collapse}
+  .chart-table th,.chart-table td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line)}
+  .chart-table th:first-child,.chart-table td:first-child{text-align:left}
+  .chart-table th{color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.04em}
+  .chart-table td{font-variant-numeric:tabular-nums}
+  details.table-toggle{margin-top:10px}
+  details.table-toggle summary{font-size:12.5px;font-weight:600;color:var(--accent);cursor:pointer;list-style:none}
+  details.table-toggle summary::-webkit-details-marker{display:none}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty-state h2{color:var(--ink);margin-bottom:8px}
+{% endblock %}
+
+{% block portal_content %}
+<div class="breadcrumb">&larr; <a href="{{ url_for('portal_home') }}">Back to Overview</a></div>
+
+{% if not has_report %}
+  <div class="empty-state">
+    <h2>No report yet</h2>
+    <p>Your first PracticeRank report is being put together — check back soon, or reach out to your account manager if you have questions in the meantime.</p>
+  </div>
+{% else %}
+
+  <div class="pillar-hero">
+    <div class="badge" style="background:{{ color }}">
+      {% if score is not none %}
+        <b>{{ score }}</b><span>of 100</span>
+      {% else %}
+        <b>–</b><span>Pending</span>
+      {% endif %}
+    </div>
+    <div class="copy">
+      <h2>
+        {{ copy.label }}
+        {% if trend %}
+          <span class="delta {{ 'up' if trend == 'up' else ('down' if trend == 'down' else 'flat') }}">
+            {{ '▲ trending up' if trend == 'up' else ('▼ trending down' if trend == 'down' else '– steady') }}
+          </span>
+        {% endif %}
+      </h2>
+      <p>{{ copy.hero_description }}</p>
+      {% if not available %}
+        <p class="mini">Not enough data yet to fully score this pillar — numbers below will fill in as more data comes in.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if key == "geo-foundation" %}
+    <div class="pillar-sec">
+      <h3>What's done</h3>
+      <p class="mini" style="margin-top:0">{{ deliverables_done if deliverables_done is not none else 0 }} of {{ deliverables_total }} deliverables complete.</p>
+      {% for item in checklist %}
+        <div class="checklist-row">
+          <div class="dot {{ 'done' if item.done else 'pending' }}">{{ '✓' if item.done else '–' }}</div>
+          <div>{{ item.label }} <span class="mini">— {{ item.description }}</span></div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if key == "content-coverage" %}
+    <div class="pillar-sec">
+      <h3>What we've published, by type</h3>
+      {% for row in type_rows %}
+        <div class="type-row">
+          <div class="name">{{ row.label }}</div>
+          <div class="bar"><i style="width:{{ row.pct }}%;background:{{ row.color }}"></i></div>
+          <div class="count">{{ row.count }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="pillar-sec">
+      <h3>Service-area coverage</h3>
+      {% if service_areas %}
+        <p class="mini" style="margin-top:0">{{ areas_covered }} of {{ service_areas }} area{{ 's' if service_areas != 1 else '' }} you serve have their own dedicated page.</p>
+        {% if area_chips %}
+          <div class="area-grid">
+            {% for chip in area_chips %}
+              <div class="area-chip"><span class="dot {{ 'done' if chip.done else 'pending' }}"></span>{{ chip.name }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="mini" style="margin-top:0">No service areas configured yet.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if key == "reputation" %}
+    <div class="cards">
+      <div class="card"><h3>Current rating</h3>
+        <div class="v">{{ ('%.1f'|format(rating) ~ '★') if rating else '–' }}</div>
+      </div>
+      <div class="card"><h3>Total reviews</h3><div class="v">{{ review_count }}</div></div>
+      <div class="card"><h3>New this period</h3>
+        <div class="v">{{ new_count }}</div>
+        {% if new_count %}
+          <div class="d up">▲ {{ new_five_star }} 5★</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="pillar-sec">
+      <h3>Rating trend</h3>
+      <p class="mini" style="margin-top:0">We benchmark against 4.5★ — the point where rating stops holding back local ranking.</p>
+      {% if rating_trend %}
+        {% for pt in rating_trend %}
+          <div class="rating-row">
+            <div class="m">{{ pt.label }}</div>
+            <div class="bar"><i style="width:{{ pt.pct }}%;background:{{ pt.color }}"></i></div>
+            <div class="v">{{ '%.1f'|format(pt.rating) }}★</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="mini">Not enough history yet — we started tracking your rating over time as of this report. Check back after a few more reports for a trend.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if key == "search-performance" %}
+    <div class="cards">
+      <div class="card"><h3>Clicks (period)</h3>
+        <div class="v">{{ clicks }}</div>
+        {% if clicks_change %}<div class="d {{ clicks_change.direction }}">{{ clicks_change.arrow }} {{ clicks_change.label }} vs prior period</div>{% endif %}
+      </div>
+      <div class="card"><h3>Impressions</h3>
+        <div class="v">{{ impressions }}</div>
+        {% if impressions_change %}<div class="d {{ impressions_change.direction }}">{{ impressions_change.arrow }} {{ impressions_change.label }} vs prior period</div>{% endif %}
+      </div>
+      <div class="card"><h3>Click-through rate</h3>
+        <div class="v">{{ ctr_pct }}%</div>
+        {% if ctr_change %}<div class="d {{ ctr_change.direction }}">{{ ctr_change.arrow }} {{ ctr_change.label }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="pillar-sec">
+      <h3>Clicks over the last 8 weeks</h3>
+      {% if clicks_chart %}
+        <p class="mini" style="margin-top:0">A trend, so it's a line, not bars. The dot at the end is the most recent week; gridlines mark the scale so you can read the rest by eye — exact numbers for every week are in the table below.</p>
+        {{ line_chart(clicks_chart, 'var(--accent)') }}
+        <details class="table-toggle">
+          <summary>Show weekly numbers ▾</summary>
+          <table class="chart-table">
+            <tr><th>Week of</th><th>Clicks</th><th>CTR</th></tr>
+            {% for w in clicks_table %}
+            <tr><td>{{ w.label }}</td><td>{{ w.clicks }}</td><td>{{ w.ctr }}</td></tr>
+            {% endfor %}
+          </table>
+        </details>
+      {% else %}
+        <p class="mini">Not enough history yet for a trend chart — check back after a few more weekly reports.</p>
+      {% endif %}
+    </div>
+
+    <div class="pillar-sec">
+      <h3>AI mention rate over the same weeks</h3>
+      {% if mention_chart %}
+        <p class="mini" style="margin-top:0">A separate chart on its own 0–100% scale, not overlaid on clicks — the two are different kinds of measurement. This is the same rolling mention rate that drives your AI Visibility score: the share of tracked questions where an AI assistant mentioned your practice.</p>
+        {{ line_chart(mention_chart, '#1d4e6b') }}
+        <details class="table-toggle">
+          <summary>Show weekly numbers ▾</summary>
+          <table class="chart-table">
+            <tr><th>Week of</th><th>AI mention rate</th></tr>
+            {% for w in mention_table %}
+            <tr><td>{{ w.label }}</td><td>{{ w.rate }}</td></tr>
+            {% endfor %}
+          </table>
+        </details>
+      {% else %}
+        <p class="mini">Not enough AI-check history yet for a trend chart — check back after a few more scheduled checks.</p>
+      {% endif %}
+    </div>
+
+    {% if movers %}
+    <div class="pillar-sec">
+      <h3>Biggest keyword movers</h3>
+      <table>
+        <tr><th>Search term</th><th>Clicks</th><th>Position</th><th>Move</th></tr>
+        {% for m in movers %}
+        <tr>
+          <td>{{ m.query }}</td>
+          <td>{{ m.clicks }}</td>
+          <td>{{ '%.1f'|format(m.position) if m.position is not none else '–' }}</td>
+          <td class="{{ 'mover-up' if m.up else 'mover-down' }}">{{ '▲' if m.up else '▼' }} {{ '%.1f'|format(m.move|abs) if m.move is not none else '' }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
+    <script>
+    (function(){
+      function initChart(svg){
+        var dots = Array.prototype.slice.call(svg.querySelectorAll('.dot'));
+        if (!dots.length) return;
+        var wrap = svg.closest('.chart-wrap');
+        var tooltip = wrap ? wrap.querySelector('.chart-tooltip') : null;
+        var crosshair = svg.querySelector('.crosshair');
+        var rect = svg.querySelector('.hit-area');
+        if (!tooltip) return;
+
+        function showAt(dot){
+          var cx = parseFloat(dot.getAttribute('cx'));
+          var cy = parseFloat(dot.getAttribute('cy'));
+          if (crosshair){
+            crosshair.setAttribute('x1', cx);
+            crosshair.setAttribute('x2', cx);
+            crosshair.style.opacity = '1';
+          }
+          while (tooltip.firstChild) tooltip.removeChild(tooltip.firstChild);
+          var vEl = document.createElement('strong');
+          vEl.textContent = dot.getAttribute('data-value') || '';
+          var lEl = document.createElement('span');
+          lEl.textContent = dot.getAttribute('data-label') || '';
+          tooltip.appendChild(vEl);
+          tooltip.appendChild(lEl);
+          tooltip.hidden = false;
+          tooltip.style.left = (cx / 560 * 100) + '%';
+          tooltip.style.top = (cy / 150 * 100) + '%';
+        }
+        function hide(){
+          tooltip.hidden = true;
+          if (crosshair) crosshair.style.opacity = '0';
+        }
+        function nearestDot(clientX){
+          var pt = svg.createSVGPoint();
+          pt.x = clientX; pt.y = 0;
+          var ctm = svg.getScreenCTM();
+          if (!ctm) return null;
+          var loc = pt.matrixTransform(ctm.inverse());
+          var best = null, bestDist = Infinity;
+          dots.forEach(function(d){
+            var dx = Math.abs(parseFloat(d.getAttribute('cx')) - loc.x);
+            if (dx < bestDist){ bestDist = dx; best = d; }
+          });
+          return best;
+        }
+        if (rect){
+          rect.addEventListener('pointermove', function(e){
+            var d = nearestDot(e.clientX);
+            if (d) showAt(d);
+          });
+          rect.addEventListener('pointerleave', hide);
+        }
+        dots.forEach(function(d){
+          d.addEventListener('focus', function(){ showAt(d); });
+          d.addEventListener('blur', hide);
+          d.addEventListener('pointerenter', function(){ showAt(d); });
+        });
+      }
+      document.querySelectorAll('svg.line-chart').forEach(initChart);
+    })();
+    </script>
+  {% endif %}
+
+{% endif %}
+{% endblock %}

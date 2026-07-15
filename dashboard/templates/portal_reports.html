@@ -1,0 +1,63 @@
+{% extends "portal_base.html" %}
+{% block title %}Full Reports - Client Portal - PracticeRank{% endblock %}
+
+{% block extra_style %}
+  .mini{font-size:12px;color:var(--muted)}
+  .cadence-tabs{display:inline-flex;gap:3px;background:#eef1f4;border-radius:9px;padding:3px;margin-bottom:16px}
+  .cadence-tabs button{font:inherit;font-size:13px;font-weight:600;padding:6px 14px;border-radius:7px;color:var(--muted);background:none;border:none;cursor:pointer}
+  .cadence-tabs button.active{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .report-pane{display:none}
+  .report-pane.active{display:block}
+  .report-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1px solid var(--line);border-radius:10px;margin:8px 0}
+  .report-row .period{font-weight:600;font-size:14.5px}
+  .report-row .range{font-size:12.5px;color:var(--muted)}
+  .report-row .score-mini{font-size:13px;font-weight:700;padding:3px 10px;border-radius:99px;color:#fff}
+  .btn{font-size:13px;font-weight:600;background:var(--brand);color:#fff;padding:7px 14px;border-radius:8px}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+{% endblock %}
+
+{% block portal_content %}
+<h2 style="font-size:20px;margin:0 0 14px">Full Reports</h2>
+
+<div class="cadence-tabs">
+  {% for rp in report_periods %}
+  <button type="button" data-cadence="{{ rp.type }}" class="{{ 'active' if loop.first else '' }}" onclick="prSwitchCadence('{{ rp.type }}', this)">{{ rp.label }}</button>
+  {% endfor %}
+</div>
+
+{% for rp in report_periods %}
+<div class="report-pane {{ 'active' if loop.first else '' }}" data-cadence-pane="{{ rp.type }}">
+  {% set history = report_history_by_type[rp.type] %}
+  {% if history %}
+    {% for snap in history %}
+    <div class="report-row">
+      <div>
+        <div class="period">Period ending {{ snap.period_end }}</div>
+        <div class="range">Generated {{ snap.created_at[:10] if snap.created_at else '' }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        {% if snap.score is not none %}
+        <span class="score-mini" style="background:{{ snap.color }}">{{ snap.score }}</span>
+        {% endif %}
+        <a class="btn" href="{{ url_for('portal_report_snapshot', snapshot_id=snap.id) }}">View Report</a>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <p><b>No {{ rp.label|lower }} reports yet.</b> Check back after your first {{ rp.label|lower }} report is generated.</p>
+    </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<script>
+function prSwitchCadence(cadence, btn) {
+  document.querySelectorAll('.cadence-tabs button').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('.report-pane').forEach(function(p) {
+    p.classList.toggle('active', p.getAttribute('data-cadence-pane') === cadence);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "portal_base.html" %}
+{% block title %}AI Visibility - Client Portal - PracticeRank{% endblock %}
+
+{% block extra_style %}
+  .breadcrumb{font-size:13px;color:var(--muted);margin-bottom:18px}
+  .breadcrumb a{color:var(--muted);font-weight:600}
+
+  .pillar-hero{display:flex;gap:24px;align-items:center;flex-wrap:wrap;padding:22px 26px;background:#f8faf9;border:1px solid var(--line);border-radius:16px}
+  .pillar-hero .badge{width:88px;height:88px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto}
+  .pillar-hero .badge b{font-size:30px;line-height:1}
+  .pillar-hero .badge span{font-size:11px;opacity:.9}
+  .pillar-hero .copy h2{font-size:22px;margin:2px 0 4px}
+  .pillar-hero .copy p{margin:0;color:var(--muted);font-size:14.5px;max-width:52ch}
+
+  .pillar-sec{margin-top:28px}
+  .pillar-sec h3{margin:0}
+  .mini{font-size:12px;color:var(--muted)}
+
+  .engine-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .engine-row:last-child{border-bottom:0}
+  .engine-row .logo{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:0 0 auto}
+  .engine-row .name{font-weight:600;font-size:14.5px;width:110px;flex:0 0 auto}
+  .engine-row .bar{flex:1;margin:0}
+  .engine-row .pct{width:70px;text-align:right;font-weight:700;font-size:14.5px;flex:0 0 auto}
+  .engine-row .sub{font-size:12px;color:var(--muted);width:110px;text-align:right;flex:0 0 auto}
+
+  .bar{height:9px;background:#eef1f4;border-radius:99px;overflow:hidden;margin:8px 0 6px}
+  .bar i{display:block;height:100%;border-radius:99px}
+
+  .prompt-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border:1px solid var(--line);border-radius:9px;margin:7px 0;font-size:13.5px}
+  .prompt-row .q{color:var(--ink)}
+  .hit{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px}
+  .hit.yes{background:#e8f5ec;color:var(--good)}
+  .hit.no{background:#f6f7f8;color:var(--muted)}
+
+  .sov-row{display:flex;align-items:center;gap:12px;margin:8px 0;font-size:14px}
+  .sov-row .who{width:150px;flex:0 0 auto;font-weight:600}
+  .sov-row.you .who{color:var(--accent)}
+  .sov-row .bar{flex:1;margin:0}
+  .sov-row .pct{width:46px;text-align:right;font-weight:700}
+
+  .up{color:var(--good)} .down{color:var(--bad)} .flat{color:var(--muted)}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty-state h2{color:var(--ink);margin-bottom:8px}
+  .empty{font-size:13.5px;color:var(--muted)}
+{% endblock %}
+
+{% block portal_content %}
+{% if not has_report %}
+  <div class="empty-state">
+    <h2>No report yet</h2>
+    <p>Your first PracticeRank report is being put together — check back soon, or reach out to your account manager if you have questions in the meantime.</p>
+  </div>
+{% else %}
+
+  <div class="breadcrumb">← <a href="{{ url_for('portal_home') }}">Back to Overview</a></div>
+
+  <div class="pillar-hero">
+    <div class="badge" style="background:{{ hero_color }}">
+      {% if pillar_score is not none %}
+        <b>{{ pillar_score }}</b><span>of 100</span>
+      {% else %}
+        <b>–</b><span>Pending</span>
+      {% endif %}
+    </div>
+    <div class="copy">
+      <h2>AI Visibility
+        {% if trend == 'up' %}<span class="up" style="font-size:14px">▲ trending up</span>
+        {% elif trend == 'down' %}<span class="down" style="font-size:14px">▼ trending down</span>
+        {% elif trend == 'stable' %}<span class="flat" style="font-size:14px">– no change</span>
+        {% endif %}
+      </h2>
+      <p>{{ hero_description }}</p>
+    </div>
+  </div>
+
+  <div class="pillar-sec">
+    <h3 style="margin:0 0 4px">Your hit rate by AI assistant</h3>
+    <p class="mini" style="margin-top:0">How many of the benchmark questions we test each assistant mentioned your practice for.</p>
+    {% for e in engine_rows %}
+    <div class="engine-row">
+      <div class="logo">{{ e.logo }}</div>
+      <div class="name">{{ e.name }}</div>
+      <div class="bar" style="flex:1"><i style="width:{{ e.pct }}%;background:{{ e.color }}"></i></div>
+      <div class="pct">{{ e.pct }}%</div>
+      <div class="sub">{% if e.tested %}{{ e.mentions }} / {{ e.total }}{% else %}not yet tested{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="pillar-sec">
+    <h3 style="margin:0 0 4px">Questions we test</h3>
+    <p class="mini" style="margin-top:0">A sample of the real questions patients ask AI assistants, and whether you came up.</p>
+    {% if prompt_rows %}
+      {% for p in prompt_rows %}
+      <div class="prompt-row">
+        <span class="q">"{{ p.prompt }}"</span>
+        {% if p.hit %}
+          <span class="hit yes">Mentioned by {{ p.mentioned }}/{{ p.total }}</span>
+        {% else %}
+          <span class="hit no">Not mentioned</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty">No AI benchmark questions have been run yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="pillar-sec">
+    <h3 style="margin:0 0 4px">Share of voice</h3>
+    <p class="mini" style="margin-top:0">Of every practice mentioned across these AI answers, how much belongs to you vs. nearby competitors.</p>
+    {% if sov_rows %}
+      {% for s in sov_rows %}
+      <div class="sov-row {{ 'you' if s.you else '' }}">
+        <span class="who">{{ s.who }}</span>
+        <div class="bar" style="flex:1"><i style="width:{{ s.pct }}%;background:{{ '#16a34a' if s.you else '#9aa5b1' }}"></i></div>
+        <span class="pct">{{ s.pct }}%</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="empty">Share of voice hasn't been calculated yet — check back after your next AI visibility check.</p>
+    {% endif %}
+  </div>
+
+{% endif %}
+{% endblock %}

@@ -45,8 +45,8 @@
   </div>
   <nav class="p-nav">
     <a href="{{ url_for('portal_home') }}" class="{{ 'active' if request.endpoint == 'portal_home' else '' }}">Overview</a>
-    <a href="/portal/actions">Action Items</a>
-    <a href="/portal/reports">Full Reports</a>
+    <a href="/portal/actions" class="{{ 'active' if request.endpoint == 'portal_actions' else '' }}">Action Items</a>
+    <a href="/portal/reports" class="{{ 'active' if request.endpoint == 'portal_reports' else '' }}">Full Reports</a>
   </nav>
   <div class="p-logout">{{ session.get('client_display_name', '') }} &middot; <a href="{{ url_for('portal_logout') }}">Log out</a></div>
 </div>

@@ -274,13 +274,34 @@ def build_report_data(db: CustomerDB, customer_id: str, period_end: str | None =
 
 
     # --- Visitors / clicks over time (last 8 weeks) for the trend chart ---
+    # `ctr` is stashed alongside `clicks` (client-portal Ticket 5's Search
+    # Performance chart table needs both) — get_gsc_weekly_summary already
+    # computes it (AVG(ctr) per week), so this is free.
     try:
         wk = db.get_gsc_weekly_summary(customer_id, weeks=8)
         if wk and len(wk) > 1:
             data["sections"]["traffic_series"] = [
                 {"label": (w.get("week_start") or "")[5:10].replace("-", "/"),
-                 "clicks": int(w.get("clicks") or 0)}
+                 "clicks": int(w.get("clicks") or 0),
+                 "ctr": w.get("ctr")}
                 for w in reversed(wk)
+            ]
+    except Exception:
+        pass
+
+    # --- AI mention rate over the last 8 runs (client-portal Ticket 5's second
+    # Search Performance chart). Reuses get_rolling_mention_stats — the same
+    # benchmark-filtered, apples-to-apples series that drives the AI Visibility
+    # score's own trend arrow — rather than hand-rolling a second date-sort over
+    # get_ai_mention_runs. Wrapped like the traffic_series block above: a
+    # customer with <3 benchmark runs simply doesn't get this field, and the
+    # portal template renders "not enough history yet" instead of crashing.
+    try:
+        rolling8 = db.get_rolling_mention_stats(customer_id, window=8, prompt_set="benchmark")
+        if rolling8 and len(rolling8.get("dates") or []) > 1:
+            data["sections"]["ai_mention_series"] = [
+                {"label": (d or "")[5:10].replace("-", "/"), "mention_rate": r}
+                for d, r in zip(rolling8["dates"], rolling8["rates"])
             ]
     except Exception:
         pass
@@ -1259,6 +1280,7 @@ def generate_and_store(db: CustomerDB, customer_id: str, period_end: str | None 
             pil.get("reputation", {}).get("score"),
             sc.get("breakdown_json", "{}"),
         )
+
 
     payload = {k: v for k, v in data.items() if k not in ("customer",)}
     token = db.save_report_snapshot(

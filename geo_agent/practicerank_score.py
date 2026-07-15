@@ -436,14 +436,18 @@ def compute_content_velocity(db: CustomerDB, customer_id: str) -> dict | None:
     # Service-area coverage — cities with a published location page ÷ cities served.
     customer = db.get_customer(customer_id) or {}
     areas = customer.get("service_areas") or []
+    covered_areas: list[str] = []
+    uncovered_areas: list[str] = []
     if areas:
         page_titles = " || ".join((r.get("title") or "").lower()
                                   for r in published if r.get("rec_type") == "new_page")
         # A city counts as covered if WE published a location page for it OR the
         # reconciler detected a live page for it on the site (dev-built pages).
         live_areas = {a for a in (customer.get("live_area_pages") or [])}
-        covered = sum(1 for a in areas
-                      if a.split(",")[0].strip().lower() in page_titles or a in live_areas)
+        for a in areas:
+            is_covered = a.split(",")[0].strip().lower() in page_titles or a in live_areas
+            (covered_areas if is_covered else uncovered_areas).append(a)
+        covered = len(covered_areas)
         coverage_score = covered / len(areas) * 100
     else:
         covered = 0
@@ -472,6 +476,13 @@ def compute_content_velocity(db: CustomerDB, customer_id: str) -> dict | None:
             "categories": sorted(cats),
             "service_areas": len(areas),
             "areas_covered": covered,
+            # Per-area breakdown (client-portal Ticket 5) — the aggregate
+            # `areas_covered`/`service_areas` counts above existed already;
+            # these two lists are the actual area names so the portal can
+            # render done/pending chips without a live re-query of
+            # customer.service_areas at render time (frozen-snapshot rule).
+            "covered_areas": covered_areas,
+            "uncovered_areas": uncovered_areas,
             "sub_scores": {
                 "breadth": round(breadth_score, 1),
                 "volume": round(volume_score, 1),

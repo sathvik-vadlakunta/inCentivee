@@ -272,6 +272,362 @@ def portal_logout():
     return redirect(url_for("portal_login"))
 
 
+@app.route("/portal/signup/<token>", methods=["GET", "POST"])
+def portal_signup(token):
+    """Client-facing signup page (Ticket 12): the client sets their own password
+    via a one-time link staff generated in the 'Client Portal Access' admin panel
+    (Ticket 11). Invalid/unknown/already-consumed tokens always render the same
+    friendly dead-end message, never a 404 or stack trace."""
+    db = get_db()
+    try:
+        user = db.get_client_user_by_signup_token(token)
+        if not user:
+            return render_template("portal_signup.html", invalid=True)
+
+        customer = db.get_customer(user["customer_id"])
+        practice_name = customer["name"] if customer else ""
+
+        if request.method == "POST":
+            password = request.form.get("password", "")
+            confirm_password = request.form.get("confirm_password", "")
+
+            error = None
+            if len(password) < 8:
+                error = "Password must be at least 8 characters."
+            elif password != confirm_password:
+                error = "Passwords do not match."
+
+            if error:
+                return render_template(
+                    "portal_signup.html", invalid=False, practice_name=practice_name,
+                    username=user["username"], error=error,
+                )
+
+            if not db.complete_client_signup(token, password):
+                # Concurrent double-submit or a stale reopen of an already-used link.
+                return render_template("portal_signup.html", invalid=True)
+
+            _reset_session_kind("client")
+            session["client_logged_in"] = True
+            session["client_user_id"] = user["id"]
+            session["client_customer_id"] = user["customer_id"]
+            session["client_display_name"] = user["display_name"] or user["username"]
+            audit_log(
+                "client_signup_completed", customer_id=user["customer_id"],
+                details=f"Client user '{user['username']}' completed signup",
+            )
+            return redirect(url_for("portal_home"))
+
+        return render_template(
+            "portal_signup.html", invalid=False, practice_name=practice_name,
+            username=user["username"],
+        )
+    finally:
+        db.close()
+
+
+# Engine display names — must stay in sync with scripts/scheduled_ai_check.py:56-62
+# (ENGINES list: [("Claude", ...), ("ChatGPT", ...), ("Perplexity", ...),
+# ("Gemini", ...), ("Grok", ...)]). Only the names are needed here (the query
+# functions paired with them in that list are for the live check, not this
+# read-only snapshot page), so they're hardcoded rather than imported to avoid
+# pulling in that module's API-client dependencies. Verified current as of
+# this ticket (2026-07-14) — re-check scheduled_ai_check.py if engines change.
+_PORTAL_AI_ENGINE_NAMES = ["Claude", "ChatGPT", "Perplexity", "Gemini", "Grok"]
+# Distinct logo-badge initials — Claude/ChatGPT both start with "C" and
+# Gemini/Grok both start with "G", so a naive name[0] collides. Matches the
+# spec mock's abbreviations (client-portal.html engine-row logos).
+_PORTAL_AI_ENGINE_LOGO = {"Claude": "C", "ChatGPT": "G", "Perplexity": "P", "Gemini": "Ge", "Grok": "X"}
+
+
+@app.route("/portal/pillar/ai-visibility")
+@client_login_required
+def portal_pillar_ai_visibility():
+    from geo_agent.portal_copy import PILLAR_COPY
+    from geo_agent.practicerank_score import grade_from_score
+
+    db = get_db()
+    try:
+        customer_id = session["client_customer_id"]
+        snapshot = None
+        for report_type in ("weekly", "monthly", "quarterly"):
+            snapshot = db.get_latest_report_snapshot(customer_id, report_type)
+            if snapshot:
+                break
+
+        if not snapshot:
+            return render_template("portal_pillar_ai.html", has_report=False)
+
+        try:
+            payload = json.loads(snapshot["payload_json"])
+        except (TypeError, ValueError, KeyError):
+            logger.warning("portal_pillar_ai_visibility: unparseable payload_json for snapshot %s",
+                           snapshot.get("id"), exc_info=True)
+            return render_template("portal_pillar_ai.html", has_report=False)
+
+        score = payload.get("score") or {}
+        sections = payload.get("sections") or {}
+        copy = PILLAR_COPY.get("ai-visibility", {})
+
+        # --- Pillar hero: identical source as the Overview pillar bar for
+        # this same snapshot, so the two numbers can never disagree. ---
+        pillar = (score.get("pillars") or {}).get("ai_visibility") or {}
+        pillar_score = pillar.get("score")
+        trend = (pillar.get("detail") or {}).get("trend")
+        hero_color = grade_from_score(pillar_score)["color"] if pillar_score is not None else "#9aa5b1"
+
+        ai = sections.get("ai") or {}
+        engines_data = ai.get("engines") or {}
+
+        # --- 1. Your hit rate by AI assistant — every engine in the fixed
+        # 5-name list always renders a row, even if absent from this
+        # snapshot's engines dict (not yet tested as of that snapshot). ---
+        engine_rows = []
+        for name in _PORTAL_AI_ENGINE_NAMES:
+            info = engines_data.get(name)
+            tested = isinstance(info, dict) and info.get("status") == "active" and info.get("total")
+            if tested:
+                mentions = int(info.get("mentions", 0) or 0)
+                total = int(info.get("total", 0) or 0)
+                pct = round((mentions / total) * 100) if total else 0
+            else:
+                mentions, total, pct = 0, 0, 0
+            engine_rows.append({
+                "name": name,
+                "logo": _PORTAL_AI_ENGINE_LOGO.get(name, name[0]),
+                "pct": pct,
+                "mentions": mentions,
+                "total": total,
+                "tested": bool(tested),
+                # Bar color is by this row's own hit-rate band, never by rank
+                # among the 5 engines — grade_from_score's color bands work
+                # fine applied to a 0-100 percentage even though it's designed
+                # for overall scores.
+                "color": grade_from_score(pct)["color"],
+            })
+
+        # --- 2. Share of voice — frozen snapshot value (sections.ai.sov,
+        # captured by db.get_share_of_voice() at snapshot-generation time),
+        # never a live query. None means SOV hasn't been computed yet for
+        # this customer as of this snapshot. ---
+        sov = ai.get("sov")
+        sov_rows = None
+        if sov and sov.get("total_entity_mentions"):
+            customer = db.get_customer(customer_id) or {}
+            you_pct = round((sov.get("customer_share") or 0) * 100)
+            sov_rows = [{
+                "who": customer.get("name") or "You",
+                "pct": you_pct,
+                "you": True,
+            }]
+            # Top 3 named competitors (already sorted by mention_count desc
+            # in get_share_of_voice()'s SQL) — matches the spec mock's
+            # "practice + named competitors + everyone else" shape; capped at
+            # 3 as a reasonable sample so the section stays scannable.
+            named = (sov.get("competitors") or [])[:3]
+            named_pct_total = 0
+            for comp in named:
+                comp_pct = round((comp.get("share") or 0) * 100)
+                named_pct_total += comp_pct
+                sov_rows.append({
+                    "who": comp.get("name") or "Unknown",
+                    "pct": comp_pct,
+                    "you": False,
+                })
+            everyone_else_pct = max(0, 100 - you_pct - named_pct_total)
+            if everyone_else_pct > 0:
+                sov_rows.append({"who": "Everyone else", "pct": everyone_else_pct, "you": False})
+
+        # --- 3. Questions we test — the ONE sub-section with no aggregate
+        # already in payload_json. Scoped to the exact historical run_id
+        # frozen in this snapshot (sections.ai.latest.id), never "whatever
+        # ai_mention_runs row is latest right now" — so it still describes
+        # this snapshot's historical moment even though it's a live query. ---
+        latest_ai = ai.get("latest") or {}
+        run_id = latest_ai.get("id")
+        prompt_rows = []
+        if run_id:
+            results = db.get_ai_mention_results(run_id)
+            grouped: dict[str, list[dict]] = {}
+            for r in results:
+                grouped.setdefault(r["prompt"], []).append(r)
+            all_prompts = []
+            for prompt, rows in grouped.items():
+                total = len(rows)
+                mentioned = sum(1 for r in rows if r.get("mentioned"))
+                all_prompts.append({
+                    "prompt": prompt,
+                    "mentioned": mentioned,
+                    "total": total,
+                    "hit": mentioned > 0,
+                })
+            # Sample up to 6, prioritizing a mix of hits and misses (rather
+            # than e.g. the first 6 alphabetically, which could show all-hit
+            # or all-miss and misrepresent the run) — up to 4 hits (highest
+            # hit-count first) then up to 2 misses.
+            hits = sorted([p for p in all_prompts if p["hit"]], key=lambda p: -p["mentioned"])
+            misses = [p for p in all_prompts if not p["hit"]]
+            prompt_rows = hits[:4] + misses[:2]
+            if len(prompt_rows) < 6:
+                # Backfill from whichever bucket has more, if one bucket was thin.
+                remaining = [p for p in all_prompts if p not in prompt_rows]
+                prompt_rows += remaining[: 6 - len(prompt_rows)]
+
+        return render_template(
+            "portal_pillar_ai.html",
+            has_report=True,
+            pillar_score=pillar_score,
+            hero_color=hero_color,
+            trend=trend,
+            hero_description=copy.get("hero_description", ""),
+            engine_rows=engine_rows,
+            sov_rows=sov_rows,
+            prompt_rows=prompt_rows,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/portal/actions")
+@client_login_required
+def portal_actions():
+    """Action Items list (Ticket 7): pending content recs needing approval,
+    a short "recently added" log, and secondary needs-from-you items.
+
+    Approve/reject are handled by portal_action_approve/portal_action_reject
+    below (Ticket 8). Full-piece preview (Ticket 9) isn't built yet — the
+    "Preview full piece" link below points at /portal/actions/<id>, which
+    404s until that ticket adds the route.
+    """
+    from geo_agent.weekly_report import _REC_TYPE_LABELS, build_report_data
+
+    def _type_label(rec_type: str) -> str:
+        return _REC_TYPE_LABELS.get(rec_type, (rec_type or "other").replace("_", " ").title())
+
+    db = get_db()
+    try:
+        customer_id = session["client_customer_id"]
+        recs = db.get_content_recommendations(customer_id, limit=100)
+
+        pending = [r for r in recs if r["status"] == "pending"]
+        for r in pending:
+            r["type_label"] = _type_label(r["rec_type"])
+
+        # get_content_recommendations orders by "priority ASC, created_at DESC"
+        # -- priority is the PRIMARY sort key there, so straight-slicing the
+        # filtered list would surface old low-priority-number recs ahead of
+        # recently-published high-priority-number ones. "Recently added to
+        # your site" means recency, not priority, so re-sort the
+        # published-only subset by created_at desc before capping at 8.
+        published = sorted(
+            (r for r in recs if r["status"] == "published"),
+            key=lambda r: r.get("created_at") or "",
+            reverse=True,
+        )[:8]
+        for r in published:
+            r["type_label"] = _type_label(r["rec_type"])
+
+        # "Other things we need from you" -- same live builder the weekly
+        # report uses (sections.needs), intentionally a live call rather than
+        # a frozen snapshot read (unlike the pillar pages above).
+        needs = []
+        try:
+            report_data = build_report_data(db, customer_id, live_state=True)
+            raw_needs = (report_data.get("sections") or {}).get("needs") or []
+            # Drop the "approve pending content" needs item: it's produced in
+            # weekly_report.build_report_data as
+            #   {"icon": "📝", "title": f"Approve {N} piece(s) of content
+            #    we've prepared for you", "why": "Approving the content..."}
+            # Content now has its own full "Needs your approval" section
+            # above, so this line item would be redundant here. N is
+            # dynamic, so match on the fixed icon + the static title tail
+            # "prepared for you" rather than the whole string.
+            needs = [
+                n for n in raw_needs
+                if not (n.get("icon") == "📝" and "prepared for you" in (n.get("title") or ""))
+            ]
+        except Exception:
+            logger.warning("portal_actions: build_report_data failed for needs section for %s",
+                           customer_id, exc_info=True)
+
+        all_caught_up = not pending and not published and not needs
+
+        return render_template(
+            "portal_actions.html",
+            pending=pending,
+            published=published,
+            needs=needs,
+            all_caught_up=all_caught_up,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/portal/actions/<rec_id>/approve", methods=["POST"])
+@client_login_required
+def portal_action_approve(rec_id):
+    """Client approves a pending content recommendation (Ticket 8). Writes
+    through the exact same db.update_content_recommendation_status() call the
+    admin content queue uses (api_content_status above), so the change is
+    immediately reflected in both the portal and the admin queue."""
+    db = get_db()
+    try:
+        rec = db.get_content_recommendation(rec_id)
+        if not rec or rec["customer_id"] != session["client_customer_id"]:
+            abort(404)
+        db.update_content_recommendation_status(rec_id, "approved")
+        audit_log(
+            "client_content_status_changed",
+            customer_id=rec["customer_id"],
+            details=f"rec={rec_id} -> approved by client",
+        )
+        return redirect(url_for("portal_actions"))
+    finally:
+        db.close()
+
+
+@app.route("/portal/actions/<rec_id>/reject", methods=["POST"])
+@client_login_required
+def portal_action_reject(rec_id):
+    """Client rejects ("Not for us") a pending content recommendation
+    (Ticket 8). Same write path as portal_action_approve above."""
+    db = get_db()
+    try:
+        rec = db.get_content_recommendation(rec_id)
+        if not rec or rec["customer_id"] != session["client_customer_id"]:
+            abort(404)
+        db.update_content_recommendation_status(rec_id, "rejected")
+        audit_log(
+            "client_content_status_changed",
+            customer_id=rec["customer_id"],
+            details=f"rec={rec_id} -> rejected by client",
+        )
+        return redirect(url_for("portal_actions"))
+    finally:
+        db.close()
+
+
+@app.route("/portal/actions/<rec_id>")
+@client_login_required
+def portal_action_preview(rec_id):
+    """Full-page preview of a content recommendation for the client (Ticket
+    9). Reuses content_preview.html — the same template the admin content
+    queue's preview route renders — with the back-link pointed at
+    /portal/actions instead of the admin content queue."""
+    db = get_db()
+    try:
+        rec = db.get_content_recommendation(rec_id)
+        if not rec or rec["customer_id"] != session["client_customer_id"]:
+            abort(404)
+        customer = db.get_customer(session["client_customer_id"])
+        return render_template(
+            "content_preview.html", customer=customer, rec=rec,
+            back_url=url_for("portal_actions"),
+        )
+    finally:
+        db.close()
+
+
 @app.context_processor
 def inject_portal_customer():
     """Make the logged-in client's practice available to every portal template."""
@@ -289,10 +645,480 @@ def inject_portal_customer():
     return ctx
 
 
+def _portal_pct_change(cur: float, prev: float | None) -> dict | None:
+    """Percent-change label/direction for a supporting-card delta line.
+
+    Mirrors the rounding/threshold behavior of weekly_report._pct_delta so the
+    portal's numbers read consistently with the emailed report, without
+    importing that module's private helper.
+    """
+    if prev in (None, 0) or cur is None:
+        return None
+    change = (cur - prev) / prev * 100
+    if abs(change) < 0.5:
+        return {"label": "no change", "direction": "flat", "arrow": "–"}
+    sign = "+" if change > 0 else ""
+    direction = "up" if change > 0 else "down"
+    return {"label": f"{sign}{change:.0f}%", "direction": direction,
+            "arrow": "▲" if direction == "up" else "▼"}
+
+
 @app.route("/portal/")
 @client_login_required
 def portal_home():
-    return render_template("portal_base.html")
+    from geo_agent.portal_copy import PILLAR_COPY, PILLAR_KEY_TO_SLUG, grade_takeaway
+    from geo_agent.practicerank_score import PILLAR_WEIGHTS, grade_from_score
+
+    db = get_db()
+    try:
+        customer_id = session["client_customer_id"]
+        snapshot = None
+        for report_type in ("weekly", "monthly", "quarterly"):
+            snapshot = db.get_latest_report_snapshot(customer_id, report_type)
+            if snapshot:
+                break
+
+        if not snapshot:
+            return render_template("portal_home.html", has_report=False)
+
+        try:
+            payload = json.loads(snapshot["payload_json"])
+        except (TypeError, ValueError, KeyError):
+            logger.warning("portal_home: unparseable payload_json for snapshot %s",
+                           snapshot.get("id"), exc_info=True)
+            return render_template("portal_home.html", has_report=False)
+
+        score = payload.get("score") or {}
+        score_prev = payload.get("score_prev")
+        sections = payload.get("sections") or {}
+        grade = score.get("grade") or {}
+        overall = score.get("score")
+
+        delta = None
+        if overall is not None and score_prev is not None:
+            delta = overall - score_prev
+
+        # Pillar breakdown — iterate PILLAR_WEIGHTS so order always matches the
+        # spec mock (AI Visibility, GEO Foundation, Content & Coverage,
+        # Reputation, Search Performance) regardless of dict insertion elsewhere.
+        pillars = []
+        score_pillars = score.get("pillars") or {}
+        for key, weight in PILLAR_WEIGHTS.items():
+            p = score_pillars.get(key) or {}
+            if not p.get("available"):
+                continue
+            slug = PILLAR_KEY_TO_SLUG.get(key, key)
+            copy = PILLAR_COPY.get(slug, {})
+            val = p.get("score")
+            # Only ai_visibility's detail carries a qualitative trend today;
+            # no pillar has a numeric historical delta in the snapshot payload
+            # (score_prev is overall-only), so we show a direction arrow where
+            # available and omit the delta line entirely otherwise.
+            trend = (p.get("detail") or {}).get("trend")
+            pillars.append({
+                "slug": slug,
+                "label": copy.get("label", key.replace("_", " ").title()),
+                "one_liner": copy.get("one_liner", ""),
+                "weight_pct": round(weight * 100),
+                "score": val,
+                "color": grade_from_score(val)["color"] if val is not None else "#9aa5b1",
+                "trend": trend,
+            })
+
+        # --- Supporting card: search clicks ---
+        search_card = None
+        search = sections.get("search")
+        if search and search.get("cur"):
+            cur, prev = search["cur"], search.get("prev")
+            change = _portal_pct_change(cur.get("clicks"), (prev or {}).get("clicks") if prev else None)
+            search_card = {"clicks": int(cur.get("clicks", 0)), "change": change}
+
+        # --- Supporting card: AI hit-rate summary + engine chips ---
+        ai_card = None
+        ai = sections.get("ai")
+        if ai:
+            latest_ai = ai.get("latest") or {}
+            rolling = ai.get("rolling") or {}
+            hit_rate = None
+            if latest_ai.get("total_queries"):
+                hit_rate = round((latest_ai.get("mention_rate") or 0) * 100)
+            elif rolling.get("current_rate") is not None:
+                hit_rate = round(rolling["current_rate"] * 100)
+            chips = []
+            for name, info in (ai.get("engines") or {}).items():
+                if not isinstance(info, dict):
+                    continue
+                m, t = info.get("mentions", 0), info.get("total", 0)
+                hit = info.get("status") == "active" and t
+                chips.append({"name": name, "hit": bool(hit), "mentions": m, "total": t})
+            if hit_rate is not None or chips:
+                ai_card = {"hit_rate": hit_rate, "chips": chips}
+
+        # --- Supporting card: Google reviews ---
+        reviews_card = None
+        reviews = sections.get("reviews")
+        if reviews and reviews.get("places"):
+            places = reviews["places"]
+            reviews_card = {
+                "rating": places.get("rating"),
+                "review_count": int(places.get("review_count", 0) or 0),
+                "new_count": reviews.get("new_count", 0),
+                "new_five_star": reviews.get("new_five_star", 0),
+            }
+
+        # --- Supporting card: what we did for you this period ---
+        wins_card = None
+        wins = sections.get("wins")
+        if wins and wins.get("published"):
+            titles = [w.get("title") for w in wins["published"] if w.get("title")]
+            if titles:
+                wins_card = titles[:3]
+
+        return render_template(
+            "portal_home.html",
+            has_report=True,
+            overall_score=overall,
+            grade=grade,
+            score_delta=delta,
+            takeaway=grade_takeaway(grade.get("label", "")),
+            pillars=pillars,
+            search_card=search_card,
+            ai_card=ai_card,
+            reviews_card=reviews_card,
+            wins_card=wins_card,
+        )
+    finally:
+        db.close()
+
+
+# --- Client Portal: Pillar Detail (Ticket 5) ---
+#
+# Covers the 4 pillars other than AI Visibility (Ticket 6, its own dedicated
+# static route registered elsewhere — Werkzeug matches that exact static rule
+# ahead of this dynamic <key> rule, so /portal/pillar/ai-visibility never
+# reaches here). Every value rendered below comes from the SAME frozen
+# snapshot payload Overview reads (no live re-query), with one narrow,
+# documented exception in the reputation branch (see below).
+
+_PILLAR_DETAIL_KEYS = {"geo-foundation", "content-coverage", "reputation", "search-performance"}
+
+
+def _line_chart_geometry(points: list[dict], value_key: str, *, percent: bool = False):
+    """Compute pixel geometry for the client portal's 560x150 inline line/area
+    chart — dataviz-skill-compliant markup copied from
+    specs/platform/client-portal.html lines 574-661 (hairline gridlines at
+    0/half/max, a single flat color, only the endpoint direct-labeled).
+    Returns None when there are fewer than 2 usable points, so the caller can
+    render a "not enough history yet" state instead of a broken chart (this is
+    the graceful-degradation path for old snapshots that predate the
+    traffic_series/ai_mention_series fields, or a brand-new customer).
+
+    percent=True fixes the y-domain to 0..1 (rendered as 0%/50%/100%) for the
+    AI mention-rate chart. Otherwise the y-domain is 0..(data max, rounded up
+    to a friendly ceiling) so gridlines read as clean numbers at any scale —
+    the spec mock's literal "0/50/100" labels only happened to line up because
+    its example data topped out at 92 clicks; this generalizes that same
+    fixed-3-gridline *style* to real click counts of any size.
+    """
+    pts = [(p.get("label", ""), p.get(value_key)) for p in points]
+    pts = [(l, v) for l, v in pts if v is not None]
+    if len(pts) < 2:
+        return None
+
+    vals = [v for _, v in pts]
+    if percent:
+        y_max = 1.0
+    else:
+        raw_max = max(vals) or 1
+        magnitude = 10 ** max(0, len(str(int(raw_max))) - 1)
+        y_max = ((int(raw_max) // magnitude) + 1) * magnitude or 1
+
+    n = len(pts)
+    x0, x1, y0, y1 = 30, 550, 118, 14
+
+    def X(i):
+        return round(x0 + (i / (n - 1)) * (x1 - x0), 1) if n > 1 else float(x0)
+
+    def Y(v):
+        frac = (v / y_max) if y_max else 0
+        return round(y0 - frac * (y0 - y1), 1)
+
+    def fmt_val(v):
+        return f"{round(v * 100)}%" if percent else str(int(round(v)))
+
+    coords = [(X(i), Y(v)) for i, (_, v) in enumerate(pts)]
+    dot_pts = [
+        {"x": x, "y": y, "label": label, "value_label": fmt_val(v)}
+        for (label, v), (x, y) in zip(pts, coords)
+    ]
+    line_points = " ".join(f"{x},{y}" for x, y in coords)
+    area_path = ("M%s,%s L" % (x0, y0)) + " L".join(f"{x},{y}" for x, y in coords) + f" L{coords[-1][0]},{y0} Z"
+    grid = [
+        {"y": y0, "label": "0%" if percent else "0"},
+        {"y": round((y0 + y1) / 2, 1),
+         "label": f"{round(y_max / 2 * 100)}%" if percent else str(int(y_max / 2))},
+        {"y": y1, "label": f"{round(y_max * 100)}%" if percent else str(int(y_max))},
+    ]
+    return {
+        "points": dot_pts,
+        "grid": grid,
+        "line_points": line_points,
+        "area_path": area_path,
+        "end_label": dot_pts[-1]["value_label"],
+    }
+
+
+@app.route("/portal/pillar/<key>")
+@client_login_required
+def portal_pillar(key):
+    from geo_agent.portal_copy import PILLAR_COPY, PILLAR_SLUG_TO_KEY, FOUNDATION_ITEM_COPY
+    from geo_agent.practicerank_score import (
+        PILLAR_WEIGHTS, grade_from_score, _FOUNDATION_ITEMS, _CONTENT_CATEGORIES,
+    )
+
+    # Defense in depth: even though PILLAR_SLUG_TO_KEY also contains
+    # "ai-visibility" (Ticket 6 owns that page as its own dedicated route),
+    # explicitly restrict this dynamic route to the 4 keys it implements.
+    if key not in _PILLAR_DETAIL_KEYS:
+        abort(404)
+
+    db_key = PILLAR_SLUG_TO_KEY[key]
+    copy = PILLAR_COPY.get(key, {})
+
+    db = get_db()
+    try:
+        customer_id = session["client_customer_id"]
+        snapshot = None
+        for report_type in ("weekly", "monthly", "quarterly"):
+            snapshot = db.get_latest_report_snapshot(customer_id, report_type)
+            if snapshot:
+                break
+
+        if not snapshot:
+            return render_template("portal_pillar.html", has_report=False, key=key, copy=copy)
+
+        try:
+            payload = json.loads(snapshot["payload_json"])
+        except (TypeError, ValueError, KeyError):
+            logger.warning("portal_pillar: unparseable payload_json for snapshot %s",
+                           snapshot.get("id"), exc_info=True)
+            return render_template("portal_pillar.html", has_report=False, key=key, copy=copy)
+
+        score = payload.get("score") or {}
+        sections = payload.get("sections") or {}
+        score_pillars = score.get("pillars") or {}
+        p = score_pillars.get(db_key) or {}
+        detail = p.get("detail") or {}
+        available = bool(p.get("available"))
+        val = p.get("score")
+        weight = PILLAR_WEIGHTS.get(db_key, 0)
+
+        # Same rule Overview (Ticket 4) uses: only ai_visibility's detail
+        # carries a qualitative trend today, and score_prev in the payload is
+        # overall-only (no per-pillar historical delta exists in the snapshot)
+        # — so we show a direction arrow where available and omit the delta
+        # line otherwise, rather than inventing a magnitude the data can't
+        # support.
+        trend = detail.get("trend")
+
+        ctx: dict = {
+            "has_report": True,
+            "key": key,
+            "copy": copy,
+            "score": val,
+            "available": available,
+            "trend": trend,
+            "weight_pct": round(weight * 100),
+            "color": grade_from_score(val)["color"] if val is not None else "#9aa5b1",
+        }
+
+        if key == "geo-foundation":
+            items = detail.get("items") or {}
+            checklist = []
+            for keys, _pts in _FOUNDATION_ITEMS:
+                first_key = keys[0]
+                item_copy = FOUNDATION_ITEM_COPY.get(first_key, {})
+                checklist.append({
+                    "done": bool(items.get(first_key)),
+                    "label": item_copy.get("label", first_key),
+                    "description": item_copy.get("description", ""),
+                })
+            ctx["checklist"] = checklist
+            ctx["deliverables_done"] = detail.get("deliverables_done")
+            ctx["deliverables_total"] = detail.get("deliverables_total", len(_FOUNDATION_ITEMS))
+
+        elif key == "content-coverage":
+            published = (sections.get("wins") or {}).get("published") or []
+            counts = {"pages": 0, "blog": 0, "faq": 0, "depth": 0, "fresh": 0}
+            for r in published:
+                bucket = _CONTENT_CATEGORIES.get(r.get("rec_type"))
+                if bucket in counts:
+                    counts[bucket] += 1
+            bucket_labels = [
+                ("pages", "Location & service pages"),
+                ("blog", "Blog posts"),
+                ("faq", "FAQ enhancements"),
+                ("depth", "Expert quotes & added depth"),
+                ("fresh", "Content refreshes"),
+            ]
+            max_count = max(counts.values()) or 1
+            ctx["type_rows"] = [
+                {
+                    "label": label,
+                    "count": counts[bucket],
+                    "pct": round(counts[bucket] / max_count * 100),
+                    "color": grade_from_score(round(counts[bucket] / max_count * 100))["color"],
+                }
+                for bucket, label in bucket_labels
+            ]
+
+            ctx["areas_covered"] = detail.get("areas_covered")
+            ctx["service_areas"] = detail.get("service_areas")
+            # covered_areas/uncovered_areas only exist on snapshots generated
+            # after this ticket's practicerank_score.py change — older frozen
+            # snapshots keep just the aggregate count, so per-area chips
+            # simply don't render for them (no live re-query of
+            # customer.service_areas here, per the frozen-snapshot rule).
+            covered_list = detail.get("covered_areas")
+            uncovered_list = detail.get("uncovered_areas")
+            ctx["area_chips"] = None
+            if covered_list is not None or uncovered_list is not None:
+                ctx["area_chips"] = (
+                    [{"name": a, "done": True} for a in (covered_list or [])]
+                    + [{"name": a, "done": False} for a in (uncovered_list or [])]
+                )
+
+        elif key == "reputation":
+            reviews = sections.get("reviews") or {}
+            places = reviews.get("places") or {}
+            ctx["rating"] = places.get("rating") if places.get("rating") is not None else detail.get("rating")
+            ctx["review_count"] = int(places.get("review_count", detail.get("review_count", 0)) or 0)
+            ctx["new_count"] = reviews.get("new_count", 0)
+            ctx["new_five_star"] = reviews.get("new_five_star", 0)
+
+            # Rating-trend chart — reads the existing "rating" KPI series that
+            # kpi_tracker.track_google_reviews() already records on its own
+            # schedule (geo_agent/kpi_tracker.py:49; also what customer_detail's
+            # admin KPI panel reads). Queries the KPI table directly rather than
+            # the frozen snapshot payload — a deliberate, narrow exception to
+            # the "reuse the snapshot, don't re-query" rule every other section
+            # on this page follows, because the whole point of a *trend* is
+            # that it keeps accumulating real points over time regardless of
+            # which report snapshot happens to be "latest" right now. Renders
+            # with however many points exist so far (possibly zero if the
+            # customer's rating has never been tracked, e.g. no
+            # GOOGLE_PLACES_API_KEY configured) — never a fabricated number.
+            rating_kpis = list(reversed(db.get_kpis(customer_id, "rating", limit=6)))
+            ctx["rating_trend"] = [
+                {
+                    "label": (k.get("date") or "")[5:10].replace("-", "/"),
+                    "rating": k["value"],
+                    "pct": min(100, round(k["value"] / 5 * 100)),
+                    "color": grade_from_score(min(100, round(k["value"] / 5 * 100)))["color"],
+                }
+                for k in rating_kpis if k.get("value") is not None
+            ]
+
+        elif key == "search-performance":
+            search = sections.get("search") or {}
+            cur, prev = search.get("cur") or {}, search.get("prev") or {}
+            ctx["clicks"] = int(cur.get("clicks", 0) or 0)
+            ctx["clicks_change"] = _portal_pct_change(cur.get("clicks"), prev.get("clicks") if prev else None)
+            ctx["impressions"] = int(cur.get("impressions", 0) or 0)
+            ctx["impressions_change"] = _portal_pct_change(
+                cur.get("impressions"), prev.get("impressions") if prev else None)
+            cur_ctr = cur.get("ctr")
+            ctx["ctr_pct"] = round((cur_ctr or 0) * 100, 1)
+            ctx["ctr_change"] = None
+            if cur_ctr is not None and prev.get("ctr") is not None:
+                pt_delta = round((cur_ctr - prev["ctr"]) * 100, 1)
+                if abs(pt_delta) >= 0.05:
+                    ctx["ctr_change"] = {
+                        "label": f"{'+' if pt_delta > 0 else ''}{pt_delta}pt vs prior period",
+                        "direction": "up" if pt_delta > 0 else "down",
+                        "arrow": "▲" if pt_delta > 0 else "▼",
+                    }
+
+            traffic_series = sections.get("traffic_series") or []
+            ctx["clicks_chart"] = _line_chart_geometry(traffic_series, "clicks")
+            ctx["clicks_table"] = [
+                {"label": w.get("label"), "clicks": w.get("clicks"),
+                 "ctr": (f"{round(w['ctr'] * 100, 1)}%" if w.get("ctr") is not None else "–")}
+                for w in traffic_series
+            ]
+
+            mention_series = sections.get("ai_mention_series") or []
+            ctx["mention_chart"] = _line_chart_geometry(mention_series, "mention_rate", percent=True)
+            ctx["mention_table"] = [
+                {"label": w.get("label"),
+                 "rate": (f"{round(w['mention_rate'] * 100)}%" if w.get("mention_rate") is not None else "–")}
+                for w in mention_series
+            ]
+
+            movers = (sections.get("keywords") or {}).get("movers") or {}
+            ctx["movers"] = [
+                {"query": m.get("query"), "clicks": m.get("clicks"),
+                 "position": m.get("position"), "move": m.get("move"),
+                 "up": (m.get("move") or 0) >= 0}
+                for m in (list(movers.get("up") or []) + list(movers.get("down") or []))
+            ]
+
+        return render_template("portal_pillar.html", **ctx)
+    finally:
+        db.close()
+
+
+@app.route("/portal/reports")
+@client_login_required
+def portal_reports():
+    from geo_agent.practicerank_score import grade_from_score
+
+    customer_id = session["client_customer_id"]
+    report_periods = [
+        {"type": "weekly", "label": "Weekly", "period": 7},
+        {"type": "monthly", "label": "Monthly", "period": 30},
+        {"type": "quarterly", "label": "Quarterly", "period": 90},
+    ]
+
+    db = get_db()
+    try:
+        report_history_by_type = {}
+        for rp in report_periods:
+            snaps = db.get_report_snapshots(customer_id, rp["type"], limit=26)
+            for snap in snaps:
+                snap["color"] = (
+                    grade_from_score(snap["score"])["color"] if snap.get("score") is not None else "#9aa5b1"
+                )
+            report_history_by_type[rp["type"]] = snaps
+
+        return render_template(
+            "portal_reports.html",
+            report_periods=report_periods,
+            report_history_by_type=report_history_by_type,
+        )
+    finally:
+        db.close()
+
+
+@app.route("/portal/reports/<int:snapshot_id>")
+@client_login_required
+def portal_report_snapshot(snapshot_id):
+    """Client-portal view of a single stored report snapshot. Same rendering
+    path as the token-based public_report() below (return the stored HTML
+    directly, unmodified) — this route is just gated by portal login instead
+    of by an unguessable share token, so it must produce byte-identical
+    output for the same snapshot."""
+    db = get_db()
+    try:
+        snap = db.get_report_snapshot(snapshot_id)
+        if not snap or snap.get("customer_id") != session["client_customer_id"] or not snap.get("html"):
+            abort(404)
+        resp = Response(snap["html"], mimetype="text/html")
+        resp.headers["Cache-Control"] = "private, no-store"
+        resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return resp
+    finally:
+        db.close()
 
 
 # --- Dashboard Home ---
@@ -603,6 +1429,10 @@ def customer_detail(customer_id):
 
         providers = db.get_providers(customer_id)
         contacts = db.get_contacts(customer_id)
+        client_users = db.list_client_users(customer_id)
+        # One-time reveal of a just-generated signup link (create/reset actions
+        # stash it in the session, popped here so a page refresh doesn't re-show it).
+        new_client_signup_link = session.pop("client_portal_new_link", None)
         access = db.get_platform_access(customer_id)
         places = db.get_google_places(customer_id)
         competitors = db.get_competitors(customer_id)
@@ -943,6 +1773,8 @@ def customer_detail(customer_id):
             ga4_connected=ga4_connected,
             subscription=_subscription,
             fatjoe_due=_fatjoe_due,
+            client_users=client_users,
+            new_client_signup_link=new_client_signup_link,
         )
     finally:
         db.close()
@@ -7442,7 +8274,10 @@ def content_preview(customer_id, rec_id):
         rec = db.get_content_recommendation(rec_id)
         if not customer or not rec or rec["customer_id"] != customer_id:
             return "Not found", 404
-        return render_template("content_preview.html", customer=customer, rec=rec)
+        return render_template(
+            "content_preview.html", customer=customer, rec=rec,
+            back_url=url_for("customer_content", customer_id=customer_id),
+        )
     finally:
         db.close()
 
@@ -9388,6 +10223,71 @@ def reap_stale_runs():
 
 
 reap_stale_runs()
+
+
+# --- Client Portal Access (staff admin panel — Ticket 11) ---
+
+
+@app.route("/customer/<customer_id>/client-users", methods=["POST"])
+@login_required
+def create_client_user_route(customer_id):
+    """Staff creates a client-portal login: username + optional display name only,
+    no password. Mints a one-time signup link the client uses to set their own
+    password (Ticket 12's /portal/signup/<token>)."""
+    db = get_db()
+    try:
+        username = (request.form.get("username") or "").strip()
+        display_name = (request.form.get("display_name") or "").strip()
+        if not username:
+            flash("Username is required.", "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id) + "#client-portal-access")
+        try:
+            result = db.create_client_user(customer_id, username, display_name=display_name)
+        except ValueError as e:
+            flash(str(e), "error")
+            return redirect(url_for("customer_detail", customer_id=customer_id) + "#client-portal-access")
+        signup_link = f"{request.url_root}portal/signup/{result['signup_token']}"
+        session["client_portal_new_link"] = {"username": username, "link": signup_link}
+        audit_log("client_user_created", customer_id=customer_id, details=f"username={username}")
+        flash(f"Client login '{username}' created — copy the signup link below to share with the client.", "success")
+        return redirect(url_for("customer_detail", customer_id=customer_id) + "#client-portal-access")
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/client-users/<int:user_id>/reset", methods=["POST"])
+@login_required
+def reset_client_user_route(customer_id, user_id):
+    """Staff-driven 'Reset access' — invalidates any existing password/token and
+    issues a fresh signup link (covers both a lost invite and a forgotten password;
+    both routes end back through the same signup page)."""
+    db = get_db()
+    try:
+        new_token = db.regenerate_client_signup_token(user_id)
+        signup_link = f"{request.url_root}portal/signup/{new_token}"
+        session["client_portal_new_link"] = {"username": "", "link": signup_link}
+        audit_log("client_user_reset", customer_id=customer_id, details=f"client_user_id={user_id}")
+        flash("Access reset — copy the new signup link below to share with the client.", "success")
+        return redirect(url_for("customer_detail", customer_id=customer_id) + "#client-portal-access")
+    finally:
+        db.close()
+
+
+@app.route("/customer/<customer_id>/client-users/<int:user_id>/deactivate", methods=["POST"])
+@login_required
+def deactivate_client_user_route(customer_id, user_id):
+    """Toggle a client-portal login active/inactive, independent of signup state."""
+    db = get_db()
+    try:
+        active = (request.form.get("active", "0") == "1")
+        db.set_client_user_active(user_id, active)
+        audit_log(
+            "client_user_activated" if active else "client_user_deactivated",
+            customer_id=customer_id, details=f"client_user_id={user_id}",
+        )
+        return redirect(url_for("customer_detail", customer_id=customer_id) + "#client-portal-access")
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

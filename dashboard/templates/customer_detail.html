@@ -2922,6 +2922,77 @@
         </div>
         {% endfor %}
     </div>
+
+    <!-- Client Portal Access -->
+    <div class="card" id="client-portal-access">
+        <div class="section-header">
+            <h2 style="font-size:1.1rem;">Client Portal Access</h2>
+        </div>
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:-0.25rem;">
+            Create a login so this customer can view their own reports at <code>/portal/</code>. Staff assign a <b>username only</b> — the client sets their own password via a one-time signup link. No password is ever set or seen here.
+        </p>
+
+        {% if new_client_signup_link %}
+        <div style="margin-top:0.6rem;padding:0.9rem 1rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;">
+            <div style="font-weight:600;font-size:0.9rem;margin-bottom:0.3rem;">🔗 Signup link{% if new_client_signup_link.username %} for {{ new_client_signup_link.username }}{% endif %}</div>
+            <p style="font-size:0.8rem;color:var(--muted);margin:0 0 0.5rem;">Send this to the client — it lets them set their own password. It only shows once here, so copy it now.</p>
+            <div style="display:flex;gap:0.5rem;align-items:center;">
+                <input type="text" readonly value="{{ new_client_signup_link.link }}"
+                       style="flex:1;padding:0.45rem 0.6rem;font-size:0.82rem;border:1px solid var(--border);border-radius:6px;background:#fff;font-family:ui-monospace,monospace;"
+                       onclick="this.select();">
+                <button class="btn btn-success btn-sm" onclick="navigator.clipboard.writeText('{{ new_client_signup_link.link }}'); this.textContent='Copied!';">Copy Link</button>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if client_users %}
+        <table style="width:100%;font-size:0.85rem;border-collapse:collapse;margin-top:1rem;">
+            <tr style="text-align:left;color:var(--muted);font-size:0.72rem;text-transform:uppercase;">
+                <th style="padding:0.4rem 0.5rem;">Username</th><th>Display name</th><th>Status</th><th>Active</th><th>Last login</th><th></th>
+            </tr>
+            {% for cu in client_users %}
+            <tr style="border-top:1px solid var(--border);">
+                <td style="padding:0.45rem 0.5rem;font-family:ui-monospace,monospace;">{{ cu.username }}</td>
+                <td>{{ cu.display_name or '—' }}</td>
+                <td>
+                    {% if not cu.password_hash %}
+                    <span style="color:var(--muted);">Invited — awaiting signup</span>
+                    {% else %}
+                    <span style="color:#16a34a;font-weight:600;">Active</span>
+                    {% endif %}
+                </td>
+                <td>{% if cu.active %}<span style="color:#16a34a;">Yes</span>{% else %}<span style="color:var(--danger);">No</span>{% endif %}</td>
+                <td style="color:var(--muted);">{{ cu.last_login[:10] if cu.last_login else '—' }}</td>
+                <td style="text-align:right;white-space:nowrap;">
+                    <form method="post" action="{{ url_for('reset_client_user_route', customer_id=customer.id, user_id=cu.id) }}" style="display:inline;">
+                        <button class="btn btn-outline btn-sm" type="submit">Reset access</button>
+                    </form>
+                    <form method="post" action="{{ url_for('deactivate_client_user_route', customer_id=customer.id, user_id=cu.id) }}" style="display:inline;">
+                        <input type="hidden" name="active" value="{{ '0' if cu.active else '1' }}">
+                        <button class="btn btn-outline btn-sm" style="color:{% if cu.active %}var(--danger){% else %}#16a34a{% endif %};" type="submit">{{ 'Deactivate' if cu.active else 'Activate' }}</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <p style="color:var(--muted);font-size:0.85rem;margin-top:1rem;">No client-portal logins yet.</p>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('create_client_user_route', customer_id=customer.id) }}" style="display:flex;gap:0.5rem;align-items:flex-end;margin-top:1rem;flex-wrap:wrap;">
+            <div>
+                <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:0.2rem;">Username</label>
+                <input type="text" name="username" required maxlength="80" placeholder="e.g. hilltopdental"
+                       style="padding:0.45rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;">
+            </div>
+            <div>
+                <label style="display:block;font-size:0.78rem;font-weight:600;margin-bottom:0.2rem;">Display name (optional)</label>
+                <input type="text" name="display_name" maxlength="120" placeholder="e.g. Dr. David Gallup"
+                       style="padding:0.45rem 0.6rem;font-size:0.85rem;border:1px solid var(--border);border-radius:6px;">
+            </div>
+            <button class="btn btn-primary btn-sm" type="submit">Create login</button>
+        </form>
+    </div>
 </div>
 
 <!-- ==================== NOTES TAB ==================== -->

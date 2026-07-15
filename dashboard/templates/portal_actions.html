@@ -1,0 +1,99 @@
+{% extends "portal_base.html" %}
+{% block title %}Action Items - Client Portal - PracticeRank{% endblock %}
+
+{% block extra_style %}
+  .lead{color:var(--muted);font-size:14.5px;margin:0 0 22px}
+  .section-lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin:26px 0 10px}
+  .section-lbl:first-of-type{margin-top:0}
+
+  .rec-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:0 0 12px}
+  .rec-card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  .rec-card .title{font-weight:700;font-size:15px}
+  .rec-type{font-size:11.5px;background:#eef4f8;border:1px solid #d7e6ef;color:var(--brand);padding:3px 9px;border-radius:99px;white-space:nowrap}
+  .rec-card .why{font-size:13.5px;color:var(--muted);margin:8px 0 0}
+  .rec-card .actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .rec-btn{font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+  .rec-btn:hover{text-decoration:none;background:#f5f6f7}
+  .rec-btn.approve{background:var(--accent);border-color:var(--accent);color:#fff}
+  .rec-btn.approve:hover{background:#15803d}
+  .rec-btn.reject{color:var(--bad);border-color:#fecaca}
+  .rec-btn.preview{color:var(--accent)}
+  form.inline{display:inline}
+
+  .pub-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin:0 0 8px}
+  .pub-row .name{font-weight:600;font-size:14px}
+  .pub-row .meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+  .action{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}
+  .action:last-child{border-bottom:none}
+  .action .icon{font-size:20px;line-height:1.3}
+  .action .title{font-weight:600;font-size:14px}
+  .action .why{font-size:13px;color:var(--muted);margin-top:2px}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+  .empty-state .big{font-size:38px;line-height:1}
+  .empty-state p{margin-top:10px}
+{% endblock %}
+
+{% block portal_content %}
+<p class="lead">Content we've prepared for your practice — take a look and let us know what to publish.</p>
+
+{% if all_caught_up %}
+  <div class="empty-state">
+    <div class="big">✅</div>
+    <p><b>You're all caught up.</b> No action needed from you right now.</p>
+  </div>
+{% else %}
+
+  {% if pending %}
+  <div class="section-lbl">Needs your approval &middot; {{ pending|length }}</div>
+  {% for r in pending %}
+    <div class="rec-card">
+      <div class="top">
+        <div class="title">{{ r.title }}</div>
+        <span class="rec-type">{{ r.type_label }}</span>
+      </div>
+      {% if r.ai_impact_reason %}
+        <p class="why">{{ r.ai_impact_reason }}</p>
+      {% endif %}
+      <div class="actions">
+        <form class="inline" method="post" action="/portal/actions/{{ r.id }}/approve">
+          <button type="submit" class="rec-btn approve">Approve</button>
+        </form>
+        <form class="inline" method="post" action="/portal/actions/{{ r.id }}/reject">
+          <button type="submit" class="rec-btn reject">Not for us</button>
+        </form>
+        <a class="rec-btn preview" href="/portal/actions/{{ r.id }}">Preview full piece &rarr;</a>
+      </div>
+    </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if published %}
+  <div class="section-lbl">Recently added to your site</div>
+  {% for r in published %}
+    <div class="pub-row">
+      <div>
+        <div class="name">{{ r.title }}</div>
+        <div class="meta">{{ r.type_label }}{% if r.published_at %} &middot; published {{ r.published_at[:10] }}{% endif %}</div>
+      </div>
+      <a class="rec-btn preview" style="padding:4px" href="/portal/actions/{{ r.id }}">View &rarr;</a>
+    </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if needs %}
+  <div class="section-lbl">Other things we need from you</div>
+  {% for n in needs %}
+    <div class="action">
+      <div class="icon">{{ n.icon }}</div>
+      <div>
+        <div class="title">{{ n.title }}</div>
+        {% if n.why %}<div class="why">{{ n.why }}</div>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+  {% endif %}
+
+{% endif %}
+{% endblock %}

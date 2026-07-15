@@ -90,6 +90,11 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 - [x] `GET /portal/` exists as a stub behind `client_login_required` rendering `portal_base.html` with a placeholder body (real content lands in Ticket 4).
 - [x] Manual verification: (a) log into `/login` as staff, then in the same browser open `/portal/login` and log in as a client — confirm the admin session's `logged_in`/`username` keys are gone and hitting `/` now redirects to `/login`, not admin content; (b) reverse the order (client first, then staff) and confirm the same exclusivity holds; (c) confirm `/portal/` with no session redirects to `/portal/login`, and any `@login_required` admin route with only `client_logged_in` set redirects to `/login`. (`tests/integration/test_portal_auth.py`, plus a live local run against a scratch DB.)
 
+**Local test login used for manual verification** (throwaway scratch SQLite DB, not a real customer — DB no longer exists, kept here only so the flow is reproducible):
+- Portal: username `davidg`, password `ub5IsEaQ97VuIz`, customer `test-practice` ("Test Practice Dental")
+- Admin: username `staffadmin`, password `adminpass123`
+- Reproduce: `python dashboard/app.py --db /tmp/portal_test.db --port 5199 --debug`, after seeding via `CustomerDB.create_client_user()` / `complete_client_signup()` and `CustomerDB.create_user()` as shown in the Ticket 1 unit tests.
+
 **Out of scope:** Overview page content, pillar pages, action items, reports list, the sign-up page itself (Ticket 12), CSRF protection and secure cookie flags (Ticket 2a).
 
 **Dependencies:** Ticket 1 (`authenticate_client_user`).
@@ -117,15 +122,18 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 3 — Write plain-English portal copy module
 
+**Status:** ✅ Complete.
+
 **Context:** Spec principle "The customer is a dental practice owner, not a marketer" (§1) and the data-mapping table's explicit `NEW COPY` row for "Plain-English sentence per pillar" (§3). Verified while reading the code: neither `PILLAR_LABELS` (`practicerank_score.py:42`) nor `_FOUNDATION_ITEMS` (`practicerank_score.py:349-358`, plain tuples of internal checklist keys like `seo_schema_localbusiness`, `seo_llms_txt`) carry any client-facing wording today — all of this copy is new and needs a single source of truth so Overview and the pillar detail pages don't drift out of sync.
 
 **Acceptance criteria:**
-- [ ] A new module (e.g. `geo_agent/portal_copy.py`) defines:
+- [x] A new module (`geo_agent/portal_copy.py`) defines:
   - `PILLAR_COPY: dict[str, dict]` keyed by the 5 pillar slugs (`ai-visibility`, `geo-foundation`, `content-coverage`, `reputation`, `search-performance`), each with `label`, `one_liner` (Overview breakdown sentence, e.g. spec line 300), and `hero_description` (pillar-detail-page sentence, e.g. spec line 381).
   - `FOUNDATION_ITEM_COPY: dict[str, dict]` keyed by each of the 8 `_FOUNDATION_ITEMS` first-keys (`seo_schema_localbusiness`, `seo_schema_faq`, `seo_llms_txt`, `seo_robots_txt`, `seo_llms_full`, `seo_xml_sitemap`, `seo_schema_review`, `seo_structured_headings`), each with `label` and `description` matching spec lines 458-465.
   - A `grade_takeaway(grade_label) -> str` helper producing the Overview score-hero one-liner (spec line 289 style), keyed off `grade_from_score()`'s existing grade labels (`practicerank_score.py:61`).
-- [ ] Every string lives in this one file — no copy embedded inline in Jinja templates for these three surfaces.
-- [ ] A comment notes this copy should be reviewed by Kody/marketing before shipping.
+  - (Not originally spelled out in the acceptance text, but needed by Ticket 4/6 and added here as copy/labeling glue, not scoring logic): `PILLAR_KEY_TO_SLUG: dict[str, str]` and `PILLAR_SLUG_TO_KEY: dict[str, str]`, mapping the DB's stable `PILLAR_WEIGHTS` keys (`ai_visibility`, `technical_health`, `content_velocity`, `reputation`, `search_growth`) to/from the portal URL slugs used by `PILLAR_COPY`.
+- [x] Every string lives in this one file — no copy embedded inline in Jinja templates for these three surfaces.
+- [x] A comment notes this copy should be reviewed by Kody/marketing before shipping.
 
 **Out of scope:** Wiring this module into any template (Tickets 4–6); `_FOUNDATION_ITEMS` ordering/weights themselves (unchanged).
 
@@ -137,15 +145,17 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 4 — Build Overview page (score hero, pillar breakdown, supporting cards)
 
+**Status:** ✅ Complete.
+
 **Context:** Spec §1 "Score first, breakdown second" and the fully mocked Overview page (`client-portal.html` lines 273-364). This page's data-loading pattern — read the latest `report_snapshots` row, parse `payload_json`, never recompute — is reused as-is by every pillar detail page per the resolved D3 decision.
 
 **Acceptance criteria:**
-- [ ] `GET /portal/` (replacing the Ticket 2 stub) loads the customer's latest snapshot via `db.get_latest_report_snapshot(session["client_customer_id"], "weekly")`, falling back to `"monthly"` then `"quarterly"` if no weekly snapshot exists, and parses `payload_json`.
-- [ ] `portal_home.html` renders, in order: (1) score hero — score, grade, delta vs. `score_prev`, one-line takeaway from `grade_takeaway()` (Ticket 3); (2) pillar breakdown — 5 bars from `data["score"]["pillars"]`, each showing `PILLAR_COPY[slug]["one_liner"]` and weight as "N% of your score," each linking to `/portal/pillar/<slug>`; (3) supporting cards — search clicks, AI hit-rate summary + per-engine chips, reviews, "what we did for you" — matching spec lines 334-361.
-- [ ] Bar fill color is a function of that pillar's own score band (green/yellow-green/amber/red thresholds), never colored by rank/position among the 5 bars.
-- [ ] "No report yet" state: if no snapshot exists in any of the three cadences, render a friendly empty state instead of erroring.
-- [ ] Domain-authority/competitor-gap detail, FATJOE line items, and system alerts are **not** rendered anywhere on this page.
-- [ ] Manual verification: load `/portal/` for a customer with a real snapshot and confirm every number matches that customer's admin-panel report for the same period.
+- [x] `GET /portal/` (replacing the Ticket 2 stub) loads the customer's latest snapshot via `db.get_latest_report_snapshot(session["client_customer_id"], "weekly")`, falling back to `"monthly"` then `"quarterly"` if no weekly snapshot exists, and parses `payload_json`.
+- [x] `portal_home.html` renders, in order: (1) score hero — score, grade, delta vs. `score_prev`, one-line takeaway from `grade_takeaway()` (Ticket 3); (2) pillar breakdown — 5 bars from `data["score"]["pillars"]`, each showing `PILLAR_COPY[slug]["one_liner"]` and weight as "N% of your score," each linking to `/portal/pillar/<slug>`; (3) supporting cards — search clicks, AI hit-rate summary + per-engine chips, reviews, "what we did for you" — matching spec lines 334-361.
+- [x] Bar fill color is a function of that pillar's own score band (green/yellow-green/amber/red thresholds), never colored by rank/position among the 5 bars.
+- [x] "No report yet" state: if no snapshot exists in any of the three cadences, render a friendly empty state instead of erroring.
+- [x] Domain-authority/competitor-gap detail, FATJOE line items, and system alerts are **not** rendered anywhere on this page.
+- [x] Manual verification: load `/portal/` for a customer with a real snapshot and confirm every number matches that customer's admin-panel report for the same period. (Done via an automated integration test seeding a realistic snapshot and asserting the rendered HTML against the exact score/pillar/card numbers, per the ticket's own fallback guidance — no interactive browser available in this environment.)
 
 **Out of scope:** Pillar detail pages (Tickets 5–6), Action Items, Full Reports.
 
@@ -159,15 +169,17 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 **Context:** Spec principle "Every category is a door, not a dead end" (§1) and the 4 fully mocked pillar pages other than AI Visibility (`client-portal.html` lines 436-674). All four read exclusively from the same already-loaded snapshot `payload_json` as Overview — no new queries.
 
+**Status:** ✅ Complete.
+
 **Acceptance criteria:**
-- [ ] `GET /portal/pillar/<key>` route added for `key` in `{geo-foundation, content-coverage, reputation, search-performance}`, loading the same latest-snapshot payload Ticket 4 loads, reusing one shared `portal_pillar.html` template keyed by `key`. Unknown `key` returns 404.
-- [ ] Each page has a `pillar-hero` (score, delta, `PILLAR_COPY[key]["hero_description"]`) and a breadcrumb back to `/portal/`.
-- [ ] **GEO Foundation**: 8-item checklist from the snapshot's stored technical-health detail (`items` dict, `compute_technical_health`, `practicerank_score.py:395-405`), each row's label/description from `FOUNDATION_ITEM_COPY` (Ticket 3), done/pending dot per spec lines 456-466.
-- [ ] **Content & Coverage**: by-type breakdown bars (`_CONTENT_CATEGORIES` groupings, spec lines 489-495) and service-area coverage chips (spec lines 497-506), all from the snapshot payload.
-- [ ] **Reputation**: 3 KPI cards (current rating, total reviews, new this period) and a rating-trend bar list (spec lines 529-542), from `sections.reviews`/`compute_reputation()` detail already in the payload.
-- [ ] **Search Performance**: 3 KPI cards (clicks, impressions, CTR — CTR read directly off the `ctr` field already present in `sections.search.cur`/`.prev`), the two 8-week SVG line/area charts (clicks, AI mention rate) per the dataviz-skill-compliant markup already built in the spec (lines 574-661: solid hairline gridlines, single flat color per chart, only the endpoint direct-labeled, each with a collapsible `<details class="table-toggle">` full-data table), and the keyword-movers table (spec lines 663-672). Chart series come from the snapshot's `sections.traffic_series`/stored weekly figures (same "frozen, not live" rule as every other pillar — if the payload doesn't already carry 8 weeks of clicks/CTR/mention-rate at the granularity the chart needs, extend what gets written into `payload_json` at snapshot-generation time rather than querying `db.get_gsc_weekly_summary()`/`db.get_rolling_mention_stats()` live at render time).
-- [ ] Real implementation adds a hover/focus tooltip on both line charts per the dataviz skill's `interaction.md`. Tooltip is additive only — every value must already be reachable via the endpoint label or the collapsible table.
-- [ ] Manual verification: for each of the 4 keys, confirm the pillar-hero score matches the corresponding bar on `/portal/` for the same customer/snapshot, and confirm the Search Performance chart's 8 weekly numbers in the collapsible table match what's actually stored in that snapshot's `payload_json` (not a fresh live query).
+- [x] `GET /portal/pillar/<key>` route added for `key` in `{geo-foundation, content-coverage, reputation, search-performance}`, loading the same latest-snapshot payload Ticket 4 loads, reusing one shared `portal_pillar.html` template keyed by `key`. Unknown `key` returns 404.
+- [x] Each page has a `pillar-hero` (score, delta, `PILLAR_COPY[key]["hero_description"]`) and a breadcrumb back to `/portal/`.
+- [x] **GEO Foundation**: 8-item checklist from the snapshot's stored technical-health detail (`items` dict, `compute_technical_health`, `practicerank_score.py:395-405`), each row's label/description from `FOUNDATION_ITEM_COPY` (Ticket 3), done/pending dot per spec lines 456-466.
+- [x] **Content & Coverage**: by-type breakdown bars (`_CONTENT_CATEGORIES` groupings, spec lines 489-495) and service-area coverage chips (spec lines 497-506), all from the snapshot payload. `compute_content_velocity()` was extended to also return `covered_areas`/`uncovered_areas` (option (a) from the ticket's data-gap note) so the chips don't require a live re-query; old snapshots predating that change just render the aggregate count with no chips.
+- [x] **Reputation**: 3 KPI cards (current rating, total reviews, new this period) and a rating-trend bar list (spec lines 529-542), from `sections.reviews`/`compute_reputation()` detail already in the payload. The rating-trend chart itself has one narrow, documented exception to "payload only": it queries `db.get_kpis(customer_id, "rating", limit=6)` live (not from `payload_json`) — the same `"rating"` KPI metric `kpi_tracker.track_google_reviews()` (`geo_agent/kpi_tracker.py:49`) already records on its own schedule and that the admin `customer_detail` KPI panel already reads (`dashboard/app.py:1187`). *(Correction: the first pass at this ticket incorrectly believed no rating history existed anywhere and added a duplicate `google_rating` KPI capture in `weekly_report.generate_and_store()` — that redundant write was removed and the route repointed at the pre-existing `"rating"` metric instead, so there's one rating-history series, not two.)* Renders however many points exist, gracefully showing "not enough history yet" when there are none (e.g. no `GOOGLE_PLACES_API_KEY` configured for that customer).
+- [x] **Search Performance**: 3 KPI cards (clicks, impressions, CTR — CTR read directly off the `ctr` field already present in `sections.search.cur`/`.prev`), the two 8-week SVG line/area charts (clicks, AI mention rate) per the dataviz-skill-compliant markup already built in the spec (lines 574-661: solid hairline gridlines, single flat color per chart, only the endpoint direct-labeled, each with a collapsible `<details class="table-toggle">` full-data table), and the keyword-movers table (spec lines 663-672). `weekly_report.build_report_data()` now stashes `ctr` onto each `traffic_series` week and adds a new `sections.ai_mention_series` (via `db.get_rolling_mention_stats(..., window=8, prompt_set="benchmark")` — the same benchmark-filtered series that drives the AI Visibility trend, reused rather than hand-rolled from `get_ai_mention_runs`), both wrapped in try/except like the existing `traffic_series` block so missing history never breaks report generation.
+- [x] Real implementation adds a hover/focus tooltip on both line charts per the dataviz skill's `interaction.md`. Tooltip is additive only — every value must already be reachable via the endpoint label or the collapsible table.
+- [x] Manual verification: for each of the 4 keys, confirm the pillar-hero score matches the corresponding bar on `/portal/` for the same customer/snapshot, and confirm the Search Performance chart's 8 weekly numbers in the collapsible table match what's actually stored in that snapshot's `payload_json` (not a fresh live query). Verified via `tests/integration/test_portal_pillar.py` Flask-test-client assertions against a payload with known values (per the ticket, a test-client check is sufficient — no browser needed).
 
 **Out of scope:** AI Visibility pillar page (Ticket 6).
 
@@ -179,15 +191,19 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 6 — Build Pillar Detail page for AI Visibility (frozen snapshot, same as Overview)
 
+**Status:** ✅ Complete.
+
 **Context:** Spec's flagship example (§1) — "your hit rate on each individual AI assistant, not just one blended percentage" — mocked at `client-portal.html` lines 366-434. Per the resolved D3 decision, this page must **not** issue any live query; it reads the exact same snapshot payload as Overview and every other pillar page, so the AI Visibility number on Overview's pillar bar can never disagree with this page's detail for the same report.
 
 **Acceptance criteria:**
-- [ ] `GET /portal/pillar/ai-visibility` uses the identical snapshot-loading call as Ticket 4/5 (no separate `db.get_ai_mention_runs()` or `db.get_share_of_voice()` call) — confirmed via `weekly_report.py:163-185` that `sections.ai.engines` (per-engine hit rate, sourced from `latest_ai["engines_json"]` at snapshot time) and `sections.ai.sov` (share of voice, from `db.get_share_of_voice()` at snapshot time) are already captured into `payload_json` when the snapshot was generated.
-- [ ] "Your hit rate by AI assistant" renders one `engine-row` per engine in `ENGINES` (`scripts/scheduled_ai_check.py`: Claude, ChatGPT, Perplexity, Gemini, Grok) from `sections.ai.engines`, per spec lines 385-414. An engine absent from that dict (never run as of this snapshot) renders as 0% / "not yet tested" — every engine in `ENGINES` always has a row.
-- [ ] "Share of voice" renders the practice + named competitors + "everyone else" from `sections.ai.sov`, per spec lines 425-432.
-- [ ] "Questions we test" (sample prompts + hit/miss, spec lines 416-423) is the one sub-section with no aggregate figure already in `payload_json` — it is scoped to the **specific historical run** referenced by `sections.ai.latest`'s run id (i.e. `ai_mention_results` filtered to that exact `run_id`, not "whatever `ai_mention_runs` row is latest right now"). This keeps the sample-question list describing the same historical moment as the rest of the page even though it's technically a DB query rather than a payload field.
-- [ ] Bar/chip colors assigned by each row's own value band (or a fixed "you" vs. "competitor" 2-color distinction for share-of-voice), not by rank position.
-- [ ] Manual verification: confirm the per-engine numbers on this page exactly match `sections.ai.engines` inside that snapshot's stored `payload_json` (not the current live `ai_mention_runs` row, which may have since changed), and confirm the AI Visibility score shown here matches the AI Visibility bar on `/portal/` for the same snapshot byte-for-byte.
+- [x] `GET /portal/pillar/ai-visibility` uses the identical snapshot-loading call as Ticket 4/5 (no separate `db.get_ai_mention_runs()` or `db.get_share_of_voice()` call) — confirmed via `weekly_report.py:163-185` that `sections.ai.engines` (per-engine hit rate, sourced from `latest_ai["engines_json"]` at snapshot time) and `sections.ai.sov` (share of voice, from `db.get_share_of_voice()` at snapshot time) are already captured into `payload_json` when the snapshot was generated.
+- [x] "Your hit rate by AI assistant" renders one `engine-row` per engine in `ENGINES` (`scripts/scheduled_ai_check.py`: Claude, ChatGPT, Perplexity, Gemini, Grok) from `sections.ai.engines`, per spec lines 385-414. An engine absent from that dict (never run as of this snapshot) renders as 0% / "not yet tested" — every engine in `ENGINES` always has a row.
+- [x] "Share of voice" renders the practice + named competitors + "everyone else" from `sections.ai.sov`, per spec lines 425-432.
+- [x] "Questions we test" (sample prompts + hit/miss, spec lines 416-423) is the one sub-section with no aggregate figure already in `payload_json` — it is scoped to the **specific historical run** referenced by `sections.ai.latest`'s run id (i.e. `ai_mention_results` filtered to that exact `run_id`, not "whatever `ai_mention_runs` row is latest right now"). This keeps the sample-question list describing the same historical moment as the rest of the page even though it's technically a DB query rather than a payload field.
+- [x] Bar/chip colors assigned by each row's own value band (or a fixed "you" vs. "competitor" 2-color distinction for share-of-voice), not by rank position.
+- [x] Manual verification: confirm the per-engine numbers on this page exactly match `sections.ai.engines` inside that snapshot's stored `payload_json` (not the current live `ai_mention_runs` row, which may have since changed), and confirm the AI Visibility score shown here matches the AI Visibility bar on `/portal/` for the same snapshot byte-for-byte.
+
+**Post-hoc fix (found via `scripts/seed_demo_data.py`):** the engine-row logo badge used `e.name[0]` (first letter), which collides — Claude/ChatGPT both start with "C", Gemini/Grok both start with "G" — so two rows showed identical badges. The spec mock uses distinct abbreviations (C/G/P/Ge/X). Fixed with an explicit `_PORTAL_AI_ENGINE_LOGO` lookup in `app.py` (cosmetic only, no data/score impact; caught by driving the real pipeline's output through the page rather than a hand-typed fixture, which happened to use non-colliding engine data).
 
 **Out of scope:** The other 4 pillar pages (Ticket 5).
 
@@ -199,14 +215,21 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 7 — Build Action Items list page (recommendations + secondary needs)
 
+**Status:** ✅ Complete.
+
 **Context:** User's explicit correction mid-session: "make the actionable items page actually contain the content recommendations we generate for each client." Spec §"Action Items" mockup, `client-portal.html` lines 676-748.
 
 **Acceptance criteria:**
-- [ ] `GET /portal/actions` (`client_login_required`) calls `db.get_content_recommendations(session["client_customer_id"], limit=100)` (`db.py:2574`), splits into `status == "pending"` (shown first) and `status == "published"` (most recent ~8).
-- [ ] `portal_actions.html` renders, in order: "Needs your approval · N" — one `rec-card` per pending item with title, friendly type label (reuse `_REC_TYPE_LABELS`, `weekly_report.py:431-435`), the `ai_impact_reason` field as the "why" copy, and Approve/Not for us/Preview affordances (wired in Tickets 8/9); then "Recently added to your site" — read-only rows per spec lines 728-730.
-- [ ] Below that, "Other things we need from you" sourced from `build_report_data(db, customer_id, live_state=True)["sections"].get("needs", [])` (`weekly_report.py:390-420`), with its own "approve pending content" line item (if produced) dropped since content now has its own full section above.
-- [ ] Empty state: when pending/published recs and `needs` are all empty, render "✅ You're all caught up" (spec lines 742-746) instead of empty section headers.
-- [ ] Manual verification: for a test customer with a pending, a published, and a `needs` item, confirm this page's grouping matches what admin `/content-queue` shows for that customer's pending items.
+- [x] `GET /portal/actions` (`client_login_required`) calls `db.get_content_recommendations(session["client_customer_id"], limit=100)` (`db.py:2574`), splits into `status == "pending"` (shown first) and `status == "published"` (most recent ~8).
+- [x] `portal_actions.html` renders, in order: "Needs your approval · N" — one `rec-card` per pending item with title, friendly type label (reuse `_REC_TYPE_LABELS`, `weekly_report.py:431-435`), the `ai_impact_reason` field as the "why" copy, and Approve/Not for us/Preview affordances (wired in Tickets 8/9); then "Recently added to your site" — read-only rows per spec lines 728-730.
+- [x] Below that, "Other things we need from you" sourced from `build_report_data(db, customer_id, live_state=True)["sections"].get("needs", [])` (`weekly_report.py:390-420`), with its own "approve pending content" line item (if produced) dropped since content now has its own full section above.
+- [x] Empty state: when pending/published recs and `needs` are all empty, render "✅ You're all caught up" (spec lines 742-746) instead of empty section headers.
+- [x] Manual verification: for a test customer with a pending, a published, and a `needs` item, confirm this page's grouping matches what admin `/content-queue` shows for that customer's pending items.
+
+**Implementation notes:**
+- `get_content_recommendations` orders by `priority ASC, created_at DESC` (priority is the *primary* sort key), so slicing the published-only subset straight off that list would rank by priority, not recency. Adjusted: `published` is re-sorted by `created_at` descending in Python before capping at 8, so "Recently added to your site" is actually most-recent-first. Verified in `test_actions_page_groups_pending_published_and_needs` (seeds an old rec with priority 1 and a new rec with priority 5, asserts the new one renders first).
+- The redundant "needs" item is `weekly_report.build_report_data`'s `{"icon": "📝", "title": f"Approve {N} piece(s) of content we've prepared for you", ...}` line (added whenever there are pending recs). Filtered by matching `icon == "📝"` and `"prepared for you" in title` (N is dynamic, so matched on the fixed title tail rather than the whole string).
+- Route inserted directly after `portal_pillar_ai_visibility()` in `dashboard/app.py`, per the anchor convention used to avoid edit collisions with the parallel Ticket 10/11 agents also editing `app.py`.
 
 **Out of scope:** Approve/reject write actions (Ticket 8), full-piece preview (Ticket 9).
 
@@ -218,14 +241,16 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 8 — Add approve/reject actions to Action Items
 
+**Status:** ✅ Complete.
+
 **Context:** Spec's rec-card Approve/"Not for us" buttons must write status changes through the exact same DB write the admin content queue already uses.
 
 **Acceptance criteria:**
-- [ ] `POST /portal/actions/<rec_id>/approve` and `POST /portal/actions/<rec_id>/reject` (`client_login_required`) each: load via `db.get_content_recommendation(rec_id)` (`db.py:2649`), **404 if missing or `rec["customer_id"] != session["client_customer_id"]`** (matches the existing `content_preview` route's ownership-check pattern, `app.py:7314`), call `db.update_content_recommendation_status(rec_id, "approved" | "rejected")` (`db.py:2594`, same method `api_content_status` at `app.py:7334` uses), call `audit_log("client_content_status_changed", ...)`, redirect to `/portal/actions`.
-- [ ] `content_recommendations.id` is `TEXT` (confirmed `db.py:165`), so the route uses `<rec_id>` with no `int:` converter.
-- [ ] Approving/rejecting removes the item from "Needs your approval" on next load; approving doesn't move it into "Recently added" (still gated on `status == "published"`).
-- [ ] Cross-check: approving from the portal is reflected in admin `/content-queue` for the same customer.
-- [ ] Approving/rejecting a `rec_id` belonging to a different customer returns 404 and does not change that row.
+- [x] `POST /portal/actions/<rec_id>/approve` and `POST /portal/actions/<rec_id>/reject` (`client_login_required`) each: load via `db.get_content_recommendation(rec_id)` (`db.py:2649`), **404 if missing or `rec["customer_id"] != session["client_customer_id"]`** (matches the existing `content_preview` route's ownership-check pattern, `app.py:7314`), call `db.update_content_recommendation_status(rec_id, "approved" | "rejected")` (`db.py:2594`, same method `api_content_status` at `app.py:7334` uses), call `audit_log("client_content_status_changed", ...)`, redirect to `/portal/actions`.
+- [x] `content_recommendations.id` is `TEXT` (confirmed `db.py:165`), so the route uses `<rec_id>` with no `int:` converter.
+- [x] Approving/rejecting removes the item from "Needs your approval" on next load; approving doesn't move it into "Recently added" (still gated on `status == "published"`).
+- [x] Cross-check: approving from the portal is reflected in admin `/content-queue` for the same customer.
+- [x] Approving/rejecting a `rec_id` belonging to a different customer returns 404 and does not change that row.
 
 **Out of scope:** Preview page (Ticket 9).
 
@@ -237,13 +262,15 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 9 — Add recommendation preview route (reuse `content_preview.html`)
 
+**Status:** ✅ Complete.
+
 **Context:** `dashboard/templates/content_preview.html` is confirmed standalone (no admin `base.html` extension) with no admin-only data — its only admin-coupled element is a hardcoded back-link (`content_preview.html:169`).
 
 **Acceptance criteria:**
-- [ ] `content_preview.html`'s back-link is parameterized (`back_url` passed in by the caller); the existing admin `content_preview` route (`app.py:7306-7318`) passes its current admin URL as `back_url`, unchanged behavior.
-- [ ] `GET /portal/actions/<rec_id>` (`client_login_required`) loads via `db.get_content_recommendation(rec_id)`, same ownership check as Ticket 8, renders `content_preview.html` with `back_url` = `/portal/actions`.
-- [ ] Confirmed no admin-only fields (webflow ids, publish errors) render anywhere in this template — only title/type/status/body, all already visible to the client on the Action Items list.
-- [ ] Manual verification: "Preview full piece →" from `/portal/actions` renders the same body a staff member sees via the admin queue, with "← Back" returning to `/portal/actions`.
+- [x] `content_preview.html`'s back-link is parameterized (`back_url` passed in by the caller); the existing admin `content_preview` route (`app.py:8187-8199`) passes its current admin URL as `back_url`, unchanged behavior.
+- [x] `GET /portal/actions/<rec_id>` (`client_login_required`) loads via `db.get_content_recommendation(rec_id)`, same ownership check as Ticket 8, renders `content_preview.html` with `back_url` = `/portal/actions`.
+- [x] Confirmed no admin-only fields (webflow ids, publish errors) render anywhere in this template — only title/type/status/body, all already visible to the client on the Action Items list.
+- [x] Manual verification: "Preview full piece →" from `/portal/actions` renders the same body a staff member sees via the admin queue, with "← Back" returning to `/portal/actions`. Verified via `tests/integration/test_portal_actions.py::test_portal_action_preview_renders_title_and_body_with_back_link_to_actions` (client route returns 200, title/body render, back-link points at `/portal/actions`, no `webflow_item_id`/`publish_error` in body), `::test_portal_action_preview_404_for_other_customers_rec`, `::test_portal_action_preview_404_for_nonexistent_rec_id`, and `::test_admin_content_preview_route_unaffected_by_back_url_refactor` (regression check: admin route still renders 200 with back-link pointing at `/customer/c1/content`).
 
 **Out of scope:** Editing recommendation content (no such feature exists anywhere today).
 
@@ -257,11 +284,13 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 **Context:** Spec §"Full Reports" (`client-portal.html` lines 750-775) — reuses the exact stored HTML `/r/<token>` already serves.
 
+**Status:** ✅ Complete.
+
 **Acceptance criteria:**
-- [ ] `GET /portal/reports` (`client_login_required`) lists snapshots across weekly/monthly/quarterly (`report_periods`, `app.py:794-798`) via `db.get_report_snapshots(customer_id, rt, limit=26)`, per spec lines 759-772.
-- [ ] `portal_reports.html` handles a cadence with zero snapshots as an empty tab, not an error.
-- [ ] `GET /portal/reports/<int:snapshot_id>` (`client_login_required`) loads via `db.get_report_snapshot(snapshot_id)` (Ticket 1), **404s if missing or `snap["customer_id"] != session["client_customer_id"]`**, otherwise returns `snap["html"]` directly — identical rendering path to `/r/<token>`'s `public_report()` (`app.py:1644-1663`).
-- [ ] Manual verification: confirm `/portal/reports/<id>` output is byte-identical to that snapshot's existing `/r/<token>` link; confirm guessing another customer's snapshot id returns 404.
+- [x] `GET /portal/reports` (`client_login_required`) lists snapshots across weekly/monthly/quarterly (`report_periods`, `app.py:794-798`) via `db.get_report_snapshots(customer_id, rt, limit=26)`, per spec lines 759-772.
+- [x] `portal_reports.html` handles a cadence with zero snapshots as an empty tab, not an error.
+- [x] `GET /portal/reports/<int:snapshot_id>` (`client_login_required`) loads via `db.get_report_snapshot(snapshot_id)` (Ticket 1), **404s if missing or `snap["customer_id"] != session["client_customer_id"]`**, otherwise returns `snap["html"]` directly — identical rendering path to `/r/<token>`'s `public_report()` (`app.py:1644-1663`).
+- [x] Manual verification: confirm `/portal/reports/<id>` output is byte-identical to that snapshot's existing `/r/<token>` link; confirm guessing another customer's snapshot id returns 404. Verified via `tests/integration/test_portal_reports.py::test_portal_report_snapshot_byte_identical_to_public_token_route` (Flask-test-client body/header equality against the same snapshot's `/r/<token>` response) and `::test_portal_report_snapshot_404s_for_other_customers_snapshot`.
 
 **Out of scope:** Any change to `/r/<token>` itself or snapshot generation.
 
@@ -273,15 +302,25 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 11 — Add "Client Portal Access" admin panel — staff creates a username, no password
 
+**Status:** ✅ Complete.
+
 **Context:** Plan §5, revised per the resolved account-creation decision: staff no longer set or see a client's password at all. Staff assign a username; the system mints a one-time signup link for the client to set their own password (Ticket 12). Panel sits near the existing "Secure customer share link" section (`customer_detail.html:2865-2878`).
 
 **Acceptance criteria:**
-- [ ] "Client Portal Access" panel lists existing `client_users` for this customer via `db.list_client_users(customer_id)`, showing username, status (**Invited — awaiting signup** vs **Active**, derived from `password_hash IS NULL`), active/inactive, last login.
-- [ ] A form (username + optional display name — no password field anywhere in this UI) posts to `POST /customer/<customer_id>/client-users` (`@login_required`), calls `db.create_client_user(...)`, `audit_log("client_user_created", ...)`, and on success **displays the generated signup link** (`/portal/signup/<signup_token>`, absolute URL) in a copy-to-clipboard field so staff can hand it to the client via whatever channel they use — no new email-sending infrastructure required.
-- [ ] "Reset access" action (for a lost invite link or a forgotten password) calls `db.regenerate_client_signup_token(id)` (Ticket 1), `audit_log("client_user_reset", ...)`, and re-displays the new signup link. This works for both "still invited, never signed up" and "was active, needs a fresh password" cases — both end up back at the signup page.
-- [ ] "Deactivate" toggles `active` via `db.set_client_user_active`, `audit_log(...)`, independent of signup state.
-- [ ] Duplicate-username creation shows a flashed error instead of a 500.
-- [ ] Manual verification: create a username for a test customer, copy the generated link, confirm it matches the format Ticket 12's route expects; deactivate the account and confirm a since-completed login now fails at `/portal/login`.
+- [x] "Client Portal Access" panel lists existing `client_users` for this customer via `db.list_client_users(customer_id)`, showing username, status (**Invited — awaiting signup** vs **Active**, derived from `password_hash IS NULL`), active/inactive, last login.
+- [x] A form (username + optional display name — no password field anywhere in this UI) posts to `POST /customer/<customer_id>/client-users` (`@login_required`), calls `db.create_client_user(...)`, `audit_log("client_user_created", ...)`, and on success **displays the generated signup link** (`/portal/signup/<signup_token>`, absolute URL) in a copy-to-clipboard field so staff can hand it to the client via whatever channel they use — no new email-sending infrastructure required.
+- [x] "Reset access" action (for a lost invite link or a forgotten password) calls `db.regenerate_client_signup_token(id)` (Ticket 1), `audit_log("client_user_reset", ...)`, and re-displays the new signup link. This works for both "still invited, never signed up" and "was active, needs a fresh password" cases — both end up back at the signup page.
+- [x] "Deactivate" toggles `active` via `db.set_client_user_active`, `audit_log(...)`, independent of signup state.
+- [x] Duplicate-username creation shows a flashed error instead of a 500.
+- [x] Manual verification: create a username for a test customer, copy the generated link, confirm it matches the format Ticket 12's route expects; deactivate the account and confirm a since-completed login now fails at `/portal/login`.
+
+**Implementation notes:**
+- New routes added at the very end of `dashboard/app.py`'s route definitions, immediately before `if __name__ == "__main__":`, to avoid edit collisions with Tickets 7/10 working in the same file concurrently: `POST /customer/<customer_id>/client-users` (create), `POST /customer/<customer_id>/client-users/<int:user_id>/reset` (reset access — separate endpoint, not an action discriminator on the create route, for a clean `url_for` per row), `POST /customer/<customer_id>/client-users/<int:user_id>/deactivate` (toggle active, reads `active` from form body so one route serves both directions).
+- `db.create_client_user` raises `ValueError("Username '<x>' is already taken")` on a duplicate `sqlite3.IntegrityError` (caught inside the db method itself, not left to bubble as a raw sqlite error) — the route catches `ValueError` specifically and flashes `str(e)`, redirecting back to `#client-portal-access` instead of 500ing.
+- The generated signup link is a one-time reveal: stashed in `session["client_portal_new_link"]` by the create/reset routes, popped (read-once) by the `customer_detail` view on the next GET and passed to the template — avoids leaking the token into the flash-message autoescape path (flash messages are user-data-bearing elsewhere in this file, so marking the whole flash block `|safe` would be an XSS footgun) and avoids a page refresh re-showing a stale reveal.
+- `client_users = db.list_client_users(customer_id)` fetched in the `customer_detail` view alongside `providers`/`contacts` and passed into the template context, following the existing per-customer list pattern.
+- Tests: `tests/integration/test_client_portal_admin.py` — create shows signup link in response body + DB row has `password_hash IS NULL`; duplicate username flashes "already taken" and does not create a second row; reset invalidates the old token (`get_client_user_by_signup_token` returns `None`) and the new token resolves; deactivate flips `active` to 0 and `authenticate_client_user` then fails even with the correct password (Ticket 1's `active=1` guard regression check); unauthenticated POST redirects to `/login`. All 5 pass, plus a manual full-page-render check confirming the panel shows correctly with a live username and "Invited — awaiting signup" status.
+- Pre-existing, unrelated gap found (not fixed, out of scope): `geo_agent/secrets.py` is gitignored (`**/secret*`) and was never committed to this repo at all — `customer_detail`'s WordPress-connection check imports it unconditionally, so a full GET of `/customer/<id>` 500s in a fresh checkout, and several pre-existing tests (`test_overview_render.py`, `test_security.py`, `test_config.py`, `test_gbp_client.py`) already fail the same way independent of this ticket. Worked around in this ticket's own tests by stubbing a minimal fake module in `sys.modules`; confirmed via direct reproduction that the failure is identical and pre-existing, not introduced by Tickets 7/10/11's changes.
 
 **Out of scope:** Any client-facing self-service password reset (staff-driven "Reset access" is the only recovery path, matching the no-new-infra constraint).
 
@@ -293,16 +332,18 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 12 — Build client sign-up page (client sets their own password)
 
+**Status:** ✅ Complete.
+
 **Context:** Direct user request: staff should create a username only; the client visits a link and creates their own password. This is the missing half of Ticket 11's invite flow and the reason `client_users.password_hash` starts `NULL`.
 
 **Acceptance criteria:**
-- [ ] `GET /portal/signup/<token>` looks up via `db.get_client_user_by_signup_token(token)` (Ticket 1). An invalid, unknown, or already-consumed token shows a friendly "This invite link is invalid or has already been used — ask your account manager for a new one" message (not a raw 404 or stack trace).
-- [ ] On a valid token, the page shows the practice name and the assigned username (read-only) plus a "Create a password" field and a "Confirm password" field, styled with the same `BRAND` tokens as `portal_login.html`.
-- [ ] `POST /portal/signup/<token>` validates the two password fields match and meet a minimum length (8 characters), re-showing the form with an inline error otherwise (no data loss — token stays valid on a validation failure).
-- [ ] On success, calls `db.complete_client_signup(token, password)` (Ticket 1). If it returns `False` (token already consumed by a concurrent request), show the same "invalid or already used" message rather than silently failing.
-- [ ] On success, the client is signed in immediately: applies the same session-exclusivity clearing as `/portal/login` (Ticket 2's helper), sets the four `client_*` session keys, `audit_log("client_signup_completed", ...)`, redirects to `/portal/`.
-- [ ] The same token, used a second time (e.g. the client re-opens the original invite email/link after already finishing signup), shows the "invalid or already used" message — never lets a second password overwrite the first silently.
-- [ ] Manual verification: create a username via Ticket 11, open the generated link in a private window, set a password, confirm landing on `/portal/` already logged in; reopen the same original link and confirm it's rejected; log out and confirm `/portal/login` with the new username/password works.
+- [x] `GET /portal/signup/<token>` looks up via `db.get_client_user_by_signup_token(token)` (Ticket 1). An invalid, unknown, or already-consumed token shows a friendly "This invite link is invalid or has already been used — ask your account manager for a new one" message (not a raw 404 or stack trace).
+- [x] On a valid token, the page shows the practice name and the assigned username (read-only) plus a "Create a password" field and a "Confirm password" field, styled with the same `BRAND` tokens as `portal_login.html`.
+- [x] `POST /portal/signup/<token>` validates the two password fields match and meet a minimum length (8 characters), re-showing the form with an inline error otherwise (no data loss — token stays valid on a validation failure).
+- [x] On success, calls `db.complete_client_signup(token, password)` (Ticket 1). If it returns `False` (token already consumed by a concurrent request), show the same "invalid or already used" message rather than silently failing.
+- [x] On success, the client is signed in immediately: applies the same session-exclusivity clearing as `/portal/login` (Ticket 2's helper), sets the four `client_*` session keys, `audit_log("client_signup_completed", ...)`, redirects to `/portal/`.
+- [x] The same token, used a second time (e.g. the client re-opens the original invite email/link after already finishing signup), shows the "invalid or already used" message — never lets a second password overwrite the first silently.
+- [x] Manual verification: create a username via Ticket 11, open the generated link in a private window, set a password, confirm landing on `/portal/` already logged in; reopen the same original link and confirm it's rejected; log out and confirm `/portal/login` with the new username/password works.
 
 **Out of scope:** Self-service "forgot password" (covered by staff-driven "Reset access" in Ticket 11, which routes back through this same page).
 
@@ -314,16 +355,20 @@ All routes are new and additive — none of this touches `/r/<token>`, `/gap/<to
 
 ## Ticket 13 — End-to-end verification pass: isolation, regressions, data parity
 
+**Status:** ✅ Complete.
+
 **Context:** Closing checklist run once Tickets 2–12 are merged, not new feature work.
 
 **Acceptance criteria:**
-- [ ] For one real (or realistic test) customer: `/portal/` score hero and pillar breakdown match that customer's latest `report_snapshots` row exactly, **including the AI Visibility pillar page**, which must match Overview's AI Visibility bar exactly for the same snapshot (regression check for the resolved D3 decision).
-- [ ] `/portal/actions` pending list matches the admin `/content-queue` group for that customer; approving/rejecting via the portal is reflected there too.
-- [ ] `/portal/reports` lists only that customer's snapshots; opening one matches its `/r/<token>` output byte-for-byte.
-- [ ] Session exclusivity: logging into `/portal/login` while an admin session is active clears the admin session (and vice versa) — no browser state ever satisfies both `login_required` and `client_login_required` at once.
-- [ ] Sign-up flow end-to-end: staff creates a username (Ticket 11) → invite link → client sets password (Ticket 12) → auto-logged-in → logs out → logs back in with the new credentials → the same original invite link is rejected on reuse.
-- [ ] From a client session for customer A: requests to `/` and every `@login_required` admin route redirect to `/login` and render no data; guessing another customer's `snapshot_id` at `/portal/reports/<id>` or `rec_id` at `/portal/actions/<rec_id>` (including the approve/reject POSTs) all return 404.
-- [ ] `/r/<token>` and every existing admin route behave exactly as before this work started (spot-check a handful of admin pages + one existing `/r/<token>` link).
+- [x] For one real (or realistic test) customer: `/portal/` score hero and pillar breakdown match that customer's latest `report_snapshots` row exactly, **including the AI Visibility pillar page**, which must match Overview's AI Visibility bar exactly for the same snapshot (regression check for the resolved D3 decision).
+- [x] `/portal/actions` pending list matches the admin `/content-queue` group for that customer; approving/rejecting via the portal is reflected there too.
+- [x] `/portal/reports` lists only that customer's snapshots; opening one matches its `/r/<token>` output byte-for-byte.
+- [x] Session exclusivity: logging into `/portal/login` while an admin session is active clears the admin session (and vice versa) — no browser state ever satisfies both `login_required` and `client_login_required` at once.
+- [x] Sign-up flow end-to-end: staff creates a username (Ticket 11) → invite link → client sets password (Ticket 12) → auto-logged-in → logs out → logs back in with the new credentials → the same original invite link is rejected on reuse.
+- [x] From a client session for customer A: requests to `/` and every `@login_required` admin route redirect to `/login` and render no data; guessing another customer's `snapshot_id` at `/portal/reports/<id>` or `rec_id` at `/portal/actions/<rec_id>` (including the approve/reject POSTs) all return 404.
+- [x] `/r/<token>` and every existing admin route behave exactly as before this work started (spot-check a handful of admin pages + one existing `/r/<token>` link).
+
+Verified in `tests/integration/test_portal_e2e.py` (12 tests, all green), plus a full re-run of the whole portal suite (`test_portal_auth.py`, `test_portal_overview.py`, `test_portal_pillar.py`, `test_portal_pillar_ai.py`, `test_portal_actions.py`, `test_portal_reports.py`, `test_client_portal_admin.py`, `test_portal_signup.py`, `test_portal_e2e.py` — 72 tests, all green) and `pytest -m "not docker"` (no new failures; the 18 failed / 18 collection errors present both with and without this change are pre-existing, unrelated environment gaps — missing `respx`/`voyageai`/`geo_agent.secrets`, stale `AttributeError`s in `test_embeddings.py`/`test_google_places.py` — confirmed via `git stash`). No non-trivial bugs found in Tickets 1–12's work during this pass.
 
 **Out of scope:** New feature work — a real bug found here becomes a new ticket unless trivial.
 
