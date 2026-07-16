@@ -85,7 +85,7 @@ export default function QuizTaker() {
               <span className="pv-score-max"> / {questions.length}</span>
             </div>
             <p className="pv-rank" style={{ color: pct >= 80 ? 'var(--tertiary)' : pct >= 50 ? 'var(--secondary)' : 'var(--accent)' }}>
-              {pct >= 80 ? '🏆 Excellent!' : pct >= 50 ? '👍 Good effort!' : '📚 Keep studying!'}
+              {pct >= 80 ? 'Excellent!' : pct >= 50 ? 'Good effort!' : 'Keep studying!'}
             </p>
             <div className="pv-stats">
               <div className="pv-stat"><span className="pv-stat-value">{score}</span><span className="pv-stat-label">Correct</span></div>

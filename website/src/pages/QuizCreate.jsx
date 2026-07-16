@@ -77,7 +77,7 @@ export default function QuizCreate() {
     <section className="section">
       <div className="container quiz-editor">
         <div className="quiz-success-box">
-          <h2>Quiz Created! 🎉</h2>
+          <h2>Quiz Created!</h2>
           <p style={{ color: 'var(--muted-foreground)' }}>Share this code with anyone to take your quiz:</p>
           <div className="quiz-success-code">{done.code}</div>
           <p className="quiz-success-hint">They can enter it at <strong>incentivefinance.org/quizzes</strong></p>
