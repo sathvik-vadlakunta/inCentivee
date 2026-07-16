@@ -57,10 +57,6 @@ export default function Login() {
           <Link to="/" className="login-brand">
             in<span>cent</span>ive
           </Link>
-          <div className="login-badge">
-            <span className="login-badge-dot" />
-            {mode === 'login' ? 'Welcome back' : 'Join incentive'}
-          </div>
           <h1>{mode === 'login' ? 'Log in to learn' : 'Create your account'}</h1>
           <p>{mode === 'login' ? 'Pick up right where your streak left off.' : 'Start building real financial confidence today.'}</p>
         </div>
