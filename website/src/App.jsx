@@ -18,6 +18,7 @@ import Learn from './pages/Learn'
 import UnitPage from './pages/UnitPage'
 import Admin from './pages/Admin'
 import AdminRoute from './components/AdminRoute'
+import CoinFlyLayer from './components/CoinFlyLayer'
 import './App.css'
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
             <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
           </Route>
         </Routes>
+        <CoinFlyLayer />
       </AuthProvider>
     </BrowserRouter>
   )

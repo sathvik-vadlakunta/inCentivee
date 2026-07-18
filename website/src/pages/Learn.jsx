@@ -6,6 +6,7 @@ import { allUnits } from '../data/levels'
 import { fetchQuestionsMap } from '../lib/questionsApi'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
 import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw } from 'lucide-react'
+import { triggerCoinFly } from '../components/CoinFlyLayer'
 import './Learn.css'
 
 const SECTIONS = [
@@ -219,6 +220,7 @@ export default function Learn() {
       } else {
         setCompletedIds(prev => new Set([...prev, unit.id]))
         bumpXP(earned)
+        triggerCoinFly(earned)
         refreshProfile()
       }
     }

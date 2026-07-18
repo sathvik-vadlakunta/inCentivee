@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, Lock, LogIn, Star } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { triggerCoinFly } from '../components/CoinFlyLayer'
 import { supabase } from '../lib/supabase'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
 import { allUnits } from '../data/levels'
@@ -241,6 +242,7 @@ export default function UnitPage() {
         })
       }
       bumpXP(earned)
+      triggerCoinFly(earned)
     }
 
     setCompletedIds(newCompleted)
