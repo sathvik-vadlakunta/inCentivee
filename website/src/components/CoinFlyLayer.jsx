@@ -5,7 +5,7 @@ let _id = 0
 
 export function triggerCoinFly(amount) {
   if (!amount || amount <= 0) return
-  const count = Math.min(Math.max(Math.ceil(amount / 8), 3), 8)
+  const count = Math.min(amount, 20)
   window.dispatchEvent(new CustomEvent('coinfly', { detail: { count } }))
 }
 

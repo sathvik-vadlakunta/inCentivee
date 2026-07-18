@@ -11,7 +11,7 @@
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--tertiary);
   color: #fff;
   font-family: var(--font-heading);
   font-weight: 800;
