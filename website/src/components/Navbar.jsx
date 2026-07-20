@@ -27,8 +27,8 @@ export default function Navbar() {
     <header className="navbar">
       <nav className="navbar-inner container">
         <Link to="/" className="navbar-brand" aria-label="incentive home">
-          <span>in<span className="brand-highlight">cent</span>ive</span>
           <img src="/coin-logo.png" alt="" className="navbar-brand-logo" />
+          <span>in<span className="brand-highlight">cent</span>ive</span>
         </Link>
 
         <ul className={`navbar-links ${open ? 'navbar-links--open' : ''}`}>
