@@ -16,6 +16,9 @@
 
 /* Brand / Wordmark */
 .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: var(--text-xl);
@@ -23,6 +26,12 @@
   text-decoration: none;
   letter-spacing: 0;
   flex-shrink: 0;
+}
+
+.navbar-brand-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 /* Desktop links */

@@ -27,6 +27,7 @@ export default function Navbar() {
     <header className="navbar">
       <nav className="navbar-inner container">
         <Link to="/" className="navbar-brand" aria-label="incentive home">
+          <img src="/coin-logo.png" alt="" className="navbar-brand-logo" />
           in<span className="brand-highlight">cent</span>ive
         </Link>
 
