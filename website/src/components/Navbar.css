@@ -18,7 +18,7 @@
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0px;
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: var(--text-xl);
@@ -29,8 +29,8 @@
 }
 
 .navbar-brand-logo {
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   object-fit: contain;
 }
 
