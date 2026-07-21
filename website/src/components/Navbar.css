@@ -225,14 +225,14 @@
 
   /* Scale down brand on mobile */
   .navbar-brand {
-    font-size: var(--text-lg);
+    font-size: var(--text-xl);
     gap: 0;
   }
 
   .navbar-brand-logo {
-    width: 58px;
-    height: 58px;
-    margin-right: -10px;
+    width: 68px;
+    height: 68px;
+    margin-right: -12px;
   }
 
   .navbar-toggle {
