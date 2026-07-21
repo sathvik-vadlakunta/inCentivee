@@ -45,11 +45,11 @@ export default function Navbar() {
         <div className="navbar-actions">
           {currentUser ? (
             <>
-              <div className="navbar-xp" title="Your XP">
+              <div className="navbar-xp" data-tooltip="This is your XP — you earn it every time you complete a lesson">
                 <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
-                <span className="navbar-xp-count">{xp} XP</span>
+                <span className="navbar-xp-count">{xp}</span>
               </div>
-              <div className="navbar-cents" title="Your cents">
+              <div className="navbar-cents" data-tooltip="This is how many cents you've earned">
                 <span className="navbar-cents-coin">¢</span>
                 <span className="navbar-cents-count">{coins}</span>
               </div>
@@ -60,11 +60,11 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <div className="navbar-xp navbar-xp--guest" title="Log in to earn XP">
+              <div className="navbar-xp navbar-xp--guest" data-tooltip="Log in to start earning XP">
                 <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
-                <span className="navbar-xp-count">0 XP</span>
+                <span className="navbar-xp-count">0</span>
               </div>
-              <div className="navbar-cents navbar-cents--guest" title="Log in to earn cents">
+              <div className="navbar-cents navbar-cents--guest" data-tooltip="Log in to start earning cents">
                 <span className="navbar-cents-coin">¢</span>
                 <span className="navbar-cents-count">0</span>
               </div>
@@ -79,7 +79,7 @@ export default function Navbar() {
         <div className="navbar-end">
           <div className={`navbar-xp navbar-xp--mobile${!currentUser ? ' navbar-xp--guest' : ''}`} title="Your XP" aria-hidden="true">
             <Zap size={12} strokeWidth={2.5} className="navbar-xp-icon" />
-            <span className="navbar-xp-count">{currentUser ? xp : 0} XP</span>
+            <span className="navbar-xp-count">{currentUser ? xp : 0}</span>
           </div>
           <div className={`navbar-cents navbar-cents--mobile${!currentUser ? ' navbar-cents--guest' : ''}`} title="Your cents" aria-hidden="true">
             <span className="navbar-cents-coin">¢</span>
@@ -115,7 +115,7 @@ export default function Navbar() {
             <div className="navbar-mobile-bottom">
               <div className="navbar-xp">
                 <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
-                <span className="navbar-xp-count">{xp} XP</span>
+                <span className="navbar-xp-count">{xp}</span>
               </div>
               <div className="navbar-cents">
                 <span className="navbar-cents-coin">¢</span>

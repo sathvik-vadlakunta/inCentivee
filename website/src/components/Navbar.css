@@ -71,6 +71,38 @@
   font-size: var(--text-sm);
 }
 
+/* Hover tooltips for XP and cents */
+.navbar-xp[data-tooltip],
+.navbar-cents[data-tooltip] {
+  position: relative;
+}
+
+.navbar-xp[data-tooltip]::after,
+.navbar-cents[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--foreground);
+  color: var(--background);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  z-index: 200;
+}
+
+.navbar-xp[data-tooltip]:hover::after,
+.navbar-cents[data-tooltip]:hover::after {
+  opacity: 1;
+}
+
 /* XP counter */
 .navbar-xp {
   display: inline-flex;
