@@ -199,10 +199,6 @@
   display: none;
 }
 
-/* Login button shown only on mobile (between coin and hamburger) */
-.navbar-mobile-login {
-  display: none !important;
-}
 
 /* Hamburger toggle — hidden on desktop */
 .navbar-toggle {
@@ -240,17 +236,7 @@
     display: inline-flex;
   }
 
-  .navbar-mobile-login {
-    display: inline-flex !important;
-    padding: 3px 8px;
-    font-size: 11px;
-  }
-  .navbar-mobile-login .btn-icon-badge {
-    width: 18px;
-    height: 18px;
-  }
-
-  .navbar-mobile {
+.navbar-mobile {
     display: flex;
     flex-direction: column;
     gap: 16px;

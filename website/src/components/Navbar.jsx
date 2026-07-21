@@ -85,12 +85,6 @@ export default function Navbar() {
             <span className="navbar-cents-coin">¢</span>
             <span className="navbar-cents-count">{currentUser ? coins : 0}</span>
           </div>
-          {!currentUser && (
-            <button className="btn btn-secondary navbar-mobile-login" onClick={() => navigate('/login')}>
-              <span className="btn-label">Log in</span>
-              <span className="btn-icon-badge"><LogIn size={16} strokeWidth={2.5} /></span>
-            </button>
-          )}
           <button
             className="navbar-toggle"
             aria-label={open ? 'Close menu' : 'Open menu'}
