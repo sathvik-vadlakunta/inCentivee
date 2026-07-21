@@ -22,8 +22,9 @@
 
 .path-coin-video {
   position: absolute;
-  width: 110px;
-  border-radius: var(--radius-md);
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
   opacity: 0.9;
   pointer-events: none;
 }
