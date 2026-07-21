@@ -165,7 +165,7 @@ export default function Learn() {
       '/sprites/coin-2-0.png', '/sprites/coin-2-1.png', '/sprites/coin-2-2.png',
     ]
     return [...all].sort(() => Math.random() - 0.5).slice(0, 4)
-  }, [])
+  }, [sectionIndex])
 
   useEffect(() => {
     fetchQuestionsMap()
