@@ -158,13 +158,16 @@ export default function Learn() {
   const [sparklingId,   setSparklingId]   = useState(null)
   const [qData,         setQData]         = useState(null)
 
-  const coinSprites = useMemo(() => {
-    const all = [
-      '/sprites/coin-0-0.png', '/sprites/coin-0-1.png', '/sprites/coin-0-2.png',
-      '/sprites/coin-1-0.png', '/sprites/coin-1-1.png', '/sprites/coin-1-2.png',
-      '/sprites/coin-2-0.png', '/sprites/coin-2-1.png', '/sprites/coin-2-2.png',
-    ]
-    return [...all].sort(() => Math.random() - 0.5).slice(0, 4)
+  const ALL_SPRITES = [
+    '/sprites/coin-0-0.png', '/sprites/coin-0-1.png', '/sprites/coin-0-2.png',
+    '/sprites/coin-1-0.png', '/sprites/coin-1-1.png', '/sprites/coin-1-2.png',
+    '/sprites/coin-2-0.png', '/sprites/coin-2-1.png', '/sprites/coin-2-2.png',
+  ]
+  const [coinSprites, setCoinSprites] = useState(() =>
+    [...ALL_SPRITES].sort(() => Math.random() - 0.5).slice(0, 4)
+  )
+  useEffect(() => {
+    setCoinSprites([...ALL_SPRITES].sort(() => Math.random() - 0.5).slice(0, 4))
   }, [sectionIndex])
 
   useEffect(() => {
