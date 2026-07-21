@@ -160,9 +160,9 @@ export default function Learn() {
 
   const coinSprites = useMemo(() => {
     const all = [
-      '0% 0%','50% 0%','100% 0%',
-      '0% 50%','50% 50%','100% 50%',
-      '0% 100%','50% 100%','100% 100%',
+      '/sprites/coin-0-0.png', '/sprites/coin-0-1.png', '/sprites/coin-0-2.png',
+      '/sprites/coin-1-0.png', '/sprites/coin-1-1.png', '/sprites/coin-1-2.png',
+      '/sprites/coin-2-0.png', '/sprites/coin-2-1.png', '/sprites/coin-2-2.png',
     ]
     return [...all].sort(() => Math.random() - 0.5).slice(0, 4)
   }, [])
@@ -439,12 +439,8 @@ export default function Learn() {
 
         {/* Left shapes */}
         <div className="path-side path-side--left" aria-hidden="true">
-          <div className="side-shape side-shape--pill"   style={{top:'9%',  left:'20%'}}/>
-          <div className="side-shape side-shape--tri"    style={{top:'34%', left:'45%'}}/>
-          <div className="side-shape side-shape--square" style={{top:'61%', left:'12%'}}/>
-          <div className="side-shape side-shape--pill side-shape--sm" style={{top:'80%', left:'52%'}}/>
-          <div className="coin-sprite" style={{top:'18%', left:'8%',  backgroundPosition: coinSprites[0]}} />
-          <div className="coin-sprite" style={{top:'62%', left:'18%', backgroundPosition: coinSprites[1]}} />
+          <img className="coin-sprite" src={coinSprites[0]} style={{top:'15%', right:'0%'}} alt="" />
+          <img className="coin-sprite" src={coinSprites[1]} style={{top:'58%', right:'0%'}} alt="" />
         </div>
 
         <div className="path-center">
@@ -538,12 +534,8 @@ export default function Learn() {
 
         {/* Right shapes */}
         <div className="path-side path-side--right" aria-hidden="true">
-          <div className="side-shape side-shape--tri"    style={{top:'7%',  left:'30%'}}/>
-          <div className="side-shape side-shape--square" style={{top:'38%', left:'48%'}}/>
-          <div className="side-shape side-shape--pill"   style={{top:'62%', left:'18%'}}/>
-          <div className="side-shape side-shape--tri side-shape--sm" style={{top:'83%', left:'55%'}}/>
-          <div className="coin-sprite" style={{top:'38%', left:'12%', backgroundPosition: coinSprites[2]}} />
-          <div className="coin-sprite" style={{top:'75%', left:'5%',  backgroundPosition: coinSprites[3]}} />
+          <img className="coin-sprite" src={coinSprites[2]} style={{top:'35%', left:'0%'}} alt="" />
+          <img className="coin-sprite" src={coinSprites[3]} style={{top:'72%', left:'0%'}} alt="" />
         </div>
 
       </div>
