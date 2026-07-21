@@ -225,14 +225,14 @@
 
   /* Scale down brand on mobile */
   .navbar-brand {
-    font-size: var(--text-base);
+    font-size: var(--text-lg);
     gap: 0;
   }
 
   .navbar-brand-logo {
-    width: 48px;
-    height: 48px;
-    margin-right: -8px;
+    width: 58px;
+    height: 58px;
+    margin-right: -10px;
   }
 
   .navbar-toggle {
@@ -246,21 +246,21 @@
   .navbar-cents--mobile,
   .navbar-xp--mobile {
     display: inline-flex;
-    padding: 4px 8px;
-    gap: 4px;
-    font-size: var(--text-xs);
+    padding: 5px 10px;
+    gap: 5px;
+    font-size: var(--text-sm);
     box-shadow: none;
   }
 
   .navbar-xp--mobile .navbar-xp-icon-wrap {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
   }
 
   .navbar-cents--mobile .navbar-cents-coin {
-    width: 18px;
-    height: 18px;
-    font-size: 10px;
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
   }
 
   .navbar-end {
