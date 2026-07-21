@@ -52,6 +52,9 @@
   .since-badge.up{color:var(--good)} .since-badge.down{color:var(--bad)} .since-badge.flat{color:var(--muted)}
   .since-badge .period{font-size:12px;font-weight:500;color:var(--muted);margin-left:3px}
   .sparkline-chart{margin-top:2px}
+  .card-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .card-hd h3{margin:0;font-size:14.5px}
+  .period-sel{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--muted);background:var(--card);cursor:pointer;outline:none;font-family:inherit;font-weight:600}
 {% endblock %}
 
 {% block portal_content %}
@@ -143,66 +146,105 @@
     </div>
 
     <div class="card">
-      <h3>Google rating</h3>
       {% if reviews_card %}
+        <div class="card-hd">
+          <h3>Google rating</h3>
+          <select class="period-sel" data-target="rating">
+            <option value="weekly">Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
         <div class="v">{{ '%.1f'|format(reviews_card.rating) if reviews_card.rating else '–' }}★</div>
         {% if reviews_card.new_five_star %}
           <div class="d up">▲ {{ reviews_card.new_five_star }} new 5-star review{{ 's' if reviews_card.new_five_star != 1 else '' }} this period</div>
         {% elif reviews_card.new_count %}
           <div class="d up">▲ {{ reviews_card.new_count }} new review{{ 's' if reviews_card.new_count != 1 else '' }} this period</div>
         {% endif %}
-        {% if reviews_card.since_delta %}
-          <span class="since-badge {{ reviews_card.since_dir or 'flat' }}">
-            {{ '▲' if reviews_card.since_dir == 'up' else ('▼' if reviews_card.since_dir == 'down' else '–') }}
-            {{ reviews_card.since_delta }}<span class="period">since {{ reviews_card.since_date }}</span>
-          </span>
-        {% endif %}
-        {% if reviews_card.sparkline %}
-          <div class="sparkline-chart">{{ reviews_card.sparkline|safe }}</div>
+        {% if reviews_card.periods %}
+          {% for period in ['weekly', 'monthly', 'yearly'] %}
+            {% set pd = reviews_card.periods[period] %}
+            {% if pd %}
+            <div class="period-panel" data-target="rating" data-period="{{ period }}"{% if period != 'monthly' %} style="display:none"{% endif %}>
+              <span class="since-badge {{ pd.since_dir }}">
+                {{ '▲' if pd.since_dir == 'up' else ('▼' if pd.since_dir == 'down' else '–') }}
+                {{ pd.since_delta }}★<span class="period">since {{ pd.since_date }}</span>
+              </span>
+              <div class="sparkline-chart">{{ pd.sparkline|safe }}</div>
+            </div>
+            {% endif %}
+          {% endfor %}
         {% endif %}
       {% else %}
+        <h3>Google rating</h3>
         <p class="empty">Google Business Profile isn't connected yet.</p>
       {% endif %}
     </div>
 
     <div class="card">
-      <h3>Total reviews</h3>
       {% if total_reviews_card %}
+        <div class="card-hd">
+          <h3>Total reviews</h3>
+          <select class="period-sel" data-target="reviews">
+            <option value="weekly">Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
         <div class="v">{{ total_reviews_card.count }}</div>
-        {% if total_reviews_card.since_delta %}
-          <span class="since-badge {{ total_reviews_card.since_dir or 'flat' }}">
-            {{ '▲' if total_reviews_card.since_dir == 'up' else ('▼' if total_reviews_card.since_dir == 'down' else '–') }}
-            {{ total_reviews_card.since_delta }}<span class="period">since {{ total_reviews_card.since_date }}</span>
-          </span>
-        {% endif %}
-        {% if total_reviews_card.sparkline %}
-          <div class="sparkline-chart">{{ total_reviews_card.sparkline|safe }}</div>
+        {% if total_reviews_card.periods %}
+          {% for period in ['weekly', 'monthly', 'yearly'] %}
+            {% set pd = total_reviews_card.periods[period] %}
+            {% if pd %}
+            <div class="period-panel" data-target="reviews" data-period="{{ period }}"{% if period != 'monthly' %} style="display:none"{% endif %}>
+              <span class="since-badge {{ pd.since_dir }}">
+                {{ '▲' if pd.since_dir == 'up' else ('▼' if pd.since_dir == 'down' else '–') }}
+                {{ pd.since_delta }}<span class="period">since {{ pd.since_date }}</span>
+              </span>
+              <div class="sparkline-chart">{{ pd.sparkline|safe }}</div>
+            </div>
+            {% endif %}
+          {% endfor %}
         {% endif %}
       {% else %}
+        <h3>Total reviews</h3>
         <p class="empty">Google Business Profile isn't connected yet.</p>
       {% endif %}
     </div>
 
     <div class="card">
-      <h3>Domain rank</h3>
       {% if authority_card %}
+        <div class="card-hd">
+          <h3>Domain rank</h3>
+          <select class="period-sel" data-target="da">
+            <option value="weekly">Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
         <div class="v">{{ authority_card.da }} <span style="font-size:14px;color:var(--muted);font-weight:500">/ 100 Domain Authority</span></div>
         {% if authority_card.delta_label %}
           <div class="d {{ authority_card.direction }}">{{ '▲' if authority_card.direction == 'up' else ('▼' if authority_card.direction == 'down' else '–') }} {{ authority_card.delta_label }}</div>
         {% endif %}
-        {% if authority_card.since_delta %}
-          <span class="since-badge {{ authority_card.since_dir or 'flat' }}">
-            {{ '▲' if authority_card.since_dir == 'up' else ('▼' if authority_card.since_dir == 'down' else '–') }}
-            {{ authority_card.since_delta }}<span class="period">since {{ authority_card.since_date }}</span>
-          </span>
-        {% endif %}
-        {% if authority_card.sparkline %}
-          <div class="sparkline-chart">{{ authority_card.sparkline|safe }}</div>
+        {% if authority_card.periods %}
+          {% for period in ['weekly', 'monthly', 'yearly'] %}
+            {% set pd = authority_card.periods[period] %}
+            {% if pd %}
+            <div class="period-panel" data-target="da" data-period="{{ period }}"{% if period != 'monthly' %} style="display:none"{% endif %}>
+              <span class="since-badge {{ pd.since_dir }}">
+                {{ '▲' if pd.since_dir == 'up' else ('▼' if pd.since_dir == 'down' else '–') }}
+                {{ pd.since_delta }}<span class="period">since {{ pd.since_date }}</span>
+              </span>
+              <div class="sparkline-chart">{{ pd.sparkline|safe }}</div>
+            </div>
+            {% endif %}
+          {% endfor %}
         {% endif %}
         {% if authority_card.top_competitor %}
           <p class="empty" style="margin-top:8px">Top competitor: {{ authority_card.top_competitor }}</p>
         {% endif %}
       {% else %}
+        <h3>Domain rank</h3>
         <p class="empty">Domain authority tracking hasn't started yet.</p>
       {% endif %}
     </div>
@@ -229,4 +271,16 @@
   {% endif %}
 
 {% endif %}
+
+<script>
+document.querySelectorAll('.period-sel').forEach(function(sel) {
+  sel.addEventListener('change', function() {
+    var target = this.dataset.target;
+    var chosen = this.value;
+    document.querySelectorAll('.period-panel[data-target="' + target + '"]').forEach(function(p) {
+      p.style.display = p.dataset.period === chosen ? '' : 'none';
+    });
+  });
+});
+</script>
 {% endblock %}

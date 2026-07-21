@@ -663,6 +663,34 @@ def _portal_pct_change(cur: float, prev: float | None) -> dict | None:
             "arrow": "▲" if direction == "up" else "▼"}
 
 
+def _kpi_periods(hist: list, current_val: float, val_fmt: str = ".0f") -> dict:
+    """Return {weekly, monthly, yearly} sparkline + since-data for a KPI history (oldest-first).
+
+    Slices: weekly = last 4 pts, monthly = last 8 pts, yearly = full history.
+    Falls back to the full history when a slice has fewer than 2 points.
+    """
+    slices = {
+        "weekly":  hist[-4:]  if len(hist) >= 4  else hist,
+        "monthly": hist[-8:]  if len(hist) >= 8  else hist,
+        "yearly":  hist,
+    }
+    out = {}
+    for period, h in slices.items():
+        if len(h) < 2:
+            out[period] = None
+            continue
+        first, curr = float(h[0]["value"]), float(current_val)
+        d = curr - first
+        sign = "+" if d > 0 else ("" if d == 0 else "-")
+        out[period] = {
+            "sparkline":   _make_sparkline(h, val_fmt=val_fmt),
+            "since_date":  _fmt_month(h[0]["date"]),
+            "since_delta": f"{sign}{format(abs(d), val_fmt)}",
+            "since_dir":   "up" if d > 0 else ("down" if d < 0 else "flat"),
+        }
+    return out
+
+
 def _fmt_month(date_str: str) -> str:
     """'2026-04-22' → 'Apr 2026'"""
     if not date_str:
@@ -885,35 +913,24 @@ def portal_home():
             }
 
         # --- KPI history sparklines (domain authority, rating, review count) ---
-        da_hist     = list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12)))
-        rating_hist = list(reversed(db.get_kpis(customer_id, "rating", limit=12)))
-        review_hist = list(reversed(db.get_kpis(customer_id, "review_count", limit=12)))
+        da_hist     = list(reversed(db.get_kpis(customer_id, "domain_authority", limit=24)))
+        rating_hist = list(reversed(db.get_kpis(customer_id, "rating", limit=24)))
+        review_hist = list(reversed(db.get_kpis(customer_id, "review_count", limit=24)))
 
         if authority_card and len(da_hist) >= 2:
-            first_da = round(da_hist[0]["value"])
-            since_d  = authority_card["da"] - first_da
-            authority_card["since_date"]  = _fmt_month(da_hist[0]["date"])
-            authority_card["since_delta"] = f"+{since_d}" if since_d > 0 else str(since_d)
-            authority_card["since_dir"]   = "up" if since_d > 0 else ("down" if since_d < 0 else "flat")
-            authority_card["sparkline"]   = _make_sparkline(da_hist)
+            authority_card["periods"] = _kpi_periods(da_hist, authority_card["da"])
 
         # Split review data: reviews_card keeps rating; total_reviews_card is its own card
         total_reviews_card = None
         if reviews_card:
             if len(rating_hist) >= 2:
-                rd = round((reviews_card.get("rating") or 0) - (rating_hist[0]["value"] or 0), 1)
-                reviews_card["since_date"]  = _fmt_month(rating_hist[0]["date"])
-                reviews_card["since_delta"] = f"+{rd:.1f}★" if rd > 0 else f"{rd:.1f}★"
-                reviews_card["since_dir"]   = "up" if rd > 0 else ("down" if rd < 0 else "flat")
-                reviews_card["sparkline"]   = _make_sparkline(rating_hist, color="#2563eb", val_fmt=".1f")
+                reviews_card["periods"] = _kpi_periods(
+                    rating_hist, reviews_card.get("rating") or 0, val_fmt=".1f"
+                )
             if len(review_hist) >= 2:
-                cd = int(reviews_card.get("review_count") or 0) - int(review_hist[0]["value"] or 0)
                 total_reviews_card = {
-                    "count":       reviews_card["review_count"],
-                    "since_date":  _fmt_month(review_hist[0]["date"]),
-                    "since_delta": f"+{cd}" if cd > 0 else str(cd),
-                    "since_dir":   "up" if cd > 0 else ("down" if cd < 0 else "flat"),
-                    "sparkline":   _make_sparkline(review_hist),
+                    "count":   reviews_card["review_count"],
+                    "periods": _kpi_periods(review_hist, reviews_card["review_count"]),
                 }
 
         return render_template(
