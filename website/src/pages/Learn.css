@@ -20,6 +20,14 @@
 .path-side--left  { left: 0; }
 .path-side--right { right: 0; }
 
+.path-coin-video {
+  position: absolute;
+  width: 110px;
+  border-radius: var(--radius-md);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
 .side-shape { position: absolute; opacity: 0.75; }
 
 .side-shape--pill {

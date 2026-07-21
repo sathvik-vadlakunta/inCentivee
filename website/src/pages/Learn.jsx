@@ -434,6 +434,7 @@ export default function Learn() {
           <div className="side-shape side-shape--tri"    style={{top:'34%', left:'45%'}}/>
           <div className="side-shape side-shape--square" style={{top:'61%', left:'12%'}}/>
           <div className="side-shape side-shape--pill side-shape--sm" style={{top:'80%', left:'52%'}}/>
+          <video className="path-coin-video" src="/coin-animation.mp4" autoPlay loop muted playsInline style={{top:'22%', left:'10%'}} />
         </div>
 
         <div className="path-center">
@@ -531,6 +532,7 @@ export default function Learn() {
           <div className="side-shape side-shape--square" style={{top:'38%', left:'48%'}}/>
           <div className="side-shape side-shape--pill"   style={{top:'62%', left:'18%'}}/>
           <div className="side-shape side-shape--tri side-shape--sm" style={{top:'83%', left:'55%'}}/>
+          <video className="path-coin-video" src="/coin-animation.mp4" autoPlay loop muted playsInline style={{top:'50%', left:'5%'}} />
         </div>
 
       </div>
