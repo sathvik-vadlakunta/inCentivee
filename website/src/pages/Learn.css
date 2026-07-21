@@ -20,12 +20,13 @@
 .path-side--left  { left: 0; }
 .path-side--right { right: 0; }
 
-.path-coin-video {
+.coin-sprite {
   position: absolute;
-  width: 150px;
-  height: 150px;
-  object-fit: contain;
-  opacity: 0.9;
+  width: 96px;
+  height: 96px;
+  background-image: url('/coin-sprites.png');
+  background-size: 300% 300%;
+  background-repeat: no-repeat;
   pointer-events: none;
 }
 
