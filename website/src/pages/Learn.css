@@ -22,8 +22,8 @@
 
 .coin-sprite {
   position: absolute;
-  width: 130px;
-  height: 130px;
+  width: 260px;
+  height: 260px;
   object-fit: contain;
   pointer-events: none;
 }
