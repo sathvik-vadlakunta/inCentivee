@@ -5,8 +5,8 @@ import { supabase } from '../lib/supabase'
 import { allUnits } from '../data/levels'
 import { fetchQuestionsMap } from '../lib/questionsApi'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
-import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw } from 'lucide-react'
-import { triggerCoinFly } from '../components/CoinFlyLayer'
+import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw, Zap } from 'lucide-react'
+import { triggerCoinFly, triggerXPFly } from '../components/CoinFlyLayer'
 import './Learn.css'
 
 const SECTIONS = [
@@ -221,6 +221,7 @@ export default function Learn() {
         setCompletedIds(prev => new Set([...prev, unit.id]))
         bumpXP(earned)
         triggerCoinFly(earned)
+        triggerXPFly(earned * 2)
         refreshProfile()
       }
     }
@@ -321,9 +322,15 @@ export default function Learn() {
                 </span>
               </div>
             )}
-            <div className="done-cents">
-              <span className="cents-coin">¢</span>
-              <span>+{centsEarned} cents earned</span>
+            <div className="done-rewards">
+              <div className="done-cents">
+                <span className="cents-coin">¢</span>
+                <span>+{centsEarned} cents earned</span>
+              </div>
+              <div className="done-xp">
+                <span className="done-xp-icon"><Zap size={14} strokeWidth={2.5} /></span>
+                <span>+{centsEarned * 2} XP earned</span>
+              </div>
             </div>
             {!currentUser && (
               <div className="done-guest-cta">

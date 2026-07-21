@@ -356,11 +356,32 @@
 .done-test-badge--passed { color: var(--secondary); background: rgba(13,148,136,0.1); }
 .done-test-badge--failed { color: var(--accent);    background: rgba(255,111,97,0.1); }
 
+.done-rewards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .done-cents {
   display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px;
   background: var(--muted); border: var(--border-width) solid var(--foreground);
   border-radius: var(--radius-full); font-family: var(--font-heading); font-weight: 700;
   font-size: var(--text-md); box-shadow: var(--shadow-card);
+}
+
+.done-xp {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px;
+  background: var(--muted); border: var(--border-width) solid var(--foreground);
+  border-radius: var(--radius-full); font-family: var(--font-heading); font-weight: 700;
+  font-size: var(--text-md); box-shadow: var(--shadow-card);
+}
+
+.done-xp-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%; background: var(--secondary); color: white;
+  border: var(--border-width) solid var(--foreground); box-shadow: 2px 2px 0 var(--foreground);
+  flex-shrink: 0;
 }
 .cents-coin {
   display: flex; align-items: center; justify-content: center;

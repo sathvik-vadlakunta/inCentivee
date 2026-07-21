@@ -119,8 +119,18 @@
   color: var(--foreground);
 }
 
-.navbar-xp-icon {
-  color: var(--secondary);
+.navbar-xp-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--secondary);
+  color: white;
+  border: var(--border-width) solid var(--foreground);
+  box-shadow: 1px 1px 0 var(--foreground);
+  flex-shrink: 0;
 }
 
 .navbar-xp--guest {

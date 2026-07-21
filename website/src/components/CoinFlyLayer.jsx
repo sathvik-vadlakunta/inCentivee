@@ -6,7 +6,13 @@ let _id = 0
 export function triggerCoinFly(amount) {
   if (!amount || amount <= 0) return
   const count = Math.min(amount, 20)
-  window.dispatchEvent(new CustomEvent('coinfly', { detail: { count } }))
+  window.dispatchEvent(new CustomEvent('coinfly', { detail: { count, type: 'coin' } }))
+}
+
+export function triggerXPFly(amount) {
+  if (!amount || amount <= 0) return
+  const count = Math.min(amount, 20)
+  window.dispatchEvent(new CustomEvent('coinfly', { detail: { count, type: 'xp' } }))
 }
 
 export default function CoinFlyLayer() {
@@ -14,11 +20,11 @@ export default function CoinFlyLayer() {
 
   useEffect(() => {
     function onCoinFly(e) {
-      const { count } = e.detail
+      const { count, type } = e.detail
 
-      const targetEl =
-        document.querySelector('.navbar-actions .navbar-cents') ??
-        document.querySelector('.navbar-cents--mobile')
+      const targetEl = type === 'xp'
+        ? (document.querySelector('.navbar-actions .navbar-xp') ?? document.querySelector('.navbar-xp--mobile'))
+        : (document.querySelector('.navbar-actions .navbar-cents') ?? document.querySelector('.navbar-cents--mobile'))
       if (!targetEl) return
 
       const rect = targetEl.getBoundingClientRect()
@@ -35,6 +41,7 @@ export default function CoinFlyLayer() {
         tx,
         ty,
         delay: i * 65,
+        type,
       }))
 
       setCoins(prev => [...prev, ...batch])
@@ -49,7 +56,7 @@ export default function CoinFlyLayer() {
       {coins.map(c => (
         <div
           key={c.id}
-          className="coin-fly"
+          className={`coin-fly coin-fly--${c.type}`}
           style={{
             left: c.sx,
             top:  c.sy,
@@ -59,7 +66,7 @@ export default function CoinFlyLayer() {
           }}
           onAnimationEnd={() => setCoins(prev => prev.filter(x => x.id !== c.id))}
         >
-          ¢
+          {c.type === 'xp' ? '⚡' : '¢'}
         </div>
       ))}
     </div>

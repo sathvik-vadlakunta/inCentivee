@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Lock, LogIn, Star } from 'lucide-react'
+import { ArrowLeft, Check, Lock, LogIn, Star, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { triggerCoinFly } from '../components/CoinFlyLayer'
+import { triggerCoinFly, triggerXPFly } from '../components/CoinFlyLayer'
 import { supabase } from '../lib/supabase'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
 import { allUnits } from '../data/levels'
@@ -243,6 +243,7 @@ export default function UnitPage() {
       }
       bumpXP(earned)
       triggerCoinFly(earned)
+      triggerXPFly(earned * 2)
     }
 
     setCompletedIds(newCompleted)
@@ -267,9 +268,15 @@ export default function UnitPage() {
             </div>
             <h2>Nice work.</h2>
             <p className="done-subtitle">{activeLesson.title}</p>
-            <div className="done-cents">
-              <span className="cents-coin">¢</span>
-              <span>+{centsEarned} cents earned</span>
+            <div className="done-rewards">
+              <div className="done-cents">
+                <span className="cents-coin">¢</span>
+                <span>+{centsEarned} cents earned</span>
+              </div>
+              <div className="done-xp">
+                <span className="done-xp-icon"><Zap size={14} strokeWidth={2.5} /></span>
+                <span>+{centsEarned * 2} XP earned</span>
+              </div>
             </div>
             {!currentUser && (
               <div className="done-guest-cta">
