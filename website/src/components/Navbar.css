@@ -71,6 +71,36 @@
   font-size: var(--text-sm);
 }
 
+/* XP counter */
+.navbar-xp {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--muted);
+  border: var(--border-width) solid var(--foreground);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: var(--text-sm);
+  color: var(--foreground);
+}
+
+.navbar-xp-icon {
+  color: var(--secondary);
+}
+
+.navbar-xp--guest {
+  opacity: 0.35;
+  pointer-events: none;
+  user-select: none;
+}
+
+.navbar-xp--mobile {
+  display: none;
+}
+
 /* Cents counter */
 .navbar-cents {
   display: inline-flex;
@@ -161,6 +191,10 @@
   }
 
   .navbar-cents--mobile {
+    display: inline-flex;
+  }
+
+  .navbar-xp--mobile {
     display: inline-flex;
   }
 

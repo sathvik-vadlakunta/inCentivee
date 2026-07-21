@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Menu, X, LogIn, LogOut } from 'lucide-react'
+import { Menu, X, LogIn, LogOut, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import './Navbar.css'
 
@@ -16,6 +16,9 @@ export default function Navbar() {
   const [open, setOpen] = useState(false)
   const { currentUser, profile, logOut } = useAuth()
   const navigate = useNavigate()
+
+  const coins = profile?.xp ?? 0
+  const xp    = coins * 2
 
   async function handleLogOut() {
     await logOut()
@@ -42,9 +45,13 @@ export default function Navbar() {
         <div className="navbar-actions">
           {currentUser ? (
             <>
+              <div className="navbar-xp" title="Your XP">
+                <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
+                <span className="navbar-xp-count">{xp} XP</span>
+              </div>
               <div className="navbar-cents" title="Your cents">
                 <span className="navbar-cents-coin">¢</span>
-                <span className="navbar-cents-count">{profile?.xp ?? 0}</span>
+                <span className="navbar-cents-count">{coins}</span>
               </div>
               <button className="btn btn-secondary navbar-logout" onClick={handleLogOut}>
                 <span className="btn-label">Log out</span>
@@ -53,6 +60,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
+              <div className="navbar-xp navbar-xp--guest" title="Log in to earn XP">
+                <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
+                <span className="navbar-xp-count">0 XP</span>
+              </div>
               <div className="navbar-cents navbar-cents--guest" title="Log in to earn cents">
                 <span className="navbar-cents-coin">¢</span>
                 <span className="navbar-cents-count">0</span>
@@ -66,9 +77,13 @@ export default function Navbar() {
         </div>
 
         <div className="navbar-end">
+          <div className={`navbar-xp navbar-xp--mobile${!currentUser ? ' navbar-xp--guest' : ''}`} title="Your XP" aria-hidden="true">
+            <Zap size={12} strokeWidth={2.5} className="navbar-xp-icon" />
+            <span className="navbar-xp-count">{currentUser ? xp : 0} XP</span>
+          </div>
           <div className={`navbar-cents navbar-cents--mobile${!currentUser ? ' navbar-cents--guest' : ''}`} title="Your cents" aria-hidden="true">
             <span className="navbar-cents-coin">¢</span>
-            <span className="navbar-cents-count">{currentUser ? (profile?.xp ?? 0) : 0}</span>
+            <span className="navbar-cents-count">{currentUser ? coins : 0}</span>
           </div>
           {!currentUser && (
             <button className="btn btn-secondary navbar-mobile-login" onClick={() => navigate('/login')}>
@@ -98,9 +113,13 @@ export default function Navbar() {
           </ul>
           {currentUser ? (
             <div className="navbar-mobile-bottom">
+              <div className="navbar-xp">
+                <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
+                <span className="navbar-xp-count">{xp} XP</span>
+              </div>
               <div className="navbar-cents">
                 <span className="navbar-cents-coin">¢</span>
-                <span className="navbar-cents-count">{profile?.xp ?? 0}</span>
+                <span className="navbar-cents-count">{coins}</span>
               </div>
               <button className="btn btn-secondary" onClick={handleLogOut} style={{ flex: 1, justifyContent: 'center' }}>
                 <span className="btn-label">Log out</span>
