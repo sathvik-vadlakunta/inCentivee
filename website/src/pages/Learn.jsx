@@ -439,8 +439,8 @@ export default function Learn() {
 
         {/* Left shapes */}
         <div className="path-side path-side--left" aria-hidden="true">
-          <img className="coin-sprite" src={coinSprites[0]} style={{top:'15%', right:'0%'}} alt="" />
-          <img className="coin-sprite" src={coinSprites[1]} style={{top:'58%', right:'0%'}} alt="" />
+          <img className="coin-sprite" src={coinSprites[0]} style={{top: section.isCapstone ? '35%' : '15%', right:'0%'}} alt="" />
+          {!section.isCapstone && <img className="coin-sprite" src={coinSprites[1]} style={{top:'58%', right:'0%'}} alt="" />}
         </div>
 
         <div className="path-center">
@@ -534,8 +534,8 @@ export default function Learn() {
 
         {/* Right shapes */}
         <div className="path-side path-side--right" aria-hidden="true">
-          <img className="coin-sprite" src={coinSprites[2]} style={{top:'35%', left:'0%'}} alt="" />
-          <img className="coin-sprite" src={coinSprites[3]} style={{top:'72%', left:'0%'}} alt="" />
+          <img className="coin-sprite" src={coinSprites[2]} style={{top: section.isCapstone ? '35%' : '35%', left:'0%'}} alt="" />
+          {!section.isCapstone && <img className="coin-sprite" src={coinSprites[3]} style={{top:'72%', left:'0%'}} alt="" />}
         </div>
 
       </div>
