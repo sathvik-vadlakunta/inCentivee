@@ -4,13 +4,16 @@
 {% block extra_style %}
   .score-hero{display:flex;gap:26px;align-items:center;flex-wrap:wrap;padding:26px;background:linear-gradient(135deg,#f8faf9,#eef7f0);border:1px solid #dcefe1;border-radius:16px}
   .score-badge{width:132px;height:132px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;flex:0 0 auto;box-shadow:0 8px 20px rgba(22,163,74,.25)}
-  .score-badge b{font-size:46px;line-height:1}
-  .score-badge span{font-size:13px;opacity:.92;margin-top:2px}
+  .score-badge b{font-size:44px;line-height:1;letter-spacing:-.01em}
+  .score-badge span{font-size:12px;opacity:.88;margin-top:4px;letter-spacing:.04em}
   .score-copy{flex:1;min-width:240px}
-  .score-copy .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
-  .score-copy h2{margin:2px 0 8px;font-size:26px}
+  .score-copy h2{margin:0 0 6px;font-size:22px;font-weight:800}
   .score-copy .delta{font-size:14px;font-weight:600}
-  .score-copy .takeaway{margin-top:8px;font-size:15px;color:#14532d;background:#e8f5ec;border:1px solid #c7e7d1;border-radius:10px;padding:12px 14px;display:inline-block}
+  .score-wins{min-width:200px;padding-left:24px;border-left:1px solid #dcefe1;align-self:stretch;display:flex;flex-direction:column;justify-content:center}
+  .score-wins h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;margin:0 0 8px}
+  .score-wins ul{margin:0;padding-left:16px;font-size:13.5px;line-height:1.7;color:var(--ink)}
+  .score-wins .empty{font-size:13px;color:var(--muted);margin:0}
+  @media(max-width:640px){.score-wins{border-left:none;padding-left:0;border-top:1px solid #dcefe1;padding-top:16px;width:100%}}
 
   .pillar-sec{margin-top:28px}
   .pillar-sec h3{margin:0}
@@ -32,12 +35,23 @@
   .card .d{font-size:13px;font-weight:600;margin-top:2px}
   .card ul{margin:6px 0 0;padding-left:18px;font-size:14px}
   .card .empty{font-size:13.5px;color:var(--muted)}
-  .engines{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  .chip{font-size:12px;background:#eef4f8;border:1px solid #d7e6ef;color:var(--brand);padding:4px 10px;border-radius:99px}
-  .chip.miss{background:#f6f7f8;color:var(--muted);border-color:var(--line)}
+  .engines{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;align-items:flex-end}
+  .ai-logo-chip{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .ai-logo-chip .logo-box{width:40px;height:40px;border-radius:10px;border:1.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;padding:7px;box-sizing:border-box;background:#fff}
+  .ai-logo-chip .logo-box img{width:100%;height:100%;object-fit:contain;display:block}
+  .ai-logo-chip .logo-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  .ai-logo-chip .logo-count{font-size:10.5px;font-weight:700;color:var(--good)}
+  .ai-logo-chip.miss .logo-box{border-color:#e5e7eb;opacity:.4}
+  .ai-logo-chip.miss .logo-count{color:var(--muted)}
+  .ai-logo-chip[data-engine="chatgpt"] .logo-box{padding:3px}
 
   .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
   .empty-state h2{color:var(--ink);margin-bottom:8px}
+
+  .since-badge{font-size:16px;font-weight:800;margin:6px 0 12px;display:block;line-height:1.2}
+  .since-badge.up{color:var(--good)} .since-badge.down{color:var(--bad)} .since-badge.flat{color:var(--muted)}
+  .since-badge .period{font-size:12px;font-weight:500;color:var(--muted);margin-left:3px}
+  .sparkline-chart{margin-top:2px}
 {% endblock %}
 
 {% block portal_content %}
@@ -52,22 +66,30 @@
   <div class="score-hero">
     <div class="score-badge" style="background:{{ grade.color or '#9aa5b1' }}">
       {% if overall_score is not none %}
-        <b>{{ overall_score }}</b><span>Grade {{ grade.letter or '–' }}</span>
+        <b>{{ grade.letter or '–' }}</b><span>Score: {{ overall_score }}</span>
       {% else %}
         <b>–</b><span>Pending</span>
       {% endif %}
     </div>
     <div class="score-copy">
-      <div class="label">Your PracticeRank Score</div>
-      <h2>
-        {{ overall_score if overall_score is not none else '–' }}
-        {% if score_delta is not none %}
-          <span class="delta {{ 'up' if score_delta > 0 else ('down' if score_delta < 0 else 'flat') }}">
-            {{ '▲' if score_delta > 0 else ('▼' if score_delta < 0 else '–') }} {{ score_delta|abs }} pts vs last period
-          </span>
-        {% endif %}
-      </h2>
-      <div class="takeaway">{{ takeaway }}</div>
+      <h2>Your PracticeRank Score</h2>
+      {% if score_delta is not none %}
+        <div class="delta {{ 'up' if score_delta > 0 else ('down' if score_delta < 0 else 'flat') }}">
+          {{ '▲' if score_delta > 0 else ('▼' if score_delta < 0 else '–') }} {{ score_delta|abs }} pts vs last period
+        </div>
+      {% endif %}
+    </div>
+    <div class="score-wins">
+      <h3>What we did for you this period</h3>
+      {% if wins_card %}
+        <ul>
+          {% for title in wins_card %}
+            <li>{{ title }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="empty">No published items yet this period.</p>
+      {% endif %}
     </div>
   </div>
 
@@ -92,13 +114,26 @@
           <div class="v">{{ ai_card.hit_rate }}% <span style="font-size:14px;color:var(--muted);font-weight:500">avg. hit rate</span></div>
         {% endif %}
         {% if ai_card.chips %}
+        {% set logo_map = {"chatgpt": "chatgpt.png", "claude": "claude.png", "gemini": "gemini.webp", "grok": "grok.png", "perplexity": "perplexity.png"} %}
         <div class="engines">
           {% for c in ai_card.chips %}
-            {% if c.hit %}
-              <span class="chip">✓ {{ c.name }} {{ c.mentions }}/{{ c.total }}</span>
-            {% else %}
-              <span class="chip miss">{{ c.name }} — pending</span>
-            {% endif %}
+            {% set key = c.name|lower %}
+            {% set logo = logo_map.get(key, "") %}
+            <div class="ai-logo-chip {{ '' if c.hit else 'miss' }}" data-engine="{{ key }}">
+              <div class="logo-box">
+                {% if logo %}
+                  <img src="/static/ai-logos/{{ logo }}" alt="{{ c.name }}">
+                {% else %}
+                  <span style="font-size:11px;font-weight:700;color:var(--muted)">{{ c.name[:2] }}</span>
+                {% endif %}
+              </div>
+              <span class="logo-label">{{ c.name }}</span>
+              {% if c.hit %}
+                <span class="logo-count">{{ c.mentions }}/{{ c.total }}</span>
+              {% else %}
+                <span class="logo-count" style="color:var(--muted);opacity:.5">–</span>
+              {% endif %}
+            </div>
           {% endfor %}
         </div>
         {% endif %}
@@ -108,13 +143,22 @@
     </div>
 
     <div class="card">
-      <h3>Google reviews</h3>
+      <h3>Google rating</h3>
       {% if reviews_card %}
-        <div class="v">{{ '%.1f'|format(reviews_card.rating) if reviews_card.rating else '–' }}★ <span style="font-size:14px;color:var(--muted);font-weight:500">{{ reviews_card.review_count }} total</span></div>
+        <div class="v">{{ '%.1f'|format(reviews_card.rating) if reviews_card.rating else '–' }}★</div>
         {% if reviews_card.new_five_star %}
           <div class="d up">▲ {{ reviews_card.new_five_star }} new 5-star review{{ 's' if reviews_card.new_five_star != 1 else '' }} this period</div>
         {% elif reviews_card.new_count %}
           <div class="d up">▲ {{ reviews_card.new_count }} new review{{ 's' if reviews_card.new_count != 1 else '' }} this period</div>
+        {% endif %}
+        {% if reviews_card.since_delta %}
+          <span class="since-badge {{ reviews_card.since_dir or 'flat' }}">
+            {{ '▲' if reviews_card.since_dir == 'up' else ('▼' if reviews_card.since_dir == 'down' else '–') }}
+            {{ reviews_card.since_delta }}<span class="period">since {{ reviews_card.since_date }}</span>
+          </span>
+        {% endif %}
+        {% if reviews_card.sparkline %}
+          <div class="sparkline-chart">{{ reviews_card.sparkline|safe }}</div>
         {% endif %}
       {% else %}
         <p class="empty">Google Business Profile isn't connected yet.</p>
@@ -122,15 +166,20 @@
     </div>
 
     <div class="card">
-      <h3>What we did for you this period</h3>
-      {% if wins_card %}
-        <ul>
-          {% for title in wins_card %}
-            <li>Published "{{ title }}"</li>
-          {% endfor %}
-        </ul>
+      <h3>Total reviews</h3>
+      {% if total_reviews_card %}
+        <div class="v">{{ total_reviews_card.count }}</div>
+        {% if total_reviews_card.since_delta %}
+          <span class="since-badge {{ total_reviews_card.since_dir or 'flat' }}">
+            {{ '▲' if total_reviews_card.since_dir == 'up' else ('▼' if total_reviews_card.since_dir == 'down' else '–') }}
+            {{ total_reviews_card.since_delta }}<span class="period">since {{ total_reviews_card.since_date }}</span>
+          </span>
+        {% endif %}
+        {% if total_reviews_card.sparkline %}
+          <div class="sparkline-chart">{{ total_reviews_card.sparkline|safe }}</div>
+        {% endif %}
       {% else %}
-        <p class="empty">No published items yet this period.</p>
+        <p class="empty">Google Business Profile isn't connected yet.</p>
       {% endif %}
     </div>
 
@@ -141,8 +190,17 @@
         {% if authority_card.delta_label %}
           <div class="d {{ authority_card.direction }}">{{ '▲' if authority_card.direction == 'up' else ('▼' if authority_card.direction == 'down' else '–') }} {{ authority_card.delta_label }}</div>
         {% endif %}
+        {% if authority_card.since_delta %}
+          <span class="since-badge {{ authority_card.since_dir or 'flat' }}">
+            {{ '▲' if authority_card.since_dir == 'up' else ('▼' if authority_card.since_dir == 'down' else '–') }}
+            {{ authority_card.since_delta }}<span class="period">since {{ authority_card.since_date }}</span>
+          </span>
+        {% endif %}
+        {% if authority_card.sparkline %}
+          <div class="sparkline-chart">{{ authority_card.sparkline|safe }}</div>
+        {% endif %}
         {% if authority_card.top_competitor %}
-          <p class="empty" style="margin-top:6px">Top competitor: {{ authority_card.top_competitor }}</p>
+          <p class="empty" style="margin-top:8px">Top competitor: {{ authority_card.top_competitor }}</p>
         {% endif %}
       {% else %}
         <p class="empty">Domain authority tracking hasn't started yet.</p>

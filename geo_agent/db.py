@@ -3001,19 +3001,33 @@ class CustomerDB:
 
     @staticmethod
     def _hash_password(password: str) -> str:
-        """Hash a password with scrypt + random salt."""
+        """Hash a password with scrypt (pbkdf2 fallback) + random salt."""
         salt = secrets.token_hex(16)
-        h = hashlib.scrypt(password.encode(), salt=salt.encode(), n=16384, r=8, p=1, dklen=32)
-        return f"{salt}${h.hex()}"
+        try:
+            h = hashlib.scrypt(password.encode(), salt=salt.encode(), n=16384, r=8, p=1, dklen=32)
+            return f"scrypt${salt}${h.hex()}"
+        except (AttributeError, OSError):
+            # scrypt unavailable (e.g. macOS system Python without OpenSSL scrypt)
+            h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 260000, dklen=32)
+            return f"pbkdf2${salt}${h.hex()}"
 
     @staticmethod
     def _verify_password(password: str, password_hash: str) -> bool:
         """Verify a password against a stored hash."""
         try:
-            salt, h_hex = password_hash.split("$", 1)
-            h = hashlib.scrypt(password.encode(), salt=salt.encode(), n=16384, r=8, p=1, dklen=32)
+            parts = password_hash.split("$")
+            if len(parts) == 3:
+                algo, salt, h_hex = parts
+            else:
+                # Legacy format: salt$hash (assumed scrypt, no algo prefix)
+                algo = "scrypt"
+                salt, h_hex = parts[0], parts[1]
+            if algo == "scrypt":
+                h = hashlib.scrypt(password.encode(), salt=salt.encode(), n=16384, r=8, p=1, dklen=32)
+            else:
+                h = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 260000, dklen=32)
             return secrets.compare_digest(h.hex(), h_hex)
-        except (ValueError, KeyError):
+        except (ValueError, KeyError, AttributeError, OSError):
             return False
 
     def create_user(self, username: str, password: str, display_name: str = "", role: str = "admin") -> bool:

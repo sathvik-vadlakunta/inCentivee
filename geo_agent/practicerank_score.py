@@ -50,11 +50,14 @@ PILLAR_LABELS = {
 # Recalibrated so a fully-executed early account (foundation done, content
 # shipped, AI building) lands at a strong B (~80).
 GRADES = [
-    (88, "A", "Excellent", "#16a34a"),
-    (72, "B", "Strong", "#65a30d"),
-    (55, "C", "Good", "#d97706"),
-    (38, "D", "Needs Work", "#ea580c"),
-    (0, "F", "Critical", "#dc2626"),
+    (95, "A+", "Excellent",  "#15803d"),
+    (85, "A",  "Excellent",  "#16a34a"),
+    (80, "B+", "Strong",     "#65a30d"),
+    (70, "B",  "Good",       "#65a30d"),
+    (65, "C+", "Fair",       "#d97706"),
+    (55, "C",  "Fair",       "#d97706"),
+    (50, "D+", "Needs Work", "#ea580c"),
+    (40, "D",  "Needs Work", "#dc2626"),
 ]
 
 
@@ -63,7 +66,7 @@ def grade_from_score(score: int) -> dict:
     for threshold, letter, label, color in GRADES:
         if score >= threshold:
             return {"letter": letter, "label": label, "color": color}
-    return {"letter": "F", "label": "Critical", "color": "#dc2626"}
+    return {"letter": "F", "label": "Critical", "color": "#991b1b"}
 
 
 # ---------------------------------------------------------------------------

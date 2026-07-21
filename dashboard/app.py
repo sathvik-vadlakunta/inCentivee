@@ -337,7 +337,7 @@ _PORTAL_AI_ENGINE_NAMES = ["Claude", "ChatGPT", "Perplexity", "Gemini", "Grok"]
 # Distinct logo-badge initials — Claude/ChatGPT both start with "C" and
 # Gemini/Grok both start with "G", so a naive name[0] collides. Matches the
 # spec mock's abbreviations (client-portal.html engine-row logos).
-_PORTAL_AI_ENGINE_LOGO = {"Claude": "C", "ChatGPT": "G", "Perplexity": "P", "Gemini": "Ge", "Grok": "X"}
+_PORTAL_AI_ENGINE_LOGO = {"Claude": "claude.png", "ChatGPT": "chatgpt.png", "Perplexity": "perplexity.png", "Gemini": "gemini.webp", "Grok": "grok.png"}
 
 
 @app.route("/portal/pillar/ai-visibility")
@@ -663,6 +663,95 @@ def _portal_pct_change(cur: float, prev: float | None) -> dict | None:
             "arrow": "▲" if direction == "up" else "▼"}
 
 
+def _fmt_month(date_str: str) -> str:
+    """'2026-04-22' → 'Apr 2026'"""
+    if not date_str:
+        return ""
+    try:
+        from datetime import datetime as _dt
+        return _dt.strptime(date_str[:10], "%Y-%m-%d").strftime("%b %Y")
+    except (ValueError, TypeError):
+        return date_str
+
+
+def _make_sparkline(
+    history: list,
+    color: str = "#16a34a",
+    val_fmt: str = ".0f",
+) -> str | None:
+    """Full-width SVG area+line sparkline with start/end value labels on the dots.
+
+    Uses width="100%" + viewBox so it scales to whatever container CSS sets.
+    Returns None when fewer than 2 valid data points exist.
+    """
+    pts_data = [(h["date"][:10], float(h["value"])) for h in history if h.get("value") is not None]
+    if len(pts_data) < 2:
+        return None
+    dates = [d for d, _ in pts_data]
+    vals  = [v for _, v in pts_data]
+    mn, mx = min(vals), max(vals)
+    rng = mx - mn or 1
+    n = len(vals)
+
+    W, H   = 220, 62
+    pad_l  = 32   # room for start-value label
+    pad_r  = 32   # room for end-value label
+    pad_t  = 10   # breathing room above highest point
+    pad_b  = 20   # room for date labels
+
+    cw = W - pad_l - pad_r
+    ch = H - pad_t - pad_b
+
+    coords = []
+    for i, v in enumerate(vals):
+        x = round(pad_l + i / (n - 1) * cw, 1)
+        y = round(pad_t + (1 - (v - mn) / rng) * ch, 1)
+        coords.append((x, y))
+
+    base_y = pad_t + ch
+    area_d = (
+        f"M {coords[0][0]},{base_y} "
+        + " ".join(f"L {x},{y}" for x, y in coords)
+        + f" L {coords[-1][0]},{base_y} Z"
+    )
+    line_d = "M " + " L ".join(f"{x},{y}" for x, y in coords)
+    dots = "".join(
+        f'<circle cx="{x}" cy="{y}" r="3.5" fill="{color}" stroke="#fff" stroke-width="1.8"/>'
+        for x, y in coords
+    )
+    fmt_v = lambda v: format(v, val_fmt)
+    date_y = H - 2
+
+    return (
+        f'<svg width="100%" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg" '
+        f'preserveAspectRatio="none" style="display:block;overflow:visible">'
+        # area fill
+        f'<path d="{area_d}" fill="{color}" fill-opacity="0.12"/>'
+        # baseline
+        f'<line x1="{pad_l}" y1="{base_y}" x2="{W - pad_r}" y2="{base_y}" '
+        f'stroke="#e5e7eb" stroke-width="1"/>'
+        # line
+        f'<path d="{line_d}" fill="none" stroke="{color}" stroke-width="2.4" '
+        f'stroke-linejoin="round" stroke-linecap="round"/>'
+        # dots
+        f'{dots}'
+        # start-value label (left of first dot, muted)
+        f'<text x="{coords[0][0] - 6}" y="{coords[0][1]}" font-size="11" fill="{color}" '
+        f'opacity="0.65" font-family="system-ui,sans-serif" text-anchor="end" '
+        f'dominant-baseline="middle" font-weight="600">{fmt_v(vals[0])}</text>'
+        # end-value label (right of last dot, full color, bold)
+        f'<text x="{coords[-1][0] + 6}" y="{coords[-1][1]}" font-size="11" fill="{color}" '
+        f'font-family="system-ui,sans-serif" text-anchor="start" '
+        f'dominant-baseline="middle" font-weight="700">{fmt_v(vals[-1])}</text>'
+        # date labels
+        f'<text x="{coords[0][0]}" y="{date_y}" font-size="9" fill="#9aa5b1" '
+        f'font-family="system-ui,sans-serif" text-anchor="middle">{_fmt_month(dates[0])}</text>'
+        f'<text x="{coords[-1][0]}" y="{date_y}" font-size="9" fill="#9aa5b1" '
+        f'font-family="system-ui,sans-serif" text-anchor="middle">{_fmt_month(dates[-1])}</text>'
+        f'</svg>'
+    )
+
+
 @app.route("/portal/")
 @client_login_required
 def portal_home():
@@ -691,8 +780,9 @@ def portal_home():
         score = payload.get("score") or {}
         score_prev = payload.get("score_prev")
         sections = payload.get("sections") or {}
-        grade = score.get("grade") or {}
         overall = score.get("score")
+        # Recompute grade live so the current scale always applies to frozen snapshots
+        grade = grade_from_score(overall) if overall is not None else {}
 
         delta = None
         if overall is not None and score_prev is not None:
@@ -794,6 +884,38 @@ def portal_home():
                 "top_competitor": top_competitor,
             }
 
+        # --- KPI history sparklines (domain authority, rating, review count) ---
+        da_hist     = list(reversed(db.get_kpis(customer_id, "domain_authority", limit=12)))
+        rating_hist = list(reversed(db.get_kpis(customer_id, "rating", limit=12)))
+        review_hist = list(reversed(db.get_kpis(customer_id, "review_count", limit=12)))
+
+        if authority_card and len(da_hist) >= 2:
+            first_da = round(da_hist[0]["value"])
+            since_d  = authority_card["da"] - first_da
+            authority_card["since_date"]  = _fmt_month(da_hist[0]["date"])
+            authority_card["since_delta"] = f"+{since_d}" if since_d > 0 else str(since_d)
+            authority_card["since_dir"]   = "up" if since_d > 0 else ("down" if since_d < 0 else "flat")
+            authority_card["sparkline"]   = _make_sparkline(da_hist)
+
+        # Split review data: reviews_card keeps rating; total_reviews_card is its own card
+        total_reviews_card = None
+        if reviews_card:
+            if len(rating_hist) >= 2:
+                rd = round((reviews_card.get("rating") or 0) - (rating_hist[0]["value"] or 0), 1)
+                reviews_card["since_date"]  = _fmt_month(rating_hist[0]["date"])
+                reviews_card["since_delta"] = f"+{rd:.1f}★" if rd > 0 else f"{rd:.1f}★"
+                reviews_card["since_dir"]   = "up" if rd > 0 else ("down" if rd < 0 else "flat")
+                reviews_card["sparkline"]   = _make_sparkline(rating_hist, color="#2563eb", val_fmt=".1f")
+            if len(review_hist) >= 2:
+                cd = int(reviews_card.get("review_count") or 0) - int(review_hist[0]["value"] or 0)
+                total_reviews_card = {
+                    "count":       reviews_card["review_count"],
+                    "since_date":  _fmt_month(review_hist[0]["date"]),
+                    "since_delta": f"+{cd}" if cd > 0 else str(cd),
+                    "since_dir":   "up" if cd > 0 else ("down" if cd < 0 else "flat"),
+                    "sparkline":   _make_sparkline(review_hist),
+                }
+
         return render_template(
             "portal_home.html",
             has_report=True,
@@ -805,6 +927,7 @@ def portal_home():
             search_card=search_card,
             ai_card=ai_card,
             reviews_card=reviews_card,
+            total_reviews_card=total_reviews_card,
             wins_card=wins_card,
             authority_card=authority_card,
         )
