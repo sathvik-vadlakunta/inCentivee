@@ -774,6 +774,26 @@ def portal_home():
             if titles:
                 wins_card = titles[:3]
 
+        # --- Supporting card: domain rank (Moz Domain Authority) ---
+        # Frozen-snapshot, same as every other card — sections.authority is only
+        # present when DA is tracked for this customer (weekly_report.py gates it
+        # on db.get_latest_kpi(customer_id, "domain_authority")).
+        authority_card = None
+        authority = sections.get("authority")
+        if authority and authority.get("da") is not None:
+            da = round(authority["da"])
+            month_prev = authority.get("month_prev")
+            direction, delta_label = "flat", None
+            if month_prev is not None:
+                d = da - round(month_prev)
+                direction = "up" if d > 0 else ("down" if d < 0 else "flat")
+                delta_label = f"{'+' if d > 0 else ''}{d} vs last month" if d else "no change vs last month"
+            top_competitor = round(authority["top_competitor"]) if authority.get("top_competitor") else None
+            authority_card = {
+                "da": da, "direction": direction, "delta_label": delta_label,
+                "top_competitor": top_competitor,
+            }
+
         return render_template(
             "portal_home.html",
             has_report=True,
@@ -786,6 +806,7 @@ def portal_home():
             ai_card=ai_card,
             reviews_card=reviews_card,
             wins_card=wins_card,
+            authority_card=authority_card,
         )
     finally:
         db.close()

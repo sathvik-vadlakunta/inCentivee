@@ -38,6 +38,9 @@ CUSTOMER_ID = "demo-aspen-grove"
 CUSTOMER_NAME = "Aspen Grove Dental"
 PORTAL_USERNAME = "demo"
 PORTAL_PASSWORD = "demo-password-123"
+ADMIN_USERNAME = "demo-admin"
+ADMIN_PASSWORD = "demo-admin-password-123"
+ADMIN_DISPLAY_NAME = "Demo Staff"
 
 SERVICE_AREAS = ["Bellingham, WA", "Ferndale, WA", "Lynden, WA", "Blaine, WA"]
 LIVE_AREA_PAGES = ["Bellingham, WA", "Ferndale, WA", "Lynden, WA"]  # 3 of 4 — matches spec mock
@@ -73,8 +76,10 @@ RESET_TABLES = [
     ("content_recommendations", "customer_id"),
     ("reviews", "customer_id"),
     ("competitors", "customer_id"),
+    ("competitor_domains", "customer_id"),
     ("gsc_daily_metrics", "customer_id"),
     ("gsc_query_daily", "customer_id"),
+    ("ai_response_entities", "customer_id"),
     ("ai_mention_results", "customer_id"),
     ("ai_mention_runs", "customer_id"),
     ("google_places", "customer_id"),
@@ -97,8 +102,9 @@ def reset_demo_customer(db: CustomerDB) -> None:
         except Exception as e:
             print(f"  (skip {table}: {e})")
     db.conn.execute("DELETE FROM customers WHERE id = ?", (CUSTOMER_ID,))
+    db.conn.execute("DELETE FROM dashboard_users WHERE username = ?", (ADMIN_USERNAME,))
     db.conn.commit()
-    print(f"Reset: cleared all existing rows for {CUSTOMER_ID}")
+    print(f"Reset: cleared all existing rows for {CUSTOMER_ID} (+ the demo admin login)")
 
 
 def seed_customer(db: CustomerDB) -> None:
@@ -192,11 +198,18 @@ def seed_ai_mentions(db: CustomerDB) -> None:
             "avg_position": round(3.5 - rate * 2, 1),
             "engines": engines_summary, "prompt_set": "benchmark", "methodology": "2.0",
         })
-        if is_latest:
-            # Full per-prompt results only for the latest run — this is what
-            # Ticket 6's "Questions we test" section queries by run_id.
+        # Full per-prompt results for the last 3 runs — "Questions we test"
+        # (Ticket 6) only ever needs the single latest run, but share-of-voice
+        # (db.get_share_of_voice, default last_n_runs=3) pools entities across
+        # the last 3, so those need real ai_mention_results rows to attach
+        # ai_response_entities to (FOREIGN KEY result_id -> ai_mention_results.id).
+        is_sov_run = week_i >= len(rates) - 3
+        if is_sov_run:
+            run_hits = (LATEST_ENGINE_HITS if is_latest else
+                       {n: round(h * rate / rates[-1]) for n, h in LATEST_ENGINE_HITS.items()})
+            claude_result_ids = {}  # prompt -> id, used as the SOV entity anchor below
             for engine in ENGINES:
-                hits = LATEST_ENGINE_HITS[engine]
+                hits = run_hits[engine]
                 for p_i, prompt in enumerate(BENCHMARK_PROMPTS):
                     mentioned = p_i < hits
                     db.save_ai_mention_result({
@@ -207,8 +220,43 @@ def seed_ai_mentions(db: CustomerDB) -> None:
                         "context": f"Mentioned {CUSTOMER_NAME}" if mentioned else "",
                         "full_response": "", "is_disclaimer": False, "model": "",
                     })
+                    if engine == "Claude":
+                        row = db.conn.execute(
+                            "SELECT id FROM ai_mention_results WHERE run_id=? AND engine=? AND prompt=?",
+                            (run_id, engine, prompt),
+                        ).fetchone()
+                        claude_result_ids[p_i] = row["id"]
+
+            # Share of voice: which businesses AI answers name, not just whether
+            # ours got mentioned. Anchored on Claude's result row per prompt (one
+            # AI answer often names several practices in one response, e.g. a
+            # "top 3 dentists near you" — so multiple entities per result_id is
+            # realistic, not a bug). Deterministic per-prompt pattern rather than
+            # random so reruns without --reset produce identical entity counts.
+            for p_i, prompt in enumerate(BENCHMARK_PROMPTS):
+                result_id = claude_result_ids[p_i]
+                run_date_iso = f"{run_date}T00:00:00Z"
+
+                def _entity(name: str, is_customer: bool, position: int):
+                    db.save_ai_response_entity({
+                        "result_id": result_id, "run_id": run_id, "customer_id": CUSTOMER_ID,
+                        "entity_name": name, "entity_name_normalized": name.lower().strip(),
+                        "is_customer": is_customer, "position": position,
+                        "engine": "Claude", "prompt": prompt,
+                        "prompt_category": "local_intent", "run_date": run_date_iso,
+                    })
+
+                if p_i < LATEST_ENGINE_HITS["Claude"]:  # matches Claude's own hit/miss above
+                    _entity(CUSTOMER_NAME, True, 1)
+                if p_i % 2 == 0:
+                    _entity("Bellingham Family Dental", False, 2)
+                if p_i % 3 == 0:
+                    _entity("Whatcom Smiles", False, 3)
+                if p_i % 4 == 0:
+                    _entity("Cascade Family Dentistry", False, 4)
     print(f"Seeded {len(rates)} weekly AI mention runs (rate {rates[0]:.0%} -> {rates[-1]:.0%}), "
-          f"full per-prompt results for the latest run ({len(BENCHMARK_PROMPTS)} prompts x {len(ENGINES)} engines)")
+          f"full per-prompt results + share-of-voice entities for the last 3 runs "
+          f"({len(BENCHMARK_PROMPTS)} prompts x {len(ENGINES)} engines each)")
 
 
 def seed_reviews_and_places(db: CustomerDB) -> None:
@@ -236,6 +284,20 @@ def seed_reviews_and_places(db: CustomerDB) -> None:
     db.add_competitor(CUSTOMER_ID, "Whatcom Smiles", rating=4.3, review_count=61,
                       location="Ferndale, WA")
     print("Seeded Google Places, 10 reviews, rating/review_count KPI history, 2 competitors")
+
+
+def seed_domain_authority(db: CustomerDB) -> None:
+    """Moz Domain Authority history + one competitor domain's DA, for the
+    Overview page's "Domain rank" card (weekly_report.py's `sections.authority`,
+    gated on db.get_latest_kpi(customer_id, "domain_authority") existing)."""
+    today = _today()
+    for months_ago, da in [(3, 24), (2, 27), (1, 29), (0, 31)]:
+        d = (today - timedelta(days=months_ago * 30)).strftime("%Y-%m-%d")
+        db.record_kpi(CUSTOMER_ID, "domain_authority", da, date=d)
+    db.add_competitor_domain(CUSTOMER_ID, "bellinghamfamilydental.com",
+                             name="Bellingham Family Dental")
+    db.update_competitor_da(CUSTOMER_ID, "bellinghamfamilydental.com", 38)
+    print("Seeded Domain Authority history (24 -> 31) + 1 competitor domain (DA 38)")
 
 
 def seed_content(db: CustomerDB) -> None:
@@ -299,6 +361,17 @@ def seed_portal_login(db: CustomerDB) -> None:
     print(f"Seeded portal login: username={PORTAL_USERNAME!r} password={PORTAL_PASSWORD!r}")
 
 
+def seed_admin_login(db: CustomerDB) -> None:
+    """Staff/admin login (dashboard_users) — separate table and session from the
+    client-portal login above; create_user() is idempotent (returns False on a
+    duplicate username rather than raising), so this is safe to call every run."""
+    created = db.create_user(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_DISPLAY_NAME, role="admin")
+    if created:
+        print(f"Seeded admin login: username={ADMIN_USERNAME!r} password={ADMIN_PASSWORD!r}")
+    else:
+        print(f"Admin login already exists: username={ADMIN_USERNAME!r}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--db", required=True, help="Path to the SQLite DB file to seed")
@@ -320,15 +393,19 @@ def main() -> None:
             seed_gsc(db)
             seed_ai_mentions(db)
             seed_reviews_and_places(db)
+            seed_domain_authority(db)
             seed_content(db)
             seed_portal_login(db)
             print()
 
+        seed_admin_login(db)  # idempotent — ensures the demo admin exists even on a re-run
         generate_snapshots(db)
         print(f"\nDone. DB: {args.db}")
-        print(f"Portal:  http://127.0.0.1:5199/portal/login  "
+        print(f"Portal login:  http://127.0.0.1:5199/portal/login  "
               f"(username={PORTAL_USERNAME!r}, password={PORTAL_PASSWORD!r})")
-        print(f"Admin:   /customer/{CUSTOMER_ID}  (needs a dashboard_users login, unrelated to this script)")
+        print(f"Admin login:   http://127.0.0.1:5199/login  "
+              f"(username={ADMIN_USERNAME!r}, password={ADMIN_PASSWORD!r})")
+        print(f"Admin customer page: /customer/{CUSTOMER_ID}")
     finally:
         db.close()
 

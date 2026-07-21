@@ -71,27 +71,7 @@
     </div>
   </div>
 
-  <!-- 2. What makes up your score -->
-  {% if pillars %}
-  <div class="pillar-sec">
-    <div class="h"><h3>What makes up your score</h3></div>
-    {% for p in pillars %}
-    <div class="pillar">
-      <div class="row">
-        <span>{{ p.label }} <span class="weight">{{ p.weight_pct }}% of your score</span></span>
-        <span class="{{ 'up' if p.trend == 'up' else ('down' if p.trend == 'down' else 'flat') }}">
-          {{ p.score }}{% if p.trend == 'up' %} ▲{% elif p.trend == 'down' %} ▼{% elif p.trend == 'stable' %} –{% endif %}
-        </span>
-      </div>
-      <div class="bar"><i style="width:{{ p.score }}%;background:{{ p.color }}"></i></div>
-      <p class="why">{{ p.one_liner }}</p>
-      <a class="view-link" href="/portal/pillar/{{ p.slug }}">See the details →</a>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <!-- 3. Supporting cards -->
+  <!-- 2. Supporting cards -->
   <div class="cards">
     <div class="card">
       <h3>Website visits from Google</h3>
@@ -153,7 +133,42 @@
         <p class="empty">No published items yet this period.</p>
       {% endif %}
     </div>
+
+    <div class="card">
+      <h3>Domain rank</h3>
+      {% if authority_card %}
+        <div class="v">{{ authority_card.da }} <span style="font-size:14px;color:var(--muted);font-weight:500">/ 100 Domain Authority</span></div>
+        {% if authority_card.delta_label %}
+          <div class="d {{ authority_card.direction }}">{{ '▲' if authority_card.direction == 'up' else ('▼' if authority_card.direction == 'down' else '–') }} {{ authority_card.delta_label }}</div>
+        {% endif %}
+        {% if authority_card.top_competitor %}
+          <p class="empty" style="margin-top:6px">Top competitor: {{ authority_card.top_competitor }}</p>
+        {% endif %}
+      {% else %}
+        <p class="empty">Domain authority tracking hasn't started yet.</p>
+      {% endif %}
+    </div>
   </div>
+
+  <!-- 3. What makes up your score -->
+  {% if pillars %}
+  <div class="pillar-sec">
+    <div class="h"><h3>What makes up your score</h3></div>
+    {% for p in pillars %}
+    <div class="pillar">
+      <div class="row">
+        <span>{{ p.label }} <span class="weight">{{ p.weight_pct }}% of your score</span></span>
+        <span class="{{ 'up' if p.trend == 'up' else ('down' if p.trend == 'down' else 'flat') }}">
+          {{ p.score }}{% if p.trend == 'up' %} ▲{% elif p.trend == 'down' %} ▼{% elif p.trend == 'stable' %} –{% endif %}
+        </span>
+      </div>
+      <div class="bar"><i style="width:{{ p.score }}%;background:{{ p.color }}"></i></div>
+      <p class="why">{{ p.one_liner }}</p>
+      <a class="view-link" href="/portal/pillar/{{ p.slug }}">See the details →</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
 
 {% endif %}
 {% endblock %}
