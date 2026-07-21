@@ -215,6 +215,7 @@
 @media (max-width: 768px) {
   .navbar-inner {
     height: 60px;
+    gap: 0;
   }
 
   .navbar-links,
@@ -222,21 +223,51 @@
     display: none;
   }
 
+  /* Scale down brand on mobile */
+  .navbar-brand {
+    font-size: var(--text-base);
+    gap: 0;
+  }
+
+  .navbar-brand-logo {
+    width: 48px;
+    height: 48px;
+    margin-right: -8px;
+  }
+
   .navbar-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
-  .navbar-cents--mobile {
-    display: inline-flex;
-  }
-
+  /* Compact counter pills on mobile */
+  .navbar-cents--mobile,
   .navbar-xp--mobile {
     display: inline-flex;
+    padding: 4px 8px;
+    gap: 4px;
+    font-size: var(--text-xs);
+    box-shadow: none;
   }
 
-.navbar-mobile {
+  .navbar-xp--mobile .navbar-xp-icon-wrap {
+    width: 18px;
+    height: 18px;
+  }
+
+  .navbar-cents--mobile .navbar-cents-coin {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
+
+  .navbar-end {
+    gap: 5px;
+  }
+
+  .navbar-mobile {
     display: flex;
     flex-direction: column;
     gap: 16px;
