@@ -45,7 +45,7 @@ export default function Navbar() {
         <div className="navbar-actions">
           {currentUser ? (
             <>
-              <div className="navbar-xp" data-tooltip="This is your XP — you earn it every time you complete a lesson">
+              <div className="navbar-xp" data-tooltip="This is your XP, you earn it every time you complete a lesson">
                 <Zap size={14} strokeWidth={2.5} className="navbar-xp-icon" />
                 <span className="navbar-xp-count">{xp}</span>
               </div>
