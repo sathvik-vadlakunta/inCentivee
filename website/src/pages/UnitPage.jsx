@@ -137,7 +137,8 @@ export default function UnitPage() {
   const [sparklingId,   setSparklingId]   = useState(null)
 
   useEffect(() => {
-    if (!currentUser || !unit?.lessons) return
+    if (!currentUser) { setCompletedIds(new Set()); return }
+    if (!unit?.lessons) return
     const lessonIds = unit.lessons.map(l => l.id)
     supabase.from('lesson_progress').select('lesson_id')
       .eq('user_id', currentUser.id).eq('completed', true)

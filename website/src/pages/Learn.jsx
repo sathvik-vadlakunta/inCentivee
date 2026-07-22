@@ -190,7 +190,7 @@ export default function Learn() {
   }, [qData])
 
   useEffect(() => {
-    if (!currentUser) return
+    if (!currentUser) { setCompletedIds(new Set()); return }
     supabase.from('lesson_progress').select('lesson_id')
       .eq('user_id', currentUser.id).eq('completed', true)
       .then(({ data }) => {

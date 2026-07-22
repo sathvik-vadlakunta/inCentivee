@@ -13,3 +13,9 @@ export function storeProgress(ids) {
     localStorage.setItem(KEY, JSON.stringify([...ids]))
   } catch {}
 }
+
+export function clearStoredProgress() {
+  try {
+    localStorage.removeItem(KEY)
+  } catch {}
+}
