@@ -339,12 +339,15 @@
 }
 
 .done-icon {
-  width: 72px; height: 72px; border-radius: 50%; background: var(--secondary);
+  width: 72px; height: 72px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #CFFAFE, #22D3EE 30%, #0D9488 65%, #134E4A 100%);
   border: 4px solid var(--foreground); box-shadow: 4px 4px 0 var(--foreground);
   display: flex; align-items: center; justify-content: center; color: white;
   animation: pop-in 0.4s var(--ease-bounce) both;
 }
-.done-icon--gold { background: var(--tertiary); }
+.done-icon--gold {
+  background: radial-gradient(circle at 35% 28%, #FFFBEB, #FCD34D 28%, #F59E0B 65%, #DC6803 100%);
+}
 
 .lesson-done h2  { font-size: var(--text-3xl); }
 .done-subtitle   { font-size: var(--text-md); color: var(--muted-foreground); margin: 0; }
@@ -387,7 +390,8 @@
 
 .done-xp-icon {
   display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 50%; background: var(--secondary); color: white;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #CFFAFE, #22D3EE 30%, #0D9488 65%, #134E4A 100%);
   border: var(--border-width) solid var(--foreground); box-shadow: 2px 2px 0 var(--foreground);
   flex-shrink: 0;
 }

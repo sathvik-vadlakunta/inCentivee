@@ -126,7 +126,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--secondary);
+  background: radial-gradient(circle at 35% 28%, #CFFAFE, #22D3EE 30%, #0D9488 65%, #134E4A 100%);
   color: white;
   border: var(--border-width) solid var(--foreground);
   box-shadow: 1px 1px 0 var(--foreground);

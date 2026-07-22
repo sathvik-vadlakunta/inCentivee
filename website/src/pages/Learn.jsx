@@ -5,8 +5,9 @@ import { supabase } from '../lib/supabase'
 import { allUnits } from '../data/levels'
 import { fetchQuestionsMap } from '../lib/questionsApi'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
-import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ArrowLeft, LogIn, Lock, Check, Star, Trophy, RefreshCw } from 'lucide-react'
 import { triggerCoinFly, triggerXPFly } from '../components/CoinFlyLayer'
+import CoinBadge from '../components/CoinBadge'
 import './Learn.css'
 
 const SECTIONS = [
@@ -336,11 +337,11 @@ export default function Learn() {
             )}
             <div className="done-rewards">
               <div className="done-cents">
-                <span className="cents-coin">¢</span>
+                <CoinBadge size={28} drop="2px 2px 0" />
                 <span>+{centsEarned} cents earned</span>
               </div>
               <div className="done-xp">
-                <span className="done-xp-icon"><Zap size={14} strokeWidth={2.5} /></span>
+                <span className="done-xp-icon"></span>
                 <span>+{centsEarned * 2} XP earned</span>
               </div>
             </div>
@@ -513,7 +514,7 @@ export default function Learn() {
                     </button>
                     <div className="node-chip" style={{'--chip-color': nodeColor}}>
                       <span className="node-chip-name">{node.title}</span>
-                      <span className="node-coin-badge">¢</span>
+                      <CoinBadge size={20} drop="1px 1px 0" />
                       <span className="node-chip-cents">{node.centsReward}</span>
                     </div>
                   </div>

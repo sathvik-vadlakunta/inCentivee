@@ -211,6 +211,36 @@ p {
   }
 }
 
+/* ===== SHOP COSMETICS ===== */
+
+/* Custom navbar color */
+.shop-custom-nav .navbar {
+  background-color: var(--navbar-custom-bg);
+  border-bottom-color: rgba(255,255,255,0.15);
+}
+.shop-custom-nav .navbar-brand,
+.shop-custom-nav .navbar-brand span,
+.shop-custom-nav .navbar-toggle        { color: white; }
+.shop-custom-nav .navbar-links a       { color: rgba(255,255,255,0.82); }
+.shop-custom-nav .navbar-links a:hover { background: rgba(255,255,255,0.18); color: white; }
+.shop-custom-nav .navbar-xp,
+.shop-custom-nav .navbar-cents {
+  background: rgba(255,255,255,0.18);
+  border-color: rgba(255,255,255,0.35);
+  color: white;
+  box-shadow: 2px 2px 0 rgba(255,255,255,0.25);
+}
+.shop-custom-nav .navbar-xp-icon-wrap,
+.shop-custom-nav .navbar-cents-coin { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.45); box-shadow: none; }
+
+/* Custom progress bar color */
+.shop-custom-progress .quest-bar-fill,
+.shop-custom-progress .banner-progress-fill,
+.shop-custom-progress .lesson-progress-fill { background: var(--progress-custom-color) !important; }
+
+/* Coin shapes are rendered as inline SVG (CoinBadge/CoinSVG components).
+   Body classes (shop-coin-star etc.) are kept by shop.js for potential future use. */
+
 /* ===== ACCESSIBILITY ===== */
 
 @media (prefers-reduced-motion: reduce) {

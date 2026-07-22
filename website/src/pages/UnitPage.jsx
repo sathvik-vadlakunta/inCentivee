@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Check, Lock, LogIn, Star, Zap } from 'lucide-react'
+import { ArrowLeft, Check, Lock, LogIn, Star } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { triggerCoinFly, triggerXPFly } from '../components/CoinFlyLayer'
+import CoinBadge from '../components/CoinBadge'
 import { supabase } from '../lib/supabase'
 import { getStoredProgress, storeProgress } from '../lib/guestProgress'
 import { allUnits } from '../data/levels'
@@ -270,11 +271,11 @@ export default function UnitPage() {
             <p className="done-subtitle">{activeLesson.title}</p>
             <div className="done-rewards">
               <div className="done-cents">
-                <span className="cents-coin">¢</span>
+                <CoinBadge size={28} drop="2px 2px 0" />
                 <span>+{centsEarned} cents earned</span>
               </div>
               <div className="done-xp">
-                <span className="done-xp-icon"><Zap size={14} strokeWidth={2.5} /></span>
+                <span className="done-xp-icon"></span>
                 <span>+{centsEarned * 2} XP earned</span>
               </div>
             </div>
@@ -431,7 +432,7 @@ export default function UnitPage() {
                     </button>
                     <div className="node-chip node-chip--sm" style={{'--chip-color': color}}>
                       <span className="node-chip-name">{lesson.title}</span>
-                      <span className="node-coin-badge">¢</span>
+                      <CoinBadge size={20} drop="1px 1px 0" />
                       <span className="node-chip-cents">{lesson.centsReward}</span>
                     </div>
                   </div>

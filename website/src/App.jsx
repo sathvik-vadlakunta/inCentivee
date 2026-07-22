@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AuthProvider } from './context/AuthContext'
+import { applyCosmetics } from './lib/shop'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
@@ -15,6 +17,7 @@ import QuizTaker from './pages/QuizTaker'
 import QuizCreate from './pages/QuizCreate'
 import Login from './pages/Login'
 import Learn from './pages/Learn'
+import Progress from './pages/Progress'
 import UnitPage from './pages/UnitPage'
 import Admin from './pages/Admin'
 import AdminRoute from './components/AdminRoute'
@@ -22,7 +25,21 @@ import CoinFlyLayer from './components/CoinFlyLayer'
 import './App.css'
 
 export default function App() {
+  useEffect(() => { applyCosmetics() }, [])
+
   return (
+    <>
+    {/* Shared coin gradient — referenced via url(#coin-grad) in any SVG on the page */}
+    <svg style={{position:'absolute',width:0,height:0,overflow:'hidden'}} aria-hidden="true">
+      <defs>
+        <radialGradient id="coin-grad" cx="0.35" cy="0.28" r="0.72" gradientUnits="objectBoundingBox">
+          <stop offset="0%"   stopColor="#FFFBEB"/>
+          <stop offset="28%"  stopColor="#FCD34D"/>
+          <stop offset="65%"  stopColor="#F59E0B"/>
+          <stop offset="100%" stopColor="#DC6803"/>
+        </radialGradient>
+      </defs>
+    </svg>
     <BrowserRouter>
       <AuthProvider>
         <Routes>
@@ -41,6 +58,7 @@ export default function App() {
             <Route path="quizzes/:code" element={<QuizTaker />} />
             <Route path="login" element={<Login />} />
             <Route path="learn" element={<Learn />} />
+            <Route path="progress" element={<Progress />} />
             <Route path="learn/unit/:unitId" element={<UnitPage />} />
             <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
           </Route>
@@ -48,5 +66,6 @@ export default function App() {
         <CoinFlyLayer />
       </AuthProvider>
     </BrowserRouter>
+    </>
   )
 }
