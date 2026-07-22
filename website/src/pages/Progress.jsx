@@ -4,7 +4,11 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getStoredProgress } from '../lib/guestProgress'
 import { Check, LogIn, BookOpen, Star, Trophy, Lock, Download } from 'lucide-react'
-import { getPurchased, getActive, getSpent, getCustomValue, setCustomValue, purchase, toggleItem } from '../lib/shop'
+import {
+  getPurchased, getActive, getSpent,
+  purchase, activateItem, deactivateColor, deactivateShape,
+  applyCosmetics, THEME_COLORS, COIN_SHAPES,
+} from '../lib/shop'
 import './Progress.css'
 
 const LESSON_IDS_ALL = [
@@ -26,33 +30,18 @@ const QUESTS = [
   { id: 'q-cap',     label: 'The Graduate',   desc: 'Complete the Capstone',      goal: 1,  getProgress: (ids)         => ids.has('capstone') ? 1 : 0 },
 ]
 
-const COIN_SHAPES = [
-  { id: 'circle',  label: 'Circle',  d: null },
-  { id: 'star',    label: 'Star',    d: 'M44.2,11.5 Q50,3 55.8,11.5 L66.5,27.4 L84.8,32.7 Q94.7,35.5 88.4,43.6 L76.6,58.7 L77.2,77.8 Q77.6,88 67.9,84.5 L50,78 L32.1,84.5 Q22.4,88 22.8,77.8 L23.4,58.7 L11.6,43.6 Q5.3,35.5 15.2,32.7 L33.5,27.4 Z' },
-  { id: 'hexagon', label: 'Hexagon', d: 'M43.9,6.5 Q50,3 56.1,6.5 L84.6,23 Q90.7,26.5 90.7,33.5 L90.7,66.5 Q90.7,73.5 84.6,77 L56.1,93.5 Q50,97 43.9,93.5 L15.4,77 Q9.3,73.5 9.3,66.5 L9.3,33.5 Q9.3,26.5 15.4,23 Z' },
-  { id: 'diamond', label: 'Diamond', d: 'M41.5,11.5 Q50,3 58.5,11.5 L88.5,41.5 Q97,50 88.5,58.5 L58.5,88.5 Q50,97 41.5,88.5 L11.5,58.5 Q3,50 11.5,41.5 Z' },
-  { id: 'shield',  label: 'Shield',  d: 'M12,10 Q50,5 88,10 C96,15 97,40 90,65 C82,82 65,93 50,97 C35,93 18,82 10,65 C3,40 4,15 12,10 Z' },
-]
-
-function CoinSVG({ shape, size = 28, stroke = 'var(--foreground)', strokeWidth, drop, style }) {
-  const sw = strokeWidth ?? Math.round(200 / size)
+function CoinSVG({ shape, size = 28, drop, style }) {
+  const sw = Math.round(200 / size)
   const filter = drop ? `drop-shadow(${drop} var(--foreground))` : undefined
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" aria-hidden="true"
          style={{ display: 'block', flexShrink: 0, filter, ...style }}>
       {shape.id === 'circle'
-        ? <circle cx="50" cy="50" r="44" fill="url(#coin-grad)" stroke={stroke} strokeWidth={sw}/>
-        : <path d={shape.d} fill="url(#coin-grad)" stroke={stroke} strokeWidth={sw}/>}
+        ? <circle cx="50" cy="50" r="44" fill="url(#coin-grad)" stroke="var(--foreground)" strokeWidth={sw}/>
+        : <path d={shape.d} fill="url(#coin-grad)" stroke="var(--foreground)" strokeWidth={sw}/>}
     </svg>
   )
 }
-
-const SHOP_ITEMS = [
-  { id: 'custom-accent',   type: 'color', storageKey: 'accent',     label: 'Accent Color',      desc: 'Choose the color of buttons, highlights, and branded elements', price: 30, defaultColor: '#FF6F61' },
-  { id: 'custom-nav',      type: 'color', storageKey: 'nav',        label: 'Navbar Color',       desc: 'Pick any color for your navbar background',                     price: 20, defaultColor: '#1E293B' },
-  { id: 'custom-coin',     type: 'shape', storageKey: 'coin_shape', label: 'Coin Shape',         desc: 'Choose the shape of every coin badge throughout the site',      price: 25 },
-  { id: 'custom-progress', type: 'color', storageKey: 'progress',   label: 'Progress Bar Color', desc: 'Personalize the color of all progress and XP bars',            price: 20, defaultColor: '#F59E0B' },
-]
 
 function buildCertHtml({ name, lessonsCount, testsCount, coins, date }) {
   return `<!DOCTYPE html>
@@ -107,25 +96,14 @@ export default function Progress() {
   const [completedIds, setCompletedIds] = useState(() =>
     currentUser ? new Set() : getStoredProgress()
   )
-  const [purchased,     setPurchased]     = useState(getPurchased)
-  const [active,        setActiveSet]     = useState(getActive)
-  const [spent,         setSpent]         = useState(getSpent)
-  const [customValues,  setCustomValues]  = useState(() => ({
-    accent:     getCustomValue('accent',     '#FF6F61'),
-    nav:        getCustomValue('nav',        '#1E293B'),
-    coin_shape: getCustomValue('coin_shape', 'circle'),
-    progress:   getCustomValue('progress',   '#F59E0B'),
-  }))
+  const [purchased, setPurchased] = useState(getPurchased)
+  const [active,    setActive]    = useState(getActive)
+  const [spent,     setSpent]     = useState(getSpent)
 
   function refreshShop() {
     setPurchased(getPurchased())
-    setActiveSet(getActive())
+    setActive(getActive())
     setSpent(getSpent())
-  }
-
-  function handleCustom(key, value) {
-    setCustomValue(key, value)
-    setCustomValues(prev => ({ ...prev, [key]: value }))
   }
 
   useEffect(() => {
@@ -140,7 +118,10 @@ export default function Progress() {
       })
   }, [currentUser?.id])
 
-  const activeShape  = COIN_SHAPES.find(s => s.id === (customValues.coin_shape || 'circle')) ?? COIN_SHAPES[0]
+  useEffect(() => { applyCosmetics() }, [])
+
+  const activeShape  = COIN_SHAPES.find(s => s.id !== 'circle' && active.has(s.id)) ?? COIN_SHAPES[0]
+  const activeColor  = THEME_COLORS.find(c => active.has(c.id)) ?? null
   const earned       = profile?.xp ?? 0
   const coins        = Math.max(0, earned - spent)
   const xp           = earned * 2
@@ -152,21 +133,27 @@ export default function Progress() {
     const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     const html = buildCertHtml({ name, lessonsCount, testsCount, coins, date })
     const win  = window.open('', '_blank', 'width=960,height=760')
-    if (win) {
-      win.document.write(html)
-      win.document.close()
-      setTimeout(() => win.print(), 800)
-    }
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 800) }
   }
 
-  function handleBuy(item) {
-    purchase(item.id, item.price)
+  function handleBuy(itemId, price) {
+    purchase(itemId, price)
     refreshShop()
   }
 
-  function handleToggle(item) {
-    toggleItem(item.id, !active.has(item.id))
-    refreshShop()
+  function handleEquip(itemId) {
+    activateItem(itemId)
+    setActive(getActive())
+  }
+
+  function handleUnequipColor() {
+    deactivateColor()
+    setActive(getActive())
+  }
+
+  function handleUnequipShape() {
+    deactivateShape()
+    setActive(getActive())
   }
 
   return (
@@ -215,30 +202,30 @@ export default function Progress() {
           </div>
         </div>
 
-        {/* Certificate achievement */}
+        {/* Certificate */}
         {(() => {
-          const earned = completedIds.has('capstone')
+          const capEarned = completedIds.has('capstone')
           return (
-            <div className={`cert-achievement${earned ? ' cert-achievement--earned' : ''}`}>
-              <div className={`cert-achievement-icon${earned ? ' cert-achievement-icon--earned' : ''}`}>
-                {earned ? <Trophy size={28} strokeWidth={2.5} /> : <Lock size={24} strokeWidth={2.5} />}
+            <div className={`cert-achievement${capEarned ? ' cert-achievement--earned' : ''}`}>
+              <div className={`cert-achievement-icon${capEarned ? ' cert-achievement-icon--earned' : ''}`}>
+                {capEarned ? <Trophy size={28} strokeWidth={2.5} /> : <Lock size={24} strokeWidth={2.5} />}
               </div>
               <div className="cert-achievement-text">
                 <span className="cert-achievement-label">Finance Certificate</span>
                 <span className="cert-achievement-desc">
-                  {earned
+                  {capEarned
                     ? 'You completed the Capstone Challenge — your certificate is ready.'
                     : 'Complete the Capstone Challenge to earn your certificate of financial literacy.'}
                 </span>
               </div>
               <button
-                className={`btn ${earned ? 'btn-primary' : 'btn-secondary'} cert-achievement-btn`}
-                disabled={!earned}
-                onClick={earned ? openCertificate : undefined}
+                className={`btn ${capEarned ? 'btn-primary' : 'btn-secondary'} cert-achievement-btn`}
+                disabled={!capEarned}
+                onClick={capEarned ? openCertificate : undefined}
               >
-                <span className="btn-label">{earned ? 'Download' : 'Locked'}</span>
+                <span className="btn-label">{capEarned ? 'Download' : 'Locked'}</span>
                 <span className="btn-icon-badge">
-                  {earned ? <Download size={15} strokeWidth={2.5} /> : <Lock size={15} strokeWidth={2.5} />}
+                  {capEarned ? <Download size={15} strokeWidth={2.5} /> : <Lock size={15} strokeWidth={2.5} />}
                 </span>
               </button>
             </div>
@@ -285,101 +272,114 @@ export default function Progress() {
                 {coins} available
               </span>
             </h2>
-            <div className="shop-grid">
-              {SHOP_ITEMS.map(item => {
-                const owned    = purchased.has(item.id)
-                const isActive = active.has(item.id)
-                const canBuy   = !owned && coins >= item.price
-                const curColor = item.type === 'color' ? (customValues[item.storageKey] || item.defaultColor) : null
-                const curShape = item.type === 'shape' ? (customValues.coin_shape || 'circle') : null
 
-                return (
-                  <div key={item.id} className={`shop-card${isActive ? ' shop-card--active' : ''}`}>
-
-                    {/* preview strip */}
-                    {item.type === 'color' && (
-                      <div className="shop-swatch" style={{ background: owned && isActive ? curColor : item.defaultColor }}>
-                        {isActive && <span className="shop-active-tag"><Check size={10} strokeWidth={3} /> Active</span>}
+            {/* Theme Colors */}
+            <div className="shop-category">
+              <div className="shop-cat-header">
+                <span className="shop-cat-title">Theme Color</span>
+                <span className="shop-cat-desc">Accents, buttons &amp; progress bars · 200¢ each</span>
+              </div>
+              <div className="shop-color-grid">
+                {THEME_COLORS.map(color => {
+                  const owned    = purchased.has(color.id)
+                  const isActive = active.has(color.id)
+                  const canBuy   = !owned && coins >= color.price
+                  return (
+                    <div key={color.id} className={`shop-color-item${isActive ? ' shop-color-item--active' : ''}`}>
+                      <div className="shop-color-swatch" style={{ background: color.hex }}>
+                        {isActive && <Check size={18} strokeWidth={3} color="white" />}
                       </div>
-                    )}
-                    {item.type === 'shape' && (
-                      <div className="shop-swatch shop-swatch--shapes">
-                        {COIN_SHAPES.map(s => (
-                          <CoinSVG key={s.id} shape={s} size={32}
-                            style={{ opacity: (owned && isActive && curShape === s.id) ? 1 : 0.55 }}
-                          />
-                        ))}
-                        {isActive && <span className="shop-active-tag"><Check size={10} strokeWidth={3} /> Active</span>}
+                      <div className="shop-color-footer">
+                        <span className="shop-color-name">{color.label}</span>
+                        {owned ? (
+                          <button
+                            className={`btn ${isActive ? 'btn-secondary' : 'btn-primary'} shop-pill-btn`}
+                            onClick={() => isActive ? handleUnequipColor() : handleEquip(color.id)}
+                          >
+                            {isActive ? 'On' : 'Use'}
+                          </button>
+                        ) : (
+                          <button
+                            className={`btn ${canBuy ? 'btn-primary' : 'btn-secondary'} shop-pill-btn`}
+                            disabled={!canBuy}
+                            onClick={() => canBuy && handleBuy(color.id, color.price)}
+                          >
+                            {color.price}¢
+                          </button>
+                        )}
                       </div>
-                    )}
-
-                    <div className="shop-card-body">
-                      <span className="shop-card-label">{item.label}</span>
-                      <p className="shop-card-desc">{item.desc}</p>
                     </div>
+                  )
+                })}
+              </div>
+            </div>
 
-                    {/* controls when active */}
-                    {owned && isActive && item.type === 'color' && (
-                      <div className="shop-controls">
-                        <input
-                          type="color"
-                          className="shop-color-picker"
-                          value={curColor}
-                          onChange={e => handleCustom(item.storageKey, e.target.value)}
+            {/* Coin Shapes */}
+            <div className="shop-category">
+              <div className="shop-cat-header">
+                <span className="shop-cat-title">Coin Shape</span>
+                <span className="shop-cat-desc">Changes every coin badge on the site</span>
+              </div>
+              <div className="shop-shape-grid">
+                {COIN_SHAPES.map(shape => {
+                  const isFree   = shape.price === 0
+                  const owned    = isFree || purchased.has(shape.id)
+                  const isActive = isFree
+                    ? !COIN_SHAPES.some(s => s.id !== 'circle' && active.has(s.id))
+                    : active.has(shape.id)
+                  const canBuy   = !owned && coins >= shape.price
+                  return (
+                    <div key={shape.id} className={`shop-shape-item${isActive ? ' shop-shape-item--active' : ''}${!owned ? ' shop-shape-item--locked' : ''}`}>
+                      <div className="shop-shape-preview">
+                        <CoinSVG shape={shape} size={46} drop="2px 2px 0"
+                          style={{ opacity: owned ? 1 : 0.45 }}
                         />
-                        <span className="shop-controls-hint">Pick a color</span>
+                        {!owned && (
+                          <div className="shop-shape-lock-badge">
+                            <Lock size={10} strokeWidth={2.5} />
+                          </div>
+                        )}
+                        {isActive && (
+                          <div className="shop-shape-active-badge">
+                            <Check size={10} strokeWidth={3} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {owned && isActive && item.type === 'shape' && (
-                      <div className="shop-controls">
-                        <div className="shop-shape-grid">
-                          {COIN_SHAPES.map(s => (
-                            <button
-                              key={s.id}
-                              className={`shop-shape-btn${curShape === s.id ? ' shop-shape-btn--selected' : ''}`}
-                              title={s.label}
-                              onClick={() => handleCustom('coin_shape', s.id)}
-                            >
-                              <CoinSVG shape={s} size={30}/>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="shop-card-footer">
-                      {owned ? (
+                      <span className="shop-shape-name">{shape.label}</span>
+                      {isFree ? (
                         <button
-                          className={`btn ${isActive ? 'btn-secondary' : 'btn-primary'} shop-btn`}
-                          onClick={() => handleToggle(item)}
+                          className={`btn ${isActive ? 'btn-secondary' : 'btn-primary'} shop-pill-btn`}
+                          disabled={isActive}
+                          onClick={() => !isActive && handleEquip('circle')}
                         >
-                          <span className="btn-label">{isActive ? 'Deactivate' : 'Apply'}</span>
+                          {isActive ? 'On' : 'Use'}
+                        </button>
+                      ) : owned ? (
+                        <button
+                          className={`btn ${isActive ? 'btn-secondary' : 'btn-primary'} shop-pill-btn`}
+                          onClick={() => isActive ? handleUnequipShape() : handleEquip(shape.id)}
+                        >
+                          {isActive ? 'On' : 'Use'}
                         </button>
                       ) : (
-                        <>
-                          <span className="shop-price">
-                            <CoinSVG shape={activeShape} size={28} drop="2px 2px 0" />
-                            {item.price}
-                          </span>
-                          <button
-                            className={`btn ${canBuy ? 'btn-primary' : 'btn-secondary'} shop-btn`}
-                            disabled={!canBuy}
-                            onClick={() => canBuy && handleBuy(item)}
-                          >
-                            <span className="btn-label">{canBuy ? 'Buy' : 'Need more ¢'}</span>
-                          </button>
-                        </>
+                        <button
+                          className={`btn ${canBuy ? 'btn-primary' : 'btn-secondary'} shop-pill-btn`}
+                          disabled={!canBuy}
+                          onClick={() => canBuy && handleBuy(shape.id, shape.price)}
+                        >
+                          {shape.price}¢
+                        </button>
                       )}
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
+
           </section>
 
         </div>
       </div>
-
     </main>
   )
 }
