@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Menu, X, LogIn, LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import CoinBadge from './CoinBadge'
+import { getSpent } from '../lib/shop'
 import './Navbar.css'
 
 const links = [
@@ -16,11 +17,18 @@ const links = [
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  const [spent, setSpent] = useState(getSpent)
   const { currentUser, profile, logOut } = useAuth()
   const navigate = useNavigate()
 
-  const coins = profile?.xp ?? 0
-  const xp    = coins * 2
+  useEffect(() => {
+    const refresh = () => setSpent(getSpent())
+    window.addEventListener('incentive:shop-update', refresh)
+    return () => window.removeEventListener('incentive:shop-update', refresh)
+  }, [])
+
+  const coins = Math.max(0, (profile?.xp ?? 0) - spent)
+  const xp    = (profile?.xp ?? 0) * 2
 
   async function handleLogOut() {
     await logOut()

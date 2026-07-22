@@ -41,6 +41,7 @@ export function purchase(itemId, price) {
   localStorage.setItem(PURCHASED_KEY, JSON.stringify([...purchased]))
   localStorage.setItem(SPENT_KEY, String(getSpent() + price))
   activateItem(itemId)
+  window.dispatchEvent(new CustomEvent('incentive:shop-update'))
 }
 
 export function activateItem(itemId) {
