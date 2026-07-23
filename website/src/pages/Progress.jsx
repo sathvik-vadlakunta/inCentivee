@@ -47,10 +47,15 @@ const QUESTS = [
   { id: 'q-test',      label: 'Test Taker',       desc: 'Pass a chapter test',          goal: 1,  getProgress: ids          => Math.min(testCount(ids), 1) },
   { id: 'q-tests-3',   label: 'Quiz Whiz',        desc: 'Pass 3 chapter tests',         goal: 3,  getProgress: ids          => testCount(ids) },
   { id: 'q-tests-all', label: 'Chapter Champion', desc: 'Pass all 6 chapter tests',     goal: 6,  getProgress: ids          => testCount(ids) },
-  // Coins
-  { id: 'q-coins-50',  label: 'Coin Collector',   desc: 'Earn 50 cents',                goal: 50,  getProgress: (_i, coins) => coins },
-  { id: 'q-coins-100', label: 'Penny Pincher',    desc: 'Earn 100 cents',               goal: 100, getProgress: (_i, coins) => coins },
-  { id: 'q-coins-500', label: 'Money Maker',      desc: 'Earn 500 cents',               goal: 500, getProgress: (_i, coins) => coins },
+  // XP milestones (never decreases)
+  { id: 'q-xp-100',    label: 'XP Grinder',       desc: 'Earn 100 XP',                  goal: 100,  getProgress: (_i, _c, _p, xp) => xp },
+  { id: 'q-xp-200',    label: 'XP Hunter',        desc: 'Earn 200 XP',                  goal: 200,  getProgress: (_i, _c, _p, xp) => xp },
+  { id: 'q-xp-1000',   label: 'XP Legend',        desc: 'Earn 1,000 XP',                goal: 1000, getProgress: (_i, _c, _p, xp) => xp },
+  // Coin inventory (current balance — can fluctuate)
+  { id: 'q-hold-100',  label: 'Saving Up',        desc: 'Hold 100 cents at once',       goal: 100,  getProgress: (_i, coins) => coins },
+  { id: 'q-hold-500',  label: 'Piggy Bank',       desc: 'Hold 500 cents at once',       goal: 500,  getProgress: (_i, coins) => coins },
+  { id: 'q-hold-1000', label: 'Vault',            desc: 'Hold 1,000 cents at once',     goal: 1000, getProgress: (_i, coins) => coins },
+  { id: 'q-hold-2000', label: 'Fort Knox',        desc: 'Hold 2,000 cents at once',     goal: 2000, getProgress: (_i, coins) => coins },
   // Shop
   { id: 'q-shop',      label: 'Window Shopper',   desc: 'Buy something from the shop',  goal: 1,  getProgress: (_i, _c, pur) => pur.size > 0 ? 1 : 0 },
   // Capstone
@@ -277,7 +282,7 @@ export default function Progress() {
             <div className="quests-grid">
               {[...QUESTS]
                 .map(q => {
-                  const progress = q.getProgress(completedIds, coins, purchased)
+                  const progress = q.getProgress(completedIds, coins, purchased, xp)
                   const done = progress >= q.goal
                   const pct  = Math.min((progress / q.goal) * 100, 100)
                   return { ...q, progress, done, pct }
