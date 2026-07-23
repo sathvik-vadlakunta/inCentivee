@@ -1,6 +1,7 @@
 const PURCHASED_KEY = 'incentive_shop_purchased'
 const ACTIVE_KEY    = 'incentive_shop_active'
 const SPENT_KEY     = 'incentive_shop_spent'
+const PEAK_KEY      = 'incentive_peak_coins'
 
 export const THEME_COLORS = [
   { id: 'color-coral',  hex: '#FF6F61', label: 'Coral',  price: 0 },
@@ -32,6 +33,19 @@ export function getActive() {
 
 export function getSpent() {
   return parseInt(localStorage.getItem(SPENT_KEY) ?? '0', 10)
+}
+
+export function getPeakCoins() {
+  return parseInt(localStorage.getItem(PEAK_KEY) ?? '0', 10)
+}
+
+export function updatePeakCoins(current) {
+  const peak = getPeakCoins()
+  if (current > peak) {
+    localStorage.setItem(PEAK_KEY, String(current))
+    return current
+  }
+  return peak
 }
 
 export function purchase(itemId, price) {
@@ -76,6 +90,7 @@ export function clearShopData() {
     localStorage.removeItem(PURCHASED_KEY)
     localStorage.removeItem(ACTIVE_KEY)
     localStorage.removeItem(SPENT_KEY)
+    localStorage.removeItem(PEAK_KEY)
   } catch {}
   applyCosmetics(new Set())
   window.dispatchEvent(new CustomEvent('incentive:shop-update'))

@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { getStoredProgress } from '../lib/guestProgress'
 import { Check, LogIn, BookOpen, Star, Trophy, Lock, Download } from 'lucide-react'
 import {
-  getPurchased, getActive, getSpent,
+  getPurchased, getActive, getSpent, getPeakCoins, updatePeakCoins,
   purchase, activateItem, deactivateColor, deactivateShape,
   applyCosmetics, THEME_COLORS, COIN_SHAPES,
 } from '../lib/shop'
@@ -51,11 +51,11 @@ const QUESTS = [
   { id: 'q-xp-100',    label: 'XP Grinder',       desc: 'Earn 100 XP',                  goal: 100,  getProgress: (_i, _c, _p, xp) => xp },
   { id: 'q-xp-200',    label: 'XP Hunter',        desc: 'Earn 200 XP',                  goal: 200,  getProgress: (_i, _c, _p, xp) => xp },
   { id: 'q-xp-1000',   label: 'XP Legend',        desc: 'Earn 1,000 XP',                goal: 1000, getProgress: (_i, _c, _p, xp) => xp },
-  // Coin inventory (current balance — can fluctuate)
-  { id: 'q-hold-100',  label: 'Saving Up',        desc: 'Hold 100 cents at once',       goal: 100,  getProgress: (_i, coins) => coins },
-  { id: 'q-hold-500',  label: 'Piggy Bank',       desc: 'Hold 500 cents at once',       goal: 500,  getProgress: (_i, coins) => coins },
-  { id: 'q-hold-1000', label: 'Vault',            desc: 'Hold 1,000 cents at once',     goal: 1000, getProgress: (_i, coins) => coins },
-  { id: 'q-hold-2000', label: 'Fort Knox',        desc: 'Hold 2,000 cents at once',     goal: 2000, getProgress: (_i, coins) => coins },
+  // Coin inventory (peak balance ever held — never decreases)
+  { id: 'q-hold-100',  label: 'Saving Up',        desc: 'Hold 100 cents at once',       goal: 100,  getProgress: (_i, _c, _p, _x, peak) => peak },
+  { id: 'q-hold-500',  label: 'Piggy Bank',       desc: 'Hold 500 cents at once',       goal: 500,  getProgress: (_i, _c, _p, _x, peak) => peak },
+  { id: 'q-hold-1000', label: 'Vault',            desc: 'Hold 1,000 cents at once',     goal: 1000, getProgress: (_i, _c, _p, _x, peak) => peak },
+  { id: 'q-hold-2000', label: 'Fort Knox',        desc: 'Hold 2,000 cents at once',     goal: 2000, getProgress: (_i, _c, _p, _x, peak) => peak },
   // Shop
   { id: 'q-shop',      label: 'Window Shopper',   desc: 'Buy something from the shop',  goal: 1,  getProgress: (_i, _c, pur) => pur.size > 0 ? 1 : 0 },
   // Capstone
@@ -128,14 +128,16 @@ export default function Progress() {
   const [completedIds, setCompletedIds] = useState(() =>
     currentUser ? new Set() : getStoredProgress()
   )
-  const [purchased, setPurchased] = useState(getPurchased)
-  const [active,    setActive]    = useState(getActive)
-  const [spent,     setSpent]     = useState(getSpent)
+  const [purchased,  setPurchased]  = useState(getPurchased)
+  const [active,     setActive]     = useState(getActive)
+  const [spent,      setSpent]      = useState(getSpent)
+  const [peakCoins,  setPeakCoins]  = useState(getPeakCoins)
 
   function refreshShop() {
     setPurchased(getPurchased())
     setActive(getActive())
     setSpent(getSpent())
+    setPeakCoins(getPeakCoins())
   }
 
   useEffect(() => {
@@ -157,6 +159,14 @@ export default function Progress() {
   }, [])
 
   useEffect(() => { applyCosmetics() }, [])
+
+  useEffect(() => {
+    const newPeak = updatePeakCoins(coins)
+    if (newPeak > peakCoins) {
+      setPeakCoins(newPeak)
+      if (currentUser) saveShopToCloud(currentUser.id)
+    }
+  }, [coins])
 
   const activeShape  = COIN_SHAPES.find(s => s.id !== 'circle' && active.has(s.id)) ?? COIN_SHAPES[0]
   const activeColor  = THEME_COLORS.find(c => active.has(c.id)) ?? null
@@ -282,7 +292,7 @@ export default function Progress() {
             <div className="quests-grid">
               {[...QUESTS]
                 .map(q => {
-                  const progress = q.getProgress(completedIds, coins, purchased, xp)
+                  const progress = q.getProgress(completedIds, coins, purchased, xp, peakCoins)
                   const done = progress >= q.goal
                   const pct  = Math.min((progress / q.goal) * 100, 100)
                   return { ...q, progress, done, pct }
