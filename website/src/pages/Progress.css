@@ -168,7 +168,16 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
+
+.quests-grid::-webkit-scrollbar        { width: 4px; }
+.quests-grid::-webkit-scrollbar-track  { background: transparent; }
+.quests-grid::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 4px; }
 
 .quest-card {
   padding: 16px 20px;

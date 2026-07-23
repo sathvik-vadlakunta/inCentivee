@@ -22,13 +22,39 @@ const LESSON_IDS_ALL = [
 ]
 const CHAPTER_TEST_IDS_ALL = ['s1','s2','s3','s4','s5','s6'].map(id => `${id}-test`)
 
+const S1 = ['u1-1','u1-2','u1-3','u1-4','u2-1','u2-2']
+const S2 = ['u2-3','u3-1','u3-2','u3-3','u4-1','u4-2']
+const S3 = ['u4-3','u5-1','u5-2','u6-1','u7-1','u7-2']
+const S4 = ['u7-3','u7-4','u7-5','u8-1','u9-1','u10-1']
+
+const lessonCount = ids => LESSON_IDS_ALL.filter(id => ids.has(id)).length
+const testCount   = ids => CHAPTER_TEST_IDS_ALL.filter(id => ids.has(id)).length
+
 const QUESTS = [
-  { id: 'q-first',   label: 'First Steps',    desc: 'Complete your first lesson', goal: 1,  getProgress: (ids)         => Math.min(LESSON_IDS_ALL.filter(id => ids.has(id)).length, 1) },
-  { id: 'q-ten',     label: 'On a Roll',      desc: 'Complete 10 lessons',        goal: 10, getProgress: (ids)         => LESSON_IDS_ALL.filter(id => ids.has(id)).length },
-  { id: 'q-fanatic', label: 'Finance Fanatic',desc: 'Complete 25 lessons',        goal: 25, getProgress: (ids)         => LESSON_IDS_ALL.filter(id => ids.has(id)).length },
-  { id: 'q-test',    label: 'Test Taker',     desc: 'Pass a chapter test',        goal: 1,  getProgress: (ids)         => Math.min(CHAPTER_TEST_IDS_ALL.filter(id => ids.has(id)).length, 1) },
-  { id: 'q-coins',   label: 'Coin Collector', desc: 'Earn 50 cents',              goal: 50, getProgress: (_ids, coins) => coins },
-  { id: 'q-cap',     label: 'The Graduate',   desc: 'Complete the Capstone',      goal: 1,  getProgress: (ids)         => ids.has('capstone') ? 1 : 0 },
+  // Lesson milestones
+  { id: 'q-first',     label: 'First Steps',      desc: 'Complete your first lesson',   goal: 1,   getProgress: ids         => Math.min(lessonCount(ids), 1) },
+  { id: 'q-five',      label: 'Getting Started',  desc: 'Complete 5 lessons',           goal: 5,   getProgress: ids         => lessonCount(ids) },
+  { id: 'q-ten',       label: 'On a Roll',        desc: 'Complete 10 lessons',          goal: 10,  getProgress: ids         => lessonCount(ids) },
+  { id: 'q-twenty',    label: 'Halfway There',    desc: 'Complete 20 lessons',          goal: 20,  getProgress: ids         => lessonCount(ids) },
+  { id: 'q-fanatic',   label: 'Finance Fanatic',  desc: 'Complete 25 lessons',          goal: 25,  getProgress: ids         => lessonCount(ids) },
+  { id: 'q-all',       label: 'The Full Course',  desc: 'Complete all 35 lessons',      goal: 35,  getProgress: ids         => lessonCount(ids) },
+  // Section completion
+  { id: 'q-basics',    label: 'Back to Basics',   desc: 'Finish The Basics section',    goal: S1.length, getProgress: ids  => S1.filter(id => ids.has(id)).length },
+  { id: 'q-banking',   label: 'Money Manager',    desc: 'Finish Banking & Budgeting',   goal: S2.length, getProgress: ids  => S2.filter(id => ids.has(id)).length },
+  { id: 'q-taxes',     label: 'Tax Season',       desc: 'Finish Taxes & Investing',     goal: S3.length, getProgress: ids  => S3.filter(id => ids.has(id)).length },
+  { id: 'q-markets',   label: 'Market Watcher',   desc: 'Finish Markets & Business',    goal: S4.length, getProgress: ids  => S4.filter(id => ids.has(id)).length },
+  // Tests
+  { id: 'q-test',      label: 'Test Taker',       desc: 'Pass a chapter test',          goal: 1,  getProgress: ids          => Math.min(testCount(ids), 1) },
+  { id: 'q-tests-3',   label: 'Quiz Whiz',        desc: 'Pass 3 chapter tests',         goal: 3,  getProgress: ids          => testCount(ids) },
+  { id: 'q-tests-all', label: 'Chapter Champion', desc: 'Pass all 6 chapter tests',     goal: 6,  getProgress: ids          => testCount(ids) },
+  // Coins
+  { id: 'q-coins-50',  label: 'Coin Collector',   desc: 'Earn 50 cents',                goal: 50,  getProgress: (_i, coins) => coins },
+  { id: 'q-coins-100', label: 'Penny Pincher',    desc: 'Earn 100 cents',               goal: 100, getProgress: (_i, coins) => coins },
+  { id: 'q-coins-500', label: 'Money Maker',      desc: 'Earn 500 cents',               goal: 500, getProgress: (_i, coins) => coins },
+  // Shop
+  { id: 'q-shop',      label: 'Window Shopper',   desc: 'Buy something from the shop',  goal: 1,  getProgress: (_i, _c, pur) => pur.size > 0 ? 1 : 0 },
+  // Capstone
+  { id: 'q-cap',       label: 'The Graduate',     desc: 'Complete the Capstone',        goal: 1,  getProgress: ids          => ids.has('capstone') ? 1 : 0 },
 ]
 
 function CoinSVG({ shape, size = 28, drop, style }) {
@@ -249,28 +275,35 @@ export default function Progress() {
           <section className="progress-section">
             <h2 className="progress-section-title">Quests</h2>
             <div className="quests-grid">
-              {QUESTS.map(q => {
-                const progress = q.getProgress(completedIds, coins)
-                const pct  = Math.min(Math.round((progress / q.goal) * 100), 100)
-                const done = progress >= q.goal
-                return (
-                  <div key={q.id} className={`quest-card${done ? ' quest-card--done' : ''}`}>
+              {[...QUESTS]
+                .map(q => {
+                  const progress = q.getProgress(completedIds, coins, purchased)
+                  const done = progress >= q.goal
+                  const pct  = Math.min((progress / q.goal) * 100, 100)
+                  return { ...q, progress, done, pct }
+                })
+                .sort((a, b) => {
+                  if (a.done !== b.done) return a.done ? 1 : -1
+                  return b.pct - a.pct
+                })
+                .map(q => (
+                  <div key={q.id} className={`quest-card${q.done ? ' quest-card--done' : ''}`}>
                     <div className="quest-card-top">
-                      <div className={`quest-check${done ? ' quest-check--done' : ''}`}>
-                        {done && <Check size={13} strokeWidth={3} />}
+                      <div className={`quest-check${q.done ? ' quest-check--done' : ''}`}>
+                        {q.done && <Check size={13} strokeWidth={3} />}
                       </div>
                       <div className="quest-card-text">
                         <span className="quest-card-label">{q.label}</span>
                         <span className="quest-card-desc">{q.desc}</span>
                       </div>
-                      <span className="quest-card-count">{Math.min(progress, q.goal)}/{q.goal}</span>
+                      <span className="quest-card-count">{Math.min(q.progress, q.goal)}/{q.goal}</span>
                     </div>
                     <div className="quest-bar-track">
-                      <div className="quest-bar-fill" style={{ width: `${pct}%` }} />
+                      <div className="quest-bar-fill" style={{ width: `${Math.round(q.pct)}%` }} />
                     </div>
                   </div>
-                )
-              })}
+                ))
+              }
             </div>
           </section>
 
