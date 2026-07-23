@@ -170,6 +170,24 @@ export default function AboutPage() {
           </div>
 
           <div className="about-team-group">
+            <h3>Social Media</h3>
+            <div className="about-team-grid">
+              <div className="about-person-card">
+                <div className="about-person-photo">
+                  <img src="/images/esha-yarram.jpeg" alt="Esha Yarram" />
+                </div>
+                <h4>Esha Yarram</h4>
+                <p className="about-person-role">Social Media Coordinator</p>
+                <div className="about-person-socials">
+                  <a href="https://www.instagram.com/eshayarram/" target="_blank" rel="noopener noreferrer" className="about-social-btn" aria-label="Esha Instagram">
+                    <img src="/images/instagram-logo.svg" alt="Instagram" />
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="about-team-group">
             <h3>Board of Advisors</h3>
             <div className="about-team-grid">
               <div className="about-person-card">
