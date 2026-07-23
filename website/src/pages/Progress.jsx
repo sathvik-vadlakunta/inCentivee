@@ -9,6 +9,7 @@ import {
   purchase, activateItem, deactivateColor, deactivateShape,
   applyCosmetics, THEME_COLORS, COIN_SHAPES,
 } from '../lib/shop'
+import { saveShopToCloud } from '../lib/shopSync'
 import './Progress.css'
 
 const LESSON_IDS_ALL = [
@@ -145,21 +146,25 @@ export default function Progress() {
   function handleBuy(itemId, price) {
     purchase(itemId, price)
     refreshShop()
+    if (currentUser) saveShopToCloud(currentUser.id)
   }
 
   function handleEquip(itemId) {
     activateItem(itemId)
     setActive(getActive())
+    if (currentUser) saveShopToCloud(currentUser.id)
   }
 
   function handleUnequipColor() {
     deactivateColor()
     setActive(getActive())
+    if (currentUser) saveShopToCloud(currentUser.id)
   }
 
   function handleUnequipShape() {
     deactivateShape()
     setActive(getActive())
+    if (currentUser) saveShopToCloud(currentUser.id)
   }
 
   return (

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { allUnits } from '../data/levels'
 import { clearStoredProgress } from '../lib/guestProgress'
 import { clearShopData } from '../lib/shop'
+import { loadShopFromCloud } from '../lib/shopSync'
 
 const AuthContext = createContext(null)
 
@@ -40,6 +41,7 @@ export function AuthProvider({ children }) {
     ])
     const xp = progressData ? computeXP(progressData) : 0
     setProfile(prev => ({ ...prev, ...(profileData ?? {}), xp }))
+    loadShopFromCloud(userId)
   }
 
   useEffect(() => {
