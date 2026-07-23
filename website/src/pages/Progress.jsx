@@ -160,14 +160,6 @@ export default function Progress() {
 
   useEffect(() => { applyCosmetics() }, [])
 
-  useEffect(() => {
-    const newPeak = updatePeakCoins(coins)
-    if (newPeak > peakCoins) {
-      setPeakCoins(newPeak)
-      if (currentUser) saveShopToCloud(currentUser.id)
-    }
-  }, [coins])
-
   const activeShape  = COIN_SHAPES.find(s => s.id !== 'circle' && active.has(s.id)) ?? COIN_SHAPES[0]
   const activeColor  = THEME_COLORS.find(c => active.has(c.id)) ?? null
   const earned       = profile?.xp ?? 0
@@ -175,6 +167,14 @@ export default function Progress() {
   const xp           = earned * 2
   const lessonsCount = LESSON_IDS_ALL.filter(id => completedIds.has(id)).length
   const testsCount   = CHAPTER_TEST_IDS_ALL.filter(id => completedIds.has(id)).length
+
+  useEffect(() => {
+    const newPeak = updatePeakCoins(coins)
+    if (newPeak > peakCoins) {
+      setPeakCoins(newPeak)
+      if (currentUser) saveShopToCloud(currentUser.id)
+    }
+  }, [coins])
 
   function openCertificate() {
     const name = profile?.name ?? currentUser?.email?.split('@')[0] ?? 'Student'
