@@ -281,7 +281,8 @@ export default function Progress() {
               </div>
               <div className="shop-color-grid">
                 {THEME_COLORS.map(color => {
-                  const owned    = purchased.has(color.id)
+                  const isFree   = color.price === 0
+                  const owned    = isFree || purchased.has(color.id)
                   const isActive = active.has(color.id)
                   const canBuy   = !owned && coins >= color.price
                   return (

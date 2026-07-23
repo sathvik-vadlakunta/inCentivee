@@ -3,7 +3,7 @@ const ACTIVE_KEY    = 'incentive_shop_active'
 const SPENT_KEY     = 'incentive_shop_spent'
 
 export const THEME_COLORS = [
-  { id: 'color-coral',  hex: '#FF6F61', label: 'Coral',  price: 200 },
+  { id: 'color-coral',  hex: '#FF6F61', label: 'Coral',  price: 0 },
   { id: 'color-teal',   hex: '#0D9488', label: 'Teal',   price: 200 },
   { id: 'color-amber',  hex: '#F59E0B', label: 'Amber',  price: 200 },
   { id: 'color-purple', hex: '#8B5CF6', label: 'Purple', price: 200 },
