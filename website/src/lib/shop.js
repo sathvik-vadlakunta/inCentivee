@@ -71,6 +71,16 @@ export function deactivateShape() {
   applyCosmetics(active)
 }
 
+export function clearShopData() {
+  try {
+    localStorage.removeItem(PURCHASED_KEY)
+    localStorage.removeItem(ACTIVE_KEY)
+    localStorage.removeItem(SPENT_KEY)
+  } catch {}
+  applyCosmetics(new Set())
+  window.dispatchEvent(new CustomEvent('incentive:shop-update'))
+}
+
 export function applyCosmetics(active) {
   if (!active) active = getActive()
   const root = document.documentElement

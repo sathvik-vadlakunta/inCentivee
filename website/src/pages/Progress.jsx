@@ -107,7 +107,7 @@ export default function Progress() {
   }
 
   useEffect(() => {
-    if (!currentUser) return
+    if (!currentUser) { setCompletedIds(new Set()); return }
     supabase
       .from('lesson_progress')
       .select('lesson_id')
@@ -117,6 +117,12 @@ export default function Progress() {
         if (data) setCompletedIds(new Set(data.map(r => r.lesson_id)))
       })
   }, [currentUser?.id])
+
+  useEffect(() => {
+    const refresh = () => refreshShop()
+    window.addEventListener('incentive:shop-update', refresh)
+    return () => window.removeEventListener('incentive:shop-update', refresh)
+  }, [])
 
   useEffect(() => { applyCosmetics() }, [])
 

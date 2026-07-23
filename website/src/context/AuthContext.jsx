@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { allUnits } from '../data/levels'
 import { clearStoredProgress } from '../lib/guestProgress'
+import { clearShopData } from '../lib/shop'
 
 const AuthContext = createContext(null)
 
@@ -51,7 +52,7 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setCurrentUser(session?.user ?? null)
       if (session?.user) fetchProfile(session.user.id)
-      else { setProfile(null); clearStoredProgress() }
+      else { setProfile(null); clearStoredProgress(); clearShopData() }
     })
 
     return () => subscription.unsubscribe()
