@@ -8,6 +8,7 @@ export async function fetchQuestionsMap() {
     .from('questions')
     .select('*')
     .order('position', { ascending: true })
+    .limit(5000)
 
   if (error) throw error
 
