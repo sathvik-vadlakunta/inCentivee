@@ -167,6 +167,7 @@
 .node-chip-name { }
 .node-chip--sm {
   gap: 6px; padding: 5px 10px 5px 12px; font-size: 10px;
+  max-width: 120px; white-space: normal; text-align: center;
 }
 .node-chip--sm .node-coin-badge { width: 16px; height: 16px; font-size: 9px; }
 .node-coin-badge {
