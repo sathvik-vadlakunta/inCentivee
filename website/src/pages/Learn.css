@@ -167,11 +167,12 @@
 .node-chip-name { }
 .node-chip--sm {
   gap: 6px; padding: 5px 10px 5px 12px; font-size: 10px;
-  max-width: 148px;
+  max-width: 148px; overflow: hidden;
 }
 .node-chip--sm .node-coin-badge { width: 16px; height: 16px; font-size: 9px; }
 .node-chip--sm .node-chip-name {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80px;
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .node-coin-badge {
   display: flex; align-items: center; justify-content: center;
