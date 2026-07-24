@@ -6,8 +6,26 @@
   height: 60px;
 }
 
-/* Lesson trail stop — sizes to button, chip is absolute */
-.unit-trail-stop { }
+/* Lesson trail stop — sizes to button only; chip floats to the side */
+.unit-trail-stop {
+  display: block;
+}
+
+.node-chip--right {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+.node-chip--left {
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
 
 /* "Lesson X of N" badge inside the quiz header */
 .unit-lesson-badge {

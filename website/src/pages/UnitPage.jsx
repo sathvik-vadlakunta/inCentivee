@@ -410,6 +410,7 @@ export default function UnitPage() {
                 const unlocked  = isUnlocked(lesson.id)
                 const sparkling = sparklingId === lesson.id
                 const isNextUp  = i === nextUpIndex
+                const chipRight = pos.x <= TRAIL_CENTER
                 return (
                   <div key={lesson.id} className="trail-stop unit-trail-stop"
                     style={{ left: pos.x, top: pos.y - NODE_R }}>
@@ -431,7 +432,7 @@ export default function UnitPage() {
                         : !unlocked ? <Lock size={18}/>
                         : <span className="node-num">{i+1}</span>}
                     </button>
-                    <div className="node-chip node-chip--sm" style={{'--chip-color': color}}>
+                    <div className={`node-chip node-chip--sm node-chip--${chipRight ? 'right' : 'left'}`} style={{'--chip-color': color}}>
                       <span className="node-chip-name">{lesson.title}</span>
                       <CoinBadge size={20} drop="1px 1px 0" />
                       <span className="node-chip-cents">{lesson.centsReward}</span>
