@@ -150,9 +150,8 @@
         <div class="card-hd">
           <h3>Google rating</h3>
           <select class="period-sel" data-target="rating">
-            <option value="weekly">Weekly</option>
             <option value="monthly" selected>Monthly</option>
-            <option value="yearly">Yearly</option>
+            <option value="quarterly">Quarterly</option>
           </select>
         </div>
         <div class="v">{{ '%.1f'|format(reviews_card.rating) if reviews_card.rating else '–' }}★</div>
@@ -162,7 +161,7 @@
           <div class="d up">▲ {{ reviews_card.new_count }} new review{{ 's' if reviews_card.new_count != 1 else '' }} this period</div>
         {% endif %}
         {% if reviews_card.periods %}
-          {% for period in ['weekly', 'monthly', 'yearly'] %}
+          {% for period in ['monthly', 'quarterly'] %}
             {% set pd = reviews_card.periods[period] %}
             {% if pd %}
             <div class="period-panel" data-target="rating" data-period="{{ period }}"{% if period != 'monthly' %} style="display:none"{% endif %}>
@@ -186,14 +185,13 @@
         <div class="card-hd">
           <h3>Total reviews</h3>
           <select class="period-sel" data-target="reviews">
-            <option value="weekly">Weekly</option>
             <option value="monthly" selected>Monthly</option>
-            <option value="yearly">Yearly</option>
+            <option value="quarterly">Quarterly</option>
           </select>
         </div>
         <div class="v">{{ total_reviews_card.count }}</div>
         {% if total_reviews_card.periods %}
-          {% for period in ['weekly', 'monthly', 'yearly'] %}
+          {% for period in ['monthly', 'quarterly'] %}
             {% set pd = total_reviews_card.periods[period] %}
             {% if pd %}
             <div class="period-panel" data-target="reviews" data-period="{{ period }}"{% if period != 'monthly' %} style="display:none"{% endif %}>
@@ -217,9 +215,8 @@
         <div class="card-hd">
           <h3>Domain rank</h3>
           <select class="period-sel" data-target="da">
-            <option value="weekly">Weekly</option>
             <option value="monthly" selected>Monthly</option>
-            <option value="yearly">Yearly</option>
+            <option value="quarterly">Quarterly</option>
           </select>
         </div>
         <div class="v">{{ authority_card.da }} <span style="font-size:14px;color:var(--muted);font-weight:500">/ 100 Domain Authority</span></div>
@@ -227,7 +224,7 @@
           <div class="d {{ authority_card.direction }}">{{ '▲' if authority_card.direction == 'up' else ('▼' if authority_card.direction == 'down' else '–') }} {{ authority_card.delta_label }}</div>
         {% endif %}
         {% if authority_card.periods %}
-          {% for period in ['weekly', 'monthly', 'yearly'] %}
+          {% for period in ['monthly', 'quarterly'] %}
             {% set pd = authority_card.periods[period] %}
             {% if pd %}
             <div class="period-panel" data-target="da" data-period="{{ period }}"{% if period != 'monthly' %} style="display:none"{% endif %}>

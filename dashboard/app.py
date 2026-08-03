@@ -664,15 +664,14 @@ def _portal_pct_change(cur: float, prev: float | None) -> dict | None:
 
 
 def _kpi_periods(hist: list, current_val: float, val_fmt: str = ".0f") -> dict:
-    """Return {weekly, monthly, yearly} sparkline + since-data for a KPI history (oldest-first).
+    """Return {monthly, quarterly} sparkline + since-data for a KPI history (oldest-first).
 
-    Slices: weekly = last 4 pts, monthly = last 8 pts, yearly = full history.
+    Slices: monthly = last 8 pts, quarterly = last 13 pts (~3 months of weekly snapshots).
     Falls back to the full history when a slice has fewer than 2 points.
     """
     slices = {
-        "weekly":  hist[-4:]  if len(hist) >= 4  else hist,
-        "monthly": hist[-8:]  if len(hist) >= 8  else hist,
-        "yearly":  hist,
+        "monthly":   hist[-8:]  if len(hist) >= 8  else hist,
+        "quarterly": hist[-13:] if len(hist) >= 13 else hist,
     }
     out = {}
     for period, h in slices.items():
